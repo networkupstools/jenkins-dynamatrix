@@ -124,7 +124,7 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
     }
 
     if (axis in String || axis in GString) {
-        def matcher = axis =~ /(\$\{.+\\})/
+        def matcher = axis =~ /(\$\{.+\})/
         if (matcher.find()) {
             // Substitute values of one expansion and recurse -
             // if there are more dollar-braces, they will be
