@@ -98,14 +98,36 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     nodeCaps.optionalPrintDebug()
 
     // Original request could have regexes or groovy-style substitutions
-    // to expand. The effectiveAxes is a definitive list of exact names:
+    // to expand. The effectiveAxes is generally a definitive set of
+    // sets of exact axis names, e.g. ['ARCH', 'CLANGVER', 'OS'] and
+    // ['ARCH', 'GCCVER', 'OS'] as expanded from '${COMPILER}VER' part:
     Set effectiveAxes = []
     for (axis in dynacfg.dynamatrixAxesLabels) {
-        effectiveAxes << nodeCaps.resolveAxisName(axis)
+        TreeSet effAxis = nodeCaps.resolveAxisName(axis).sort()
+        println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
+        effectiveAxes << effAxis
     }
-    effectiveAxes = effectiveAxes.flatten().sort()
+    effectiveAxes = effectiveAxes.sort()
+    println "[DEBUG] prepareDynamatrix(): Initially detected effectiveAxes: " + effectiveAxes
+    // By this point, a request for ['OS', '${COMPILER}VER', ~/ARC.+/]
+    // yields [[OS], [ARCH], [CLANGVER, GCCVER]] from which we want to
+    // get a set with two sets of axes that can do our separate builds:
+    // [ [OS, ARCH, CLANGVER], [OS, ARCH, GCCVER] ]
+    // ...and preferably really sorted :)
 
-    println "[DEBUG] prepareDynamatrix(): Detected effectiveAxes: " + effectiveAxes
+    Set eff = []
+    for (a in effectiveAxes) {
+        // Cartesian product, maybe not in most efficient manner
+        // but this is not too hot a codepath
+        println "[DEBUG] prepareDynamatrix(): multiplier: " + a.getClass() + ": " + a
+        if (eff.size() == 0) {
+            eff = a
+        } else {
+            eff = cartesianMultiply(eff, a)
+        }
+    }
+    effectiveAxes = eff
+    println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
 
     // Prepare all possible combos of requested axes (meaning we can
     // request a build agent label "A && B && C" and all of those
@@ -120,4 +142,11 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     }
 
     return true;
+}
+
+static Iterable cartesianMultiply(Iterable a, Iterable b) {
+    // Inspired by https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists#Groovy
+    assert [a,b].every { it != null }
+    def (m,n) = [a.size(),b.size()]
+    return ( (0..<(m*n)).inject([]) { prod, i -> prod << [a[i.intdiv(n)], b[i%n]].flatten().sort() } )
 }

@@ -167,7 +167,7 @@ class NodeCaps {
                 }
                 return res.flatten()
             } else {
-                res = [axis]
+                res << axis
                 return res
             }
         }
