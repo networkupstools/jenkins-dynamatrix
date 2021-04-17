@@ -9,6 +9,8 @@ def labelDefaultWorker() {
     return "master-worker"
 }
 
+// TODO: Make nodeCaps a class with proper toString() and other methods
+
 /*
  * Collect all info about useful build agents in one collection:
  * Returns a Map with names of currently known agent which matched the
@@ -69,4 +71,21 @@ def detectCapabilityLabelsForBuilders(String builderLabel = null) {
     }
 
     return nodeCaps
+}
+
+def printNodeCaps(nodeCaps = [:]) {
+    try {
+        println "[DEBUG] raw nodeCaps: " + nodeCaps
+        println "[DEBUG] nodeCaps.labelExpression: " + nodeCaps.labelExpression
+        println "[DEBUG] nodeCaps.nodeData.size(): " + nodeCaps.nodeData.size()
+        for (node in nodeCaps.nodeData.keySet()) {
+            if (node == null) continue
+            println "[DEBUG] nodeCaps.nodeData[${node}].labelMap.size()\t: " + nodeCaps.nodeData[node].labelMap.size()
+            for (String label : nodeCaps.nodeData[node].labelMap.keySet()) {
+                println "[DEBUG] nodeCaps.nodeData[${node}].labelMap['${label}']\t: " + nodeCaps.nodeData[node].labelMap[label].toString()
+            }
+        }
+    } catch (Throwable t) {
+        println "[DEBUG] FAILED to print nodeCaps, possibly unexpected structure"
+    }
 }
