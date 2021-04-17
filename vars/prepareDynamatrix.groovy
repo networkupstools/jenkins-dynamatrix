@@ -44,7 +44,7 @@ def parallelStages = prepareDynamatrix(
  */
 
 /* Returns a map of stages */
-def call(Map<Object, Object> dynacfg, Closure body) {
+def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     println "NOT IMPLEMENTED: prepareDynamatrix.groovy"
 
     if (dynacfg.dynamatrixAxesLabels) {
