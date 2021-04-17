@@ -1,3 +1,6 @@
+import java.util.Arrays.*;
+import java.util.regex.*;
+
 /*
  * Example agents and call signature from README:
 
