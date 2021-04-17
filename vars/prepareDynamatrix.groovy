@@ -96,6 +96,13 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
         nodeCaps = infra.detectCapabilityLabelsForBuilders()
     }
 
+    for (hudson.model.Node node : nodeCaps.nodeData.keySet) {
+        if (node == null) continue
+        for (String label : nodeCaps.nodeData[node].labelMap.keySet()) {
+            println "[DEBUG] nodeCaps.nodeData[${node}].labelMap['${label}']\t: " + nodeCaps.nodeData[node].labelMap[label].toString()
+        }
+    }
+
     Set effectiveAxes = []
     for (axis in dynacfg.dynamatrixAxesLabels) {
         effectiveAxes << resolveAxisName(dynacfg, nodeCaps, axis)
