@@ -57,40 +57,17 @@ def call(dynacfgOrig = [:], Closure body = null) {
     println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy"
 
     // Have some defaults, if only to have all expected fields defined
-    DynamatrixConfig dynacfg = new DynamatrixConfig(dynacfgOrig)
+    DynamatrixConfig dynacfg = new DynamatrixConfig()
 
-/*
-    try { // Check if field exists
-        if (dynacfg.dynamatrixAxesLabels == null) {
-            dynacfg.dynamatrixAxesLabels = null
+    def sanityRes = dynacfg.initDefault(dynacfgOrig)
+    if (sanityRes != true) {
+        if (sanityRes instanceof String) {
+            println sanityRes
         }
-    } catch (MissingPropertyException e) {
-        dynacfg.dynamatrixAxesLabels = null
+        // Assumed non-fatal - fields seen that are not in standard config
     }
-*/
 
-/*
-    if (dynacfg.dynamatrixAxesLabels != null) {
-        if (dynacfg.dynamatrixAxesLabels.getClass() in [ArrayList, List, Set, TreeSet, LinkedHashSet, Object[]]) {
-        } else if (dynacfg.dynamatrixAxesLabels.getClass() in [String, java.lang.String, GString]) {
-            if (dynacfg.dynamatrixAxesLabels.equals("")) {
-                dynacfg.dynamatrixAxesLabels = null
-            } else {
-                dynacfg.dynamatrixAxesLabels = [dynacfg.dynamatrixAxesLabels]
-            }
-        } else if (dynacfg.dynamatrixAxesLabels.getClass() in [java.util.regex.Pattern]) {
-            dynacfg.dynamatrixAxesLabels = [dynacfg.dynamatrixAxesLabels]
-        } else {
-            println "Not sure what type 'dynamatrixAxesLabels' is: " + dynacfg.dynamatrixAxesLabels.getClass() + " : " + dynacfg.dynamatrixAxesLabels.toString()
-            dynacfg.dynamatrixAxesLabels = null
-        }
-    }
-    if (dynacfg.dynamatrixAxesLabels == null) {
-        println "No 'dynamatrixAxesLabels' were provided, nothing to generate"
-        return null
-    }
-*/
-    def sanityRes = dynacfg.sanitycheckDynamatrixAxesLabels()
+    sanityRes = dynacfg.sanitycheckDynamatrixAxesLabels()
     if (sanityRes != true) {
         if (sanityRes instanceof String) {
             println sanityRes
@@ -99,17 +76,6 @@ def call(dynacfgOrig = [:], Closure body = null) {
         }
         return null
     }
-
-
-/*
-    try { // Check if field exists
-        if (dynacfg.commonLabelExpr == null || dynacfg.commonLabelExpr.equals("")) {
-            dynacfg.commonLabelExpr = null
-        }
-    } catch (MissingPropertyException e) {
-        dynacfg.commonLabelExpr = null
-    }
-*/
 
     // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
     // other configs for same builder would not query and parse real Jenkins
