@@ -126,7 +126,8 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
     println "[DEBUG] resolveAxisName(): " + axis.getClass() + " : " + axis.toString()
 
     if (axis in String || axis in GString) {
-        def matcher = axis =~ /(\$\{.+\})/
+        // NOTE: No support for nested request like '${COMPILER${VENDOR}}VER'
+        def matcher = axis =~ /\$\{([^\}]+)\}/
         if (matcher.find()) {
             // Substitute values of one expansion and recurse -
             // if there are more dollar-braces, they will be
@@ -137,8 +138,6 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
             // of the variable axis itself (like fixed 'COMPILER'
             // string for variable part '${COMPILER}' in originally
             // requested axis name '${COMPILER}VAR').
-            // ASSUMPTION: It might drill deeper for nested request
-            // like '${COMPILER${VENDOR}}VER' - recursion not checked
             for (expandedAxisName in resolveAxisName(dynacfg, nodeCaps, varAxis)) {
                 if (expandedAxisName == null || (!expandedAxisName in String && !expandedAxisName in GString) || expAxis.equals("")) continue;
 
