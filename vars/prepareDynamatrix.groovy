@@ -175,7 +175,10 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
 
             for (String label : nodeCaps.nodeData[node].labelMap.keySet()) {
                 if (label == null) continue
+                println "[DEBUG] resolveAxisName(): label: " + label.getClass() + " : " + label.toString()
+                println "[DEBUG] resolveAxisName(): value: " + nodeCaps.nodeData[node].labelMap[label]?.getClass() + " : " + nodeCaps.nodeData[node].labelMap[label]?.toString()
                 if (label.trim() =~ axis) {
+                    println "[DEBUG] resolveAxisName(): label matched axis as regex"
                     res << label
                 }
             }
