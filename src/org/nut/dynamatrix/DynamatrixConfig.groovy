@@ -153,6 +153,77 @@ def parallelStages = prepareDynamatrix(
     public DynamatrixConfig() {}
 
     public DynamatrixConfig(String defaultCfg) {
+        this.initDefault(defaultCfg)
+    }
+
+    public def initDefault(String defaultCfg) {
+        // TODO
+        return true
+    }
+
+    public DynamatrixConfig(Map dynacfgOrig) {
+        this.initDefault(dynacfgOrig)
+    }
+
+    public def initDefault(Map dynacfgOrig) {
+        // Combine a config with defaults from a Set passed to a groovy call()
+        if (dynacfgOrig.size() > 0) {
+            if (dynacfgOrig.containsKey('defaultDynamatrixConfig')) {
+                this.initDefault(dynacfgOrig[defaultDynamatrixConfig].toString())
+                dynacfgOrig.remove('defaultDynamatrixConfig')
+            }
+        }
+
+        String errs = ""
+        if (dynacfgOrig.size() > 0) {
+            for (k in dynacfgOrig.keySet()) {
+                try {
+                    this[k] = dynacfgOrig[k]
+                } catch(Exception e) {
+                    if (!errs.equals("")) errs += "\n"
+                    errs += "[DEBUG] DynamatrixConfig(Set): ingoring unsupported config key from request: '${k}' => " + dynacfgOrig[k]
+                }
+            }
+        }
+
+        // was not null, but at least one unused setting passed
+        if (!errs.equals("")) return errs
+
+        return true
+    }
+
+    public def sanitycheckDynamatrixAxesLabels() {
+        // Our callers expect a few specific data constructs here:
+        // either a single string or pattern (that will be remade into
+        // a single-element array), or an array/list/set/... of such types
+        String errs = ""
+        if (this.dynamatrixAxesLabels != null) {
+            if (this.dynamatrixAxesLabels.getClass() in [ArrayList, List, Set, TreeSet, LinkedHashSet, Object[]]) {
+                // TODO: Match superclass to not list all children of Set etc?
+                // TODO: Check entries if this object that they are strings/patterns
+                return true
+            } else if (this.dynamatrixAxesLabels.getClass() in [String, java.lang.String, GString]) {
+                if (this.dynamatrixAxesLabels.equals("")) {
+                    this.dynamatrixAxesLabels = null
+                } else {
+                    this.dynamatrixAxesLabels = [this.dynamatrixAxesLabels]
+                }
+                return true
+            } else if (this.dynamatrixAxesLabels.getClass() in [java.util.regex.Pattern]) {
+                this.dynamatrixAxesLabels = [this.dynamatrixAxesLabels]
+                return true
+            } else {
+                if (!errs.equals("")) errs += "\n"
+                errs += "Not sure what type 'dynamatrixAxesLabels' is: " + this.dynamatrixAxesLabels.getClass() + " : " + this.dynamatrixAxesLabels.toString()
+                //this.dynamatrixAxesLabels = null
+            }
+        }
+
+        // was not null, but at least one unused setting passed
+        if (!errs.equals("")) return errs
+
+        // is null
+        return false
     }
 
 } // end of class DynamatrixConfig

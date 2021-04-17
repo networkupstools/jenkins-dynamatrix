@@ -57,27 +57,7 @@ def call(dynacfgOrig = [:], Closure body = null) {
     println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy"
 
     // Have some defaults, if only to have all expected fields defined
-    DynamatrixConfig dynacfg
-
-    // Combine a config with defaults
-    if (dynacfgOrig.size() > 0) {
-        if (dynacfgOrig.containsKey('defaultDynamatrixConfig')) {
-            dynacfg = new DynamatrixConfig(dynacfgOrig[defaultDynamatrixConfig])
-            dynacfgOrig.remove('defaultDynamatrixConfig')
-        } else {
-            dynacfg = new DynamatrixConfig()
-        }
-    }
-
-    if (dynacfgOrig.size() > 0) {
-        for (k in dynacfgOrig.keySet()) {
-            try {
-                dynacfg[k] = dynacfgOrig[k]
-            } catch(Exception e) {
-                println "[DEBUG] prepareDynamatrix: ingoring unsupported config key from request: '${k}' => " + dynacfgOrig[k]
-            }
-        }
-    }
+    DynamatrixConfig dynacfg = new DynamatrixConfig(dynacfgOrig)
 
 /*
     try { // Check if field exists
@@ -89,6 +69,7 @@ def call(dynacfgOrig = [:], Closure body = null) {
     }
 */
 
+/*
     if (dynacfg.dynamatrixAxesLabels != null) {
         if (dynacfg.dynamatrixAxesLabels.getClass() in [ArrayList, List, Set, TreeSet, LinkedHashSet, Object[]]) {
         } else if (dynacfg.dynamatrixAxesLabels.getClass() in [String, java.lang.String, GString]) {
@@ -108,6 +89,17 @@ def call(dynacfgOrig = [:], Closure body = null) {
         println "No 'dynamatrixAxesLabels' were provided, nothing to generate"
         return null
     }
+*/
+    def sanityRes = dynacfg.sanitycheckDynamatrixAxesLabels()
+    if (sanityRes != true) {
+        if (sanityRes instanceof String) {
+            println sanityRes
+        } else {
+            println "No 'dynamatrixAxesLabels' were provided, nothing to generate"
+        }
+        return null
+    }
+
 
 /*
     try { // Check if field exists
