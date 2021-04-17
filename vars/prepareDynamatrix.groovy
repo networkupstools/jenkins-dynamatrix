@@ -61,13 +61,13 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
 
     if (dynacfg.dynamatrixAxesLabels != null) {
         if (dynacfg.dynamatrixAxesLabels.getClass() in [ArrayList, List, Set, Object[]]) {
-        } else if (dynacfg.dynamatrixAxesLabels in [String, java.lang.String, GString]) {
+        } else if (dynacfg.dynamatrixAxesLabels.getClass() in [String, java.lang.String, GString]) {
             if (dynacfg.dynamatrixAxesLabels.equals("")) {
                 dynacfg.dynamatrixAxesLabels = null
             } else {
                 dynacfg.dynamatrixAxesLabels = [dynacfg.dynamatrixAxesLabels]
             }
-        } else if (dynacfg.dynamatrixAxesLabels in [java.util.regex.Pattern]) {
+        } else if (dynacfg.dynamatrixAxesLabels.getClass() in [java.util.regex.Pattern]) {
             dynacfg.dynamatrixAxesLabels = [dynacfg.dynamatrixAxesLabels]
         } else {
             println "Not sure what type 'dynamatrixAxesLabels' is: " + dynacfg.dynamatrixAxesLabels.getClass() + " : " + dynacfg.dynamatrixAxesLabels.toString()
@@ -119,7 +119,7 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
 
     // If caller has a Set to check, they should iterate it on their own
     // TODO: or maybe provide a helper wrapper?..
-    if (axis == null || (!axis in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
+    if (axis == null || (!axis.getClass() in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
         println "[DEBUG] resolveAxisName(): invalid input value or class: " + axis.toString()
         return res;
     }
@@ -168,7 +168,7 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
         }
     }
 
-    if (axis in java.util.regex.Pattern) {
+    if (axis.getClass() in java.util.regex.Pattern) {
         // Return label keys which match the expression
         for (node in nodeCaps.nodeData.keySet()) {
             if (node == null) continue
@@ -190,7 +190,7 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
     // values which have it as a key in nodeCaps.nodeData[].labelMap[]
 
     Set res = []
-    if (axis == null || (!axis in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
+    if (axis == null || (!axis.getClass() in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
         println "[DEBUG] resolveAxisValues(): invalid input value or class: " + axis.toString()
         return res;
     }
@@ -204,7 +204,7 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
             if (label == null) continue
             println "[DEBUG] resolveAxisValues(): label: " + label.getClass() + " : " + label.toString()
             println "[DEBUG] resolveAxisValues(): value: " + nodeCaps.nodeData[node].labelMap[label]?.getClass() + " : " + nodeCaps.nodeData[node].labelMap[label]?.toString()
-            if (axis in [String, GString, java.lang.String]) {
+            if (axis.getClass() in [String, GString, java.lang.String]) {
                 if (axis.trim().equals(label.trim())) {
                     println "[DEBUG] resolveAxisValues(): label matched axis as string"
                     res << nodeCaps.nodeData[node].labelMap[label]
@@ -212,7 +212,7 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
                     println "[DEBUG] resolveAxisValues(): label did not match axis as string"
                 }
             }
-            if (axis in java.util.regex.Pattern) {
+            if (axis.getClass() in java.util.regex.Pattern) {
                 if (label.trim() =~ axis) {
                     println "[DEBUG] resolveAxisValues(): label matched axis as regex"
                     res << nodeCaps.nodeData[node].labelMap[label]
