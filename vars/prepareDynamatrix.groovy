@@ -96,8 +96,12 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
         nodeCaps = infra.detectCapabilityLabelsForBuilders()
     }
 
+    println "[DEBUG] raw nodeCaps: " + nodeCaps
+    println "[DEBUG] nodeCaps.labelExpression: " + nodeCaps.labelExpression
+    println "[DEBUG] nodeCaps.nodeData.size(): " + nodeCaps.nodeData.size()
     for (hudson.model.Node node : nodeCaps.nodeData.keySet) {
         if (node == null) continue
+        println "[DEBUG] nodeCaps.nodeData[${node}].labelMap.size()\t: " + nodeCaps.nodeData[node].labelMap.size()
         for (String label : nodeCaps.nodeData[node].labelMap.keySet()) {
             println "[DEBUG] nodeCaps.nodeData[${node}].labelMap['${label}']\t: " + nodeCaps.nodeData[node].labelMap[label].toString()
         }
