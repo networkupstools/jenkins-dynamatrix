@@ -174,10 +174,9 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
             if (node == null) continue
 
             for (String label : nodeCaps.nodeData[node].labelMap.keySet()) {
-                if (axis in java.util.regex.Pattern) {
-                    if (label =~ axis) {
-                        res << label
-                    }
+                if (label == null) continue
+                if (label =~ axis) {
+                    res << label
                 }
             }
         }
@@ -202,6 +201,7 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
         if (node == null) continue
 
         for (String label : nodeCaps.nodeData[node].labelMap.keySet()) {
+            if (label == null) continue
             if (axis in [String, GString]) {
                 if (axis.equals(label)) {
                     res << nodeCaps.nodeData[node].labelMap[label]?.trim()
