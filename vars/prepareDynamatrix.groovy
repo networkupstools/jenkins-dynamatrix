@@ -115,6 +115,7 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     // [ [OS, ARCH, CLANGVER], [OS, ARCH, GCCVER] ]
     // ...and preferably really sorted :)
 
+/*
     Set eff = []
     for (a in effectiveAxes) {
         // Cartesian product, maybe not in most efficient manner
@@ -127,6 +128,8 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
         }
     }
     effectiveAxes = eff
+*/
+    effectiveAxes = infra.cartesianSquared(effectiveAxes).sort()
     println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
 
     //nodeCaps.enableDebugTrace = true
@@ -196,7 +199,9 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
         for (nodeAxisCombos in nodeResults) {
             // this nodeResults contains the set of sets of label values
             // supported for one of the original effectiveAxes requirements
+            // each of nodeAxisCombos contains a set of axisValues
             println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
+/*
             def tmp = []
             for (axisValues in nodeAxisCombos) {
                 if (tmp.size() == 0) {
@@ -205,6 +210,8 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
                     tmp = cartesianMultiply(tmp, axisValues)
                 }
             }
+*/
+            def tmp = infra.cartesianSquared(nodeAxisCombos).sort()
             println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
             // Add members of tmp (many sets of unique key=value combos
             // for each axis) as direct members of buildLabelCombosFlat
@@ -223,11 +230,4 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     println "[DEBUG] prepareDynamatrix(): detected buildLabels: " + buildLabels
 
     return true;
-}
-
-static Iterable cartesianMultiply(Iterable a, Iterable b) {
-    // Inspired by https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists#Groovy
-    assert [a,b].every { it != null }
-    def (m,n) = [a.size(),b.size()]
-    return ( (0..<(m*n)).inject([]) { prod, i -> prod << [a[i.intdiv(n)], b[i%n]].flatten().sort() } )
 }
