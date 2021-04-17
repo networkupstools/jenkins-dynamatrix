@@ -164,15 +164,21 @@ class NodeCaps {
 
                         // Now resolve the value of "axis" with one substituted
                         // expansion variant - if it is a fixed string by now,
-                        // this will end quickly:
-                        res << this.resolveAxisName(tmpAxis)
+                        // this will end quickly. Keep it as a composite value
+                        // so that the fixed resolved key=value part is remembered:
+                        res << this.resolveAxisName("${expandedAxisName}=${expandedAxisValue} ${tmpAxis}")
 
-                        // TODO: not sure where to place it, but it may be useful to constrain
-                        // the ultimately returned axis values (in the map) to contain e.g.
-                        // "COMPILER=GCC" always for "GCCVER=1.2.3" after resolving the axis
-                        // request from "${COMPILER}VER" string. Put another way, for this
-                        // simpler example with one substitution, the "COMPILER=GCC GCCVER"
-                        // string might as well *be* the axis.
+                        // NOTE for the above: it may be useful to constrain
+                        // the ultimately returned axis values (in the map)
+                        // to remember e.g. the "COMPILER=GCC" part  always
+                        // for "GCCVER=1.2.3" after resolving the original
+                        // axis request from "${COMPILER}VER" string.
+                        // Put another way, for this simpler example with one
+                        // substitution, the "COMPILER=GCC GCCVER" string
+                        // might as well *be* the axis (supported elsewhere).
+                        // NOTE: This is expected to work (thanks to recursion
+                        // above) for resolvable axes with more than one
+                        // variable part, but this was not tested so far.
                     }
                 }
                 return res.flatten()
@@ -234,8 +240,24 @@ class NodeCaps {
             return res
         }
 
-        if (axis != null && axis.getClass() in [String, GString, java.lang.String]) {
+        def labelFixed = ""
+        if (axis != null && axis.getClass() in classesStrings) {
             axis = axis.trim()
+            // We support complex labels like "COMPILER=GCC GCCVER" which
+            // would originate from original "${COMPILER}VER" axis, out of
+            // which we want to resolve the "GCCVER=1.2.3" for the matrix
+            // and keep the fixed part as is.
+            def matcher = axis =~ /^(.* )([^ ]*)$/
+            if (matcher.find()) {
+                labelFixed = matcher[0][1]
+                axis = matcher[0][2]
+                if (this.enableDebugTrace) {
+                    this.script.println "[DEBUG] resolveAxisValues(): axis split into" +
+                        " fixed label part: '${labelFixed}' and the" +
+                        " part whose values we would look for: '${axis}'" +
+                        ( returnAssignments ? "" : " (note that fixed part is dropped when returnAssignments=${returnAssignments})")
+                }
+            }
         }
 
         if (axis == null || (!axis.getClass() in classesStringOrRegex) || axis.equals("")) {
@@ -262,6 +284,9 @@ class NodeCaps {
                     // TODO: Should it be turned into NULL?..
                 }
             }
+
+            // TODO: If labelFixed is not empty, check if this node contains
+            // all the labels and values listed in that part of our query
 
             Boolean hit = false
             if (this.enableDebugTrace) {
@@ -302,9 +327,10 @@ class NodeCaps {
             if (hit) {
                 if (val == null) {
                     // returnAssignments tells us to return the label like 'GCCVER=9'
-                    res << label
+                    res << labelFixed + label
                 } else {
                     // !returnAssignments tells us to return the value like '9'
+                    // and ignore the labelFixed part
                     res << val
                 }
             }

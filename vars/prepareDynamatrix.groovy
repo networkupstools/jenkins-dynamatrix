@@ -185,7 +185,8 @@ def call(dynacfgOrig = [:], Closure body = null) {
     // array of strings we can feed to the agent steps in pipeline:
     Set<String> buildLabels = []
     for (combo in buildLabelCombosFlat) {
-        String ble = String.join(" && ", combo)
+        // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
+        String ble = String.join('&&', combo).replaceAll('\\s+', '&&')
         buildLabels << ble
         println "[DEBUG] prepareDynamatrix(): detected buildLabels expression: " + ble
     }
