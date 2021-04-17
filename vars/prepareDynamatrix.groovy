@@ -47,15 +47,45 @@ def parallelStages = prepareDynamatrix(
 def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     println "NOT IMPLEMENTED: prepareDynamatrix.groovy"
 
-    if (dynacfg.dynamatrixAxesLabels) {
+    try { // Check if field exists
+        if (dynacfg.dynamatrixAxesLabels == null) {
+            dynacfg.dynamatrixAxesLabels = null
+        }
+    } catch (MissingPropertyException e) {
+        dynacfg.dynamatrixAxesLabels = null
+    }
+
+    if (dynacfg.dynamatrixAxesLabels != null) {
+        if (dynacfg.dynamatrixAxesLabels in [List, Array, Set]) {
+        } else if (dynacfg.dynamatrixAxesLabels in [String, GString]) {
+            if (dynacfg.dynamatrixAxesLabels.equals("")) {
+                dynacfg.dynamatrixAxesLabels = null
+            } else {
+                dynacfg.dynamatrixAxesLabels = [dynacfg.dynamatrixAxesLabels]
+            }
+        } else if (dynacfg.dynamatrixAxesLabels in [java.util.regex.Pattern]) {
+            dynacfg.dynamatrixAxesLabels = [dynacfg.dynamatrixAxesLabels]
+        } else {
+            dynacfg.dynamatrixAxesLabels = null
+        }
+    }
+    if (dynacfg.dynamatrixAxesLabels == null) {
         println "No 'dynamatrixAxesLabels' were provided, nothing to generate"
         return null
+    }
+
+    try { // Check if field exists
+        if (dynacfg.commonLabelExpr == null || dynacfg.commonLabelExpr.equals("")) {
+            dynacfg.commonLabelExpr = null
+        }
+    } catch (MissingPropertyException e) {
+        dynacfg.commonLabelExpr = null
     }
 
     def nodeCaps = null
     def buildLabels = []
 
-    if (dynacfg.commonLabelExpr) {
+    if (dynacfg.commonLabelExpr != null) {
         nodeCaps = infra.detectCapabilityLabelsForBuilders(dynacfg.commonLabelExpr)
     } else {
         nodeCaps = infra.detectCapabilityLabelsForBuilders()
