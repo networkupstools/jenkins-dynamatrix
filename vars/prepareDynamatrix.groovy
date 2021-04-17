@@ -129,17 +129,68 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     effectiveAxes = eff
     println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
 
+    //nodeCaps.enableDebugTrace = true
     // Prepare all possible combos of requested axes (meaning we can
     // request a build agent label "A && B && C" and all of those
     // would work with our currently defined agents). The buildLabels
     // are expected to provide good uniqueness thanks to the SortedSet
     // of effectiveAxes and their values that we would look into.
-    Set<String> buildLabels = []
+    Set buildLabelCombos = []
     for (node in nodeCaps.nodeData.keySet()) {
         // Looking at each node separately allows us to be sure that any
         // combo of axis-values (all of which it allegedly provides)
         // can be fulfilled
+        def nodeAxisCombos = []
+        for (axisSet in effectiveAxes) {
+            // Now looking at one definitive set of axis names that
+            // we would pick supported values for, by current node:
+            def axisCombos = []
+            for (axis in axisSet) {
+                def tmpset = nodeCaps.resolveAxisValues(axis, node, true)
+                // Got at least one usable key=value string?
+                if (tmpset != null && tmpset.size() > 0) {
+                    // TODO: Value constraints and classification
+                    // (mayFail etc) probably belong here
+                    axisCombos << tmpset.sort()
+                }
+            }
+
+            if (axisCombos.size() > 0) {
+                // Collect realistic values of each axis for this node
+                if (axisCombos.size() == axisSet.size()) {
+                    // Only collect combos which cover all requested axes
+                    // e.g. if some build host does not declare the ARCH(es)
+                    // it can build for, and we require to know it - ignore
+                    // that node
+                    // TODO: Something around constraints and classification
+                    // (is axis required? etc) might belong here
+                    axisCombos = axisCombos.sort()
+                    nodeAxisCombos << axisCombos
+                } else {
+                    println "[DEBUG] prepareDynamatrix(): ignored buildLabelCombos collected for node ${node} with requested axis set ${axisSet}: only got " + axisCombos
+                }
+            }
+        }
+        if (nodeAxisCombos.size() > 0) {
+            // It is okay if several nodes can run a build
+            // which matches the given requirements
+            nodeAxisCombos = nodeAxisCombos.sort()
+            // cartesian here?
+            buildLabelCombos << nodeAxisCombos
+        }
     }
+    buildLabelCombos = buildLabelCombos.sort()
+    println "[DEBUG] prepareDynamatrix(): detected buildLabelCombos: " + buildLabelCombos
+
+    // Convert Sets of Sets of strings in buildLabelCombos into the
+    // array of strings we can feed to the agent steps in pipeline:
+    Set<String> buildLabels = []
+    for (combo in buildLabelCombos) {
+        String ble = String.join(" && ", combo)
+        buildLabels << ble
+        println "[DEBUG] prepareDynamatrix(): detected buildLabels expression: " + ble
+    }
+    println "[DEBUG] prepareDynamatrix(): detected buildLabels: " + buildLabels
 
     return true;
 }

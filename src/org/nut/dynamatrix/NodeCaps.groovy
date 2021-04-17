@@ -196,7 +196,9 @@ class NodeCaps {
         return res.flatten()
     }
 
-    def resolveAxisValues(Object axis, Boolean returnAssignments = false) {
+    def resolveAxisValues(Object axis, node, Boolean returnAssignments = false) {
+        /* Look into a single node */
+
         /* For a fixed-string name or regex pattern, return a flattened Set of
          * values which have it as a key in nodeCaps.nodeData[].labelMap[]
          * (so not including labels that were not originally a KEY=VALUE).
@@ -210,6 +212,101 @@ class NodeCaps {
          * through the arrays of earlier parsed values per labels in labelMap.
          * NOTE: Currently there is no error-checking whether the axis param
          * itself contains an equality sign, unsure how to do it for Pattern.
+         */
+
+        Set res = []
+
+        if (node == null)
+            return res
+
+        if (!this.isInitialized) {
+            if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
+            return res
+        }
+
+        if (axis != null && axis.getClass() in [String, GString, java.lang.String]) {
+            axis = axis.trim()
+        }
+
+        if (axis == null || (!axis.getClass() in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
+            if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: " + axis.toString()
+            return res;
+        }
+
+        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): looking for: " + axis.getClass() + " : " + axis.toString()
+
+        for (String label : this.nodeData[node].labelMap.keySet()) {
+            if (this.enableDebugTrace) {
+                this.script.println "[DEBUG] resolveAxisValues(): label: " + label.getClass() + " : " + label.toString()
+                this.script.println "[DEBUG] resolveAxisValues(): value: " + this.nodeData[node].labelMap[label]?.getClass() + " : " + this.nodeData[node].labelMap[label]?.toString()
+            }
+            if (label == null) continue
+            label = label.trim()
+            if (label.equals("")) continue
+
+            def val = this.nodeData[node].labelMap[label]
+            if (val != null && val.getClass() in [String, GString, java.lang.String]) {
+                val = val.trim()
+                if (val.equals("") && (this.enableDebugTrace || this.enableDebugErrors)) {
+                    this.script.println "[WARNING] resolveAxisValues(): got a value which is an empty string"
+                    // TODO: Should it be turned into NULL?..
+                }
+            }
+
+            Boolean hit = false
+            if (this.enableDebugTrace) {
+                this.script.println "[DEBUG]   resolveAxisValues(${node}, ${returnAssignments}): " +
+                    "looking for: <" + axis.getClass() + ">(" + axis.toString() + ")    " +
+                    "GOTNEXT label: <" + label.getClass() + ">(" + label.toString() + ") // " +
+                    "value: <" + val.getClass() + ">(" + val.toString() + ")"
+            }
+            if (axis.getClass() in [String, GString, java.lang.String]) {
+                if ( (!returnAssignments && val != null && axis.equals(label))
+                ||   ( returnAssignments && val == null && label.startsWith("${axis}="))
+                ) {
+                    if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
+                    hit = true
+                } else {
+                    if (this.enableDebugTrace) {
+                        this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as string :" +
+                            " returnAssignments=${returnAssignments}" +
+                            " (val==null)=" + (val==null) +
+                            " (val!=null)=" + (val!=null) +
+                            " (axis.equals(label))=" + (axis.equals(label)) +
+                            " (axis.startsWith('${label}='))=" + (axis.startsWith("${label}=")) +
+                            " (label.startsWith('${axis}='))=" + (label.startsWith("${axis}="))
+                    }
+                }
+            }
+            if (axis.getClass() in java.util.regex.Pattern) {
+                if ( (!returnAssignments && val != null && label =~ axis && !label.contains("="))
+                ||   ( returnAssignments && val == null && label =~ ~/(${axis}|${axis}.*=)/ && label.contains("="))
+                ) {
+                    if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as regex"
+                    hit = true
+                } else {
+                    if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as regex"
+                }
+            }
+
+            if (hit) {
+                if (val == null) {
+                    // returnAssignments tells us to return the label like 'GCCVER=9'
+                    res << label
+                } else {
+                    // !returnAssignments tells us to return the value like '9'
+                    res << val
+                }
+            }
+
+        }
+
+        return res.flatten()
+    }
+
+    def resolveAxisValues(Object axis, Boolean returnAssignments = false) {
+        /* See comments in the per-node variant above - this method calls
+         * it for all selected and cached nodes, and aggregates the results
          */
 
         Set res = []
@@ -228,62 +325,13 @@ class NodeCaps {
             return res;
         }
 
-        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): " + axis.getClass() + " : " + axis.toString()
+        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(${returnAssignments}): looking for: " + axis.getClass() + " : " + axis.toString()
 
         for (node in this.nodeData.keySet()) {
             if (node == null) continue
-
-            for (String label : this.nodeData[node].labelMap.keySet()) {
-                if (this.enableDebugTrace) {
-                    this.script.println "[DEBUG] resolveAxisValues(): label: " + label.getClass() + " : " + label.toString()
-                    this.script.println "[DEBUG] resolveAxisValues(): value: " + this.nodeData[node].labelMap[label]?.getClass() + " : " + this.nodeData[node].labelMap[label]?.toString()
-                }
-                if (label == null) continue
-                label = label.trim()
-                if (label.equals("")) continue
-
-                def val = this.nodeData[node].labelMap[label]
-                if (val != null && val.getClass() in [String, GString, java.lang.String]) {
-                    val = val.trim()
-                    if (val.equals("") && (this.enableDebugTrace || this.enableDebugErrors)) {
-                        this.script.println "[WARNING] resolveAxisValues(): got a value which is an empty string"
-                        // TODO: Should it be turned into NULL?..
-                    }
-                }
-
-                Boolean hit = false
-                if (axis.getClass() in [String, GString, java.lang.String]) {
-                    if ( (!returnAssignments && val != null && axis.equals(label))
-                    ||   ( returnAssignments && val == null && axis.startsWith(label + "="))
-                    ) {
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
-                        hit = true
-                    } else {
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as string"
-                    }
-                }
-                if (axis.getClass() in java.util.regex.Pattern) {
-                    if ( (!returnAssignments && val != null && label =~ axis && !label.contains("="))
-                    ||   ( returnAssignments && val == null && label =~ ~/(${axis}|${axis}.*=)/ && label.contains("="))
-                    ) {
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as regex"
-                        hit = true
-                    } else {
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as regex"
-                    }
-                }
-
-                if (hit) {
-                    if (val == null) {
-                        // returnAssignments tells us to return the label like 'GCCVER=9'
-                        res << label
-                    } else {
-                        // !returnAssignments tells us to return the value like '9'
-                        res << val
-                    }
-                }
-
-            }
+            def nres = resolveAxisValues(axis, node, returnAssignments)
+            if (nres != null && nres.size() > 0)
+                res << nres
         }
 
         return res.flatten()
