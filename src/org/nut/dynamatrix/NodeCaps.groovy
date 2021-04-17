@@ -16,6 +16,8 @@ class NodeCaps {
 
     def script
     private final def classesStrings = [String, GString, org.codehaus.groovy.runtime.GStringImpl, java.lang.String]
+    private final def classesRegex = [java.util.regex.Pattern]
+    private final def classesStringOrRegex = classesStrings + classesRegex
 
     private Boolean isInitialized = false
     public Boolean enableDebugTrace = false
@@ -124,7 +126,7 @@ class NodeCaps {
 
         // If caller has a Set to check, they should iterate it on their own
         // TODO: or maybe provide a helper wrapper?..
-        if (axis == null || (!axis.getClass() in classesStrings + [java.util.regex.Pattern]) || axis.equals("")) {
+        if (axis == null || (!axis.getClass() in classesStringOrRegex) || axis.equals("")) {
             if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisName(): invalid input value or class: " + axis.toString()
             return res
         }
@@ -180,7 +182,7 @@ class NodeCaps {
             }
         }
 
-        if (axis.getClass() in java.util.regex.Pattern) {
+        if (axis.getClass() in classesRegex) {
             // Return label keys which match the expression
             for (node in this.nodeData.keySet()) {
                 if (node == null) continue
@@ -236,7 +238,7 @@ class NodeCaps {
             axis = axis.trim()
         }
 
-        if (axis == null || (!axis.getClass() in classesStrings + [java.util.regex.Pattern]) || axis.equals("")) {
+        if (axis == null || (!axis.getClass() in classesStringOrRegex) || axis.equals("")) {
             if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: " + axis.toString()
             return res;
         }
@@ -286,7 +288,7 @@ class NodeCaps {
                     }
                 }
             }
-            if (axis.getClass() in java.util.regex.Pattern) {
+            if (axis.getClass() in classesRegex) {
                 if ( (!returnAssignments && val != null && label =~ axis && !label.contains("="))
                 ||   ( returnAssignments && val == null && label =~ ~/(${axis}|${axis}.*=)/ && label.contains("="))
                 ) {
@@ -328,7 +330,7 @@ class NodeCaps {
             axis = axis.trim()
         }
 
-        if (axis == null || (!axis.getClass() in classesStrings + [java.util.regex.Pattern]) || axis.equals("")) {
+        if (axis == null || (!axis.getClass() in classesStringOrRegex) || axis.equals("")) {
             if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: " + axis.toString()
             return res;
         }
