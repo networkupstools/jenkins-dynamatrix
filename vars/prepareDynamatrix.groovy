@@ -172,9 +172,9 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     // a request for dynamatrixAxesLabels: ['OS', '${COMPILER}VER', ~/ARC.+/]
     // on testbed got us this:
     // [         //### buildLabelCombos itself
-    //  [        //###  one node that served all needed labels for both GCCVER and CLANGVER
+    //  [        //###  one node that served all needed labels for both GCCVER and CLANGVER (one of nodeResults)
     //   [[ARCH=amd64, ARCH=i386], [OS=openindiana], [GCCVER=10, GCCVER=4.4.4, GCCVER=4.9, GCCVER=6, GCCVER=7]],
-    //   [[ARCH=amd64, ARCH=i386], [OS=openindiana], [CLANGVER=8, CLANGVER=9]]
+    //   [[ARCH=amd64, ARCH=i386], [OS=openindiana], [CLANGVER=8, CLANGVER=9]]    //### one of nodeAxisCombos, here with 3 sets of axisValues inside
     //  ], [     //###  second node that served all needed labels for at least one combo
     //   [[OS=linux], [ARCH=armv7l, ARCH=i386, ARCH=x86_64], [GCCVER=4.8, GCCVER=4.9, GCCVER=5, GCCVER=7]]
     //  ]        //###  ignored one node that did not declare any ARCH
