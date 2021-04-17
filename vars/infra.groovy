@@ -1,4 +1,15 @@
 /*
+ * Return the label (expression) string for a worker that handles
+ * git checkouts and stashing of the source for other build agents.
+ * Unlike the other agents, this worker should have appropriate
+ * internet access, possibly reference git repository cache, etc.
+ */
+def labelDefaultWorker() {
+    // TODO: Global/modifiable config point?
+    return "master-worker"
+}
+
+/*
  * Collect all info about useful build agents in one collection:
  * Returns a Map with names of currently known agent which matched the
  * builderLabel (or all agents if builderLabel content is trivial),
