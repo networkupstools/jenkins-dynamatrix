@@ -87,7 +87,7 @@ def parallelStages = prepareDynamatrix(
         ['"CFLAGS=-stdc=gnu99" CXXFLAGS="-stdcxx=g++99"', '"CFLAGS=-stdc=c89" CXXFLAGS="-stdcxx=c++89"'],
         ['-m32', '-m64'] ],
     dynamatrixRequiredLabelCombos: [[~/OS=bsd/, ~/CLANG=12/]],
-    mayFail: [[~/OS=.*/, ~/GCCVER=4\..*/], ['ARCH=armv7l'], [~/std.*=.*89/]],
+    allowedFailure: [[~/OS=.*/, ~/GCCVER=4\..*/], ['ARCH=armv7l'], [~/std.*=.*89/]],
     excludeCombos: [[~/OS=openindiana/, ~/CLANGVER=9/, ~/ARCH=x86/]]
 ) {
     unstash 'preparedSource'
