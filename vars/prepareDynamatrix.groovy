@@ -95,8 +95,7 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     } else {
         nodeCaps = infra.detectCapabilityLabelsForBuilders()
     }
-
-    infra.printNodeCaps(nodeCaps)
+    //infra.printNodeCaps(nodeCaps)
 
     Set effectiveAxes = []
     for (axis in dynacfg.dynamatrixAxesLabels) {
@@ -197,7 +196,7 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
         return res;
     }
 
-    println "[DEBUG] resolveAxisValue(): " + axis.getClass() + " : " + axis.toString()
+    println "[DEBUG] resolveAxisValues(): " + axis.getClass() + " : " + axis.toString()
 
     for (node in nodeCaps.nodeData.keySet()) {
         if (node == null) continue
