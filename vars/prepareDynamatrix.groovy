@@ -97,7 +97,7 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     }
 
     Set effectiveAxes = []
-    for (axis in dynamatrixAxesLabels) {
+    for (axis in dynacfg.dynamatrixAxesLabels) {
         effectiveAxes << resolveAxisName(dynacfg, nodeCaps, axis)
     }
     effectiveAxes = effectiveAxes.flatten()
