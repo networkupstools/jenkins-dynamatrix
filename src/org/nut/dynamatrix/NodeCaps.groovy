@@ -115,6 +115,10 @@ class NodeCaps {
             return res
         }
 
+        if (axis != null && axis.getClass() in [String, GString, java.lang.String]) {
+            axis = axis.trim()
+        }
+
         // If caller has a Set to check, they should iterate it on their own
         // TODO: or maybe provide a helper wrapper?..
         if (axis == null || (!axis.getClass() in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
@@ -172,12 +176,14 @@ class NodeCaps {
                 if (node == null) continue
 
                 for (String label : this.nodeData[node].labelMap.keySet()) {
-                    if (label == null) continue
                     if (this.enableDebugTrace) {
                         this.script.println "[DEBUG] resolveAxisName(): label: " + label.getClass() + " : " + label.toString()
                         this.script.println "[DEBUG] resolveAxisName(): value: " + this.nodeData[node].labelMap[label]?.getClass() + " : " + this.nodeData[node].labelMap[label]?.toString()
                     }
-                    if (label.trim() =~ axis && !label.contains("=")) {
+                    if (label == null) continue
+                    label = label.trim()
+                    if (label.equals("")) continue
+                    if (label =~ axis && !label.contains("=")) {
                         if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisName(): label matched axis as regex"
                         res << label
                     }
@@ -199,6 +205,10 @@ class NodeCaps {
             return res
         }
 
+        if (axis != null && axis.getClass() in [String, GString, java.lang.String]) {
+            axis = axis.trim()
+        }
+
         if (axis == null || (!axis.getClass() in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
             if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: " + axis.toString()
             return res;
@@ -210,13 +220,15 @@ class NodeCaps {
             if (node == null) continue
 
             for (String label : this.nodeData[node].labelMap.keySet()) {
-                if (label == null) continue
                 if (this.enableDebugTrace) {
                     this.script.println "[DEBUG] resolveAxisValues(): label: " + label.getClass() + " : " + label.toString()
                     this.script.println "[DEBUG] resolveAxisValues(): value: " + this.nodeData[node].labelMap[label]?.getClass() + " : " + this.nodeData[node].labelMap[label]?.toString()
                 }
+                if (label == null) continue
+                label = label.trim()
+                if (label.equals("")) continue
                 if (axis.getClass() in [String, GString, java.lang.String]) {
-                    if (axis.trim().equals(label.trim())) {
+                    if (axis.equals(label)) {
                         if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
                         res << this.nodeData[node].labelMap[label]
                     } else {
@@ -224,7 +236,7 @@ class NodeCaps {
                     }
                 }
                 if (axis.getClass() in java.util.regex.Pattern) {
-                    if (label.trim() =~ axis && !label.contains("=")) {
+                    if (label =~ axis && !label.contains("=")) {
                         if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as regex"
                         res << this.nodeData[node].labelMap[label]
                     } else {
