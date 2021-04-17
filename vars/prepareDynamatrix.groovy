@@ -61,7 +61,7 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
 
     if (dynacfg.dynamatrixAxesLabels != null) {
         if (dynacfg.dynamatrixAxesLabels.getClass() in [ArrayList, List, Set, Object[]]) {
-        } else if (dynacfg.dynamatrixAxesLabels in [String, GString]) {
+        } else if (dynacfg.dynamatrixAxesLabels in [String, java.lang.String, GString]) {
             if (dynacfg.dynamatrixAxesLabels.equals("")) {
                 dynacfg.dynamatrixAxesLabels = null
             } else {
@@ -119,7 +119,7 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
 
     // If caller has a Set to check, they should iterate it on their own
     // TODO: or maybe provide a helper wrapper?..
-    if (axis == null || (!axis in [String, GString, java.util.regex.Pattern]) || axis.equals("")) {
+    if (axis == null || (!axis in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
         println "[DEBUG] resolveAxisName(): invalid input value or class: " + axis.toString()
         return res;
     }
@@ -190,7 +190,7 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
     // values which have it as a key in nodeCaps.nodeData[].labelMap[]
 
     Set res = []
-    if (axis == null || (!axis in [String, GString, java.util.regex.Pattern]) || axis.equals("")) {
+    if (axis == null || (!axis in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
         println "[DEBUG] resolveAxisValues(): invalid input value or class: " + axis.toString()
         return res;
     }
@@ -204,7 +204,7 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
             if (label == null) continue
             println "[DEBUG] resolveAxisValues(): label: " + label.getClass() + " : " + label.toString()
             println "[DEBUG] resolveAxisValues(): value: " + nodeCaps.nodeData[node].labelMap[label]?.getClass() + " : " + nodeCaps.nodeData[node].labelMap[label]?.toString()
-            if (axis in [String, GString]) {
+            if (axis in [String, GString, java.lang.String]) {
                 if (axis.equals(label)) {
                     println "[DEBUG] resolveAxisValues(): label matched axis as string"
                     res << nodeCaps.nodeData[node].labelMap[label]
