@@ -139,7 +139,7 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
             // string for variable part '${COMPILER}' in originally
             // requested axis name '${COMPILER}VAR').
             for (expandedAxisName in resolveAxisName(dynacfg, nodeCaps, varAxis)) {
-                if (expandedAxisName == null || (!expandedAxisName in String && !expandedAxisName in GString) || expAxis.equals("")) continue;
+                if (expandedAxisName == null || (!expandedAxisName in String && !expandedAxisName in GString) || expandedAxisName.equals("")) continue;
 
                 // This layer of recursion gets us fixed-string name
                 // variants of the variable axis (like 'GCC' and
@@ -147,7 +147,7 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
                 // requested axis name '${COMPILER}VAR').
                 // Pattern looks into nodeCaps.
                 for (expandedAxisValue in resolveAxisValues(dynacfg, nodeCaps, expandedAxisName)) {
-                    if (expandedAxisValue == null || (!expandedAxisValue in String && !expandedAxisValue in GString) || expAxis.equals("")) continue;
+                    if (expandedAxisValue == null || (!expandedAxisValue in String && !expandedAxisValue in GString) || expandedAxisValue.equals("")) continue;
 
                     // In the original axis like '${COMPILER}VER' apply current item
                     // from expandedAxisValue like 'GCC' (or 'CLANG' in next loop)
