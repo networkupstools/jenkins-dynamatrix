@@ -96,7 +96,9 @@ class NodeCaps {
     }
 
     void optionalPrintDebug() {
-        if (this.enableDebugTrace || this.enableDebugErrors) {
+        if (this.enableDebugTrace
+//         || this.enableDebugErrors
+        ) {
             this.printDebug()
         }
     }

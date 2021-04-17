@@ -53,7 +53,7 @@ def parallelStages = prepareDynamatrix(
 
 /* Returns a map of stages */
 def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
-    println "NOT IMPLEMENTED: prepareDynamatrix.groovy"
+    println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy"
 
     try { // Check if field exists
         if (dynacfg.dynamatrixAxesLabels == null) {
@@ -91,18 +91,33 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
         dynacfg.commonLabelExpr = null
     }
 
+    // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
+    // other configs for same builder would not query and parse real Jenkins
+    // worker labels again and again.
     NodeCaps nodeCaps = new NodeCaps(this, dynacfg.commonLabelExpr, dynamatrixGlobal.enableDebugTrace, dynamatrixGlobal.enableDebugErrors)
     nodeCaps.optionalPrintDebug()
 
+    // Original request could have regexes or groovy-style substitutions
+    // to expand. The effectiveAxes is a definitive list of exact names:
     Set effectiveAxes = []
     for (axis in dynacfg.dynamatrixAxesLabels) {
         effectiveAxes << nodeCaps.resolveAxisName(axis)
     }
-    effectiveAxes = effectiveAxes.flatten()
+    effectiveAxes = effectiveAxes.flatten().sort()
 
     println "[DEBUG] prepareDynamatrix(): Detected effectiveAxes: " + effectiveAxes
 
-    def buildLabels = []
+    // Prepare all possible combos of requested axes (meaning we can
+    // request a build agent label "A && B && C" and all of those
+    // would work with our currently defined agents). The buildLabels
+    // are expected to provide good uniqueness thanks to the SortedSet
+    // of effectiveAxes and their values that we would look into.
+    Set<String> buildLabels = []
+    for (node in nodeCaps.nodeData.keySet()) {
+        // Looking at each node separately allows us to be sure that any
+        // combo of axis-values (all of which it allegedly provides)
+        // can be fulfilled
+    }
 
     return true;
 }
