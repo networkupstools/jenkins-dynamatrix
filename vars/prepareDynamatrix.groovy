@@ -177,7 +177,7 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
                 if (label == null) continue
                 println "[DEBUG] resolveAxisName(): label: " + label.getClass() + " : " + label.toString()
                 println "[DEBUG] resolveAxisName(): value: " + nodeCaps.nodeData[node].labelMap[label]?.getClass() + " : " + nodeCaps.nodeData[node].labelMap[label]?.toString()
-                if (label.trim() =~ axis) {
+                if (label.trim() =~ axis && !label.contains("=")) {
                     println "[DEBUG] resolveAxisName(): label matched axis as regex"
                     res << label
                 }
@@ -216,7 +216,7 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
                 }
             }
             if (axis.getClass() in java.util.regex.Pattern) {
-                if (label.trim() =~ axis) {
+                if (label.trim() =~ axis && !label.contains("=")) {
                     println "[DEBUG] resolveAxisValues(): label matched axis as regex"
                     res << nodeCaps.nodeData[node].labelMap[label]
                 } else {
