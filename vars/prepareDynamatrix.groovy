@@ -109,26 +109,12 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     }
     effectiveAxes = effectiveAxes.sort()
     println "[DEBUG] prepareDynamatrix(): Initially detected effectiveAxes: " + effectiveAxes
+
     // By this point, a request for ['OS', '${COMPILER}VER', ~/ARC.+/]
     // yields [[OS], [ARCH], [CLANGVER, GCCVER]] from which we want to
     // get a set with two sets of axes that can do our separate builds:
     // [ [OS, ARCH, CLANGVER], [OS, ARCH, GCCVER] ]
     // ...and preferably really sorted :)
-
-/*
-    Set eff = []
-    for (a in effectiveAxes) {
-        // Cartesian product, maybe not in most efficient manner
-        // but this is not too hot a codepath
-        println "[DEBUG] prepareDynamatrix(): multiplier: " + a.getClass() + ": " + a
-        if (eff.size() == 0) {
-            eff = a
-        } else {
-            eff = cartesianMultiply(eff, a)
-        }
-    }
-    effectiveAxes = eff
-*/
     effectiveAxes = infra.cartesianSquared(effectiveAxes).sort()
     println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
 
@@ -198,19 +184,9 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     for (nodeResults in buildLabelCombos) {
         for (nodeAxisCombos in nodeResults) {
             // this nodeResults contains the set of sets of label values
-            // supported for one of the original effectiveAxes requirements
-            // each of nodeAxisCombos contains a set of axisValues
+            // supported for one of the original effectiveAxes requirements,
+            // where each of nodeAxisCombos contains a set of axisValues
             println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
-/*
-            def tmp = []
-            for (axisValues in nodeAxisCombos) {
-                if (tmp.size() == 0) {
-                    tmp = axisValues
-                } else {
-                    tmp = cartesianMultiply(tmp, axisValues)
-                }
-            }
-*/
             def tmp = infra.cartesianSquared(nodeAxisCombos).sort()
             println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
             // Add members of tmp (many sets of unique key=value combos
