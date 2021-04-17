@@ -1,0 +1,6 @@
+package org.nut.dynamatrix;
+
+class dynamatrixGlobal {
+    // buildMatrixCell* steps populate this with their build analysis results
+    static Array<Object> issueAnalysis = []
+}
