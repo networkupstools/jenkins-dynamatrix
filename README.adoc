@@ -150,6 +150,18 @@ For certain compiler toolkits (e.g. 'C' family) it would provide an
 automatic preparation of variables for several same-versioned tools
 (e.g. C and C++ compilers).
 
+Directory naming
+~~~~~~~~~~~~~~~~
+
+This is a Jenkins Shared Library. As such, it has some required file
+system structure including:
+
+* vars/ - the "groovy variables" which are, at least in this context,
+  sources for single-use class instances and their methods that can
+  be called from each other or from the pipeline which uses the lib;
+* src/ - formal classes including ones that can be static, such as
+  to store some persistent configuration for the run.
+
 Inspirational reading
 ~~~~~~~~~~~~~~~~~~~~~
 
