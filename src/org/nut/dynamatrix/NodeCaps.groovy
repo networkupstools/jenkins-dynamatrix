@@ -163,6 +163,13 @@ class NodeCaps {
                         // expansion variant - if it is a fixed string by now,
                         // this will end quickly:
                         res << this.resolveAxisName(tmpAxis)
+
+                        // TODO: not sure where to place it, but it may be useful to constrain
+                        // the ultimately returned axis values (in the map) to contain e.g.
+                        // "COMPILER=GCC" always for "GCCVER=1.2.3" after resolving the axis
+                        // request from "${COMPILER}VER" string. Put another way, for this
+                        // simpler example with one substitution, the "COMPILER=GCC GCCVER"
+                        // string might as well *be* the axis.
                     }
                 }
                 return res.flatten()
