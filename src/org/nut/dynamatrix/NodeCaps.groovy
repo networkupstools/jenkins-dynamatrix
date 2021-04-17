@@ -15,6 +15,7 @@ class NodeCaps {
      */
 
     def script
+    private final def classesStrings = [String, GString, org.codehaus.groovy.runtime.GStringImpl, java.lang.String]
 
     private Boolean isInitialized = false
     public Boolean enableDebugTrace = false
@@ -117,20 +118,20 @@ class NodeCaps {
             return res
         }
 
-        if (axis != null && axis.getClass() in [String, GString, java.lang.String]) {
+        if (axis != null && axis.getClass() in classesStrings) {
             axis = axis.trim()
         }
 
         // If caller has a Set to check, they should iterate it on their own
         // TODO: or maybe provide a helper wrapper?..
-        if (axis == null || (!axis.getClass() in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
+        if (axis == null || (!axis.getClass() in classesStrings + [java.util.regex.Pattern]) || axis.equals("")) {
             if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisName(): invalid input value or class: " + axis.toString()
             return res
         }
 
         if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisName(): " + axis.getClass() + " : " + axis.toString()
 
-        if (axis in String || axis in GString) {
+        if (axis.getClass() in classesStrings) {
             // NOTE: No support for nested request like '${COMPILER${VENDOR}}VER'
             def matcher = axis =~ /\$\{([^\}]+)\}/
             if (matcher.find()) {
@@ -144,7 +145,7 @@ class NodeCaps {
                 // string for variable part '${COMPILER}' in originally
                 // requested axis name '${COMPILER}VAR').
                 for (expandedAxisName in this.resolveAxisName(varAxis)) {
-                    if (expandedAxisName == null || (!expandedAxisName in String && !expandedAxisName in GString) || expandedAxisName.equals("")) continue;
+                    if (expandedAxisName == null || (!expandedAxisName in classesStrings) || expandedAxisName.equals("")) continue;
 
                     // This layer of recursion gets us fixed-string name
                     // variants of the variable axis (like 'GCC' and
@@ -152,7 +153,7 @@ class NodeCaps {
                     // requested axis name '${COMPILER}VAR').
                     // Pattern looks into nodeCaps.
                     for (expandedAxisValue in this.resolveAxisValues(expandedAxisName)) {
-                        if (expandedAxisValue == null || (!expandedAxisValue in String && !expandedAxisValue in GString) || expandedAxisValue.equals("")) continue;
+                        if (expandedAxisValue == null || (!expandedAxisValue in classesStrings) || expandedAxisValue.equals("")) continue;
 
                         // In the original axis like '${COMPILER}VER' apply current item
                         // from expandedAxisValue like 'GCC' (or 'CLANG' in next loop)
@@ -235,7 +236,7 @@ class NodeCaps {
             axis = axis.trim()
         }
 
-        if (axis == null || (!axis.getClass() in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
+        if (axis == null || (!axis.getClass() in classesStrings + [java.util.regex.Pattern]) || axis.equals("")) {
             if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: " + axis.toString()
             return res;
         }
@@ -252,7 +253,7 @@ class NodeCaps {
             if (label.equals("")) continue
 
             def val = this.nodeData[node].labelMap[label]
-            if (val != null && val.getClass() in [String, GString, java.lang.String]) {
+            if (val != null && val.getClass() in classesStrings) {
                 val = val.trim()
                 if (val.equals("") && (this.enableDebugTrace || this.enableDebugErrors)) {
                     this.script.println "[WARNING] resolveAxisValues(): got a value which is an empty string"
@@ -267,7 +268,7 @@ class NodeCaps {
                     "GOTNEXT label: <" + label.getClass() + ">(" + label.toString() + ") // " +
                     "value: <" + val.getClass() + ">(" + val.toString() + ")"
             }
-            if (axis.getClass() in [String, GString, java.lang.String]) {
+            if (axis.getClass() in classesStrings) {
                 if ( (!returnAssignments && val != null && axis.equals(label))
                 ||   ( returnAssignments && val == null && label.startsWith("${axis}="))
                 ) {
@@ -323,11 +324,11 @@ class NodeCaps {
             return res
         }
 
-        if (axis != null && axis.getClass() in [String, GString, java.lang.String]) {
+        if (axis != null && axis.getClass() in classesStrings) {
             axis = axis.trim()
         }
 
-        if (axis == null || (!axis.getClass() in [String, java.lang.String, GString, java.util.regex.Pattern]) || axis.equals("")) {
+        if (axis == null || (!axis.getClass() in classesStrings + [java.util.regex.Pattern]) || axis.equals("")) {
             if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: " + axis.toString()
             return res;
         }
