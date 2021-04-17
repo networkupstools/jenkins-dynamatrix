@@ -1,0 +1,202 @@
+Dynamatrix
+==========
+
+What and why
+~~~~~~~~~~~~
+
+This project is intended as a relatively generic solution for Jenkins
+pipelines to build and test the codebase in a variety of environments
+(such as operating systems, compiler brands/versions or programming
+language revisions) and setups (such as the sets of warnings marked
+to be fatal vs. ones that are still tolerated) based dynamically on
+what capabilities are supported by the workers of the build farm.
+
+These workers may be not necessarily managed or provisioned by the
+same administrator or entity as manages the build farm, but can be
+e.g. a link:https://plugins.jenkins.io/swarm/[Swarm] of specially
+labeled agents provided by contributors of a FOSS project -- which
+is especially of interest to such users in order to have their less
+common system or setup supported by the FOSS project they like and
+use, or to contribute access to architectures that the project does
+not own.
+
+For projects that have a minimal baseline of scenarios that must pass,
+this information can be conveyed by the configuration for the pipeline,
+so that dynamic workers matching those requirements can be spun up and
+later deactivated or destroyed to conserve run-time resources of the
+centralized build farm. This allows to sequentialize builds of varied
+operating environments hosted on systems with limited memory.
+
+Main idea
+~~~~~~~~~
+
+Dynamatrix provides a Shared Pipeline library, so that the pipeline
+definitions in actual source code repositories can be kept compact
+and not need to update their Jenkinsfiles whenever this idea evolves.
+
+Build agent definitions, whether static (e.g. SSH Agents) or dynamic
+(e.g. Swarm Client agents) can declare labels which can be matched in
+the pipeline stages. The Dynamatrix is layered on top of structurally
+named labels to generate a list of possible build combinations as a
+boolean label expression, and so dynamically generate the payload
+structure of each build.
+
+Since the same CI farm and Swarm agent workers can be used for the
+benefit of several FOSS projects, one of the label patterns allows
+to declare that this worker is suitable for (and contributes to)
+builds of a particular project.
+
+Example configuration
+~~~~~~~~~~~~~~~~~~~~~
+
+In the illustrative example below, two workers are provisioned and
+based on their installed tools, they declare the following agent
+labels relevant to the dynamatrix:
+
+* "testoi":
+----
+COMPILER=CLANG COMPILER=GCC
+CLANGVER=8 CLANGVER=9
+GCCVER=10 GCCVER=4.4.4 GCCVER=4.9 GCCVER=6 GCCVER=7
+OS=openindiana
+ARCH=x86_64 ARCH=x86
+nut-builder zmq-builder
+----
+* "testdeb":
+----
+COMPILER=GCC
+GCCVER=4.8 GCCVER=4.9 GCCVER=5 GCCVER=7
+OS=linux
+ARCH=x86_64 ARCH=x86 ARCH=armv7l
+nut-builder zmq-builder linux-kernel-builder
+----
+
+A Jenkinsfile in a project using this library would look like:
+----
+@Library ('dynamatrix') _
+
+// Prepare parallel stages for the dynamatrix:
+def parallelStages = prepareDynamatrix(
+    commonLabelExpr: 'nut-builder',
+    compilerType: 'C',
+    compilerLabel: 'COMPILER',
+    compilerTools: ['CC', 'CXX', 'CPP'],
+    dynamatrixAxesLabels: ['OS', '${COMPILER}VER', 'ARCH'],
+    dynamatrixAxesCommonEnv: [['LANG=C', 'TZ=UTC'], ['LANG=ru_RU']],
+    dynamatrixAxesCommonOpts: [
+        ['"CFLAGS=-stdc=gnu99" CXXFLAGS="-stdcxx=g++99"', '"CFLAGS=-stdc=c89" CXXFLAGS="-stdcxx=c++89"'],
+        ['-m32', '-m64'] ],
+    dynamatrixRequiredLabelCombos: [[/OS=bsd/, /CLANG=12/]],
+    mayFail: [[/OS=.*/, /GCCVER=4\..*/], ['ARCH=armv7l'], [/std.*=.*89/]],
+    skip: [[/OS=openindiana/, /CLANGVER=9/, /ARCH=x86/]]
+) {
+    unstash 'preparedSource'
+    sh """ ./autogen.sh """
+    sh """ ${dynamatrix.commonEnv} CC=${dynamatrix.COMPILER.CC.VER} CXX=${dynamatrix.COMPILER.CXX.VER} ./configure ${dynamatrix.commonOpts} """
+    sh """ make -j4 """
+    sh """ make check """
+}
+
+pipeline {
+    // List some unique options, build parameters, and build scenarios
+    // like spell checking or docs generation that you do not need to
+    // run dozens of times using every agent.
+    agent { label 'persistent-worker' }
+    stages {
+        stage('Prepare source') {
+            steps {
+                // The persistent agent may be in better position to
+                // e.g. use a Git reference repository for faster
+                // checkouts, or just to have the internet access
+                // which CI farm workers may lack.
+                checkout scm
+                stash 'preparedSource'
+            }
+        }
+        stage('Spell Check') {
+            steps {
+                sh """ aspell ... """
+            }
+        }
+        stage('Make docs') {
+            agent { label 'docs-builder' }
+            steps {
+                unstash 'preparedSource'
+                sh """ make pdf """
+            }
+        }
+    }
+}
+
+parallel parallelStages
+----
+
+With this configuration, the Dynamatrix should detect the running
+agents and know their capabilities, so it is in position to prepare
+a series of builds covering every available OS and compiler version
+and CPU architecture.
+
+It can optionally be filtered through constraints, such as that we
+do not even want to try building a combination described by (matching)
+the `skip` option, that we require to run some combination(s) even if
+an agent for that is not currently running so labels are not detected
+(things can hang in queue waiting for a worker, or can cause spinning
+up a build agent if it is configured but dormant), or that some certain
+build setups may fail (e.g. we wonder how they fare, but they are not
+a required baseline and so not blockers for a merge) so their results
+would not be impacting the overall job verdict.
+
+For certain compiler toolkits (e.g. 'C' family) it would provide an
+automatic preparation of variables for several same-versioned tools
+(e.g. C and C++ compilers).
+
+Inspirational reading
+~~~~~~~~~~~~~~~~~~~~~
+
+* https://www.jenkins.io/blog/2020/10/21/a-sustainable-pattern-with-shared-library/ --
+  provides a useful pattern allowing a default configuration for a
+  generic librarly build recipe implementation to be merged with
+  options desired for a particular pipeline's build, including an
+  OOP-style selection of build method based on files present in
+  the specific repo. This way whatever looks similar on some level
+  of abstraction is handled the same way, and whatever really differs
+  has the hooks and hacks for that individuality.
+
+* https://github.com/jenkins-infra/pipeline-library/blob/master/vars/buildPlugin.groovy --
+  code orchestrating standard builds of Jenkins plugins manages a
+  similar matrix, optionally based on build parameters
+
+* https://bmuschko.com/blog/jenkins-shared-libraries/ --
+  goes into the much welcome and somewhat gritty detail about using
+  classes instead of "vars" used quickly as steps, which is what most
+  of the other articles focus on
+
+* https://www.linkedin.com/pulse/jenkins-shared-pipeline-libraries-custom-runtime-delgado-garrido --
+  pattern for configs in component sources that can tune behavior of
+  otherwise standardized library pipelines and/or maintain a Singleton
+  with config (and other) data during the run
+
+* https://www.linkedin.com/pulse/jenkins-global-shared-pipeline-libraries-real-unit-delgado-garrido --
+  another pattern for keeping real logic hidden in classes, frontended
+  by steps in "vars" folder
+
+Good explanatory articles with varied detail; many other texts seem
+to tell the same things differently while reasonably assuming a
+non-beginner level from the reader. Some of those below may be a bit
+too long and chewing the basics delicately -- but sometimes that is
+really a good thing:
+
+* https://www.lambdatest.com/blog/use-jenkins-shared-libraries-in-a-jenkins-pipeline/
+* https://tomd.xyz/jenkins-shared-library/
+* https://medium.com/@werne2j/jenkins-shared-libraries-part-1-5ba3d072536a
+* https://medium.com/@werne2j/how-to-build-your-own-jenkins-shared-library-9dc129db260c
+* https://medium.com/@werne2j/unit-testing-a-jenkins-shared-library-9bfb6b599748
+* https://medium.com/@werne2j/collecting-code-coverage-for-a-jenkins-shared-library-c2d8f502732e
+
+
+Standard reading library:
+
+* https://www.jenkins.io/doc/book/pipeline/shared-libraries/
+* https://www.jenkins.io/doc/pipeline/steps/workflow-cps-global-lib/
+* https://www.jenkins.io/blog/2019/12/02/matrix-building-with-scripted-pipeline/
+* https://www.jenkins.io/blog/2019/11/22/welcome-to-the-matrix/
