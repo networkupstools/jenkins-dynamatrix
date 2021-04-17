@@ -28,7 +28,7 @@ CC=gcc-${GCCVER} CXX=g++-${GCCVER} \
     script {
         def id = "GCC-${GCCVER}:STD=${STD}${STDVER}:WARN=${BUILD_WARNOPT}@${PLATFORM}"
         def i = scanForIssues tool: gcc(name: id)
-//        dynamatrixGlobal.issueAnalysis << i
+//        dynamatrixGlobalState.issueAnalysis << i
         publishIssues issues: [i], filters: [includePackage('io.jenkins.plugins.analysis.*')]
     }
 } // buildMatrixCellGCC()

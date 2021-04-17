@@ -28,7 +28,7 @@ CC=clang-${CLANGVER} CXX=clang++-${CLANGVER} CPP=clang-cpp \
     script {
         def id = "CLANG-${CLANGVER}:STD=${STD}${STDVER}:WARN=${BUILD_WARNOPT}@${PLATFORM}"
         def i = scanForIssues tool: clang(name: id)
-//        dynamatrixGlobal.issueAnalysis << i
+//        dynamatrixGlobalState.issueAnalysis << i
         publishIssues issues: [i], filters: [includePackage('io.jenkins.plugins.analysis.*')]
     }
 } // buildMatrixCellCLANG()

@@ -4,7 +4,7 @@ import java.util.regex.*;
 
 import org.nut.dynamatrix.NodeCaps;
 import org.nut.dynamatrix.NodeData;
-import org.nut.dynamatrix.dynamatrixGlobal;
+import org.nut.dynamatrix.dynamatrixGlobalState;
 
 /*
  * Example agents and call signature from README:
@@ -94,7 +94,7 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
     // other configs for same builder would not query and parse real Jenkins
     // worker labels again and again.
-    NodeCaps nodeCaps = new NodeCaps(this, dynacfg.commonLabelExpr, dynamatrixGlobal.enableDebugTrace, dynamatrixGlobal.enableDebugErrors)
+    NodeCaps nodeCaps = new NodeCaps(this, dynacfg.commonLabelExpr, dynamatrixGlobalState.enableDebugTrace, dynamatrixGlobalState.enableDebugErrors)
     nodeCaps.optionalPrintDebug()
 
     // Original request could have regexes or groovy-style substitutions

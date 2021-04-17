@@ -5,7 +5,7 @@ void call(String JOB_NAME, String BRANCH_NAME) {
         def reference = JOB_NAME.replace(BRANCH_NAME, "master")
         publishIssues id: 'analysis', name: 'All Issues',
             referenceJobName: reference,
-            issues: dynamatrixGlobal.issueAnalysis,
+            issues: dynamatrixGlobalState.issueAnalysis,
             filters: [includePackage('io.jenkins.plugins.analysis.*')]
     }
 } // doSummarizeIssues()

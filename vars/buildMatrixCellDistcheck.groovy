@@ -13,7 +13,7 @@ void call(String BUILD_TYPE, String PLATFORM) {
         def id = "Distcheck:${BUILD_TYPE}@${PLATFORM}"
         def i = scanForIssues tool: gcc(name: id)
         //def i = scanForIssues tool: clang(name: id)
-        //dynamatrixGlobal.issueAnalysis << i
+        //dynamatrixGlobalState.issueAnalysis << i
         publishIssues issues: [i], filters: [includePackage('io.jenkins.plugins.analysis.*')]
     }
 } // buildMatrixCellDistcheck()
