@@ -175,17 +175,47 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
             // It is okay if several nodes can run a build
             // which matches the given requirements
             nodeAxisCombos = nodeAxisCombos.sort()
-            // cartesian here?
             buildLabelCombos << nodeAxisCombos
         }
     }
     buildLabelCombos = buildLabelCombos.sort()
-    println "[DEBUG] prepareDynamatrix(): detected buildLabelCombos: " + buildLabelCombos
+    println "[DEBUG] prepareDynamatrix(): Initially detected buildLabelCombos (still grouped per node): " + buildLabelCombos
+    // a request for dynamatrixAxesLabels: ['OS', '${COMPILER}VER', ~/ARC.+/]
+    // on testbed got us this:
+    // [         //### buildLabelCombos itself
+    //  [        //###  one node that served all needed labels for both GCCVER and CLANGVER
+    //   [[ARCH=amd64, ARCH=i386], [OS=openindiana], [GCCVER=10, GCCVER=4.4.4, GCCVER=4.9, GCCVER=6, GCCVER=7]],
+    //   [[ARCH=amd64, ARCH=i386], [OS=openindiana], [CLANGVER=8, CLANGVER=9]]
+    //  ], [     //###  second node that served all needed labels for at least one combo
+    //   [[OS=linux], [ARCH=armv7l, ARCH=i386, ARCH=x86_64], [GCCVER=4.8, GCCVER=4.9, GCCVER=5, GCCVER=7]]
+    //  ]        //###  ignored one node that did not declare any ARCH
+    // ]
+
+    def buildLabelCombosFlat = []
+    for (nodeResults in buildLabelCombos) {
+        for (nodeAxisCombos in nodeResults) {
+            // this nodeResults contains the set of sets of label values
+            // supported for one of the original effectiveAxes requirements
+            println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
+            def tmp = []
+            for (axisValues in nodeAxisCombos) {
+                if (tmp.size() == 0) {
+                    tmp = axisValues
+                } else {
+                    tmp = cartesianMultiply(tmp, axisValues)
+                }
+            }
+            println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
+            // Add members of tmp (many sets of unique key=value combos
+            // for each axis) as direct members of buildLabelCombosFlat
+            buildLabelCombosFlat += tmp
+        }
+    }
 
     // Convert Sets of Sets of strings in buildLabelCombos into the
     // array of strings we can feed to the agent steps in pipeline:
     Set<String> buildLabels = []
-    for (combo in buildLabelCombos) {
+    for (combo in buildLabelCombosFlat) {
         String ble = String.join(" && ", combo)
         buildLabels << ble
         println "[DEBUG] prepareDynamatrix(): detected buildLabels expression: " + ble
