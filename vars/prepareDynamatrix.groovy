@@ -171,7 +171,7 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
 
     if (axis in java.util.regex.Pattern) {
         // Return label keys which match the expression
-        for (hudson.model.Node node : nodeCaps.nodeData.keySet()) {
+        for (node in nodeCaps.nodeData.keySet()) {
             if (node == null) continue
 
             for (String label : nodeCaps.nodeData[node].labelMap.keySet()) {
@@ -199,7 +199,7 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
 
     println "[DEBUG] resolveAxisValue(): " + axis.getClass() + " : " + axis.toString()
 
-    for (hudson.model.Node node : nodeCaps.nodeData.keySet()) {
+    for (node in nodeCaps.nodeData.keySet()) {
         if (node == null) continue
 
         for (String label : nodeCaps.nodeData[node].labelMap.keySet()) {
