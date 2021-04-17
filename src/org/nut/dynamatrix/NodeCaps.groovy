@@ -194,9 +194,21 @@ class NodeCaps {
         return res.flatten()
     }
 
-    def resolveAxisValues(Object axis) {
-        // For a fixed-string name or regex pattern, return a flattened Set of
-        // values which have it as a key in nodeCaps.nodeData[].labelMap[]
+    def resolveAxisValues(Object axis, Boolean returnAssignments = false) {
+        /* For a fixed-string name or regex pattern, return a flattened Set of
+         * values which have it as a key in nodeCaps.nodeData[].labelMap[]
+         * (so not including labels that were not originally a KEY=VALUE).
+         * The returnAssignments flag controls whether the set would contain
+         * individual value labels like ['8', '9'] or strings with assignments
+         * that can be quickly put into label matching expression strings like
+         * ['GCCVER=8', 'GCCVER=9'].
+         * NOTE: For axis passed as a regex Pattern, a wording too strict
+         * (like including dollars for end-of-pattern) can preclude matching
+         * of the entries we want. This is not handled now - to e.g. trawl
+         * through the arrays of earlier parsed values per labels in labelMap.
+         * NOTE: Currently there is no error-checking whether the axis param
+         * itself contains an equality sign, unsure how to do it for Pattern.
+         */
 
         Set res = []
 
@@ -227,22 +239,48 @@ class NodeCaps {
                 if (label == null) continue
                 label = label.trim()
                 if (label.equals("")) continue
+
+                def val = this.nodeData[node].labelMap[label]
+                if (val != null && val.getClass() in [String, GString, java.lang.String]) {
+                    val = val.trim()
+                    if (val.equals("") && (this.enableDebugTrace || this.enableDebugErrors)) {
+                        this.script.println "[WARNING] resolveAxisValues(): got a value which is an empty string"
+                        // TODO: Should it be turned into NULL?..
+                    }
+                }
+
+                Boolean hit = false
                 if (axis.getClass() in [String, GString, java.lang.String]) {
-                    if (axis.equals(label)) {
+                    if ( (!returnAssignments && val != null && axis.equals(label))
+                    ||   ( returnAssignments && val == null && axis.startsWith(label + "="))
+                    ) {
                         if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
-                        res << this.nodeData[node].labelMap[label]
+                        hit = true
                     } else {
                         if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as string"
                     }
                 }
                 if (axis.getClass() in java.util.regex.Pattern) {
-                    if (label =~ axis && !label.contains("=")) {
+                    if ( (!returnAssignments && val != null && label =~ axis && !label.contains("="))
+                    ||   ( returnAssignments && val == null && label =~ ~/(${axis}|${axis}.*=)/ && label.contains("="))
+                    ) {
                         if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as regex"
-                        res << this.nodeData[node].labelMap[label]
+                        hit = true
                     } else {
                         if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as regex"
                     }
                 }
+
+                if (hit) {
+                    if (val == null) {
+                        // returnAssignments tells us to return the label like 'GCCVER=9'
+                        res << label
+                    } else {
+                        // !returnAssignments tells us to return the value like '9'
+                        res << val
+                    }
+                }
+
             }
         }
 
