@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.Arrays.*;
 import java.util.regex.*;
 
+import org.nut.dynamatrix.DynamatrixConfig;
 import org.nut.dynamatrix.NodeCaps;
 import org.nut.dynamatrix.NodeData;
 import org.nut.dynamatrix.dynamatrixGlobalState;
@@ -52,9 +53,33 @@ def parallelStages = prepareDynamatrix(
  */
 
 /* Returns a map of stages */
-def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
+def call(dynacfgOrig = [:], Closure body = null) {
     println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy"
 
+    // Have some defaults, if only to have all expected fields defined
+    DynamatrixConfig dynacfg
+
+    // Combine a config with defaults
+    if (dynacfgOrig.size() > 0) {
+        if (dynacfgOrig.containsKey('defaultDynamatrixConfig')) {
+            dynacfg = new DynamatrixConfig(dynacfgOrig[defaultDynamatrixConfig])
+            dynacfgOrig.remove('defaultDynamatrixConfig')
+        } else {
+            dynacfg = new DynamatrixConfig()
+        }
+    }
+
+    if (dynacfgOrig.size() > 0) {
+        for (k in dynacfgOrig.keySet()) {
+            try {
+                dynacfg[k] = dynacfgOrig[k]
+            } catch(Exception e) {
+                println "[DEBUG] prepareDynamatrix: ingoring unsupported config key from request: '${k}' => " + dynacfgOrig[k]
+            }
+        }
+    }
+
+/*
     try { // Check if field exists
         if (dynacfg.dynamatrixAxesLabels == null) {
             dynacfg.dynamatrixAxesLabels = null
@@ -62,9 +87,10 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     } catch (MissingPropertyException e) {
         dynacfg.dynamatrixAxesLabels = null
     }
+*/
 
     if (dynacfg.dynamatrixAxesLabels != null) {
-        if (dynacfg.dynamatrixAxesLabels.getClass() in [ArrayList, List, Set, Object[]]) {
+        if (dynacfg.dynamatrixAxesLabels.getClass() in [ArrayList, List, Set, TreeSet, LinkedHashSet, Object[]]) {
         } else if (dynacfg.dynamatrixAxesLabels.getClass() in [String, java.lang.String, GString]) {
             if (dynacfg.dynamatrixAxesLabels.equals("")) {
                 dynacfg.dynamatrixAxesLabels = null
@@ -83,6 +109,7 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
         return null
     }
 
+/*
     try { // Check if field exists
         if (dynacfg.commonLabelExpr == null || dynacfg.commonLabelExpr.equals("")) {
             dynacfg.commonLabelExpr = null
@@ -90,6 +117,7 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     } catch (MissingPropertyException e) {
         dynacfg.commonLabelExpr = null
     }
+*/
 
     // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
     // other configs for same builder would not query and parse real Jenkins
