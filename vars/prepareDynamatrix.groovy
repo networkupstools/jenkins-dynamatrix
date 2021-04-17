@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Arrays.*;
 import java.util.regex.*;
 
@@ -59,7 +60,7 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
     }
 
     if (dynacfg.dynamatrixAxesLabels != null) {
-        if (dynacfg.dynamatrixAxesLabels in [List, Array, Set]) {
+        if (dynacfg.dynamatrixAxesLabels.getClass() in [ArrayList, List, Set, Object[]]) {
         } else if (dynacfg.dynamatrixAxesLabels in [String, GString]) {
             if (dynacfg.dynamatrixAxesLabels.equals("")) {
                 dynacfg.dynamatrixAxesLabels = null
@@ -69,6 +70,7 @@ def call(Map<Object, Object> dynacfg = [:], Closure body = null) {
         } else if (dynacfg.dynamatrixAxesLabels in [java.util.regex.Pattern]) {
             dynacfg.dynamatrixAxesLabels = [dynacfg.dynamatrixAxesLabels]
         } else {
+            println "Not sure what type 'dynamatrixAxesLabels' is: " + dynacfg.dynamatrixAxesLabels.getClass() + " : " + dynacfg.dynamatrixAxesLabels.toString()
             dynacfg.dynamatrixAxesLabels = null
         }
     }
