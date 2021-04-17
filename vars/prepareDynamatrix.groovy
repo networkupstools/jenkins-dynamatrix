@@ -123,6 +123,8 @@ def resolveAxisName(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps, O
         return res;
     }
 
+    println "[DEBUG] resolveAxisName(): " + axis.getClass() + " : " + axis.toString()
+
     if (axis in String || axis in GString) {
         def matcher = axis =~ /(\$\{.+\})/
         if (matcher.find()) {
@@ -193,6 +195,8 @@ def resolveAxisValues(Map<Object, Object> dynacfg, Map<Object, Object> nodeCaps,
         println "[DEBUG] resolveAxisValues(): invalid input value or class: " + axis.toString()
         return res;
     }
+
+    println "[DEBUG] resolveAxisValue(): " + axis.getClass() + " : " + axis.toString()
 
     for (hudson.model.Node node : nodeCaps.nodeData.keySet) {
         if (node == null) continue
