@@ -14,7 +14,7 @@ class DynamatrixSingleBuildConfig {
     // The `expr` requested in `agent { label 'expr' }` for the
     // generated build stage, originates from capabilities declared
     // by build nodes or those explicitly requested by caller
-    public final String buildLabelExpression
+    public String buildLabelExpression
 
     // Original set of requested labels for the agent needed for
     // this particular build, which can include usual labels like
@@ -23,7 +23,7 @@ class DynamatrixSingleBuildConfig {
     // interpreted by the actual building closure (e.g. to
     // generate options for configure script), such as converting
     // `ARCH_BITS=64` into a `CFLAGS="$CLFAGS -m32"` addition:
-    public final Set buildLabelSet
+    public Set buildLabelSet
 
     // Additional variation from the caller, such as revision of
     // C/C++ standard to use for this particular run. Interpreted
@@ -31,20 +31,20 @@ class DynamatrixSingleBuildConfig {
     // for configure script).
     // Provided as a set of Strings with key=value pairs like:
     //   ["CSTDVERSION=17", "CSTDVARIANT=gnu"]
-    public final Set virtualLabelSet
+    public Set virtualLabelSet
 
     // Exported additional environment variables for this build, e.g.:
     //   ["TZ=UTC", "LANG=C"]
-    public final Set envvarSet
+    public Set envvarSet
 
     // Additional command-line options for this build (as interpreted
     // by the actual building closure - perhaps options for a configure
     // script), e.g.:
     //   ["CFLAGS=-stdc=gnu99", "CXXFLAGS=-stdcxx=g++99", "--without-docs"]
-    public final Set clioptSet
+    public Set clioptSet
 
-    public final Boolean isExcluded
-    public final Boolean isAllowedFailure
+    public Boolean isExcluded
+    public Boolean isAllowedFailure
 
     public DynamatrixSingleBuildConfig (script) {
         this.script = script
