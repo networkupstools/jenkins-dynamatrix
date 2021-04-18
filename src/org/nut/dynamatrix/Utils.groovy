@@ -65,6 +65,11 @@ class Utils {
         return false;
     }
 
+    public static Boolean isMapNotEmpty(obj) {
+        if (!isMap(obj)) return false;
+        return (obj.size() > 0)
+    }
+
     public static Boolean isList(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesLists) return true;
@@ -73,6 +78,11 @@ class Utils {
         if (obj instanceof ArrayList) return true;
         if (obj instanceof Object[]) return true;
         return false;
+    }
+
+    public static Boolean isListNotEmpty(obj) {
+        if (!isList(obj)) return false;
+        return (obj.size() > 0)
     }
 
     @NonCPS
