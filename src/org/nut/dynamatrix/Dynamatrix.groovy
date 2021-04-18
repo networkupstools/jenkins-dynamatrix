@@ -408,6 +408,10 @@ def parallelStages = prepareDynamatrix(
 
         }
 
+
+        this.enableDebugTrace = true
+
+
         // Finally, combine all we have (and remove what we do not want to have)
         def removedTotal = 0
         Set<DynamatrixSingleBuildConfig> dsbcSet = []
