@@ -322,8 +322,14 @@ def parallelStages = prepareDynamatrix(
         }
 
         // dynamatrixAxesCommonEnv + dynamatrixAxesCommonEnvCartesian
+        if (dynacfgBuild.dynamatrixAxesCommonEnvCartesian.size() > 0) {
+            dynacfgBuild.dynamatrixAxesCommonEnv += Utils.cartesianSquared(dynacfgBuild.dynamatrixAxesCommonEnvCartesian)
+        }
 
         // dynamatrixAxesCommonOpts + dynamatrixAxesCommonOptsCartesian
+        if (dynacfgBuild.dynamatrixAxesCommonOptsCartesian.size() > 0) {
+            dynacfgBuild.dynamatrixAxesCommonOpts += Utils.cartesianSquared(dynacfgBuild.dynamatrixAxesCommonOptsCartesian)
+        }
 
         // filter away excludeCombos, and possibly cases of allowedFailure
         // (if runAllowedFailure==false)
