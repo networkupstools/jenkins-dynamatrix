@@ -254,6 +254,17 @@ def parallelStages = prepareDynamatrix(
 
     def generateBuild(dynacfgOrig = [:], Closure body = null) {
         /* Returns a map of stages */
+        if (buildLabelsAgents.size() == 0) {
+            this.script.println "[ERROR] generateBuild() : should call prepareDynamatrix() first, or that found nothing usable"
+            return null
+        }
+
+        // Use a separate copy of the configuration for this build
+        // since different scenarios may be customized - although
+        // they all take off from the same baseline setup...
+        DynamatrixConfig dynacfgBuild = this.dynacfg
+        dynacfgBuild.initDefault(dynacfgOrig)
+
         def parallelStages = [:]
         return parallelStages
     }
