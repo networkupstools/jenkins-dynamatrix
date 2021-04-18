@@ -348,8 +348,9 @@ def parallelStages = prepareDynamatrix(
             dynacfgBuild.dynamatrixAxesCommonOpts += Utils.cartesianSquared(dynacfgBuild.dynamatrixAxesCommonOptsCartesian)
         }
 
-this.enableDebugTrace = true
-dynamatrixGlobalState.enableDebugTrace = true
+        // Uncomment this to enforce debugging from this point on:
+        //this.enableDebugTrace = true
+        //dynamatrixGlobalState.enableDebugTrace = true
 
         // Quick safe pre-filter, in case that user-provided constraints
         // only impact one type of axis:
