@@ -282,6 +282,20 @@ def parallelStages = prepareDynamatrix(
         DynamatrixConfig dynacfgBuild = this.dynacfg
         dynacfgBuild.initDefault(dynacfgOrig)
 
+        // We will generate build stages for each of the agent labels
+        // referenced in this Map's keys. Some labels are announced
+        // by workers themselves (nodeCaps), others may be required
+        // additionally by the callers at their discretion, and then
+        // filtered with excludeCombos in the end:
+        def buildLabelsAgentsBuild = this.buildLabelsAgents
+        if (dynacfgBuild.dynamatrixRequiredLabelCombos.size() > 0) {
+            // dynamatrixRequiredLabelCombos: convert from a Set of
+            // key=value pairs into a Map, to process similar to
+            // labels announced by build nodes, including use in
+            // `agent { label 'expr' }` clauses
+            buildLabelsAgentsBuild += mapBuildLabelExpressions(dynacfgBuild.dynamatrixRequiredLabelCombos)
+        }
+
         // Here we will collect axes that come from optional dynacfg fields
         Set virtualAxes = []
 
@@ -311,10 +325,8 @@ def parallelStages = prepareDynamatrix(
 
         // dynamatrixAxesCommonOpts + dynamatrixAxesCommonOptsCartesian
 
-        // dynamatrixRequiredLabelCombos: process similar to labels announced
-        // by build nodes, including use in "agent { label 'expr' }" clauses
-
-        // excludeCombos and allowedFailure (if runAllowedFailure==false)
+        // filter away excludeCombos, and possibly cases of allowedFailure
+        // (if runAllowedFailure==false)
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
