@@ -144,7 +144,11 @@ class DynamatrixSingleBuildConfig {
             }
 
             // We only count one hit, even if regex could match several fields
-            if (hadHit) hits++
+            if (hadHit) {
+                hits++
+            } else {
+                if (debug) this.script.println ("[DEBUG] matchesConstraintsCombo(): no field was hit by ${regexConstraint}")
+            }
         }
 
         // true means a valid match: we had some hits, and that was as many
@@ -152,8 +156,8 @@ class DynamatrixSingleBuildConfig {
         def res = (hits > 0 && hits == crit)
         if (debug) this.script.println (
             "[DEBUG] matchesConstraintsCombo(): ${Utils.castString(this)} " +
-            (res ? "matched" : "did not match" ) +
-            " ${Utils.castString(label)}")
+            (res ? "matched all of" : "did not match some of" ) +
+            " ${Utils.castString(combo)}")
         return res
     }
 
