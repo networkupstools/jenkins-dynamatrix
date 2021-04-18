@@ -239,17 +239,34 @@ def parallelStages = prepareDynamatrix(
         }
 
         // Convert Sets of Sets of strings in buildLabelCombos into the
-        // array of strings we can feed to the agent steps in pipeline:
-        buildLabelsAgents = [:]
-        for (combo in buildLabelCombosFlat) {
-            // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
-            String ble = String.join('&&', combo).replaceAll('\\s+', '&&')
-            buildLabelsAgents[ble] = combo
-            this.script.println "[DEBUG] prepareDynamatrix(): detected an expression for buildLabelsAgents: '" + ble + "' => " + combo
+        // array of strings (keys of the BLA Map) we can feed into the
+        // agent requirements of generated pipeline stages:
+        buildLabelsAgents = mapBuildLabelExpressions(buildLabelCombosFlat)
+        def blaStr = ""
+        for (ble in buildLabelsAgents.keySet()) {
+            blaStr += "\n    '${ble}' => " + buildLabelsAgents[ble]
         }
-        this.script.println "[DEBUG] prepareDynamatrix(): detected buildLabelsAgents: " + buildLabelsAgents.keySet()
+        this.script.println "[DEBUG] prepareDynamatrix(): detected ${buildLabelsAgents.size()} buildLabelsAgents combos:" + blaStr
 
         return true
+    }
+
+    static Map mapBuildLabelExpressions(Set<Set> blcSet) {
+        // Take blcSet[] which is a Set of Sets (equivalent to field
+        // buildLabelCombosFlat in the class), with contents like this:
+        // [ [ARCH_BITS=64 ARCH64=amd64, COMPILER=CLANG CLANGVER=9, OS_DISTRO=openindiana],
+        //   [ARCH_BITS=32 ARCH32=armv7l, COMPILER=GCC GCCVER=4.9, OS_DISTRO=debian] ]
+        // ...and convert into a Map where keys are agent label expression strings
+
+        // Equivalent to buildLabelsAgents in the class
+        def blaMap = [:]
+        for (combo in blcSet) {
+            // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
+            // ble == build label expression
+            String ble = String.join('&&', combo).replaceAll('\\s+', '&&')
+            blaMap[ble] = combo
+        }
+        return blaMap
     }
 
     def generateBuild(dynacfgOrig = [:], Closure body = null) {
