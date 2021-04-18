@@ -10,6 +10,8 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  */
 class DynamatrixSingleBuildConfig {
     private def script = null
+    public Boolean enableDebugTrace = false
+    public Boolean enableDebugErrors = true
 
     // The `expr` requested in `agent { label 'expr' }` for the
     // generated build stage, originates from capabilities declared
@@ -48,6 +50,8 @@ class DynamatrixSingleBuildConfig {
 
     public DynamatrixSingleBuildConfig (script) {
         this.script = script
+        this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+        this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
     }
 
     @NonCPS
@@ -79,8 +83,8 @@ class DynamatrixSingleBuildConfig {
          * labels, envvars and opts defined for this single build setup.
          */
 
-        def debugErr = ( (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugErrors) && this.script != null)
-        def debug = ( dynamatrixGlobalState.enableDebugTrace && this.script != null)
+        def debugErr = ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
+        def debug = ( this.enableDebugTrace && this.script != null)
 
         // No combo - no hit
         if (!Utils.isListNotEmpty(combo)) {
@@ -163,8 +167,8 @@ class DynamatrixSingleBuildConfig {
          * class DynamatrixConfig) to see if the current object hits any.
          */
 
-        def debugErr = ( (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugErrors) && this.script != null)
-        def debug = ( dynamatrixGlobalState.enableDebugTrace && this.script != null)
+        def debugErr = ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
+        def debug = ( this.enableDebugTrace && this.script != null)
 
         // No combo - no hit
         if (!Utils.isListNotEmpty(combos)) {
