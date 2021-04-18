@@ -265,7 +265,43 @@ def parallelStages = prepareDynamatrix(
         DynamatrixConfig dynacfgBuild = this.dynacfg
         dynacfgBuild.initDefault(dynacfgOrig)
 
-        def parallelStages = [:]
+        // Here we will collect axes that come from optional dynacfg fields
+        Set virtualAxes = []
+
+        // Process the map of "virtual axes": dynamatrixAxesVirtualLabelsMap
+        if (dynacfgBuild.dynamatrixAxesVirtualLabelsMap.size() > 0) {
+            // Map of "axis: [array, of, values]"
+            Set dynamatrixAxesVirtualLabelsCombos = []
+            for (k in dynacfgBuild.dynamatrixAxesVirtualLabelsMap.keySet()) {
+                def vals = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[k]
+                if (!Utils.isList(vals) || vals.size() == 0) continue
+
+                // Collect possible values of this one key
+                Set keyvalues = []
+                for (v in vals) {
+                    keyvalues << "${k}=${v}"
+                }
+
+                // add one array as an element in another
+                //EZDEBUG//dynamatrixAxesVirtualLabelsCombos += keyvalues
+                dynamatrixAxesVirtualLabelsCombos = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, keyvalues)
+            }
+            //EZDEBUG//dynamatrixAxesVirtualLabelsCombos = Utils.cartesianSquared(dynamatrixAxesVirtualLabelsCombos)
+            virtualAxes = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, virtualAxes)
+        }
+
+        // dynamatrixAxesCommonEnv + dynamatrixAxesCommonEnvCartesian
+
+        // dynamatrixAxesCommonOpts + dynamatrixAxesCommonOptsCartesian
+
+        // dynamatrixRequiredLabelCombos: process similar to labels announced
+        // by build nodes, including use in "agent { label 'expr' }" clauses
+
+        // excludeCombos and allowedFailure (if runAllowedFailure==false)
+
+        // Consider allowedFailure (if flag runAllowedFailure==true)
+        // when preparing the stages below:
+        Map parallelStages = [:]
         return parallelStages
     }
 
