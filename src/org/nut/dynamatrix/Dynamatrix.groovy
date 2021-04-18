@@ -312,23 +312,25 @@ def parallelStages = prepareDynamatrix(
                 // Collect possible values of this one key
                 Set keyvalues = []
                 for (v in vals) {
-                    keyvalues << "${k}=${v}"
+                    // Store each value of the provided axis as a set with one item
+                    Set vv = ["${k}=${v}"]
+                    keyvalues << vv
                 }
 
-                // add one array as an element in another
-                //EZDEBUG//dynamatrixAxesVirtualLabelsCombos += keyvalues
                 this.script.println "[DEBUG] generateBuild(): combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}\n    with keyvalues: ${keyvalues}"
                 dynamatrixAxesVirtualLabelsCombos = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, keyvalues)
             }
 
-            //EZDEBUG//dynamatrixAxesVirtualLabelsCombos = Utils.cartesianSquared(dynamatrixAxesVirtualLabelsCombos)
-
-            // TODO: Will we have more virtualAxes inputs, or might just use assignment here?
-            this.script.println "[DEBUG] generateBuild(): combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}\n    with virtualAxes: ${virtualAxes}" +
+            this.script.println "[DEBUG] generateBuild(): " +
+                "combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}" +
+                "\n    with virtualAxes: ${virtualAxes}" +
                 "\ndynacfgBuild.dynamatrixAxesVirtualLabelsMap.size()=${dynacfgBuild.dynamatrixAxesVirtualLabelsMap.size()} " +
                 "virtualAxes.size()=${virtualAxes.size()} " +
                 "dynamatrixAxesVirtualLabelsCombos.size()=${dynamatrixAxesVirtualLabelsCombos.size()}"
+
+            // TODO: Will we have more virtualAxes inputs, or might just use assignment here?
             virtualAxes = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, virtualAxes)
+
             this.script.println "[DEBUG] generateBuild(): ended up with virtualAxes: ${virtualAxes}"
         }
 
