@@ -50,6 +50,19 @@ class DynamatrixSingleBuildConfig {
         this.script = script
     }
 
+    @NonCPS
+    public String toString()  {
+        return  "DynamatrixSingleBuildConfig: {" +
+                "\n    buildLabelExpression: '${buildLabelExpression}'" +
+                ",\n    buildLabelSet: '${buildLabelSet}'" +
+                ",\n    virtualLabelSet: '${virtualLabelSet}'" +
+                ",\n    envvarSet: '${envvarSet}'" +
+                ",\n    clioptSet: '${clioptSet}'" +
+                ",\n    isExcluded: '${isExcluded}'" +
+                ",\n    isAllowedFailure: '${isAllowedFailure}'" +
+                "\n}" ;
+    }
+
     public Boolean matchesConstraintsCombo (Set combo) {
         /* Returns "true" if the current object hits all constraints
          * in combo, which may be used for detecting (and possibly
