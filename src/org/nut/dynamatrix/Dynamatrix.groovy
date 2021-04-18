@@ -303,6 +303,7 @@ def parallelStages = prepareDynamatrix(
         // Process the map of "virtual axes": dynamatrixAxesVirtualLabelsMap
         if (dynacfgBuild.dynamatrixAxesVirtualLabelsMap.size() > 0) {
             // Map of "axis: [array, of, values]"
+            this.script.println "[DEBUG] generateBuild(): dynamatrixAxesVirtualLabelsMap: ${dynacfgBuild.dynamatrixAxesVirtualLabelsMap}"
             Set dynamatrixAxesVirtualLabelsCombos = []
             for (k in dynacfgBuild.dynamatrixAxesVirtualLabelsMap.keySet()) {
                 def vals = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[k]
@@ -316,11 +317,19 @@ def parallelStages = prepareDynamatrix(
 
                 // add one array as an element in another
                 //EZDEBUG//dynamatrixAxesVirtualLabelsCombos += keyvalues
+                this.script.println "[DEBUG] generateBuild(): combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}\n    with keyvalues: ${keyvalues}"
                 dynamatrixAxesVirtualLabelsCombos = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, keyvalues)
             }
+
             //EZDEBUG//dynamatrixAxesVirtualLabelsCombos = Utils.cartesianSquared(dynamatrixAxesVirtualLabelsCombos)
+
             // TODO: Will we have more virtualAxes inputs, or might just use assignment here?
+            this.script.println "[DEBUG] generateBuild(): combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}\n    with virtualAxes: ${virtualAxes}" +
+                "\ndynacfgBuild.dynamatrixAxesVirtualLabelsMap.size()=${dynacfgBuild.dynamatrixAxesVirtualLabelsMap.size()} " +
+                "virtualAxes.size()=${virtualAxes.size()} " +
+                "dynamatrixAxesVirtualLabelsCombos.size()=${dynamatrixAxesVirtualLabelsCombos.size()}"
             virtualAxes = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, virtualAxes)
+            this.script.println "[DEBUG] generateBuild(): ended up with virtualAxes: ${virtualAxes}"
         }
 
         // dynamatrixAxesCommonEnv + dynamatrixAxesCommonEnvCartesian
@@ -372,7 +381,9 @@ def parallelStages = prepareDynamatrix(
 
             if (virtualAxes.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
+                this.script.println "[DEBUG] generateBuild(): virtualAxes: ${Utils.castString(virtualAxes)}"
                 for (virtualLabelSet in virtualAxes) {
+                    this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
                     for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                         dsbcBleTmp.virtualLabelSet = virtualLabelSet
                         dsbcBleSetTmp += dsbcBleTmp
