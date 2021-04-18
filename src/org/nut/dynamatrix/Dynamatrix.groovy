@@ -32,8 +32,10 @@ class Dynamatrix {
     Set effectiveAxes = []
     Set buildLabelCombos = []
     Set buildLabelCombosFlat = []
-    // This is one useful final result, strings for `agent{label 'expr'}` clauses
-    Set<String> buildLabelsAgents = []
+    // This is one useful final result, mapping strings for `agent{label 'expr'}`
+    // clauses to arrays of label contents (including "composite" labels where
+    // key=value's are persistently grouped, e.g. "COMPILER=GCC GCCVER=123")
+    Map<String, Set> buildLabelsAgents = [:]
 
     public Dynamatrix(Object script) {
         this.script = script
@@ -238,14 +240,14 @@ def parallelStages = prepareDynamatrix(
 
         // Convert Sets of Sets of strings in buildLabelCombos into the
         // array of strings we can feed to the agent steps in pipeline:
-        buildLabelsAgents = []
+        buildLabelsAgents = [:]
         for (combo in buildLabelCombosFlat) {
             // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
             String ble = String.join('&&', combo).replaceAll('\\s+', '&&')
-            buildLabelsAgents << ble
-            this.script.println "[DEBUG] prepareDynamatrix(): detected an expression for buildLabelsAgents: " + ble
+            buildLabelsAgents[ble] = combo
+            this.script.println "[DEBUG] prepareDynamatrix(): detected an expression for buildLabelsAgents: '" + ble + "' => " + combo
         }
-        this.script.println "[DEBUG] prepareDynamatrix(): detected buildLabelsAgents: " + buildLabelsAgents
+        this.script.println "[DEBUG] prepareDynamatrix(): detected buildLabelsAgents: " + buildLabelsAgents.keySet()
 
         return true
     }
