@@ -1,5 +1,7 @@
 package org.nut.dynamatrix;
 
+import org.nut.dynamatrix.Utils;
+
 /* This class intends to represent one build request configuration
  * An instance of it can be passed as the set of arguments for the
  * customized run Dynamatrix routines, while some defaults can be
@@ -282,47 +284,6 @@ def parallelStages = prepareDynamatrix(
         this.initDefault(dynacfgOrig)
     }
 
-    private def mergeMapSet(orig, addon, Boolean debug = false) {
-        /* For objects that are like an Array, List or Set, this routine
-         * simply appends contents of "addon" to "orig". For Maps it recurses
-         * so it can process the object which is value in a Map for same key.
-         * For other types, replace orig with addon.
-         * Returns the result of merge (or whatever did happen there).
-         */
-
-        if (orig.getClass() in [Set, ArrayList, Object[], List, TreeSet]) {
-            if (addon.getClass() in [Set, ArrayList, Object[], List, TreeSet]) {
-                // Concatenate
-                if (debug) println "Both orig and addon are arrays, concatenate:\n  ${orig}\n+ ${addon}\n"
-                return (orig + addon)
-            }
-            // For other types, append as a single new array item
-            if (debug) println "The orig is an array, addon is not; append it:\n  ${orig}\n+ ${addon}\n"
-            return (orig << addon)
-        }
-
-        if (orig.getClass() in [Map, LinkedHashMap, HashMap]) {
-            if (addon.getClass() in [Map, LinkedHashMap, HashMap]) {
-                if (debug) println "Both orig and addon are Maps, concatenate recursively:\n  ${orig}\n+ ${addon}\n"
-                for (k in addon.keySet()) {
-                    if (orig.containsKey(k)) {
-                        if (debug) println "+ Merging orig[${k}]=${orig[k]} with addon[${k}]=${addon[k]}"
-                        orig[k] = mergeMapSet(orig[k], addon[k])
-                    } else {
-                        if (debug) println "+ Adding new orig[${k}] from addon[${k}]=${addon[k]}\n"
-                        orig[k] = addon[k]
-                    }
-                }
-                return orig
-            }
-            throw new Exception("Can not mergeMapSet() a non-Map: <${addon.getClass()}>${addon} into a Map: <${orig.getClass()}>${orig}")
-        }
-
-        // For other types, replace with new value
-        if (debug) println "Both orig and addon are neither arrays nor maps, replace:\n${orig}\n${addon}\n"
-        return addon
-    }
-
     public def initDefault(Map dynacfgOrig) {
         // Combine a config with defaults from a Set passed to a groovy call()
         if (dynacfgOrig.size() > 0) {
@@ -349,7 +310,7 @@ def parallelStages = prepareDynamatrix(
 
                     switch ("${mergeMode}") {
                         case "merge":
-                            this[k] = mergeMapSet(this[k], dynacfgOrig[k])
+                            this[k] = Utils.mergeMapSet(this[k], dynacfgOrig[k])
                             break
 
                         case "replace":
@@ -376,23 +337,23 @@ def parallelStages = prepareDynamatrix(
         // a single-element array), or an array/list/set/... of such types
         String errs = ""
         if (this.dynamatrixAxesLabels != null) {
-            if (this.dynamatrixAxesLabels.getClass() in [ArrayList, List, Set, TreeSet, LinkedHashSet, Object[]]) {
+            if (Utils.isList(this.dynamatrixAxesLabels)) {
                 // TODO: Match superclass to not list all children of Set etc?
                 // TODO: Check entries if this object that they are strings/patterns
                 return true
-            } else if (this.dynamatrixAxesLabels.getClass() in [String, java.lang.String, GString]) {
+            } else if (Utils.isString(this.dynamatrixAxesLabels)) {
                 if (this.dynamatrixAxesLabels.equals("")) {
                     this.dynamatrixAxesLabels = null
                 } else {
                     this.dynamatrixAxesLabels = [this.dynamatrixAxesLabels]
                 }
                 return true
-            } else if (this.dynamatrixAxesLabels.getClass() in [java.util.regex.Pattern]) {
+            } else if (Utils.isRegex(this.dynamatrixAxesLabels)) {
                 this.dynamatrixAxesLabels = [this.dynamatrixAxesLabels]
                 return true
             } else {
                 if (!errs.equals("")) errs += "\n"
-                errs += "Not sure what type 'dynamatrixAxesLabels' is: " + this.dynamatrixAxesLabels.getClass() + " : " + this.dynamatrixAxesLabels.toString()
+                errs += "Not sure what type 'dynamatrixAxesLabels' is: ${Utils.castString(this.dynamatrixAxesLabels)}"
                 //this.dynamatrixAxesLabels = null
             }
         }

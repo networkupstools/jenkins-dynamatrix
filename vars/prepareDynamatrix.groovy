@@ -5,6 +5,7 @@ import java.util.regex.*;
 import org.nut.dynamatrix.DynamatrixConfig;
 import org.nut.dynamatrix.NodeCaps;
 import org.nut.dynamatrix.NodeData;
+import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 /*
@@ -109,7 +110,7 @@ def call(dynacfgOrig = [:], Closure body = null) {
     // get a set with two sets of axes that can do our separate builds:
     // [ [OS, ARCH, CLANGVER], [OS, ARCH, GCCVER] ]
     // ...and preferably really sorted :)
-    effectiveAxes = infra.cartesianSquared(effectiveAxes).sort()
+    effectiveAxes = Utils.cartesianSquared(effectiveAxes).sort()
     println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
 
     //nodeCaps.enableDebugTrace = true
@@ -181,7 +182,7 @@ def call(dynacfgOrig = [:], Closure body = null) {
             // supported for one of the original effectiveAxes requirements,
             // where each of nodeAxisCombos contains a set of axisValues
             println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
-            def tmp = infra.cartesianSquared(nodeAxisCombos).sort()
+            def tmp = Utils.cartesianSquared(nodeAxisCombos).sort()
             println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
             // Add members of tmp (many sets of unique key=value combos
             // for each axis) as direct members of buildLabelCombosFlat

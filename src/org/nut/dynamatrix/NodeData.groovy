@@ -6,6 +6,8 @@ import java.util.regex.*;
 
 import hudson.model.Node;
 
+import org.nut.dynamatrix.Utils;
+
 class NodeData {
     /* This class encapsulates interesting data about a single Jenkins Node.
      * A lot of these data points are stored in a NodeCaps object below.
@@ -27,23 +29,23 @@ class NodeData {
     public final Map<String, Object> labelMap
 
     public NodeData(Object nodeOrig) throws Exception {
-        // System.out.println("NodeData: got arg: (" + nodeOrig.getClass() + ") : " + nodeOrig.toString())
+        // System.out.println("NodeData: got arg: ${Utils.castString(nodeOrig)}"
 
         hudson.model.Node node = null
-        if (nodeOrig.getClass() in [hudson.model.Node] || nodeOrig in hudson.model.Node) {
+        if (Utils.isNode(nodeOrig)) {
             node = nodeOrig
-        } else if (nodeOrig.getClass() in [String, GString]) {
+        } else if (Utils.isString(nodeOrig)) {
             def jenkins = Jenkins.getInstanceOrNull()
             if (jenkins != null) {
                 node = jenkins.getNode(nodeOrig)
             }
             if (node == null) {
-                throw new Exception("NodeData: bad argument to constructor: node was not found by name: (" + nodeOrig.getClass() + ") : " + nodeOrig.toString())
+                throw new Exception("NodeData: bad argument to constructor: node was not found by name: ${Utils.castString(nodeOrig)}")
             }
         }
 
         if (node == null) {
-            throw new Exception("NodeData: bad argument to constructor: invalid value or class: (" + nodeOrig.getClass() + ") : " + nodeOrig.toString())
+            throw new Exception("NodeData: bad argument to constructor: invalid value or class: ${Utils.castString(nodeOrig)}")
         }
 
         this.node = node
