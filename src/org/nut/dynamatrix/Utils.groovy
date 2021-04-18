@@ -90,6 +90,8 @@ class Utils {
     static Iterable cartesianProduct(Iterable a, Iterable b) {
         // Inspired by https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists#Groovy
         // and https://coviello.blog/2013/05/19/adding-a-method-for-computing-cartesian-product-to-groovys-collections/
+        if (a.size() == 0) return b
+        if (b.size() == 0) return a
         assert [a,b].every { it != null }
         def (m,n) = [a.size(),b.size()]
         return ( (0..<(m*n)).inject([]) { prod, i -> prod << [a[i.intdiv(n)], b[i%n]].flatten().sort() } )
