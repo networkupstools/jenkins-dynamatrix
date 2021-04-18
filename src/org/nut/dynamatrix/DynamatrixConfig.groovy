@@ -59,19 +59,19 @@ class DynamatrixConfig {
     // from other influences. This example defines two build variants:
     //    dynamatrixAxesCommonEnv: [['LANG=C', 'TZ=UTC'], ['LANG=ru_RU', 'SHELL=ksh']],
     public Set<Set> dynamatrixAxesCommonEnv = []
-    // Same goal as above, but builds would get a carthesian multiplication
+    // Same goal as above, but builds would get a Cartesian multiplication
     // of the variants listed in the sub-sets, e.g. this example:
-    //    dynamatrixAxesCommonEnvCarthesian: [['LANG=C', 'LANG=ru_RU'], ['TZ=UTC', 'TZ=CET']]
+    //    dynamatrixAxesCommonEnvCartesian: [['LANG=C', 'LANG=ru_RU'], ['TZ=UTC', 'TZ=CET']]
     // ...should produce four build variants that would feed into the
     // dynamatrixAxesCommonEnv use-case, namely:
     //    [['LANG=C','TZ=UTC'], ['LANG=ru_RU','TZ=UTC'], ['LANG=C','TZ=CET'], ['LANG=ru_RU','TZ=CET']]
     // NOTE: third-layer objects (e.g. meaningful sets not strings) should
     // get plugged into the result "as is" and can help group related options
     // without "internal conflict", e.g.:
-    //    dynamatrixAxesCommonEnvCarthesian: [[ ['LANG=C','LC_ALL=C'], 'LANG=ru_RU'], ['TZ=UTC', 'TZ=CET']]
+    //    dynamatrixAxesCommonEnvCartesian: [[ ['LANG=C','LC_ALL=C'], 'LANG=ru_RU'], ['TZ=UTC', 'TZ=CET']]
     // should yield such four build variants:
     //    [['LANG=C','LC_ALL=C','TZ=UTC'], ['LANG=ru_RU','TZ=UTC'], ['LANG=C','LC_ALL=C','TZ=CET'], ['LANG=ru_RU','TZ=CET']]
-    public Set<Set> dynamatrixAxesCommonEnvCarthesian = []
+    public Set<Set> dynamatrixAxesCommonEnvCartesian = []
 
     // Set of (Sets of args to build tool into its command-line options).
     // Similar approach as above:
@@ -84,7 +84,7 @@ class DynamatrixConfig {
     //        ['-m32'], ['-m64'] ]
     public Set<Set> dynamatrixAxesCommonOpts = []
     // ...and this (also with third-layer support) example:
-    //    dynamatrixAxesCommonOptsCarthesian: [
+    //    dynamatrixAxesCommonOptsCartesian: [
     //        [ ["CFLAGS=-stdc=gnu99", "CXXFLAGS=-stdcxx=g++99"],
     //          ["CFLAGS=-stdc=c89", "CXXFLAGS=-stdcxx=c++89"]     ],
     //        ['-m32', '-m64'] ]
@@ -96,7 +96,7 @@ class DynamatrixConfig {
     // WARNING: This is an illustrative example, -mXX should belong inside
     // the CFLAGS, CXXFLAGS and LDFLAGS values, so the closure doing some
     // build in an ultimate shell command should take care of that.
-    public Set<Set> dynamatrixAxesCommonOptsCarthesian = []
+    public Set<Set> dynamatrixAxesCommonOptsCartesian = []
 
     // On top of combinations discovered from existing nodes, add the
     // following combinations as required for a build. While these are
