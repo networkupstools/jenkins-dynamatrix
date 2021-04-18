@@ -29,7 +29,8 @@ class DynamatrixConfig {
     //    compilerTools: ['CC', 'CXX', 'CPP'],
     public Set<String> compilerTools = []
 
-    // Each of these labels can be String, GString or Pattern object:
+    // Each of these labels can be String, GString or Pattern object
+    // to match labels (named as key=value pairs) of build agents:
     //    dynamatrixAxesLabels: ['OS', '${COMPILER}VER', 'ARCH'],
     public Set dynamatrixAxesLabels = []
 
