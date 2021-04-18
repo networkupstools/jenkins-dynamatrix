@@ -36,6 +36,21 @@ class DynamatrixConfig {
     // support) can still be used for some unique build combos ("...but
     // that is our only system that runs SUPERCCVER=123").
 
+    // Let the caller specify additional dimensions to the matrix which
+    // are not based on values of labels declared by current workers, as
+    // a map of labels and a set of their values. For example, a matrix
+    // for C/C++ builds can declare several standards to check:
+    //    dynamatrixAxesVirtualLabelsMap: [
+    //      'CSTDVERSION': ['89', '99', '03', '11', '14', '17', '2x'],
+    //      'CSTDVARIANT': ['c', 'gnu'],
+    //    ]
+    // Like other (label) values, these would be ultimately mixed as a
+    // cartesian product with values from combos provided into the closure
+    // doing the build, subject to "excludeCombos" and "allowedFailure"
+    // detailed below, but they should not end up in label expressions
+    // to match the build agents by Jenkins.
+    public Map dynamatrixAxesVirtualLabelsMap = [:]
+
     // Set of (Sets of envvars to export) - the resulting build matrix
     // picks one of these at a time for otherwise same conditions made
     // from other influences. This example defines two build variants:
@@ -157,7 +172,104 @@ def parallelStages = prepareDynamatrix(
     }
 
     public def initDefault(String defaultCfg) {
-        // TODO
+        switch (defaultCfg) {
+            case null:
+            case '':
+                break;
+
+            case 'C':
+                this.compilerType = 'C'
+                this.compilerLabel = 'COMPILER'
+                this.compilerTools = ['CC', 'CXX', 'CPP']
+                this.dynamatrixAxesLabels = ['OS_DISTRO', '${COMPILER}VER', 'ARCH${ARCH_BITS}']
+
+                // Note: the clause(s) doing the build should differentiate
+                // some nuances here to make some options equivalent by year:
+                // * there are C99 and C++98 (and no C++89/C++90 nor C++99 at all)
+                // * C++98 and C++03 are the same (both GCC and CLANG); there is no C03 at all
+                // * ansi means C89 and C++98, possibly with other constraints to follow
+                //   standard dialect (e.g. __STRICT_ANSI__ like '-std=c*' options do)
+                // * plain C11 is equivalent to C17 (both are C11 with error fixes)
+                // * C++11, C++14 and C++17 do differ; note there is no C14 at all
+                // * plain C2x is experimental in GCC (absent in CLANG by some accounts like v13 CLI opts, since 9.x by others)
+                // * C++20 (2a) vs C++23 (2b) also are highly experimental, present in both
+                this.dynamatrixAxesVirtualLabelsMap = [
+                    'CSTDVERSION': ['89', '99', '11', '14', '17', '2x'],
+                    'CSTDVARIANT': ['c', 'gnu']
+                    ]
+
+                // https://en.wikipedia.org/wiki/C17_(C_standard_revision) et al
+                // For GCC support, see:
+                //      https://gcc.gnu.org/onlinedocs/gcc/Standards.html
+                //      https://gcc.gnu.org/projects/cxx-status.html
+                //          (C++98 C++11 C++14 C++17 C++20 C++23)
+                //          C++98/C++03 : all versions
+                //          C++11 : since mid-4.x, mostly 4.8+, finished by 4.8.1; good in 4.9+
+                //          C++14 : complete since v5
+                //          C++17 : almost complete by v7, one fix in v8
+                //          C++20 : experimental adding a lot in v8/v9/v10/v11
+                //          C++23 : experimental since v11
+                //      https://gcc.gnu.org/onlinedocs/gcc/C-Dialect-Options.html
+                //          C89=C90 : "forever"?
+                //          C99 : "substantially supported" since v4.5, largely since 3.0+ (https://gcc.gnu.org/c99status.html)
+                //          C11 : since 4.6(partially?)
+                //          C17 : 8.1.0+
+                //          C2x : v9+
+                // For CLANG support, see:
+                //      https://clang.llvm.org/docs/CommandGuide/clang.html
+                //      https://clang.llvm.org/cxx_status.html - *complete* C++ version support begins with:
+                //          C++98/C++03 : all versions
+                //          C++11 : v3.3+
+                //          C++14 : v3.4+
+                //          C++17 : v5+
+                //          C++20 (2a) : brewing; keyword became official since v10+
+                //          C++23 (2b) : brewing since v13+
+                //      https://releases.llvm.org/6.0.0/tools/clang/docs/ReleaseNotes.html and similar
+                //          C89 : ???
+                //          C99 : ???
+                //          C11 : since 3.1
+                //          C17 : v6+
+                //          C2x : v9+
+
+                // Consider following ${COMPILER}VER numbers not sufficiently
+                // compatible with language versions from the table above, at
+                // least for the practical purpose of not scheduling builds.
+                // Combinations below that DO match keys=values of generated
+                // build candidate will remove that candidate from queue list.
+
+                // Recurrent ([^0-9.]|$|\.[0-9]+) means to have end of version
+                // or optional next numbered component, to cater for recent
+                // releases' single- or at most double-numbered releases except
+                // some special cases.
+
+                this.excludeCombos = [
+
+                    [~/GCCVER=[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90)/],
+                    [~/GCCVER=3([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99)/],
+                    [~/GCCVER=4([^0-9.]|$)/, ~/CSTDVERSION=(?!89|90|98|99)/],
+                    [~/GCCVER=4\.[0-4]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99)/],
+                    [~/GCCVER=4\.([5-7]([^0-9.]|$|\.[0-9]+)|8(\.0|[^0-9.]|$))/, ~/CSTDVERSION=(?!89|90|98|99|03)/],
+                    [~/GCCVER=4\.(8\.[1-9][0-9]*|(9|1[0-9]+)([^0-9.]|$|\.[0-9]+))/, ~/CSTDVERSION=(?!89|98|99|03|11)/],
+                    [~/GCCVER=([5-7]|8\.0)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|98|99|03|11|14)/],
+                    [~/GCCVER=8([^0-9.]|$)/, ~/CSTDVERSION=(?!89|90|98|99|03|11|14)/],
+                    [~/GCCVER=(8\.[1-9][0-9]*)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|98|99|03|11|14|17)/],
+                    [~/GCCVER=(9|[1-9][0-9]+)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|98|99|03|11|14|17|2x)/],
+
+                    [~/CLANGVER=[012]\..+/, ~/CSTDVERSION=(?!89|90|98|99)/],
+                    [~/CLANGVER=3\.[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99)/],
+                    [~/CLANGVER=3\.3([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11)/],
+                    [~/CLANGVER=3\.([4-9]|[1-9][0-9]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11|14)/],
+                    [~/CLANGVER=4([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11|14)/],
+                    [~/CLANGVER=[5-8]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11|14|17)/],
+                    [~/CLANGVER=(9|[1-9][0-9.]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11|14|17|2x)/]
+
+                ] // excludeCombos
+
+                break;
+
+            default:
+                return "[WARNING] DynamatrixConfig(String): unrecognized default pre-set: ${defaultCfg}"
+        }
         return true
     }
 
