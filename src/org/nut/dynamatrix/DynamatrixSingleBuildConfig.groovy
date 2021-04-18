@@ -8,7 +8,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  * other matrix-provided tunables derived from DynamatrixConfig
  * and Dynamatrix class field values.
  */
-class DynamatrixSingleBuildConfig {
+class DynamatrixSingleBuildConfig implements Cloneable {
     private def script = null
     public Boolean enableDebugTrace = false
     public Boolean enableDebugErrors = true
@@ -52,6 +52,11 @@ class DynamatrixSingleBuildConfig {
         this.script = script
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    }
+
+    @Override
+    public DynamatrixSingleBuildConfig clone() throws CloneNotSupportedException {
+        return (DynamatrixSingleBuildConfig) super.clone();
     }
 
     @NonCPS

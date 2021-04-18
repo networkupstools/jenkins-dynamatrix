@@ -368,7 +368,7 @@ dynamatrixGlobalState.enableDebugTrace = true
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
                 for (clioptSet in dynacfgBuild.dynamatrixAxesCommonOpts) {
-                    DynamatrixSingleBuildConfig dsbcBleTmp = dsbcBle
+                    DynamatrixSingleBuildConfig dsbcBleTmp = dsbcBle.clone()
                     dsbcBleTmp.clioptSet = clioptSet
                     dsbcBleSetTmp += dsbcBleTmp
                 }
@@ -380,7 +380,8 @@ dynamatrixGlobalState.enableDebugTrace = true
             if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
                 for (envvarSet in dynacfgBuild.dynamatrixAxesCommonEnv) {
-                    for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                    for (DynamatrixSingleBuildConfig tmp in dsbcBleSet) {
+                        DynamatrixSingleBuildConfig dsbcBleTmp = tmp.clone()
                         dsbcBleTmp.envvarSet = envvarSet
                         dsbcBleSetTmp += dsbcBleTmp
                     }
@@ -393,7 +394,10 @@ dynamatrixGlobalState.enableDebugTrace = true
                 if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): COMBINING: virtualAxes: ${Utils.castString(virtualAxes)}\nvs. dsbcBleSet: ${dsbcBleSet}"
                 for (virtualLabelSet in virtualAxes) {
                     //if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
-                    for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                    for (DynamatrixSingleBuildConfig tmp in dsbcBleSet) {
+                        DynamatrixSingleBuildConfig dsbcBleTmp = tmp.clone()
+                        //DynamatrixSingleBuildConfig dsbcBleTmp = new DynamatrixSingleBuildConfig(tmp)
+                        //dsbcBleTmp = tmp
                         if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
                         dsbcBleTmp.virtualLabelSet = virtualLabelSet
                         dsbcBleSetTmp += dsbcBleTmp
