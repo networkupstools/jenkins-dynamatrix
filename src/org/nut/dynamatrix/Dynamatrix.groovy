@@ -5,6 +5,7 @@ import java.util.Arrays.*;
 import java.util.regex.*;
 
 import org.nut.dynamatrix.DynamatrixConfig;
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
 import org.nut.dynamatrix.NodeCaps;
 import org.nut.dynamatrix.NodeData;
 import org.nut.dynamatrix.Utils;
@@ -287,7 +288,7 @@ def parallelStages = prepareDynamatrix(
         // by workers themselves (nodeCaps), others may be required
         // additionally by the callers at their discretion, and then
         // filtered with excludeCombos in the end:
-        def buildLabelsAgentsBuild = this.buildLabelsAgents
+        Map buildLabelsAgentsBuild = this.buildLabelsAgents
         if (dynacfgBuild.dynamatrixRequiredLabelCombos.size() > 0) {
             // dynamatrixRequiredLabelCombos: convert from a Set of
             // key=value pairs into a Map, to process similar to
@@ -318,6 +319,7 @@ def parallelStages = prepareDynamatrix(
                 dynamatrixAxesVirtualLabelsCombos = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, keyvalues)
             }
             //EZDEBUG//dynamatrixAxesVirtualLabelsCombos = Utils.cartesianSquared(dynamatrixAxesVirtualLabelsCombos)
+            // TODO: Will we have more virtualAxes inputs, or might just use assignment here?
             virtualAxes = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, virtualAxes)
         }
 
@@ -331,8 +333,87 @@ def parallelStages = prepareDynamatrix(
             dynacfgBuild.dynamatrixAxesCommonOpts += Utils.cartesianSquared(dynacfgBuild.dynamatrixAxesCommonOptsCartesian)
         }
 
-        // filter away excludeCombos, and possibly cases of allowedFailure
-        // (if runAllowedFailure==false)
+        // Finally, combine all we have (and remove what we do not want to have)
+        Set<DynamatrixSingleBuildConfig> dsbcSet = []
+        for (ble in buildLabelsAgentsBuild.keySet()) {
+            // We can generate numerous build configs below that
+            // would all require this (or identical) agent by its
+            // build label expression, so prepare the shared part:
+            DynamatrixSingleBuildConfig dsbcBle = new DynamatrixSingleBuildConfig(this.script)
+            Set<DynamatrixSingleBuildConfig> dsbcBleSet = []
+
+            // One of (several possible) combinations of node labels:
+            dsbcBle.buildLabelExpression = ble
+            dsbcBle.buildLabelSet = buildLabelsAgentsBuild[ble]
+
+            // Roll the snowball, let it grow!
+            if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
+                Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
+                for (clioptSet in dynacfgBuild.dynamatrixAxesCommonOpts) {
+                    DynamatrixSingleBuildConfig dsbcBleTmp = dsbcBle
+                    dsbcBleTmp.clioptSet = clioptSet
+                    dsbcBleSetTmp += dsbcBleTmp
+                }
+                dsbcBleSet = dsbcBleSetTmp
+            } else {
+                dsbcBleSet = [dsbcBle]
+            }
+
+            if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
+                Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
+                for (envvarSet in dynacfgBuild.dynamatrixAxesCommonEnv) {
+                    for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                        dsbcBleTmp.envvarSet = envvarSet
+                        dsbcBleSetTmp += dsbcBleTmp
+                    }
+                }
+                dsbcBleSet = dsbcBleSetTmp
+            }
+
+            if (virtualAxes.size() > 0) {
+                Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
+                for (virtualLabelSet in virtualAxes) {
+                    for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                        dsbcBleTmp.virtualLabelSet = virtualLabelSet
+                        dsbcBleSetTmp += dsbcBleTmp
+                    }
+                }
+                dsbcBleSet = dsbcBleSetTmp
+            }
+
+            // filter away excludeCombos, and possibly cases of allowedFailure
+            // (if runAllowedFailure==false)
+            if (dynacfgBuild.excludeCombos.size() > 0) {
+                for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                    if (dsbcBleTmp.matchesConstraints(dynacfgBuild.excludeCombos)) {
+                        dsbcBleSet -= dsbcBleTmp
+                        dsbcBleTmp.isExcluded = true
+                        // TODO: track isExcluded?
+                        this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}"
+                    }
+                }
+            }
+
+            if (dynacfgBuild.allowedFailure.size() > 0) {
+                for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                    if (dsbcBleTmp.matchesConstraints(dynacfgBuild.allowedFailure)) {
+                        dsbcBleSet -= dsbcBleTmp
+                        dsbcBleTmp.isAllowedFailure = true
+                        if (dynacfgBuild.runAllowedFailure) {
+                            dsbcBleSet += dsbcBleTmp
+                        } else {
+                            this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}"
+                        }
+                    }
+                }
+            }
+
+            dsbcSet += dsbcBleSet
+        }
+
+        for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcSet) {
+            this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbcBleTmp}"
+        }
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
