@@ -15,16 +15,18 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 COMPILER=CLANG COMPILER=GCC
 CLANGVER=8 CLANGVER=9
 GCCVER=10 GCCVER=4.4.4 GCCVER=4.9 GCCVER=6 GCCVER=7
-OS=openindiana
-ARCH=x86_64 ARCH=x86
+OS_FAMILY=illumos OS_DISTRO=openindiana
+ARCH_BITS=64 ARCH_BITS=32
+ARCH64=x86_64 ARCH32=x86
 nut-builder zmq-builder
 ----
 * "testdeb":
 ----
 COMPILER=GCC
 GCCVER=4.8 GCCVER=4.9 GCCVER=5 GCCVER=7
-OS=linux
-ARCH=x86_64 ARCH=x86 ARCH=armv7l
+OS_FAMILY=linux OS_DISTRO=debian-10
+ARCH_BITS=64 ARCH_BITS=32
+ARCH64=x86_64 ARCH32=x86 ARCH32=armv7l
 nut-builder zmq-builder linux-kernel-builder
 ----
 
@@ -34,7 +36,7 @@ def parallelStages = prepareDynamatrix(
     compilerType: 'C',
     compilerLabel: 'COMPILER',
     compilerTools: ['CC', 'CXX', 'CPP'],
-    dynamatrixAxesLabels: ['OS', '${COMPILER}VER', 'ARCH'],
+    dynamatrixAxesLabels: [~/^OS_DIS.*/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
     dynamatrixAxesCommonEnv: [['LANG=C', 'TZ=UTC'], ['LANG=ru_RU']],
     dynamatrixAxesCommonOpts: [
         ['"CFLAGS=-stdc=gnu99" CXXFLAGS="-stdcxx=g++99"', '"CFLAGS=-stdc=c89" CXXFLAGS="-stdcxx=c++89"'],
