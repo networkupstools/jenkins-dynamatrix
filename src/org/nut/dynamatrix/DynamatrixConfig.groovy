@@ -295,7 +295,7 @@ def parallelStages = prepareDynamatrix(
             // the Map passed by caller may contain "defaultDynamatrixConfig" as
             // a key for a String value to specify default pre-sets, e.g. "C".
             if (dynacfgOrig.containsKey('defaultDynamatrixConfig')) {
-                this.initDefault(dynacfgOrig[defaultDynamatrixConfig].toString())
+                this.initDefault(dynacfgOrig['defaultDynamatrixConfig'].toString())
                 dynacfgOrig.remove('defaultDynamatrixConfig')
             }
         }
