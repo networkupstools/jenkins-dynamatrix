@@ -2,6 +2,7 @@ import org.nut.dynamatrix.*;
 
 /*
  * Run one combination of settings in the matrix for default compiler
+ * using its default version of the C/C++ standards
  */
 void call(String BUILD_TYPE, String PLATFORM) {
     // NOTE: Analysis below just assumes the default compiler would be gcc

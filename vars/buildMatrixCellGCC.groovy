@@ -12,14 +12,18 @@ case "${PLATFORM}" in
 esac
 export BUILD_SSL_ONCE
 
+# Map aliased or nearby-yearly versions as valid for GCC and CLANG
 case "${STDVER}" in
-    99) STDXXVER="98" ;;
+    89|90|99) STDXXVER="98" ;;
+    03) STDXXVER="03" ; STDVER="99" ;;
+    14) STDXXVER="14" ; STDVER="11" ;;
+    2x|20) STDXXVER="2a" ;;
     *) STDXXVER="${STDVER}" ;;
 esac
 
 BUILD_TYPE=default-all-errors \
 BUILD_WARNOPT="${BUILD_WARNOPT}" BUILD_WARNFATAL=yes \
-CFLAGS="-std=${STD}${STDVER}" CXXFLAGS="-std=${STD}++\${STDXXVER}" \
+CFLAGS="-std=${STD}\${STDVER}" CXXFLAGS="-std=${STD}++\${STDXXVER}" \
 CC=gcc-${GCCVER} CXX=g++-${GCCVER} \
 ./ci_build.sh
 """
