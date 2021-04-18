@@ -63,6 +63,10 @@ class DynamatrixSingleBuildConfig {
                 "\n}" ;
     }
 
+    public Boolean matchesConstraintsCombo (ArrayList combo) {
+        return matchesConstraintsCombo(new LinkedHashSet(combo))
+    }
+
     public Boolean matchesConstraintsCombo (Set combo) {
         /* Returns "true" if the current object hits all constraints
          * in combo, which may be used for detecting (and possibly
@@ -147,6 +151,10 @@ class DynamatrixSingleBuildConfig {
             (res ? "matched" : "did not match" ) +
             " ${Utils.castString(label)}")
         return res
+    }
+
+    public Boolean matchesConstraints (ArrayList combos) {
+        return matchesConstraints(new LinkedHashSet(combos))
     }
 
     public Boolean matchesConstraints (Set combos) {
