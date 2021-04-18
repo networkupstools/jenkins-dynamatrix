@@ -24,6 +24,17 @@ class Dynamatrix {
     private DynamatrixConfig dynacfg
     private def script
 
+    // Store values populated by prepareDynamatrix() so further generateBuild()
+    // calls can use these quickly.
+    NodeCaps nodeCaps
+    // The following Sets contain different levels of processing of data about
+    // build agent capabilities proclaimed in their agent labels (via nodeCaps)
+    Set effectiveAxes = []
+    Set buildLabelCombos = []
+    Set buildLabelCombosFlat = []
+    // This is one useful final result, strings for `agent{label 'expr'}` clauses
+    Set<String> buildLabelsAgents = []
+
     public Dynamatrix(Object script) {
         this.script = script
         this.dynacfg = new DynamatrixConfig()
@@ -120,7 +131,7 @@ def parallelStages = prepareDynamatrix(
         // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
         // other configs for same builder would not query and parse real Jenkins
         // worker labels again and again.
-        NodeCaps nodeCaps = new NodeCaps(
+        nodeCaps = new NodeCaps(
             this.script,
             dynacfg.commonLabelExpr,
             dynamatrixGlobalState.enableDebugTrace,
@@ -131,7 +142,7 @@ def parallelStages = prepareDynamatrix(
         // to expand. The effectiveAxes is generally a definitive set of
         // sets of exact axis names, e.g. ['ARCH', 'CLANGVER', 'OS'] and
         // ['ARCH', 'GCCVER', 'OS'] as expanded from '${COMPILER}VER' part:
-        Set effectiveAxes = []
+        effectiveAxes = []
         for (axis in dynacfg.dynamatrixAxesLabels) {
             TreeSet effAxis = nodeCaps.resolveAxisName(axis).sort()
             this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
@@ -154,7 +165,7 @@ def parallelStages = prepareDynamatrix(
         // would work with our currently defined agents). The buildLabels
         // are expected to provide good uniqueness thanks to the SortedSet
         // of effectiveAxes and their values that we would look into.
-        Set buildLabelCombos = []
+        buildLabelCombos = []
         for (node in nodeCaps.nodeData.keySet()) {
             // Looking at each node separately allows us to be sure that any
             // combo of axis-values (all of which it allegedly provides)
@@ -210,7 +221,7 @@ def parallelStages = prepareDynamatrix(
         //  ]        //###  ignored one node that did not declare any ARCH
         // ]
 
-        def buildLabelCombosFlat = []
+        buildLabelCombosFlat = []
         for (nodeResults in buildLabelCombos) {
             for (nodeAxisCombos in nodeResults) {
                 // this nodeResults contains the set of sets of label values
@@ -227,14 +238,14 @@ def parallelStages = prepareDynamatrix(
 
         // Convert Sets of Sets of strings in buildLabelCombos into the
         // array of strings we can feed to the agent steps in pipeline:
-        Set<String> buildLabels = []
+        buildLabelsAgents = []
         for (combo in buildLabelCombosFlat) {
             // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
             String ble = String.join('&&', combo).replaceAll('\\s+', '&&')
-            buildLabels << ble
-            this.script.println "[DEBUG] prepareDynamatrix(): detected buildLabels expression: " + ble
+            buildLabelsAgents << ble
+            this.script.println "[DEBUG] prepareDynamatrix(): detected an expression for buildLabelsAgents: " + ble
         }
-        this.script.println "[DEBUG] prepareDynamatrix(): detected buildLabels: " + buildLabels
+        this.script.println "[DEBUG] prepareDynamatrix(): detected buildLabelsAgents: " + buildLabelsAgents
 
         return true
     }
