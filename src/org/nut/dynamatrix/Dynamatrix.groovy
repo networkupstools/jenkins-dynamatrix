@@ -390,15 +390,23 @@ dynamatrixGlobalState.enableDebugTrace = true
 
             if (virtualAxes.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
-                //if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): virtualAxes: ${Utils.castString(virtualAxes)}"
+                if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): COMBINING: virtualAxes: ${Utils.castString(virtualAxes)}\nvs. dsbcBleSet: ${dsbcBleSet}"
                 for (virtualLabelSet in virtualAxes) {
                     //if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
                     for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
                         dsbcBleTmp.virtualLabelSet = virtualLabelSet
                         dsbcBleSetTmp += dsbcBleTmp
                     }
                 }
                 dsbcBleSet = dsbcBleSetTmp
+            }
+
+            if (this.enableDebugTrace) {
+                this.script.println "[DEBUG] generateBuild(): BEFORE EXCLUSIONS: collected ${dsbcBleSet.size()} combos for individual builds with agent build label expression '${ble}'"
+                for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                        this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbcBleTmp}"
+                }
             }
 
             // filter away excludeCombos, and possibly cases of allowedFailure
@@ -422,7 +430,7 @@ dynamatrixGlobalState.enableDebugTrace = true
                         if (dynacfgBuild.runAllowedFailure) {
                             dsbcBleSet += dsbcBleTmp
                         } else {
-                            if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.allowedFailure}"
+                            if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.allowedFailure} (because we do not runAllowedFailure this time)"
                         }
                     }
                 }
