@@ -36,7 +36,7 @@ def parallelStages = prepareDynamatrix(
     compilerType: 'C',
     compilerLabel: 'COMPILER',
     compilerTools: ['CC', 'CXX', 'CPP'],
-    dynamatrixAxesLabels: [~/^OS_DIS.*/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+    dynamatrixAxesLabels: [~/^OS_DIS.+/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
     dynamatrixAxesCommonEnv: [['LANG=C', 'TZ=UTC'], ['LANG=ru_RU']],
     dynamatrixAxesCommonOpts: [
         ['"CFLAGS=-stdc=gnu99" CXXFLAGS="-stdcxx=g++99"', '"CFLAGS=-stdc=c89" CXXFLAGS="-stdcxx=c++89"'],
