@@ -351,6 +351,51 @@ def parallelStages = prepareDynamatrix(
 this.enableDebugTrace = true
 dynamatrixGlobalState.enableDebugTrace = true
 
+        // Quick safe pre-filter, in case that user-provided constraints
+        // only impact one type of axis:
+        if (dynacfgBuild.excludeCombos.size() > 0) {
+            if (buildLabelsAgentsBuild.size() > 0) {
+                DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
+                for (ble in buildLabelsAgentsBuild.keySet()) {
+                    dsbc.buildLabelExpression = ble
+                    dsbc.buildLabelSet = buildLabelsAgentsBuild[ble]
+                    if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
+                        buildLabelsAgentsBuild.remove(ble)
+                    }
+                }
+            }
+
+            if (virtualAxes.size() > 0) {
+                DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
+                for (virtualLabelSet in virtualAxes) {
+                    dsbc.virtualLabelSet = virtualLabelSet
+                    if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
+                        virtualAxes -= virtualLabelSet
+                    }
+                }
+            }
+
+            if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
+                DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
+                for (envvarSet in dynacfgBuild.dynamatrixAxesCommonEnv) {
+                    dsbc.envvarSet = envvarSet
+                    if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
+                        dynacfgBuild.dynamatrixAxesCommonEnv -= envvarSet
+                    }
+                }
+            }
+
+            if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
+                DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
+                for (clioptSet in dynacfgBuild.dynamatrixAxesCommonOpts) {
+                    dsbc.clioptSet = clioptSet
+                    if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
+                        dynacfgBuild.dynamatrixAxesCommonOpts -= clioptSet
+                    }
+                }
+            }
+        }
+
         // Finally, combine all we have (and remove what we do not want to have)
         Set<DynamatrixSingleBuildConfig> dsbcSet = []
         for (ble in buildLabelsAgentsBuild.keySet()) {
@@ -415,6 +460,10 @@ dynamatrixGlobalState.enableDebugTrace = true
 
             // filter away excludeCombos, and possibly cases of allowedFailure
             // (if runAllowedFailure==false)
+            // Note that we DO NOT PREFILTER much, because some user-provided
+            // exclusion combinations might only make sense in some corner
+            // cases (e.g. don't want this "compiler + Crevision" on that OS,
+            // but want it on another)
             if (dynacfgBuild.excludeCombos.size() > 0) {
                 for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.excludeCombos)) {
