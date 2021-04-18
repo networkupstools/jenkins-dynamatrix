@@ -355,6 +355,7 @@ def parallelStages = prepareDynamatrix(
         // Quick safe pre-filter, in case that user-provided constraints
         // only impact one type of axis:
         if (dynacfgBuild.excludeCombos.size() > 0) {
+            def removed = 0
             if (buildLabelsAgentsBuild.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
                 for (ble in buildLabelsAgentsBuild.keySet()) {
@@ -362,6 +363,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.buildLabelSet = buildLabelsAgentsBuild[ble]
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         buildLabelsAgentsBuild.remove(ble)
+                        removed++
                     }
                 }
             }
@@ -372,6 +374,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.virtualLabelSet = virtualLabelSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         virtualAxes -= virtualLabelSet
+                        removed++
                     }
                 }
             }
@@ -382,6 +385,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.envvarSet = envvarSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonEnv -= envvarSet
+                        removed++
                     }
                 }
             }
@@ -392,12 +396,20 @@ def parallelStages = prepareDynamatrix(
                     dsbc.clioptSet = clioptSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonOpts -= clioptSet
+                        removed++
                     }
                 }
             }
+
+            if (removed > 0) {
+                //if (this.enableDebugTrace)
+                    this.script.println "[DEBUG] generateBuild(): quick pass over excludeCombos[] removed ${removed} direct hits from original axis values"
+            }
+
         }
 
         // Finally, combine all we have (and remove what we do not want to have)
+        def removedTotal = 0
         Set<DynamatrixSingleBuildConfig> dsbcSet = []
         for (ble in buildLabelsAgentsBuild.keySet()) {
             // We can generate numerous build configs below that
@@ -405,6 +417,7 @@ def parallelStages = prepareDynamatrix(
             // build label expression, so prepare the shared part:
             DynamatrixSingleBuildConfig dsbcBle = new DynamatrixSingleBuildConfig(this.script)
             Set<DynamatrixSingleBuildConfig> dsbcBleSet = []
+            def removedBle = 0
 
             // One of (several possible) combinations of node labels:
             dsbcBle.buildLabelExpression = ble
@@ -469,6 +482,7 @@ def parallelStages = prepareDynamatrix(
                 for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dsbcBleSet -= dsbcBleTmp
+                        removedBle++
                         dsbcBleTmp.isExcluded = true
                         // TODO: track isExcluded?
                         if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.excludeCombos}"
@@ -480,6 +494,7 @@ def parallelStages = prepareDynamatrix(
                 for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.allowedFailure)) {
                         dsbcBleSet -= dsbcBleTmp
+                        removedBle++
                         dsbcBleTmp.isAllowedFailure = true
                         if (dynacfgBuild.runAllowedFailure) {
                             dsbcBleSet += dsbcBleTmp
@@ -491,6 +506,18 @@ def parallelStages = prepareDynamatrix(
             }
 
             dsbcSet += dsbcBleSet
+            removedTotal += removedBle
+
+            if (removedBle > 0) {
+                if (this.enableDebugTrace)
+                    this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching removed ${removedBle} direct hits from candidate builds for label ${ble}"
+            }
+
+        }
+
+        if (removedTotal > 0) {
+            //if (this.enableDebugTrace)
+                this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching removed ${removedTotal} direct hits from candidate builds matrix"
         }
 
         //if (this.enableDebugTrace)
