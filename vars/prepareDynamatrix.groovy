@@ -61,6 +61,12 @@ def call(dynacfgOrig = [:], Closure body = null) {
     // Have some defaults, if only to have all expected fields defined
     DynamatrixConfig dynacfg = new DynamatrixConfig()
 
+    // Note: in addition to standard contents of class DynamatrixConfig,
+    // the Map passed by caller may contain "defaultDynamatrixConfig" as
+    // a key for a String value to specify default pre-sets, e.g. "C".
+    // It can also contain a special Map to manage merge-mode of custom
+    // provided value to "replace" same-named defaults or "merge" with
+    // them -- dynacfgOrig.mergeMode["dynacfgFieldNameString"]="merge"
     def sanityRes = dynacfg.initDefault(dynacfgOrig)
     if (sanityRes != true) {
         if (sanityRes instanceof String) {
