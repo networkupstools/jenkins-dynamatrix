@@ -285,6 +285,9 @@ def parallelStages = prepareDynamatrix(
     }
 
     public def initDefault(Map dynacfgOrig) {
+        // Quick no-op
+        if (dynacfgOrig == null || dynacfgOrig.size() == 0) return true
+
         // Combine a config with defaults from a Set passed to a groovy call()
         if (dynacfgOrig.size() > 0) {
             // Note: in addition to standard contents of class DynamatrixConfig,
