@@ -348,6 +348,9 @@ def parallelStages = prepareDynamatrix(
             dynacfgBuild.dynamatrixAxesCommonOpts += Utils.cartesianSquared(dynacfgBuild.dynamatrixAxesCommonOptsCartesian)
         }
 
+this.enableDebugTrace = true
+dynamatrixGlobalState.enableDebugTrace = true
+
         // Finally, combine all we have (and remove what we do not want to have)
         Set<DynamatrixSingleBuildConfig> dsbcSet = []
         for (ble in buildLabelsAgentsBuild.keySet()) {
@@ -387,9 +390,9 @@ def parallelStages = prepareDynamatrix(
 
             if (virtualAxes.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
-                if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): virtualAxes: ${Utils.castString(virtualAxes)}"
+                //if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): virtualAxes: ${Utils.castString(virtualAxes)}"
                 for (virtualLabelSet in virtualAxes) {
-                    if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
+                    //if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
                     for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                         dsbcBleTmp.virtualLabelSet = virtualLabelSet
                         dsbcBleSetTmp += dsbcBleTmp
@@ -406,7 +409,7 @@ def parallelStages = prepareDynamatrix(
                         dsbcBleSet -= dsbcBleTmp
                         dsbcBleTmp.isExcluded = true
                         // TODO: track isExcluded?
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}"
+                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.excludeCombos}"
                     }
                 }
             }
@@ -419,7 +422,7 @@ def parallelStages = prepareDynamatrix(
                         if (dynacfgBuild.runAllowedFailure) {
                             dsbcBleSet += dsbcBleTmp
                         } else {
-                            if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}"
+                            if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.allowedFailure}"
                         }
                     }
                 }
@@ -428,8 +431,11 @@ def parallelStages = prepareDynamatrix(
             dsbcSet += dsbcBleSet
         }
 
+        //if (this.enableDebugTrace)
+            this.script.println "[DEBUG] generateBuild(): collected ${dsbcSet.size()} combos for individual builds"
         for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcSet) {
-            if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbcBleTmp}"
+            if (this.enableDebugTrace)
+                this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbcBleTmp}"
         }
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
