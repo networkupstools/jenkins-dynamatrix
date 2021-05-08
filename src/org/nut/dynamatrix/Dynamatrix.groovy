@@ -26,6 +26,8 @@ class Dynamatrix {
     private def script
     public Boolean enableDebugTrace = false
     public Boolean enableDebugErrors = true
+    public Boolean enableDebugMilestones = true
+    public Boolean enableDebugMilestonesDetails = true
 
     // Store values populated by prepareDynamatrix() so further generateBuild()
     // calls can use these quickly.
@@ -459,9 +461,7 @@ def parallelStages = prepareDynamatrix(
                     //if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
                     for (DynamatrixSingleBuildConfig tmp in dsbcBleSet) {
                         DynamatrixSingleBuildConfig dsbcBleTmp = tmp.clone()
-                        //DynamatrixSingleBuildConfig dsbcBleTmp = new DynamatrixSingleBuildConfig(tmp)
-                        //dsbcBleTmp = tmp
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
+                        //if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
                         dsbcBleTmp.virtualLabelSet = virtualLabelSet
                         dsbcBleSetTmp += dsbcBleTmp
                     }
@@ -469,7 +469,7 @@ def parallelStages = prepareDynamatrix(
                 dsbcBleSet = dsbcBleSetTmp
             }
 
-            if (this.enableDebugTrace) {
+            if (this.enableDebugMilestonesDetails || this.enableDebugTrace) {
                 this.script.println "[DEBUG] generateBuild(): BEFORE EXCLUSIONS: collected ${dsbcBleSet.size()} combos for individual builds with agent build label expression '${ble}'"
                 for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                         this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbcBleTmp}"
@@ -489,7 +489,7 @@ def parallelStages = prepareDynamatrix(
                         removedBle++
                         dsbcBleTmp.isExcluded = true
                         // TODO: track isExcluded?
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.excludeCombos}"
+                        if (this.enableDebugMilestonesDetails || this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.excludeCombos}"
                     }
                 }
             }
@@ -503,7 +503,7 @@ def parallelStages = prepareDynamatrix(
                         if (dynacfgBuild.runAllowedFailure) {
                             dsbcBleSet += dsbcBleTmp
                         } else {
-                            if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.allowedFailure} (because we do not runAllowedFailure this time)"
+                            if (this.enableDebugMilestonesDetails || this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.allowedFailure} (because we do not runAllowedFailure this time)"
                         }
                     }
                 }
@@ -513,21 +513,22 @@ def parallelStages = prepareDynamatrix(
             removedTotal += removedBle
 
             if (removedBle > 0) {
-                if (this.enableDebugTrace)
+                if (this.enableDebugMilestones || this.enableDebugTrace) {
                     this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching removed ${removedBle} direct hits from candidate builds for label ${ble}"
+                }
             }
 
         }
 
-        if (removedTotal > 0) {
-            //if (this.enableDebugTrace)
-                this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching removed ${removedTotal} direct hits from candidate builds matrix"
-        }
 
-        //if (this.enableDebugTrace)
+        if (this.enableDebugMilestones || this.enableDebugTrace) {
             this.script.println "[DEBUG] generateBuild(): collected ${dsbcSet.size()} combos for individual builds"
+            if (removedTotal > 0) {
+                this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching removed ${removedTotal} direct hits from candidate builds matrix"
+            }
+        }
         for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcSet) {
-            if (this.enableDebugTrace)
+            if (this.enableDebugMilestonesDetails || this.enableDebugTrace)
                 this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbcBleTmp}"
         }
 
