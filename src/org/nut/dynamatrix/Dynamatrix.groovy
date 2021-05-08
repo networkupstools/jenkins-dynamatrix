@@ -400,7 +400,7 @@ def parallelStages = prepareDynamatrix(
                 for (virtualLabelSet in virtualAxes) {
                     dsbc.virtualLabelSet = virtualLabelSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
-                        virtualAxes -= virtualLabelSet
+                        virtualAxes.remove(virtualLabelSet)
                         this.script.println "[DEBUG] generateBuild(): quick cleanup removed: virtualLabelSet: ${virtualLabelSet}"
                         removed++
                     }
@@ -412,7 +412,7 @@ def parallelStages = prepareDynamatrix(
                 for (envvarSet in dynacfgBuild.dynamatrixAxesCommonEnv) {
                     dsbc.envvarSet = envvarSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
-                        dynacfgBuild.dynamatrixAxesCommonEnv -= envvarSet
+                        dynacfgBuild.dynamatrixAxesCommonEnv.remove(envvarSet)
                         this.script.println "[DEBUG] generateBuild(): quick cleanup removed: envvarSet: ${envvarSet}"
                         removed++
                     }
@@ -424,7 +424,7 @@ def parallelStages = prepareDynamatrix(
                 for (clioptSet in dynacfgBuild.dynamatrixAxesCommonOpts) {
                     dsbc.clioptSet = clioptSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
-                        dynacfgBuild.dynamatrixAxesCommonOpts -= clioptSet
+                        dynacfgBuild.dynamatrixAxesCommonOpts.remove(clioptSet)
                         this.script.println "[DEBUG] generateBuild(): quick cleanup removed: clioptSet: ${clioptSet}"
                         removed++
                     }
@@ -533,7 +533,7 @@ def parallelStages = prepareDynamatrix(
             if (dynacfgBuild.excludeCombos.size() > 0) {
                 for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.excludeCombos)) {
-                        dsbcBleSet -= dsbcBleTmp
+                        dsbcBleSet.remove(dsbcBleTmp)
                         removedBle++
                         dsbcBleTmp.isExcluded = true
                         // TODO: track isExcluded?
@@ -545,7 +545,7 @@ def parallelStages = prepareDynamatrix(
             if (dynacfgBuild.allowedFailure.size() > 0) {
                 for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.allowedFailure)) {
-                        dsbcBleSet -= dsbcBleTmp
+                        dsbcBleSet.remove(dsbcBleTmp)
                         removedBle++
                         dsbcBleTmp.isAllowedFailure = true
                         if (dynacfgBuild.runAllowedFailure) {
