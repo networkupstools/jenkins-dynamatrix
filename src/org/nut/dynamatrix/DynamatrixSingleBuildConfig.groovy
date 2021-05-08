@@ -1,7 +1,5 @@
 package org.nut.dynamatrix;
 
-import groovy.transform.*; // @EqualsAndHashCode
-
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
@@ -10,13 +8,6 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  * other matrix-provided tunables derived from DynamatrixConfig
  * and Dynamatrix class field values.
  */
-
-// https://docs.groovy-lang.org/latest/html/api/groovy/transform/EqualsAndHashCode.html
-@EqualsAndHashCode(excludes=[
-    "script", "enableDebugTrace", "enableDebugErrors",
-    "isExcluded", "isAllowedFailure"
-    ], cache=true)
-@TupleConstructor
 class DynamatrixSingleBuildConfig implements Cloneable {
     private def script = null
     public Boolean enableDebugTrace = false
@@ -61,6 +52,36 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         this.script = script
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    }
+
+    /* Compare class instances as equal in important fields (e.g. to dedup
+     * when adding again to Sets), despite possible variation in some
+     * inconcequential fields:
+     *   "script", "enableDebugTrace", "enableDebugErrors",
+     *   "isExcluded", "isAllowedFailure"
+     */
+    public boolean equals(java.lang.Object other) {
+        if (other == null) return false
+        if (this.is(other)) return true
+        if (!(other instanceof DynamatrixSingleBuildConfig)) return false
+        if (!other.canEqual(this)) return false
+
+        if (buildLabelExpression != other.buildLabelExpression) return false
+        if (buildLabelSet != other.buildLabelSet) return false
+        if (virtualLabelSet != other.virtualLabelSet) return false
+        if (envvarSet != other.envvarSet) return false
+        if (clioptSet != other.clioptSet) return false
+
+/*
+        if (isExcluded != other.isExcluded) return false
+        if (isAllowedFailure != other.isAllowedFailure) return false
+*/
+
+        return true
+    }
+
+    public boolean canEqual(java.lang.Object other) {
+        return other instanceof DynamatrixSingleBuildConfig
     }
 
     @Override
