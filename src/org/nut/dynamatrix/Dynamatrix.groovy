@@ -626,9 +626,32 @@ def parallelStages = prepareDynamatrix(
                 this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName}"
             }
 
+            // Note: non-declarative pipeline syntax inside the generated stages
+            // in particular, no steps{}
             parallelStages[stageName] = {
-                echo stageName
-            }
+                stage(stageName) {
+/*
+//                    agent { label "${dsbc.buildLabelExpression}" }
+//                    agent { label "jimoi" }
+//                    steps {
+                        withEnv(dsbc.getKVSet()) {
+                            if (body == null) {
+                                echo "Running stage: stageName\n    for ${Utils.castString(dsbc)}"
+                                if (isUnix()) {
+                                    sh "set"
+                                } else {
+                                    bat "set"
+                                }
+                            } else {
+//                                body()
+                            } // if
+                        } // withEnv
+//                    } // steps
+*/
+
+                } // stage
+            } // new parallelStages[] entry
+
         }
 
         return parallelStages

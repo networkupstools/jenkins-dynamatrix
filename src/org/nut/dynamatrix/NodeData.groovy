@@ -84,6 +84,7 @@ class NodeData {
         this.labelMap = labelMap
     }
 
+    @NonCPS
     hudson.model.Node getNode() {
         return this.node;
     }
