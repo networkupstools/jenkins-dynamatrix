@@ -8,6 +8,8 @@ class dynamatrixGlobalState {
     // verbose (when called from wrapping code that passes these args)
     static Boolean enableDebugTrace = false
     static Boolean enableDebugErrors = true
+    static Boolean enableDebugMilestones = true
+    static Boolean enableDebugMilestonesDetails = false
 
     // Takes a (DynamatrixSingleBuildConfig) object as argument and returns
     // a string. Can be used for definition of "meaningful" short tags by a

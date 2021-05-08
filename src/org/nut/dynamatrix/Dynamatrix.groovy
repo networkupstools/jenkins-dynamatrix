@@ -24,10 +24,10 @@ class Dynamatrix {
     // Have some defaults, if only to have all expected fields defined
     private DynamatrixConfig dynacfg
     private def script
-    public Boolean enableDebugTrace = false
-    public Boolean enableDebugErrors = true
-    public Boolean enableDebugMilestones = true
-    public Boolean enableDebugMilestonesDetails = false
+    public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    public Boolean enableDebugMilestones = dynamatrixGlobalState.enableDebugMilestones
+    public Boolean enableDebugMilestonesDetails = dynamatrixGlobalState.enableDebugMilestonesDetails
 
     // Store values populated by prepareDynamatrix() so further generateBuild()
     // and practical generateBuildConfigSet() calls can use these quickly.
@@ -62,6 +62,27 @@ class Dynamatrix {
 
         return nodeCapsCache[labelExpr]
     }
+
+    @NonCPS
+    public Boolean shouldDebugTrace() {
+        return ( this.enableDebugTrace && this.script != null)
+    }
+
+    @NonCPS
+    public Boolean shouldDebugErrors() {
+        return ( (this.enableDebugErrors || this.enableDebugTrace) && this.script != null)
+    }
+
+    @NonCPS
+    public Boolean shouldDebugMilestones() {
+        return ( (this.enableDebugMilestones|| this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
+    }
+
+    @NonCPS
+    public Boolean shouldDebugMilestonesDetails() {
+        return ( (this.enableDebugMilestonesDetails || this.enableDebugMilestones || this.enableDebugTrace) && this.script != null)
+    }
+
 
 /*
  * Example agents and call signature from README:
@@ -111,7 +132,12 @@ def parallelStages = prepareDynamatrix(
  */
 
     def prepareDynamatrix(dynacfgOrig = [:]) {
-        if (this.enableDebugErrors) this.script.println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix()"
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
+        def debugMilestones = this.shouldDebugMilestones()
+        def debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+
+        if (debugErrors) this.script.println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix()"
 
         // Note: in addition to standard contents of class DynamatrixConfig,
         // the Map passed by caller may contain "defaultDynamatrixConfig" as
@@ -122,7 +148,7 @@ def parallelStages = prepareDynamatrix(
         def sanityRes = dynacfg.initDefault(dynacfgOrig)
         if (sanityRes != true) {
             if (sanityRes instanceof String) {
-                if (this.enableDebugErrors) this.script.println sanityRes
+                if (debugErrors) this.script.println sanityRes
             }
             // Assumed non-fatal - fields seen that are not in standard config
         }
@@ -130,9 +156,9 @@ def parallelStages = prepareDynamatrix(
         sanityRes = dynacfg.sanitycheckDynamatrixAxesLabels()
         if (sanityRes != true) {
             if (sanityRes instanceof String) {
-                if (this.enableDebugErrors) this.script.println sanityRes
+                if (debugErrors) this.script.println sanityRes
             } else {
-                if (this.enableDebugErrors) this.script.println "No 'dynamatrixAxesLabels' were provided, nothing to generate"
+                if (debugErrors) this.script.println "No 'dynamatrixAxesLabels' were provided, nothing to generate"
             }
             return null
         }
@@ -154,11 +180,11 @@ def parallelStages = prepareDynamatrix(
         effectiveAxes = []
         for (axis in dynacfg.dynamatrixAxesLabels) {
             TreeSet effAxis = nodeCaps.resolveAxisName(axis).sort()
-            if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
             effectiveAxes << effAxis
         }
         effectiveAxes = effectiveAxes.sort()
-        if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected effectiveAxes: " + effectiveAxes
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected effectiveAxes: " + effectiveAxes
 
         // By this point, a request for ['OS', '${COMPILER}VER', ~/ARC.+/]
         // yields [[OS], [ARCH], [CLANGVER, GCCVER]] from which we want to
@@ -166,7 +192,7 @@ def parallelStages = prepareDynamatrix(
         // [ [OS, ARCH, CLANGVER], [OS, ARCH, GCCVER] ]
         // ...and preferably really sorted :)
         effectiveAxes = Utils.cartesianSquared(effectiveAxes).sort()
-        if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
 
         //nodeCaps.enableDebugTrace = true
         // Prepare all possible combos of requested axes (meaning we can
@@ -206,7 +232,7 @@ def parallelStages = prepareDynamatrix(
                         axisCombos = axisCombos.sort()
                         nodeAxisCombos << axisCombos
                     } else {
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): ignored buildLabelCombos collected for node ${nodeName} with requested axis set ${axisSet}: only got " + axisCombos
+                        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): ignored buildLabelCombos collected for node ${nodeName} with requested axis set ${axisSet}: only got " + axisCombos
                     }
                 }
             }
@@ -218,7 +244,7 @@ def parallelStages = prepareDynamatrix(
             }
         }
         buildLabelCombos = buildLabelCombos.sort()
-        if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected buildLabelCombos (still grouped per node): " + buildLabelCombos
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected buildLabelCombos (still grouped per node): " + buildLabelCombos
         // a request for dynamatrixAxesLabels: ['OS', '${COMPILER}VER', ~/ARC.+/]
         // on testbed got us this:
         // [         //### buildLabelCombos itself
@@ -236,9 +262,9 @@ def parallelStages = prepareDynamatrix(
                 // this nodeResults contains the set of sets of label values
                 // supported for one of the original effectiveAxes requirements,
                 // where each of nodeAxisCombos contains a set of axisValues
-                if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
+                if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
                 def tmp = Utils.cartesianSquared(nodeAxisCombos).sort()
-                if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
+                if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
                 // Add members of tmp (many sets of unique key=value combos
                 // for each axis) as direct members of buildLabelCombosFlat
                 buildLabelCombosFlat += tmp
@@ -253,7 +279,7 @@ def parallelStages = prepareDynamatrix(
         for (ble in buildLabelsAgents.keySet()) {
             blaStr += "\n    '${ble}' => " + buildLabelsAgents[ble]
         }
-        if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): detected ${buildLabelsAgents.size()} buildLabelsAgents combos:" + blaStr
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): detected ${buildLabelsAgents.size()} buildLabelsAgents combos:" + blaStr
 
         return true
     }
@@ -279,8 +305,13 @@ def parallelStages = prepareDynamatrix(
 //    @NonCPS
     def generateBuildConfigSet(dynacfgOrig = [:]) {
         /* Returns a set of (unique) DynamatrixSingleBuildConfig items */
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
+        def debugMilestones = this.shouldDebugMilestones()
+        def debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+
         if (buildLabelsAgents.size() == 0) {
-            this.script.println "[ERROR] generateBuildConfigSet() : should call prepareDynamatrix() first, or that found nothing usable"
+            if (debugErrors) this.script.println "[ERROR] generateBuildConfigSet() : should call prepareDynamatrix() first, or that found nothing usable"
             return null
         }
 
@@ -310,7 +341,7 @@ def parallelStages = prepareDynamatrix(
         // Process the map of "virtual axes": dynamatrixAxesVirtualLabelsMap
         if (dynacfgBuild.dynamatrixAxesVirtualLabelsMap.size() > 0) {
             // Map of "axis: [array, of, values]"
-            if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): dynamatrixAxesVirtualLabelsMap: ${dynacfgBuild.dynamatrixAxesVirtualLabelsMap}"
+            if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): dynamatrixAxesVirtualLabelsMap: ${dynacfgBuild.dynamatrixAxesVirtualLabelsMap}"
             Set dynamatrixAxesVirtualLabelsCombos = []
             for (k in dynacfgBuild.dynamatrixAxesVirtualLabelsMap.keySet()) {
                 def vals = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[k]
@@ -324,11 +355,11 @@ def parallelStages = prepareDynamatrix(
                     keyvalues << vv
                 }
 
-                if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}\n    with keyvalues: ${keyvalues}"
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}\n    with keyvalues: ${keyvalues}"
                 dynamatrixAxesVirtualLabelsCombos = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, keyvalues)
             }
 
-            if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): " +
+            if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): " +
                 "combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}" +
                 "\n    with virtualAxes: ${virtualAxes}" +
                 "\ndynacfgBuild.dynamatrixAxesVirtualLabelsMap.size()=${dynacfgBuild.dynamatrixAxesVirtualLabelsMap.size()} " +
@@ -338,7 +369,7 @@ def parallelStages = prepareDynamatrix(
             // TODO: Will we have more virtualAxes inputs, or might just use assignment here?
             virtualAxes = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, virtualAxes)
 
-            if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): ended up with virtualAxes: ${virtualAxes}"
+            if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): ended up with virtualAxes: ${virtualAxes}"
         }
 
         // dynamatrixAxesCommonEnv + dynamatrixAxesCommonEnvCartesian
@@ -354,6 +385,10 @@ def parallelStages = prepareDynamatrix(
         // Uncomment this to enforce debugging from this point on:
         //this.enableDebugTrace = true
         //dynamatrixGlobalState.enableDebugTrace = true
+        //debugTrace = this.shouldDebugTrace()
+        //debugErrors = this.shouldDebugErrors()
+        //debugMilestones = this.shouldDebugMilestones()
+        //debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
         if (true) { // scope
             def countCombos = 1;
@@ -370,7 +405,7 @@ def parallelStages = prepareDynamatrix(
                 countCombos *= dynacfgBuild.dynamatrixAxesCommonOpts.size()
             }
             if (countCombos > 1) {
-                if (this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace) {
+                if (debugMilestonesDetails) {
                     this.script.println "[DEBUG] generateBuildConfigSet(): " +
                         "expecting at most ${countCombos} combinations with: " +
                         buildLabelsAgentsBuild.size() + " buildLabelsAgentsBuild, " +
@@ -391,7 +426,7 @@ def parallelStages = prepareDynamatrix(
         // Quick safe pre-filter, in case that user-provided constraints
         // only impact one type of axis:
         if (dynacfgBuild.excludeCombos.size() > 0) {
-            if (this.enableDebugMilestonesDetails || this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup: excludeCombos: ${dynacfgBuild.excludeCombos}"
+            if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup: excludeCombos: ${dynacfgBuild.excludeCombos}"
 
             def removed = 0
             if (buildLabelsAgentsBuild.size() > 0) {
@@ -401,7 +436,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.buildLabelSet = buildLabelsAgentsBuild[ble]
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         buildLabelsAgentsBuild.remove(ble)
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: ble: ${ble}"
+                        if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: ble: ${ble}"
                         removed++
                     }
                 }
@@ -413,7 +448,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.virtualLabelSet = virtualLabelSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         virtualAxes.remove(virtualLabelSet)
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: virtualLabelSet: ${virtualLabelSet}"
+                        if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: virtualLabelSet: ${virtualLabelSet}"
                         removed++
                     }
                 }
@@ -425,7 +460,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.envvarSet = envvarSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonEnv.remove(envvarSet)
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: envvarSet: ${envvarSet}"
+                        if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: envvarSet: ${envvarSet}"
                         removed++
                     }
                 }
@@ -437,14 +472,14 @@ def parallelStages = prepareDynamatrix(
                     dsbc.clioptSet = clioptSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonOpts.remove(clioptSet)
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: clioptSet: ${clioptSet}"
+                        if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: clioptSet: ${clioptSet}"
                         removed++
                     }
                 }
             }
 
             if (removed > 0) {
-                if (this.enableDebugMilestones || this.enableDebugTrace)
+                if (debugMilestones)
                     this.script.println "[DEBUG] generateBuildConfigSet(): quick pass over excludeCombos[] removed ${removed} direct hits from original axis values"
 
                 def countCombos = 1;
@@ -461,12 +496,13 @@ def parallelStages = prepareDynamatrix(
                     countCombos *= dynacfgBuild.dynamatrixAxesCommonOpts.size()
                 }
                 if (countCombos > 1)
-                    if (this.enableDebugMilestones || this.enableDebugTrace)
-                        this.script.println "[DEBUG] generateBuildConfigSet(): expecting at most ${countCombos} combinations with: " +
-                        buildLabelsAgentsBuild.size() + " buildLabelsAgentsBuild, " +
-                        virtualAxes.size() + " virtualAxes, " +
-                        dynacfgBuild.dynamatrixAxesCommonEnv.size() + " dynamatrixAxesCommonEnv, " +
-                        dynacfgBuild.dynamatrixAxesCommonOpts.size() + " dynamatrixAxesCommonOpts"
+                    if (debugMilestones)
+                        this.script.println "[DEBUG] generateBuildConfigSet(): " +
+                            "expecting at most ${countCombos} combinations with: " +
+                            buildLabelsAgentsBuild.size() + " buildLabelsAgentsBuild, " +
+                            virtualAxes.size() + " virtualAxes, " +
+                            dynacfgBuild.dynamatrixAxesCommonEnv.size() + " dynamatrixAxesCommonEnv, " +
+                            dynacfgBuild.dynamatrixAxesCommonOpts.size() + " dynamatrixAxesCommonOpts"
 
             }
 
@@ -474,6 +510,10 @@ def parallelStages = prepareDynamatrix(
 
         // Uncomment here to trace just the exclusions
         //this.enableDebugTrace = true
+        //debugTrace = this.shouldDebugTrace()
+        //debugErrors = this.shouldDebugErrors()
+        //debugMilestones = this.shouldDebugMilestones()
+        //debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
         // Finally, combine all we have (and remove what we do not want to have)
         def removedTotal = 0
@@ -521,12 +561,12 @@ def parallelStages = prepareDynamatrix(
 
             if (virtualAxes.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
-                if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): COMBINING: virtualAxes: ${Utils.castString(virtualAxes)}\nvs. dsbcBleSet: ${dsbcBleSet}"
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): COMBINING: virtualAxes: ${Utils.castString(virtualAxes)}\nvs. dsbcBleSet: ${dsbcBleSet}"
                 for (virtualLabelSet in virtualAxes) {
-                    //if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
+                    //if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
                     for (DynamatrixSingleBuildConfig tmp in dsbcBleSet) {
                         DynamatrixSingleBuildConfig dsbcBleTmp = tmp.clone()
-                        //if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
+                        //if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
                         dsbcBleTmp.virtualLabelSet = virtualLabelSet
                         dsbcBleSetTmp += dsbcBleTmp
                     }
@@ -534,7 +574,7 @@ def parallelStages = prepareDynamatrix(
                 dsbcBleSet = dsbcBleSetTmp
             }
 
-            if (this.enableDebugMilestonesDetails || this.enableDebugTrace) {
+            if (debugMilestonesDetails) {
                 this.script.println "[DEBUG] generateBuildConfigSet(): BEFORE EXCLUSIONS: collected ${dsbcBleSet.size()} combos for individual builds with agent build label expression '${ble}'"
                 for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                         this.script.println "[DEBUG] generateBuildConfigSet(): selected combo: ${dsbcBleTmp}"
@@ -554,7 +594,7 @@ def parallelStages = prepareDynamatrix(
                         dsbcBleTmp.isExcluded = true
                         dsbcBleSet.remove(dsbcBleTmp)
                         removedBle++
-                        if (this.enableDebugMilestonesDetails || this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.excludeCombos}"
+                        if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.excludeCombos}"
                     }
                 }
             }
@@ -568,7 +608,7 @@ def parallelStages = prepareDynamatrix(
                         } else {
                             dsbcBleSet.remove(dsbcBleTmp)
                             removedBle++
-                            if (this.enableDebugMilestonesDetails || this.enableDebugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.allowedFailure} (because we do not runAllowedFailure this time)"
+                            if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.allowedFailure} (because we do not runAllowedFailure this time)"
                         }
                     } else {
                         dsbcBleTmp.isAllowedFailure = false
@@ -580,7 +620,7 @@ def parallelStages = prepareDynamatrix(
             removedTotal += removedBle
             allowedToFailTotal += allowedToFailBle
 
-            if (this.enableDebugMilestonesDetails || this.enableDebugTrace) {
+            if (debugMilestonesDetails) {
                 if (removedBle > 0) {
                     this.script.println "[DEBUG] generateBuildConfigSet(): excludeCombos[] matching removed ${removedBle} direct hits from candidate builds for label ${ble}" +
                         ( (!dynacfgBuild.runAllowedFailure && (allowedToFailBle > 0)) ? " including ${allowedToFailBle} items allowed to fail which we would not run" : "" )
@@ -595,8 +635,12 @@ def parallelStages = prepareDynamatrix(
 
         // Uncomment here to just detail the collected combos:
         //this.enableDebugMilestonesDetails = true
+        //debugTrace = this.shouldDebugTrace()
+        //debugErrors = this.shouldDebugErrors()
+        //debugMilestones = this.shouldDebugMilestones()
+        //debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
-        if (true) { // this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace) {
+        if (true) { // debugMilestonesDetails) {
             def msg = "generateBuildConfigSet(): collected ${dsbcSet.size()} combos for individual builds"
             if (removedTotal > 0) {
                 msg += " with ${removedTotal} hits removed from candidate builds matrix"
@@ -608,10 +652,7 @@ def parallelStages = prepareDynamatrix(
             this.script.println msg
         }
 
-        if (this.enableDebugMilestonesDetails
-        // || this.enableDebugMilestones
-        || this.enableDebugTrace
-        ) {
+        if (debugMilestonesDetails) {
             for (DynamatrixSingleBuildConfig dsbc in dsbcSet) {
                 this.script.println "[DEBUG] generateBuildConfigSet(): selected combo: ${dsbc}"
             }
@@ -623,6 +664,11 @@ def parallelStages = prepareDynamatrix(
 //    @NonCPS
     def generateBuild(dynacfgOrig = [:], Closure body = null) {
         /* Returns a map of stages */
+        //def debugErrors = this.shouldDebugErrors()
+        //def debugTrace = this.shouldDebugTrace()
+        //def debugMilestones = this.shouldDebugMilestones()
+        def debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+
         def dsbcSet = generateBuildConfigSet(dynacfgOrig)
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
@@ -631,9 +677,9 @@ def parallelStages = prepareDynamatrix(
         for (DynamatrixSingleBuildConfig dsbc in dsbcSet) {
             String stageName = dsbc.stageName()
 
-            if (this.enableDebugMilestonesDetails
-            || this.enableDebugMilestones
-            || this.enableDebugTrace
+            if (debugMilestonesDetails
+            //|| debugMilestones
+            //|| debugTrace
             ) {
                 this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName}"
             }

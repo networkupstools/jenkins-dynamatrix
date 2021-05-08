@@ -11,8 +11,8 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 class DynamatrixSingleBuildConfig implements Cloneable {
     private def script = null
     def stageNameFunc = null
-    public Boolean enableDebugTrace = false
-    public Boolean enableDebugErrors = true
+    public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
     // The `expr` requested in `agent { label 'expr' }` for the
     // generated build stage, originates from capabilities declared
@@ -88,6 +88,16 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     @Override
     public DynamatrixSingleBuildConfig clone() throws CloneNotSupportedException {
         return (DynamatrixSingleBuildConfig) super.clone();
+    }
+
+    @NonCPS
+    public Boolean shouldDebugTrace() {
+        return ( this.enableDebugTrace && this.script != null)
+    }
+
+    @NonCPS
+    public Boolean shouldDebugErrors() {
+        return ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
     }
 
     @NonCPS
@@ -195,6 +205,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
          * assigned a (different) value to the same label key.
          */
 
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
+
         // TODO: Refactor with original label mapping, moving to Utils?
         // Probably not: mapping in NodeData is tailored for nested
         // multi-value hits, while mapping here is about unique keys
@@ -208,7 +221,13 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             try {
                 if ("".equals(label)) continue
             } catch (Exception e) {
-                throw new Exception("Expected key-value string, got label=${Utils.castString(label)}: " + e)
+                def emsg = "Expected key-value string, got label=${Utils.castString(label)}: " + e.toString()
+                if (debugErrors) {
+                    script.println "[ERROR] Skipped item: ${emsg}"
+                    continue
+                } else {
+                    throw new Exception(emsg)
+                }
             }
             def matcher = label =~ ~/^([^=]+)=(.*)$/
             if (matcher.find()) {
@@ -218,13 +237,12 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                 labelMap[label] = null
         }
 
-        // Uncomment for some extreme debugging :)
-/*
-        throw new Exception("Collected labelMap=${Utils.castString(labelMap)}\n" +
-            "  from labelSet=${Utils.castString(labelSet)}\n" +
-            "  from dsbc=${Utils.castString(this)}\n"
-            )
-*/
+        if (debugTrace) {
+            script.println("Collected labelMap=${Utils.castString(labelMap)}\n" +
+                "  from labelSet=${Utils.castString(labelSet)}\n" +
+                "  from dsbc=${Utils.castString(this)}\n"
+                )
+        }
 
         return labelMap
     }
@@ -320,12 +338,12 @@ class DynamatrixSingleBuildConfig implements Cloneable {
          * labels, envvars and opts defined for this single build setup.
          */
 
-        def debugErr = ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
-        def debug = ( this.enableDebugTrace && this.script != null)
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
 
         // No combo - no hit
         if (!Utils.isListNotEmpty(combo)) {
-            if (debugErr) this.script.println ("[ERROR] matchesConstraintsCombo(): invalid input: ${Utils.castString(combo)}")
+            if (debugErrors) this.script.println ("[ERROR] matchesConstraintsCombo(): invalid input: ${Utils.castString(combo)}")
             return false
         }
 
@@ -335,7 +353,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         for (regexConstraint in combo) {
             // Currently we only support regex matches here
             if (!Utils.isRegex(regexConstraint)) {
-                if (debugErr) this.script.println ("[ERROR] matchesConstraintsCombo(): invalid input item type, skipped: ${Utils.castString(regexConstraint)}")
+                if (debugErrors) this.script.println ("[ERROR] matchesConstraintsCombo(): invalid input item type, skipped: ${Utils.castString(regexConstraint)}")
                 continue
             }
             crit++
@@ -344,7 +362,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
             for (label in buildLabelSet) {
                 if (label =~ regexConstraint) {
-                    if (debug) this.script.println ("[DEBUG] matchesConstraintsCombo(): buildLabelSet for ${Utils.castString(this)} matched ${Utils.castString(label)} - hit with ${regexConstraint}")
+                    if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): buildLabelSet for ${Utils.castString(this)} matched ${Utils.castString(label)} - hit with ${regexConstraint}")
                     hadHit = true
                     break
                 }
@@ -353,7 +371,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             if (!hadHit) {
                 for (label in virtualLabelSet) {
                     if (label =~ regexConstraint) {
-                        if (debug) this.script.println ("[DEBUG] matchesConstraintsCombo(): virtualLabelSet for ${Utils.castString(this)} matched ${Utils.castString(label)} - hit with ${regexConstraint}")
+                        if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): virtualLabelSet for ${Utils.castString(this)} matched ${Utils.castString(label)} - hit with ${regexConstraint}")
                         hadHit = true
                         break
                     }
@@ -363,7 +381,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             if (!hadHit) {
                 for (envvarval in envvarSet) {
                     if (envvarval =~ regexConstraint) {
-                        if (debug) this.script.println ("[DEBUG] matchesConstraintsCombo(): envvarSet for ${Utils.castString(this)} matched ${Utils.castString(envvarval)} - hit with ${regexConstraint}")
+                        if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): envvarSet for ${Utils.castString(this)} matched ${Utils.castString(envvarval)} - hit with ${regexConstraint}")
                         hadHit = true
                         break
                     }
@@ -373,7 +391,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             if (!hadHit) {
                 for (cliopt in clioptSet) {
                     if (cliopt =~ regexConstraint) {
-                        if (debug) this.script.println ("[DEBUG] matchesConstraintsCombo(): clioptSet for ${Utils.castString(this)} matched ${Utils.castString(cliopt)} - hit with ${regexConstraint}")
+                        if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): clioptSet for ${Utils.castString(this)} matched ${Utils.castString(cliopt)} - hit with ${regexConstraint}")
                         hadHit = true
                         break
                     }
@@ -384,14 +402,14 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             if (hadHit) {
                 hits++
             } else {
-                if (debug) this.script.println ("[DEBUG] matchesConstraintsCombo(): no field was hit by ${regexConstraint}")
+                if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): no field was hit by ${regexConstraint}")
             }
         }
 
         // true means a valid match: we had some hits, and that was as many
         // hits as our combo had separate criteria listed (of supported type)
         def res = (hits > 0 && hits == crit)
-        if (debug) this.script.println (
+        if (debugTrace) this.script.println (
             "[DEBUG] matchesConstraintsCombo(): ${Utils.castString(this)} " +
             (res ? "matched all of" : "did not match some of" ) +
             " ${Utils.castString(combo)}")
@@ -408,24 +426,24 @@ class DynamatrixSingleBuildConfig implements Cloneable {
          * class DynamatrixConfig) to see if the current object hits any.
          */
 
-        def debugErr = ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
-        def debug = ( this.enableDebugTrace && this.script != null)
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
 
         // No combo - no hit
         if (!Utils.isListNotEmpty(combos)) {
-            if (debugErr) this.script.println ("[ERROR] matchesConstraints(): invalid input: ${Utils.castString(combos)}")
+            if (debugErrors) this.script.println ("[ERROR] matchesConstraints(): invalid input: ${Utils.castString(combos)}")
             return false
         }
 
         for (combo in combos) {
             if (this.matchesConstraintsCombo(combo)) {
-                if (debug) this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} matched ${Utils.castString(combo)}")
+                if (debugTrace) this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} matched ${Utils.castString(combo)}")
                 return true
             }
         }
 
         // None of the combos matched this object
-        if (debug) this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} did not match ${Utils.castString(combos)}")
+        if (debugTrace) this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} did not match ${Utils.castString(combos)}")
         return false
     } // matchesConstraints (Set)
 

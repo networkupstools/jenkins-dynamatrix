@@ -8,6 +8,7 @@ import hudson.model.Node;
 
 import org.nut.dynamatrix.NodeData;
 import org.nut.dynamatrix.Utils;
+import org.nut.dynamatrix.dynamatrixGlobalState;
 
 class NodeCaps {
     /* This class encapsulates retrieval, storage and queries to information
@@ -18,8 +19,8 @@ class NodeCaps {
     def script
 
     private Boolean isInitialized = false
-    public Boolean enableDebugTrace = false
-    public Boolean enableDebugErrors = true
+    public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
     // What we looked for (null means all known nodes):
     public final String labelExpression
@@ -30,7 +31,7 @@ class NodeCaps {
     // uniqueness...
     public final Map<String, NodeData> nodeData
 
-    public NodeCaps(script, String builderLabel = null, Boolean debugTrace = false, Boolean debugErrors = true) {
+    public NodeCaps(script, String builderLabel = null, Boolean debugTrace = null, Boolean debugErrors = null) {
         /*
          * Collect all info about useful build agents in one collection:
          * Returns a Map with names of currently known agent which matched the
@@ -40,8 +41,12 @@ class NodeCaps {
          */
 
         this.script = script
-        this.enableDebugTrace = debugTrace
-        this.enableDebugErrors = debugErrors
+        if (debugTrace != null) {
+            this.enableDebugTrace = debugTrace
+        }
+        if (debugErrors != null) {
+            this.enableDebugErrors = debugErrors
+        }
 
         // Track the original expression, matched or not, in the returned value
         // TODO: Maybe track something else like timestamps?
@@ -72,6 +77,16 @@ class NodeCaps {
 
         this.nodeData = nodeData
         this.isInitialized = true
+    }
+
+    @NonCPS
+    public Boolean shouldDebugTrace() {
+        return ( this.enableDebugTrace && this.script != null)
+    }
+
+    @NonCPS
+    public Boolean shouldDebugErrors() {
+        return ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
     }
 
     void printDebug() {
@@ -112,9 +127,11 @@ class NodeCaps {
         // Recurse until (a flattened Set of) fixed strings with
         // axis names (keys of labelMap[] above) can be returned.
         Set res = []
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
 
         if (!this.isInitialized) {
-            if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
+            if (debugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
             return res
         }
 
@@ -125,11 +142,11 @@ class NodeCaps {
         // If caller has a Set to check, they should iterate it on their own
         // TODO: or maybe provide a helper wrapper?..
         if (!Utils.isStringOrRegexNotEmpty(axis)) {
-            if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisName(): invalid input value or class: ${Utils.castString(axis)}"
+            if (debugErrors) this.script.println "[DEBUG] resolveAxisName(): invalid input value or class: ${Utils.castString(axis)}"
             return res
         }
 
-        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisName(): ${Utils.castString(axis)}"
+        if (debugTrace) this.script.println "[DEBUG] resolveAxisName(): ${Utils.castString(axis)}"
 
         if (Utils.isString(axis)) {
             // NOTE: No support for nested request like '${COMPILER${VENDOR}}VER'
@@ -192,7 +209,7 @@ class NodeCaps {
                 if (nodeName == null) continue
 
                 for (String label : this.nodeData[nodeName].labelMap.keySet()) {
-                    if (this.enableDebugTrace) {
+                    if (debugTrace) {
                         this.script.println "[DEBUG] resolveAxisName(): label: ${Utils.castString(label)}"
                         this.script.println "[DEBUG] resolveAxisName(): value: ${Utils.castString(this.nodeData[nodeName].labelMap[label])}"
                     }
@@ -200,7 +217,7 @@ class NodeCaps {
                     label = label.trim()
                     if (label.equals("")) continue
                     if (label =~ axis && !label.contains("=")) {
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisName(): label matched axis as regex"
+                        if (debugTrace) this.script.println "[DEBUG] resolveAxisName(): label matched axis as regex"
                         res << label
                     }
                 }
@@ -229,12 +246,14 @@ class NodeCaps {
          */
 
         Set res = []
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
 
         if (node == null)
             return res
 
         if (!this.isInitialized) {
-            if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
+            if (debugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
             return res
         }
 
@@ -249,7 +268,7 @@ class NodeCaps {
             if (matcher.find()) {
                 labelFixed = matcher[0][1]
                 axis = matcher[0][2]
-                if (this.enableDebugTrace) {
+                if (debugTrace) {
                     this.script.println "[DEBUG] resolveAxisValues(): axis split into" +
                         " fixed label part: '${labelFixed}' and the" +
                         " part whose values we would look for: '${axis}'" +
@@ -259,14 +278,14 @@ class NodeCaps {
         }
 
         if (!Utils.isStringOrRegexNotEmpty(axis)) {
-            if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: ${Utils.castString(axis)}"
+            if (debugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: ${Utils.castString(axis)}"
             return res;
         }
 
-        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): looking for: ${Utils.castString(axis)}"
+        if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): looking for: ${Utils.castString(axis)}"
 
         for (String label : this.nodeData[node].labelMap.keySet()) {
-            if (this.enableDebugTrace) {
+            if (debugTrace) {
                 this.script.println "[DEBUG] resolveAxisValues(): label: ${Utils.castString(label)}"
                 this.script.println "[DEBUG] resolveAxisValues(): value: ${Utils.castString(this.nodeData[node].labelMap[label])}"
             }
@@ -277,7 +296,7 @@ class NodeCaps {
             def val = this.nodeData[node].labelMap[label]
             if (Utils.isString(val)) {
                 val = val.trim()
-                if (val.equals("") && (this.enableDebugTrace || this.enableDebugErrors)) {
+                if (val.equals("") && debugErrors) {
                     this.script.println "[WARNING] resolveAxisValues(): got a value which is an empty string"
                     // TODO: Should it be turned into NULL?..
                 }
@@ -287,7 +306,7 @@ class NodeCaps {
             // all the labels and values listed in that part of our query
 
             Boolean hit = false
-            if (this.enableDebugTrace) {
+            if (debugTrace) {
                 this.script.println "[DEBUG]   resolveAxisValues(${node}, ${returnAssignments}): " +
                     "looking for: ${Utils.castString(axis)}    " +
                     "GOTNEXT label: ${Utils.castString(label)} // " +
@@ -297,10 +316,10 @@ class NodeCaps {
                 if ( (!returnAssignments && val != null && axis.equals(label))
                 ||   ( returnAssignments && val == null && label.startsWith("${axis}="))
                 ) {
-                    if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
+                    if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
                     hit = true
                 } else {
-                    if (this.enableDebugTrace) {
+                    if (debugTrace) {
                         this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as string :" +
                             " returnAssignments=${returnAssignments}" +
                             " (val==null)=" + (val==null) +
@@ -315,10 +334,10 @@ class NodeCaps {
                 if ( (!returnAssignments && val != null && label =~ axis && !label.contains("="))
                 ||   ( returnAssignments && val == null && label =~ ~/(${axis}|${axis}.*=)/ && label.contains("="))
                 ) {
-                    if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as regex"
+                    if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as regex"
                     hit = true
                 } else {
-                    if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as regex"
+                    if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as regex"
                 }
             }
 
@@ -344,9 +363,11 @@ class NodeCaps {
          */
 
         Set res = []
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
 
         if (!this.isInitialized) {
-            if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
+            if (debugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
             return res
         }
 
@@ -355,11 +376,11 @@ class NodeCaps {
         }
 
         if (!Utils.isStringOrRegexNotEmpty(axis)) {
-            if (this.enableDebugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: ${Utils.castString(axis)}"
+            if (debugErrors) this.script.println "[DEBUG] resolveAxisValues(): invalid input value or class: ${Utils.castString(axis)}"
             return res;
         }
 
-        if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(${returnAssignments}): looking for: ${Utils.castString(axis)}"
+        if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${returnAssignments}): looking for: ${Utils.castString(axis)}"
 
         for (nodeName in this.nodeData.keySet()) {
             if (nodeName == null) continue
