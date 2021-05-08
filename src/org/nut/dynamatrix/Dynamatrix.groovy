@@ -379,6 +379,8 @@ def parallelStages = prepareDynamatrix(
         // Quick safe pre-filter, in case that user-provided constraints
         // only impact one type of axis:
         if (dynacfgBuild.excludeCombos.size() > 0) {
+            this.script.println "[DEBUG] generateBuild(): quick cleanup: excludeCombos: ${dynacfgBuild.excludeCombos}"
+
             def removed = 0
             if (buildLabelsAgentsBuild.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
@@ -387,6 +389,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.buildLabelSet = buildLabelsAgentsBuild[ble]
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         buildLabelsAgentsBuild.remove(ble)
+                        this.script.println "[DEBUG] generateBuild(): quick cleanup removed: ble: ${ble}"
                         removed++
                     }
                 }
@@ -398,6 +401,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.virtualLabelSet = virtualLabelSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         virtualAxes -= virtualLabelSet
+                        this.script.println "[DEBUG] generateBuild(): quick cleanup removed: virtualLabelSet: ${virtualLabelSet}"
                         removed++
                     }
                 }
@@ -409,6 +413,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.envvarSet = envvarSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonEnv -= envvarSet
+                        this.script.println "[DEBUG] generateBuild(): quick cleanup removed: envvarSet: ${envvarSet}"
                         removed++
                     }
                 }
@@ -420,6 +425,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.clioptSet = clioptSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonOpts -= clioptSet
+                        this.script.println "[DEBUG] generateBuild(): quick cleanup removed: clioptSet: ${clioptSet}"
                         removed++
                     }
                 }
