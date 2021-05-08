@@ -27,7 +27,7 @@ class Dynamatrix {
     public Boolean enableDebugTrace = false
     public Boolean enableDebugErrors = true
     public Boolean enableDebugMilestones = true
-    public Boolean enableDebugMilestonesDetails = true
+    public Boolean enableDebugMilestonesDetails = false
 
     // Store values populated by prepareDynamatrix() so further generateBuild()
     // calls can use these quickly.
@@ -430,9 +430,8 @@ def parallelStages = prepareDynamatrix(
 
         }
 
-
-        this.enableDebugTrace = true
-
+        // Uncomment here to trace just the exclusions
+        //this.enableDebugTrace = true
 
         // Finally, combine all we have (and remove what we do not want to have)
         def removedTotal = 0
