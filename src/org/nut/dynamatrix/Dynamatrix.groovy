@@ -44,7 +44,7 @@ class Dynamatrix {
 
     public Dynamatrix(Object script) {
         this.script = script
-        this.dynacfg = new DynamatrixConfig()
+        this.dynacfg = new DynamatrixConfig(script)
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
     }

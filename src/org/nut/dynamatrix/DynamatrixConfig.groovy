@@ -1,6 +1,7 @@
 package org.nut.dynamatrix;
 
 import org.nut.dynamatrix.Utils;
+import org.nut.dynamatrix.dynamatrixGlobalState;
 
 /* This class intends to represent one build request configuration
  * An instance of it can be passed as the set of arguments for the
@@ -8,6 +9,10 @@ import org.nut.dynamatrix.Utils;
  * applied so needed fields are all "defined" when we look at them.
  */
 class DynamatrixConfig {
+    private def script
+    public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+
     // Define fields to satisfy the build example below
     //    commonLabelExpr: 'nut-builder',
     public String commonLabelExpr = null
@@ -173,9 +178,22 @@ def parallelStages = prepareDynamatrix(
 
  */
 
-    public DynamatrixConfig() {}
+    public DynamatrixConfig(Object script) {
+        this.script = script
+    }
 
-    public DynamatrixConfig(String defaultCfg) {
+    @NonCPS
+    public Boolean shouldDebugTrace() {
+        return ( this.enableDebugTrace && this.script != null)
+    }
+
+    @NonCPS
+    public Boolean shouldDebugErrors() {
+        return ( (this.enableDebugErrors || this.enableDebugTrace) && this.script != null)
+    }
+
+    public DynamatrixConfig(Object script, String defaultCfg) {
+        this.script = script
         this.initDefault(defaultCfg)
     }
 
@@ -281,7 +299,8 @@ def parallelStages = prepareDynamatrix(
         return true
     }
 
-    public DynamatrixConfig(Map dynacfgOrig) {
+    public DynamatrixConfig(Object script, Map dynacfgOrig) {
+        this.script = script
         this.initDefault(dynacfgOrig)
     }
 
