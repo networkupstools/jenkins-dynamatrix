@@ -354,6 +354,26 @@ def parallelStages = prepareDynamatrix(
         //this.enableDebugTrace = true
         //dynamatrixGlobalState.enableDebugTrace = true
 
+        def countCombos = 1;
+        if (buildLabelsAgentsBuild.size() > 0) {
+            countCombos *= buildLabelsAgentsBuild.size()
+        }
+        if (virtualAxes.size() > 0) {
+            countCombos *= virtualAxes.size()
+        }
+        if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
+            countCombos *= dynacfgBuild.dynamatrixAxesCommonEnv.size()
+        }
+        if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
+            countCombos *= dynacfgBuild.dynamatrixAxesCommonOpts.size()
+        }
+        if (countCombos > 1)
+            this.script.println "[DEBUG] generateBuild(): expecting at most ${countCombos} combinations with: " +
+                buildLabelsAgentsBuild.size() + " buildLabelsAgentsBuild, " +
+                virtualAxes.size() + " virtualAxes, " +
+                dynacfgBuild.dynamatrixAxesCommonEnv.size() + " dynamatrixAxesCommonEnv, " +
+                dynacfgBuild.dynamatrixAxesCommonOpts.size() + " dynamatrixAxesCommonOpts"
+
         // Quick safe pre-filter, in case that user-provided constraints
         // only impact one type of axis:
         if (dynacfgBuild.excludeCombos.size() > 0) {
