@@ -10,6 +10,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  */
 class DynamatrixSingleBuildConfig implements Cloneable {
     private def script = null
+    def stageNameFunc = null
     public Boolean enableDebugTrace = false
     public Boolean enableDebugErrors = true
 
@@ -57,7 +58,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     /* Compare class instances as equal in important fields (e.g. to dedup
      * when adding again to Sets), despite possible variation in some
      * inconcequential fields:
-     *   "script", "enableDebugTrace", "enableDebugErrors",
+     *   "script", "stageNameFunc", "enableDebugTrace", "enableDebugErrors",
      *   "isExcluded", "isAllowedFailure"
      */
     public boolean equals(java.lang.Object other) {
@@ -101,6 +102,44 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                 ",\n    isExcluded: '${isExcluded}'" +
                 ",\n    isAllowedFailure: '${isAllowedFailure}'" +
                 "\n}" ;
+    }
+
+    public String stageName() {
+        if (stageNameFunc != null) {
+            // may append arg.defaultStageName() if it wants
+            // e.g. just   NUT_MATRIX_TAG="gnu99-clang-xcode7.3-nowarn"
+            // or fully    NUT_MATRIX_TAG="gnu99-clang-xcode7.3-nowarn" BUILD_TYPE=default-all-errors CFLAGS="-std=gnu99" CXXFLAGS="-std=gnu++99" CC=clang CXX=clang++
+            return stageNameFunc(this);
+        }
+        return defaultStageName()
+    }
+
+    public String defaultStageName() {
+        // e.g. CSTDVERSION=99&&CSTDVARIANT=gnu&&COMPILER=clang&&CLANGVER=12 BUILD_TYPE=default-all-errors&&CFLAGS="-std=gnu99"&&CXXFLAGS="-std=gnu++99"&&CC=clang&&CXX=clang++  && TZ=UTC && LANG=C  -m32 --without-docs
+
+        String sn = buildLabelExpression;
+
+        if (Utils.isListNotEmpty(virtualLabelSet)) {
+            // Same as we do in Dynamatrix.mapBuildLabelExpressions() for one combo
+            sn += " && " + String.join('&&', virtualLabelSet).replaceAll('\\s+', '&&')
+        }
+
+        if (Utils.isListNotEmpty(envvarSet)) {
+            sn += "  &&  " + String.join(' && ', envvarSet)
+        }
+
+        if (Utils.isListNotEmpty(clioptSet)) {
+            sn += "  " + String.join(' ', clioptSet)
+        }
+
+        if (isAllowedFailure == true)
+            sn += " (isAllowedFailure)"
+
+        // Not likely still alive, but...
+        if (isExcluded == true)
+            sn += " (isExcluded)"
+
+        return sn;
     }
 
     public Boolean matchesConstraintsCombo (ArrayList combo) {

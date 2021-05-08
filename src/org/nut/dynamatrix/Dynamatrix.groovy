@@ -490,6 +490,8 @@ def parallelStages = prepareDynamatrix(
             // One of (several possible) combinations of node labels:
             dsbcBle.buildLabelExpression = ble
             dsbcBle.buildLabelSet = buildLabelsAgentsBuild[ble]
+            if (dynamatrixGlobalState.stageNameFunc != null)
+                dsbcBle.stageNameFunc = dynamatrixGlobalState.stageNameFunc
 
             // Roll the snowball, let it grow!
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
@@ -604,18 +606,24 @@ this.enableDebugMilestonesDetails = true
             this.script.println msg
         }
 
-        if (this.enableDebugMilestonesDetails
-        // || this.enableDebugMilestones
-        || this.enableDebugTrace
-        ) {
-            for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcSet) {
-                this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbcBleTmp}"
-            }
-        }
-
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
         Map parallelStages = [:]
+        for (DynamatrixSingleBuildConfig dsbc in dsbcSet) {
+            if (this.enableDebugMilestonesDetails
+            // || this.enableDebugMilestones
+            || this.enableDebugTrace
+            ) {
+                this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbc}"
+            }
+
+            def stageName = dsbc.stageName()
+            this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName}"
+            parallelStages[stageName] = {
+                echo stageName
+            }
+        }
+
         return parallelStages
     } // generateBuild()
 
