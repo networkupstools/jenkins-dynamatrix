@@ -153,19 +153,16 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     }
 
     @NonCPS
-    public static String C_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
-        // Expected axis labels below match presets in DynamatrixConfig("C")
-        // and agent labels in examples.
-        // Parse ARCH_BITS=64&&ARCH64=amd64&&COMPILER=CLANG&&CLANGVER=9&&OS_DISTRO=openindiana && BITS=64&&CSTDVARIANT=c&&CSTDVERSION=99 (isAllowedFailure)
-        // => NUT_MATRIX_TAG="c99-clang-openindiana-amd64-64bit(-warn|nowarn)(-mayFail)"
-
-        // TODO: Refactor with original label mapping, moving to Utils?
-        // Probably not: mapping in NodeData is tailored for nested
-        // multi-value hits, while mapping here is about unique keys
-        // each with one value (representing one selected build combo).
-
+    public Set getKVSet() {
+        /* Return the set of (not-null and unique) values represented
+         * by whichever is populated of the: build agent labels, virtual
+         * labels, and envvars (but not the CLI options). Any composite
+         * labels are split into separate entries. Resulting set is not
+         * "guaranteed" to only contain key=value strings, but is expected
+         * to for practical purposes (consumer should check it if important)
+         */
         // All labels of the world, unite!
-        Set labelSet = (dsbc.buildLabelSet + dsbc.virtualLabelSet + dsbc.envvarSet).flatten()
+        Set labelSet = (buildLabelSet + virtualLabelSet + envvarSet).flatten()
         labelSet.remove(null)
         labelSet.remove("")
         for (String label in labelSet) {
@@ -181,8 +178,31 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         labelSet.remove(null)
         labelSet.remove("")
 
+        return labelSet
+    }
+
+    @NonCPS
+    public Map getKVMap(Boolean storeNulls = false) {
+        /* Return the map with (not-null and unique) key=values represented
+         * by whichever is populated of the: build agent labels, virtual
+         * labels, and envvars (but not the CLI options). Any composite
+         * labels are split into separate entries.
+         * The resulting Map is "guaranteed" to contain either key=value
+         * strings (with "key" string mapped to a "value" string), or
+         * "key" string mapped to null if the original label did not have
+         * an equality sign (and if storeNulls==true).
+         * Behavior is not defined if several of the original label sets
+         * assigned a (different) value to the same label key.
+         */
+
+        // TODO: Refactor with original label mapping, moving to Utils?
+        // Probably not: mapping in NodeData is tailored for nested
+        // multi-value hits, while mapping here is about unique keys
+        // each with one value (representing one selected build combo).
+
+        def labelSet = getKVSet()
         def labelMap = [:]
-        for (String label in labelSet.sort()) {
+        for (String label in labelSet) {
             if (!Utils.isStringNotEmpty(label)) continue
             label = label.trim()
             try {
@@ -193,18 +213,30 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             def matcher = label =~ ~/^([^=]+)=(.*)$/
             if (matcher.find()) {
                 labelMap[matcher[0][1]] = matcher[0][2]
-            } else {
-                labelMap[label] = null
             }
+            if (storeNulls)
+                labelMap[label] = null
         }
 
         // Uncomment for some extreme debugging :)
-
+/*
         throw new Exception("Collected labelMap=${Utils.castString(labelMap)}\n" +
             "  from labelSet=${Utils.castString(labelSet)}\n" +
-            "  from dsbc=${Utils.castString(dsbc)}\n"
+            "  from dsbc=${Utils.castString(this)}\n"
             )
+*/
 
+        return labelMap
+    }
+
+    @NonCPS
+    public static String C_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
+        // Expected axis labels below match presets in DynamatrixConfig("C")
+        // and agent labels in examples.
+        // Parse ARCH_BITS=64&&ARCH64=amd64&&COMPILER=CLANG&&CLANGVER=9&&OS_DISTRO=openindiana && BITS=64&&CSTDVARIANT=c&&CSTDVERSION=99 (isAllowedFailure)
+        // => NUT_MATRIX_TAG="c99-clang-openindiana-amd64-64bit(-warn|nowarn)(-mayFail)"
+
+        def labelMap = dsbc.getKVMap(false)
 
         String sn = ""
         if (labelMap.containsKey("CSTDVARIANT") && labelMap.containsKey("CSTDVERSION")) {
