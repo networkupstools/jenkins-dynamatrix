@@ -174,5 +174,7 @@ class Utils {
         // For other types, replace with new value
         if (debug) println "Both orig and addon are neither arrays nor maps, replace:\n${orig}\n${addon}\n"
         return addon
-    }
+    } // mergeMapSet()
+
 }
+

@@ -160,6 +160,10 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         // => NUT_MATRIX_TAG="c99-clang-openindiana-amd64-64bit(-warn|nowarn)(-mayFail)"
 
         // TODO: Refactor with original label mapping, moving to Utils?
+        // Probably not: mapping in NodeData is tailored for nested
+        // multi-value hits, while mapping here is about unique keys
+        // each with one value (representing one selected build combo).
+
         // All labels of the world, unite!
         Set labelSet = (dsbc.buildLabelSet + dsbc.virtualLabelSet + dsbc.envvarSet).flatten()
         labelSet.remove(null)

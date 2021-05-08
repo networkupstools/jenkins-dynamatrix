@@ -56,7 +56,9 @@ class NodeData {
         this.labelSet = node.labelString.split('[ \r\n\t]+')
 
         // Finally, collect the map of labels which declare certain capabilities
-        // There may be several hits e.g. "GCCVER=8 GCCVER=10" so we save Sets
+        // There may be several hits e.g. "GCCVER=8 GCCVER=10" so we save keys
+        // mapped to Sets of one or more values right away. We also save the
+        // original unique "key-value" strings mapped to "null".
         def labelMap = [:]
         for (String label : labelSet) {
             if (label == null) continue
