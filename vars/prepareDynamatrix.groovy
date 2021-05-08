@@ -54,6 +54,22 @@ def parallelStages = prepareDynamatrix(
     sh """ make check """
 }
 
+prepareDynamatrix([
+    commonLabelExpr: 'nut-builder',
+    defaultDynamatrixConfig: 'C',
+    dynamatrixAxesVirtualLabelsMap: [
+        'BITS': [32, 64],
+        'CSTDVERSION': ['03', '2a']
+        ],
+    mergeMode: [ 'dynamatrixAxesVirtualLabelsMap': 'merge', 'excludeCombos': 'merge' ],
+    allowedFailure: [ [~/CSTDVARIANT=c/] ],
+    runAllowedFailure: true,
+    excludeCombos: [ [~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/] ],
+    dynamatrixAxesLabels: [~/^OS_DISTRO/, '${COMPILER}VER', 'ARCH${ARCH_BITS}']
+//    dynamatrixAxesLabels: ['OS', '${COMPILER}VER', ~/ARC.+/]
+//    dynamatrixAxesLabels: ['OS', ~/CLAN.+/]
+    ])
+
  */
 
 /* Returns a map of stages */
