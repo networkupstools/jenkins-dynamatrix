@@ -1,5 +1,7 @@
 package org.nut.dynamatrix;
 
+import groovy.transform.*; // @EqualsAndHashCode
+
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
@@ -8,6 +10,13 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  * other matrix-provided tunables derived from DynamatrixConfig
  * and Dynamatrix class field values.
  */
+
+// https://docs.groovy-lang.org/latest/html/api/groovy/transform/EqualsAndHashCode.html
+@EqualsAndHashCode(excludes=[
+    "script", "enableDebugTrace", "enableDebugErrors",
+    "isExcluded", "isAllowedFailure"
+    ], cache=true)
+@TupleConstructor
 class DynamatrixSingleBuildConfig implements Cloneable {
     private def script = null
     public Boolean enableDebugTrace = false
