@@ -90,7 +90,8 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     }
 
     @NonCPS
-    public String toString()  {
+    @Override
+    public String toString() {
         return  "DynamatrixSingleBuildConfig: {" +
                 "\n    buildLabelExpression: '${buildLabelExpression}'" +
                 ",\n    buildLabelSet: '${buildLabelSet}'" +

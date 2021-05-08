@@ -590,6 +590,7 @@ def parallelStages = prepareDynamatrix(
 
         }
 
+this.enableDebugMilestonesDetails = true
 
         if (true) { // this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace) {
             def msg = "generateBuild(): collected ${dsbcSet.size()} combos for individual builds"
