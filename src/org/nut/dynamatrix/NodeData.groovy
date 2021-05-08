@@ -14,7 +14,7 @@ class NodeData {
      */
 
     // Info about the build agent (node) detailed here.
-    public final hudson.model.Node node
+    //NotSerializable//public final hudson.model.Node node
     public final String name
 
     // Original full-string set of labels received from Jenkins Node:
@@ -48,7 +48,7 @@ class NodeData {
             throw new Exception("NodeData: bad argument to constructor: invalid value or class: ${Utils.castString(nodeOrig)}")
         }
 
-        this.node = node
+        //NotSerializable//this.node = node
 
         // Other fields are final, so can not be re-set by us or external code:
         this.name = node.getNodeName()
@@ -86,7 +86,15 @@ class NodeData {
 
     @NonCPS
     hudson.model.Node getNode() {
-        return this.node;
+        def jenkins = Jenkins.getInstanceOrNull()
+        if (jenkins != null) {
+            node = jenkins.getNode(this.name)
+        }
+        return null;
+    }
+
+    hudson.model.Node getNodeName() {
+        return this.name;
     }
 
     // Other fields are readable directly for now

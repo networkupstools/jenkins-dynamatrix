@@ -175,7 +175,7 @@ def parallelStages = prepareDynamatrix(
         // are expected to provide good uniqueness thanks to the SortedSet
         // of effectiveAxes and their values that we would look into.
         buildLabelCombos = []
-        for (node in nodeCaps.nodeData.keySet()) {
+        for (nodeName in nodeCaps.nodeData.keySet()) {
             // Looking at each node separately allows us to be sure that any
             // combo of axis-values (all of which it allegedly provides)
             // can be fulfilled
@@ -185,7 +185,7 @@ def parallelStages = prepareDynamatrix(
                 // we would pick supported values for, by current node:
                 def axisCombos = []
                 for (axis in axisSet) {
-                    def tmpset = nodeCaps.resolveAxisValues(axis, node, true)
+                    def tmpset = nodeCaps.resolveAxisValues(axis, nodeName, true)
                     // Got at least one usable key=value string?
                     if (tmpset != null && tmpset.size() > 0) {
                         // TODO: Value constraints and classification
@@ -206,7 +206,7 @@ def parallelStages = prepareDynamatrix(
                         axisCombos = axisCombos.sort()
                         nodeAxisCombos << axisCombos
                     } else {
-                        if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): ignored buildLabelCombos collected for node ${node} with requested axis set ${axisSet}: only got " + axisCombos
+                        if (this.enableDebugTrace) this.script.println "[DEBUG] prepareDynamatrix(): ignored buildLabelCombos collected for node ${nodeName} with requested axis set ${axisSet}: only got " + axisCombos
                     }
                 }
             }

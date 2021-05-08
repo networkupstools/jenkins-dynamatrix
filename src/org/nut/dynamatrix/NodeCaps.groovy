@@ -28,7 +28,7 @@ class NodeCaps {
     // TODO: Is a Map needed now that we have a copy of "node" in NodeData?
     // Maybe a Set is okay? On the other hand, being a Map key guarantees
     // uniqueness...
-    public final Map<hudson.model.Node, NodeData> nodeData
+    public final Map<String, NodeData> nodeData
 
     public NodeCaps(script, String builderLabel = null, Boolean debugTrace = false, Boolean debugErrors = true) {
         /*
@@ -66,7 +66,7 @@ class NodeCaps {
             for (hudson.model.Node node : builders) {
                 if (node == null) continue
                 if (this.enableDebugTrace) this.script.println("NodeCaps: looking for node data: ${Utils.castString(node)}")
-                nodeData[node] = new NodeData(node)
+                nodeData[node.getNodeName()] = new NodeData(node)
             }
         }
 
@@ -84,11 +84,11 @@ class NodeCaps {
             //this.script.println "[DEBUG] raw nodeCaps: " + this
             this.script.println "[DEBUG] nodeCaps.labelExpression: " + this.labelExpression
             this.script.println "[DEBUG] nodeCaps.nodeData.size(): " + this.nodeData.size()
-            for (node in this.nodeData.keySet()) {
-                if (node == null) continue
-                this.script.println "[DEBUG] nodeCaps.nodeData[${node}].labelMap.size()\t: " + this.nodeData[node].labelMap.size()
-                for (String label : this.nodeData[node].labelMap.keySet()) {
-                    this.script.println "[DEBUG] nodeCaps.nodeData[${node}].labelMap['${label}']\t: ${Utils.castString(this.nodeData[node].labelMap[label])}"
+            for (nodeName in this.nodeData.keySet()) {
+                if (nodeName == null) continue
+                this.script.println "[DEBUG] nodeCaps.nodeData[${nodeName}].labelMap.size()\t: " + this.nodeData[nodeName].labelMap.size()
+                for (String label : this.nodeData[nodeName].labelMap.keySet()) {
+                    this.script.println "[DEBUG] nodeCaps.nodeData[${nodeName}].labelMap['${label}']\t: ${Utils.castString(this.nodeData[nodeName].labelMap[label])}"
                 }
             }
         } catch (Throwable t) {
@@ -188,13 +188,13 @@ class NodeCaps {
 
         if (Utils.isRegex(axis)) {
             // Return label keys which match the expression
-            for (node in this.nodeData.keySet()) {
-                if (node == null) continue
+            for (nodeName in this.nodeData.keySet()) {
+                if (nodeName == null) continue
 
-                for (String label : this.nodeData[node].labelMap.keySet()) {
+                for (String label : this.nodeData[nodeName].labelMap.keySet()) {
                     if (this.enableDebugTrace) {
                         this.script.println "[DEBUG] resolveAxisName(): label: ${Utils.castString(label)}"
-                        this.script.println "[DEBUG] resolveAxisName(): value: ${Utils.castString(this.nodeData[node].labelMap[label])}"
+                        this.script.println "[DEBUG] resolveAxisName(): value: ${Utils.castString(this.nodeData[nodeName].labelMap[label])}"
                     }
                     if (label == null) continue
                     label = label.trim()
@@ -361,9 +361,9 @@ class NodeCaps {
 
         if (this.enableDebugTrace) this.script.println "[DEBUG] resolveAxisValues(${returnAssignments}): looking for: ${Utils.castString(axis)}"
 
-        for (node in this.nodeData.keySet()) {
-            if (node == null) continue
-            def nres = resolveAxisValues(axis, node, returnAssignments)
+        for (nodeName in this.nodeData.keySet()) {
+            if (nodeName == null) continue
+            def nres = resolveAxisValues(axis, nodeName, returnAssignments)
             if (nres != null && nres.size() > 0)
                 res << nres
         }
