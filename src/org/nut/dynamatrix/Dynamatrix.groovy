@@ -369,7 +369,8 @@ def parallelStages = prepareDynamatrix(
                 countCombos *= dynacfgBuild.dynamatrixAxesCommonOpts.size()
             }
             if (countCombos > 1)
-                this.script.println "[DEBUG] generateBuild(): expecting at most ${countCombos} combinations with: " +
+                if (this.enableDebugMilestones || this.enableDebugTrace)
+                    this.script.println "[DEBUG] generateBuild(): expecting at most ${countCombos} combinations with: " +
                     buildLabelsAgentsBuild.size() + " buildLabelsAgentsBuild, " +
                     virtualAxes.size() + " virtualAxes, " +
                     dynacfgBuild.dynamatrixAxesCommonEnv.size() + " dynamatrixAxesCommonEnv, " +
@@ -379,7 +380,7 @@ def parallelStages = prepareDynamatrix(
         // Quick safe pre-filter, in case that user-provided constraints
         // only impact one type of axis:
         if (dynacfgBuild.excludeCombos.size() > 0) {
-            this.script.println "[DEBUG] generateBuild(): quick cleanup: excludeCombos: ${dynacfgBuild.excludeCombos}"
+            if (this.enableDebugMilestonesDetails || this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): quick cleanup: excludeCombos: ${dynacfgBuild.excludeCombos}"
 
             def removed = 0
             if (buildLabelsAgentsBuild.size() > 0) {
@@ -389,7 +390,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.buildLabelSet = buildLabelsAgentsBuild[ble]
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         buildLabelsAgentsBuild.remove(ble)
-                        this.script.println "[DEBUG] generateBuild(): quick cleanup removed: ble: ${ble}"
+                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): quick cleanup removed: ble: ${ble}"
                         removed++
                     }
                 }
@@ -401,7 +402,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.virtualLabelSet = virtualLabelSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         virtualAxes.remove(virtualLabelSet)
-                        this.script.println "[DEBUG] generateBuild(): quick cleanup removed: virtualLabelSet: ${virtualLabelSet}"
+                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): quick cleanup removed: virtualLabelSet: ${virtualLabelSet}"
                         removed++
                     }
                 }
@@ -413,7 +414,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.envvarSet = envvarSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonEnv.remove(envvarSet)
-                        this.script.println "[DEBUG] generateBuild(): quick cleanup removed: envvarSet: ${envvarSet}"
+                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): quick cleanup removed: envvarSet: ${envvarSet}"
                         removed++
                     }
                 }
@@ -425,14 +426,14 @@ def parallelStages = prepareDynamatrix(
                     dsbc.clioptSet = clioptSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonOpts.remove(clioptSet)
-                        this.script.println "[DEBUG] generateBuild(): quick cleanup removed: clioptSet: ${clioptSet}"
+                        if (this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): quick cleanup removed: clioptSet: ${clioptSet}"
                         removed++
                     }
                 }
             }
 
             if (removed > 0) {
-                //if (this.enableDebugTrace)
+                if (this.enableDebugMilestones || this.enableDebugTrace)
                     this.script.println "[DEBUG] generateBuild(): quick pass over excludeCombos[] removed ${removed} direct hits from original axis values"
 
                 def countCombos = 1;
@@ -449,7 +450,8 @@ def parallelStages = prepareDynamatrix(
                     countCombos *= dynacfgBuild.dynamatrixAxesCommonOpts.size()
                 }
                 if (countCombos > 1)
-                    this.script.println "[DEBUG] generateBuild(): expecting at most ${countCombos} combinations with: " +
+                    if (this.enableDebugMilestones || this.enableDebugTrace)
+                        this.script.println "[DEBUG] generateBuild(): expecting at most ${countCombos} combinations with: " +
                         buildLabelsAgentsBuild.size() + " buildLabelsAgentsBuild, " +
                         virtualAxes.size() + " virtualAxes, " +
                         dynacfgBuild.dynamatrixAxesCommonEnv.size() + " dynamatrixAxesCommonEnv, " +
@@ -570,14 +572,20 @@ def parallelStages = prepareDynamatrix(
 
 
         if (this.enableDebugMilestones || this.enableDebugTrace) {
-            this.script.println "[DEBUG] generateBuild(): collected ${dsbcSet.size()} combos for individual builds"
+            def msg = "[DEBUG] generateBuild(): collected ${dsbcSet.size()} combos for individual builds"
             if (removedTotal > 0) {
-                this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching removed ${removedTotal} direct hits from candidate builds matrix"
+                msg += " with ${removedTotal} hits removed from candidate builds matrix"
             }
+            this.script.println msg
         }
-        for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcSet) {
-            if (this.enableDebugMilestonesDetails || this.enableDebugTrace)
+
+        if (this.enableDebugMilestonesDetails
+        || this.enableDebugMilestones
+        || this.enableDebugTrace
+        ) {
+            for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcSet) {
                 this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbcBleTmp}"
+            }
         }
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
