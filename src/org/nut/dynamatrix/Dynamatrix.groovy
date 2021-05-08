@@ -617,7 +617,7 @@ this.enableDebugMilestonesDetails = true
                 this.script.println "[DEBUG] generateBuild(): selected combo: ${dsbc}"
             }
 
-            def stageName = dsbc.stageName()
+            String stageName = dsbc.stageName()
             this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName}"
             parallelStages[stageName] = {
                 echo stageName

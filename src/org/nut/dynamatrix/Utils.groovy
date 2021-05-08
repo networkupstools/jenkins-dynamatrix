@@ -20,6 +20,7 @@ class Utils {
     public static final def classesMaps = [Map, LinkedHashMap, HashMap]
     public static final def classesLists = [ArrayList, List, Set, TreeSet, LinkedHashSet, Object[]]
 
+    @NonCPS
     public static Boolean isString(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesStrings) return true;
@@ -29,6 +30,7 @@ class Utils {
         return false;
     }
 
+    @NonCPS
     public static Boolean isRegex(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesRegex) return true;
@@ -36,18 +38,21 @@ class Utils {
         return false;
     }
 
+    @NonCPS
     public static Boolean isStringOrRegex(obj) {
         if (obj == null) return false;
         if (isString(obj) || isRegex(obj)) return true;
         return false;
     }
 
+    @NonCPS
     public static Boolean isStringNotEmpty(obj) {
         if (!isString(obj)) return false;
         if ("".equals(obj)) return false;
         return true;
     }
 
+    @NonCPS
     public static Boolean isStringOrRegexNotEmpty(obj) {
         if (isString(obj)) {
             if ("".equals(obj)) return false;
@@ -58,6 +63,7 @@ class Utils {
         return isRegex(obj)
     }
 
+    @NonCPS
     public static Boolean isMap(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesMaps) return true;
@@ -65,11 +71,13 @@ class Utils {
         return false;
     }
 
+    @NonCPS
     public static Boolean isMapNotEmpty(obj) {
         if (!isMap(obj)) return false;
         return (obj.size() > 0)
     }
 
+    @NonCPS
     public static Boolean isList(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesLists) return true;
@@ -80,6 +88,7 @@ class Utils {
         return false;
     }
 
+    @NonCPS
     public static Boolean isListNotEmpty(obj) {
         if (!isList(obj)) return false;
         return (obj.size() > 0)
@@ -93,6 +102,7 @@ class Utils {
         return false;
     }
 
+    @NonCPS
     public static String castString(obj) {
         return "<${obj?.getClass()}>(${obj?.toString()})"
     }

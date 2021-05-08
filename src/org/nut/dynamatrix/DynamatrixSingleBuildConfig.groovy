@@ -104,16 +104,19 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                 "\n}" ;
     }
 
+    @NonCPS
     public String stageName() {
         if (stageNameFunc != null) {
             // may append arg.defaultStageName() if it wants
             // e.g. just   NUT_MATRIX_TAG="gnu99-clang-xcode7.3-nowarn"
             // or fully    NUT_MATRIX_TAG="gnu99-clang-xcode7.3-nowarn" BUILD_TYPE=default-all-errors CFLAGS="-std=gnu99" CXXFLAGS="-std=gnu++99" CC=clang CXX=clang++
-            return stageNameFunc(this);
+            String sn = stageNameFunc(this)
+            return sn
         }
         return defaultStageName()
     }
 
+    @NonCPS
     public String defaultStageName() {
         // e.g. CSTDVERSION=99&&CSTDVARIANT=gnu&&COMPILER=clang&&CLANGVER=12 BUILD_TYPE=default-all-errors&&CFLAGS="-std=gnu99"&&CXXFLAGS="-std=gnu++99"&&CC=clang&&CXX=clang++  && TZ=UTC && LANG=C  -m32 --without-docs
 
@@ -140,7 +143,130 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             sn += " (isExcluded)"
 
         return sn;
+    } // defaultStageName()
+
+    // One implementation that pipelines can assign:
+    //    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc
+    @NonCPS
+    public static String C_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
+        return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.C_StageNameTagValue(dsbc) + '" && ' + dsbc.defaultStageName()
     }
+
+    @NonCPS
+    public static String C_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
+        // Expected axis labels below match presets in DynamatrixConfig("C")
+        // and agent labels in examples.
+        // Parse ARCH_BITS=64&&ARCH64=amd64&&COMPILER=CLANG&&CLANGVER=9&&OS_DISTRO=openindiana && BITS=64&&CSTDVARIANT=c&&CSTDVERSION=99 (isAllowedFailure)
+        // => NUT_MATRIX_TAG="c99-clang-openindiana-amd64-64bit(-warn|nowarn)(-mayFail)"
+
+        // TODO: Refactor with original label mapping, moving to Utils?
+        // All labels of the world, unite!
+        Set labelSet = (dsbc.buildLabelSet + dsbc.virtualLabelSet + dsbc.envvarSet).flatten()
+        labelSet.remove(null)
+        labelSet.remove("")
+        for (String label in labelSet) {
+            // Split composite labels like "COMPILER=CLANG CLANGVER=9", if any
+            if (label =~ /\s+/) {
+                labelSet.remove(label)
+                Set tmpSet = label.split(/\s/)
+                tmpSet.remove(null)
+                tmpSet.remove("")
+                labelSet += tmpSet
+            }
+        }
+        labelSet.remove(null)
+        labelSet.remove("")
+
+        def labelMap = [:]
+        for (String label in labelSet.sort()) {
+            if (!Utils.isStringNotEmpty(label)) continue
+            label = label.trim()
+            try {
+                if ("".equals(label)) continue
+            } catch (Exception e) {
+                throw new Exception("Expected key-value string, got label=${Utils.castString(label)}: " + e)
+            }
+            def matcher = label =~ ~/^([^=]+)=(.*)$/
+            if (matcher.find()) {
+                labelMap[matcher[0][1]] = matcher[0][2]
+            } else {
+                labelMap[label] = null
+            }
+        }
+
+        // Uncomment for some extreme debugging :)
+
+        throw new Exception("Collected labelMap=${Utils.castString(labelMap)}\n" +
+            "  from labelSet=${Utils.castString(labelSet)}\n" +
+            "  from dsbc=${Utils.castString(dsbc)}\n"
+            )
+
+
+        String sn = ""
+        if (labelMap.containsKey("CSTDVARIANT") && labelMap.containsKey("CSTDVERSION")) {
+            sn += labelMap["CSTDVARIANT"] + labelMap["CSTDVERSION"]
+        }
+
+        if (labelMap.containsKey("COMPILER")) {
+            if (!sn.equals("")) sn += "-"
+            def COMPILER = labelMap["COMPILER"]
+            sn += COMPILER.toLowerCase() // clang
+            if (labelMap.containsKey(COMPILER + "VER")) { // => clang-9
+                sn += "-" + labelMap[COMPILER + "VER"].toLowerCase()
+            }
+        }
+
+        if (labelMap.containsKey("OS_DISTRO")) {
+            if (!sn.equals("")) sn += "-"
+            sn += labelMap["OS_DISTRO"]
+        } else if (labelMap.containsKey("OS_FAMILY")) {
+            if (!sn.equals("")) sn += "-"
+            sn += labelMap["OS_FAMILY"]
+        }
+
+        def BITS = null
+        if (labelMap.containsKey("ARCH_BITS")) {
+            BITS = labelMap["ARCH_BITS"]
+            if (!BITS.isInteger()) BITS=null
+        }
+        if (BITS == null && labelMap.containsKey("BITS")) {
+            BITS = labelMap["BITS"]
+            if (!BITS.isInteger()) BITS=null
+        }
+
+        def ARCH = null
+        if (BITS != null && labelMap.containsKey("ARCH" + BITS)) {
+            ARCH = labelMap["ARCH" + BITS] // ex. ARCH64=amd64
+        } else if (labelMap.containsKey("ARCH")) {
+            ARCH = labelMap["ARCH"]        // ex. ARCH=armv7l
+        }
+
+        if (ARCH != null) {
+            if (!sn.equals("")) sn += "-"
+            sn += "${ARCH}"
+        } // else
+        if (BITS != null) {
+            if (!sn.equals("")) sn += "-"
+            sn += "${BITS}bit"
+        }
+
+        if (labelMap.containsKey("BUILD_TYPE")) {
+            switch (labelMap["BUILD_TYPE"]) {
+                case "default-all-errors": // NUT/zproject for "all build targets, warnings as errors"
+                    if (!sn.equals("")) sn += "-"
+                    sn += "nowarn" // do not tolerate warnings
+                    break
+            }
+        }
+
+        if (dsbc.isAllowedFailure == true) {
+            if (!sn.equals("")) sn += "-"
+            sn += "mayFail"
+        }
+
+        return sn
+    } // C_StageNameTagValue(dsbc)
+
 
     public Boolean matchesConstraintsCombo (ArrayList combo) {
         return matchesConstraintsCombo(new LinkedHashSet(combo))
@@ -234,7 +360,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             (res ? "matched all of" : "did not match some of" ) +
             " ${Utils.castString(combo)}")
         return res
-    }
+    } // matchesConstraintsCombo (Set)
 
     public Boolean matchesConstraints (ArrayList combos) {
         return matchesConstraints(new LinkedHashSet(combos))
@@ -265,6 +391,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         // None of the combos matched this object
         if (debug) this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} did not match ${Utils.castString(combos)}")
         return false
-    }
+    } // matchesConstraints (Set)
+
 }
 

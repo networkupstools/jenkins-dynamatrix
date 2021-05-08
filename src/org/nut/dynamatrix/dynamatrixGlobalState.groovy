@@ -13,7 +13,8 @@ class dynamatrixGlobalState {
     // a string. Can be used for definition of "meaningful" short tags by a
     // project, like "gnu99-gcc-freebsd-nowarn" or "c17-clang-xcode10.2-warn"
     // instead of a default long list of variables that impact the uniqueness
-    // of a build setup.
+    // of a build setup. For one reference implementation, see
+    //    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc
     static def stageNameFunc = null
 }
 
