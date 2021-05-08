@@ -368,13 +368,23 @@ def parallelStages = prepareDynamatrix(
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
                 countCombos *= dynacfgBuild.dynamatrixAxesCommonOpts.size()
             }
-            if (countCombos > 1)
-                if (this.enableDebugMilestones || this.enableDebugTrace)
-                    this.script.println "[DEBUG] generateBuild(): expecting at most ${countCombos} combinations with: " +
-                    buildLabelsAgentsBuild.size() + " buildLabelsAgentsBuild, " +
-                    virtualAxes.size() + " virtualAxes, " +
-                    dynacfgBuild.dynamatrixAxesCommonEnv.size() + " dynamatrixAxesCommonEnv, " +
-                    dynacfgBuild.dynamatrixAxesCommonOpts.size() + " dynamatrixAxesCommonOpts"
+            if (countCombos > 1) {
+                if (this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace) {
+                    this.script.println "[DEBUG] generateBuild(): " +
+                        "expecting at most ${countCombos} combinations with: " +
+                        buildLabelsAgentsBuild.size() + " buildLabelsAgentsBuild, " +
+                        virtualAxes.size() + " virtualAxes, " +
+                        dynacfgBuild.dynamatrixAxesCommonEnv.size() + " dynamatrixAxesCommonEnv, " +
+                        dynacfgBuild.dynamatrixAxesCommonOpts.size() + " dynamatrixAxesCommonOpts"
+                } else {
+                    this.script.println "generateBuild: " +
+                        "expecting to process ${countCombos} combinations " +
+                        "of requested matrix axis values, against " +
+                        "${dynacfgBuild.excludeCombos.size()} excludeCombos and " +
+                        "${dynacfgBuild.allowedFailures.size()} allowedFailures. " +
+                        "This can take some time."
+                }
+            }
         }
 
         // Quick safe pre-filter, in case that user-provided constraints
@@ -567,7 +577,7 @@ def parallelStages = prepareDynamatrix(
             removedTotal += removedBle
             allowedToFailTotal += allowedToFailBle
 
-            if (this.enableDebugMilestones || this.enableDebugTrace) {
+            if (this.enableDebugMilestonesDetails || this.enableDebugTrace) {
                 if (removedBle > 0) {
                     this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching removed ${removedBle} direct hits from candidate builds for label ${ble}" +
                         ( (!dynacfgBuild.runAllowedFailure && (allowedToFailBle > 0)) ? " including ${allowedToFailBle} items allowed to fail which we would not run" : "" )
@@ -581,8 +591,8 @@ def parallelStages = prepareDynamatrix(
         }
 
 
-        if (this.enableDebugMilestones || this.enableDebugTrace) {
-            def msg = "[DEBUG] generateBuild(): collected ${dsbcSet.size()} combos for individual builds"
+        if (true) { // this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace) {
+            def msg = "generateBuild(): collected ${dsbcSet.size()} combos for individual builds"
             if (removedTotal > 0) {
                 msg += " with ${removedTotal} hits removed from candidate builds matrix"
             }
@@ -594,7 +604,7 @@ def parallelStages = prepareDynamatrix(
         }
 
         if (this.enableDebugMilestonesDetails
-        || this.enableDebugMilestones
+        // || this.enableDebugMilestones
         || this.enableDebugTrace
         ) {
             for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcSet) {
@@ -606,7 +616,7 @@ def parallelStages = prepareDynamatrix(
         // when preparing the stages below:
         Map parallelStages = [:]
         return parallelStages
-    }
+    } // generateBuild()
 
 }
 
