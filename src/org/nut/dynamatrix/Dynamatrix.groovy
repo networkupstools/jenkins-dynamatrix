@@ -661,6 +661,32 @@ def parallelStages = prepareDynamatrix(
         return dsbcSet
     } // generateBuildConfigSet()
 
+    private Closure generatedBuildWrapper (DynamatrixSingleBuildConfig dsbc, Closure body = null) {
+        /* Helper for generatedBuild() below to not repeat the
+         * same code structure in different handled situations
+         */
+
+        return {
+//          script.withEnv(dsbc.getKVSet()) {
+                script.script {
+                    script.env.add(dsbc.getKVSet())
+
+                    if (body == null) {
+                        script.echo "Running stage: stageName" // + "\n    for ${Utils.castString(dsbc)}"
+                        if (script.isUnix()) {
+                            script.sh "set"
+                        } else {
+                            script.bat "set"
+                        }
+                    } else {
+                        body()
+                    } // if
+                } // script
+//          } // withEnv
+        } // return a Closure
+
+    }
+
 //    @NonCPS
     def generateBuild(dynacfgOrig = [:], Closure body = null) {
         /* Returns a map of stages */
@@ -688,22 +714,17 @@ def parallelStages = prepareDynamatrix(
             // in particular, no steps{}
             parallelStages[stageName] = {
                 script.stage(stageName) {
-//                    agent { label "${dsbc.buildLabelExpression}" }
-//                    agent { label "jimoi" }
-//                    steps {
-                        withEnv(dsbc.getKVSet()) {
-                            if (body == null) {
-                                echo "Running stage: stageName" //\n    for ${Utils.castString(dsbc)}"
-                                if (isUnix()) {
-                                    sh "set"
-                                } else {
-                                    bat "set"
-                                }
-                            } else {
-                                body()
-                            } // if
-                        } // withEnv
-//                    } // steps
+//                    script.agent { label "${dsbc.buildLabelExpression}" }
+//                    script.agent { label "jimoi" }
+                    script.steps {
+                        if (dsbc.isAllowedFailure) {
+                            script.catchError(message: message, buildResult: 'SUCCESS', stageResult: 'FAILED') {
+                                generatedBuildWrapper(dsbc, body).call()
+                            } // catchError
+                        } else {
+                            generatedBuildWrapper(dsbc, body).call()
+                        } // if allowedFailure
+                    } // steps
 
                 } // stage
             } // new parallelStages[] entry
