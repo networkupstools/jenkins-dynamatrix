@@ -14,6 +14,13 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
+    // Most of our builds require a build agent, usually one with
+    // specific capabilities as selected by label expression below,
+    // to run some programs in that OS. For generality's sake, there
+    // is a case for no-node mode, but that may only call pipeline
+    // steps (to schedule a build, maybe analyze, etc.)
+    public Boolean requiresBuildNode = true
+
     // The `expr` requested in `agent { label 'expr' }` for the
     // generated build stage, originates from capabilities declared
     // by build nodes or those explicitly requested by caller
@@ -73,6 +80,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         if (envvarSet != other.envvarSet) return false
         if (clioptSet != other.clioptSet) return false
 
+        // This distinction may be important
+        if (requiresBuildNode != other.requiresBuildNode) return false
+
 /*
         if (isExcluded != other.isExcluded) return false
         if (isAllowedFailure != other.isAllowedFailure) return false
@@ -109,6 +119,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                 ",\n    virtualLabelSet: '${virtualLabelSet}'" +
                 ",\n    envvarSet: '${envvarSet}'" +
                 ",\n    clioptSet: '${clioptSet}'" +
+                ",\n    requiresBuildNode: '${requiresBuildNode}'" +
                 ",\n    isExcluded: '${isExcluded}'" +
                 ",\n    isAllowedFailure: '${isAllowedFailure}'" +
                 "\n}" ;
