@@ -466,6 +466,7 @@ def parallelStages = prepareDynamatrix(
 
         // Finally, combine all we have (and remove what we do not want to have)
         def removedTotal = 0
+        def allowedToFailTotal = 0
         Set<DynamatrixSingleBuildConfig> dsbcSet = []
         for (ble in buildLabelsAgentsBuild.keySet()) {
             // We can generate numerous build configs below that
@@ -474,6 +475,7 @@ def parallelStages = prepareDynamatrix(
             DynamatrixSingleBuildConfig dsbcBle = new DynamatrixSingleBuildConfig(this.script)
             Set<DynamatrixSingleBuildConfig> dsbcBleSet = []
             def removedBle = 0
+            def allowedToFailBle = 0
 
             // One of (several possible) combinations of node labels:
             dsbcBle.buildLabelExpression = ble
@@ -535,10 +537,10 @@ def parallelStages = prepareDynamatrix(
             if (dynacfgBuild.excludeCombos.size() > 0) {
                 for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.excludeCombos)) {
+                        // TODO: track isExcluded or just delete items?
+                        dsbcBleTmp.isExcluded = true
                         dsbcBleSet.remove(dsbcBleTmp)
                         removedBle++
-                        dsbcBleTmp.isExcluded = true
-                        // TODO: track isExcluded?
                         if (this.enableDebugMilestonesDetails || this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.excludeCombos}"
                     }
                 }
@@ -547,25 +549,33 @@ def parallelStages = prepareDynamatrix(
             if (dynacfgBuild.allowedFailure.size() > 0) {
                 for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.allowedFailure)) {
-                        dsbcBleSet.remove(dsbcBleTmp)
-                        removedBle++
-                        dsbcBleTmp.isAllowedFailure = true
+                        allowedToFailBle++
                         if (dynacfgBuild.runAllowedFailure) {
-                            dsbcBleSet += dsbcBleTmp
+                            dsbcBleTmp.isAllowedFailure = true
                         } else {
+                            dsbcBleSet.remove(dsbcBleTmp)
+                            removedBle++
                             if (this.enableDebugMilestonesDetails || this.enableDebugTrace) this.script.println "[DEBUG] generateBuild(): excluded combo: ${dsbcBleTmp}\nwith ${dynacfgBuild.allowedFailure} (because we do not runAllowedFailure this time)"
                         }
+                    } else {
+                        dsbcBleTmp.isAllowedFailure = false
                     }
                 }
             }
 
             dsbcSet += dsbcBleSet
             removedTotal += removedBle
+            allowedToFailTotal += allowedToFailBle
 
-            if (removedBle > 0) {
-                if (this.enableDebugMilestones || this.enableDebugTrace) {
-                    this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching removed ${removedBle} direct hits from candidate builds for label ${ble}"
+            if (this.enableDebugMilestones || this.enableDebugTrace) {
+                if (removedBle > 0) {
+                    this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching removed ${removedBle} direct hits from candidate builds for label ${ble}" +
+                        ( (!dynacfgBuild.runAllowedFailure && (allowedToFailBle > 0)) ? " including ${allowedToFailBle} items allowed to fail which we would not run" : "" )
                 }
+                if (dynacfgBuild.runAllowedFailure && allowedToFailBle > 0) {
+                    this.script.println "[DEBUG] generateBuild(): excludeCombos[] matching marked ${allowedToFailBle} direct hits from candidate builds for label ${ble} as allowed failures"
+                }
+                this.script.println "[DEBUG] generateBuild(): ${dsbcBleSet.size()} candidates collected for label ${ble} which should succeed"
             }
 
         }
@@ -575,6 +585,10 @@ def parallelStages = prepareDynamatrix(
             def msg = "[DEBUG] generateBuild(): collected ${dsbcSet.size()} combos for individual builds"
             if (removedTotal > 0) {
                 msg += " with ${removedTotal} hits removed from candidate builds matrix"
+            }
+            if (allowedToFailTotal > 0) {
+                msg += ", including ${allowedToFailTotal} combos allowed to fail - which we would " +
+                    (dynacfgBuild.runAllowedFailure ? "" : "not ") + "run"
             }
             this.script.println msg
         }
