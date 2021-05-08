@@ -592,7 +592,8 @@ def parallelStages = prepareDynamatrix(
 
         }
 
-this.enableDebugMilestonesDetails = true
+        // Uncomment here to just detail the collected combos:
+        //this.enableDebugMilestonesDetails = true
 
         if (true) { // this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace) {
             def msg = "generateBuild(): collected ${dsbcSet.size()} combos for individual builds"
@@ -618,7 +619,13 @@ this.enableDebugMilestonesDetails = true
             }
 
             String stageName = dsbc.stageName()
-            this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName}"
+            if (this.enableDebugMilestonesDetails
+            || this.enableDebugMilestones
+            || this.enableDebugTrace
+            ) {
+                this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName}"
+            }
+
             parallelStages[stageName] = {
                 echo stageName
             }
