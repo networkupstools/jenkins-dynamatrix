@@ -145,6 +145,8 @@ def parallelStages = prepareDynamatrix(
         // It can also contain a special Map to manage merge-mode of custom
         // provided value to "replace" same-named defaults or "merge" with
         // them -- dynacfgOrig.mergeMode["dynacfgFieldNameString"]="merge"
+
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initial dynacfg: ${Utils.castString(dynacfg)}\nParameter dynacfgOrig: ${Utils.castString(dynacfgOrig)}"
         def sanityRes = dynacfg.initDefault(dynacfgOrig)
         if (sanityRes != true) {
             if (sanityRes instanceof String) {
@@ -152,16 +154,18 @@ def parallelStages = prepareDynamatrix(
             }
             // Assumed non-fatal - fields seen that are not in standard config
         }
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): After cfg merge: dynacfg: ${Utils.castString(dynacfg)}\nwith result ${Utils.castString(sanityRes)}"
 
         sanityRes = dynacfg.sanitycheckDynamatrixAxesLabels()
         if (sanityRes != true) {
             if (sanityRes instanceof String) {
-                if (debugErrors) this.script.println sanityRes
+                if (debugErrors) this.script.println "[ERROR] prepareDynamatrix(): ${sanityRes}"
             } else {
-                if (debugErrors) this.script.println "No 'dynamatrixAxesLabels' were provided, nothing to generate"
+                if (debugErrors) this.script.println "[ERROR] prepareDynamatrix(): No 'dynamatrixAxesLabels' were provided, nothing to generate"
             }
             return null
         }
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially requested dynamatrixAxesLabels: " + dynacfg.dynamatrixAxesLabels
 
         // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
         // other configs for same builder would not query and parse real Jenkins

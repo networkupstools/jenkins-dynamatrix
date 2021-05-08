@@ -131,6 +131,27 @@ class DynamatrixConfig {
     //    excludeCombos: [[~/OS=openindiana/, ~/CLANGVER=9/, ~/ARCH=x86/], [~/GCCVER=4\.[0-7]\..+/, ~/std.+=+(!?89|98|99|03)/], [~/GCCVER=4\.([8-9]|1[0-9]+)\..+/, ~/std.+=+(!?89|98|99|03|11)/]]
     public Set excludeCombos = []
 
+    @NonCPS
+    @Override
+    public String toString() {
+        return  "DynamatrixConfig: {" +
+                "\n    commonLabelExpr: '${commonLabelExpr}'" +
+                ",\n    compilerType: '${compilerType}'" +
+                ",\n    compilerLabel: '${compilerLabel}'" +
+                ",\n    compilerTools: '${compilerTools}'" +
+                ",\n    dynamatrixAxesLabels: '${dynamatrixAxesLabels}'" +
+                ",\n    dynamatrixAxesVirtualLabelsMap: '${dynamatrixAxesVirtualLabelsMap}'" +
+                ",\n    dynamatrixAxesCommonEnv: '${dynamatrixAxesCommonEnv}'" +
+                ",\n    dynamatrixAxesCommonEnvCartesian: '${dynamatrixAxesCommonEnvCartesian}'" +
+                ",\n    dynamatrixAxesCommonOpts: '${dynamatrixAxesCommonOpts}'" +
+                ",\n    dynamatrixAxesCommonOptsCartesian: '${dynamatrixAxesCommonOptsCartesian}'" +
+                ",\n    dynamatrixRequiredLabelCombos: '${dynamatrixRequiredLabelCombos}'" +
+                ",\n    allowedFailure: '${allowedFailure}'" +
+                ",\n    runAllowedFailure: '${runAllowedFailure}'" +
+                ",\n    excludeCombos: '${excludeCombos}'" +
+                "\n}" ;
+    }
+
 /*
  * Example agents and call signature from README:
 
@@ -198,6 +219,10 @@ def parallelStages = prepareDynamatrix(
     }
 
     public def initDefault(String defaultCfg) {
+        def debugTrace = this.shouldDebugTrace()
+
+        if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(String): called with defaultCfg = ${Utils.castString(defaultCfg)}")
+
         switch (defaultCfg) {
             case null:
             case '':
@@ -305,6 +330,11 @@ def parallelStages = prepareDynamatrix(
     }
 
     public def initDefault(Map dynacfgOrig) {
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
+
+        if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): called with dynacfgOrig = ${Utils.castString(dynacfgOrig)}")
+
         // Quick no-op
         if (dynacfgOrig == null || dynacfgOrig.size() == 0) return true
 
@@ -314,7 +344,9 @@ def parallelStages = prepareDynamatrix(
             // the Map passed by caller may contain "defaultDynamatrixConfig" as
             // a key for a String value to specify default pre-sets, e.g. "C".
             if (dynacfgOrig.containsKey('defaultDynamatrixConfig')) {
-                this.initDefault(dynacfgOrig['defaultDynamatrixConfig'].toString())
+                def str = dynacfgOrig['defaultDynamatrixConfig'].toString()
+                if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): calling initDefault(${str}) first")
+                this.initDefault(str)
                 dynacfgOrig.remove('defaultDynamatrixConfig')
             }
         }
@@ -322,30 +354,47 @@ def parallelStages = prepareDynamatrix(
         String errs = ""
         if (dynacfgOrig.size() > 0) {
             for (k in dynacfgOrig.keySet()) {
+                if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): checking dynacfgOrig[${k}] = ${Utils.castString(dynacfgOrig[k])}")
+
                 if (k.equals("mergeMode")) continue
                 try {
                     def mergeMode = "replace"
                     try {
                         // Expected optional value "replace" or "merge"
-                        mergeMode = dynacfgOrig.mergeMode[k]
+                        mergeMode = dynacfgOrig.mergeMode[k].trim()
                         dynacfgOrig.mergeMode.remove(k)
-                    } catch (Throwable t) {}
+                    } catch (Throwable t) {} // keep default setting if no action requested
 
+                    if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): mergeMode for k='${k}' is '${mergeMode}'")
                     switch ("${mergeMode}") {
                         case "merge":
+                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): merging: ${this[k]}\n    with: ${dynacfgOrig[k]}")
                             this[k] = Utils.mergeMapSet(this[k], dynacfgOrig[k])
+                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of merge: ${this[k]}")
                             break
 
                         case "replace":
-                        default:
+                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): replacing with: ${dynacfgOrig[k]}")
                             this[k] = dynacfgOrig[k]
+                            //if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of replacement: ${this[k]}")
+                            break
+
+                        default:
+                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): defaulting to replace with: ${dynacfgOrig[k]}")
+                            this[k] = dynacfgOrig[k]
+                            //if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of replacement: ${this[k]}")
                             break
                     }
                 } catch(Exception e) {
                     if (!errs.equals("")) errs += "\n"
-                    errs += "[DEBUG] DynamatrixConfig(Set): ignoring unsupported config key from request: '${k}' => " + dynacfgOrig[k]
+                    def str = "[DEBUG] DynamatrixConfig(Map): ignoring unsupported config key from request: '${k}' => " + dynacfgOrig[k]
+                    errs += str
+                    if (debugTrace) this.script.println str
                 }
             }
+        } else {
+            // Nothing left after special keys were removed?
+            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): dynacfgOrig was empty (except special keys)")
         }
 
         // was not null, but at least one unused setting passed
@@ -363,7 +412,9 @@ def parallelStages = prepareDynamatrix(
             if (Utils.isList(this.dynamatrixAxesLabels)) {
                 // TODO: Match superclass to not list all children of Set etc?
                 // TODO: Check entries if this object that they are strings/patterns
-                return true
+                if (this.dynamatrixAxesLabels.size() > 0)
+                    return true
+                errs += "Initially requested dynamatrixAxesLabels is empty"
             } else if (Utils.isString(this.dynamatrixAxesLabels)) {
                 if (this.dynamatrixAxesLabels.equals("")) {
                     this.dynamatrixAxesLabels = null
@@ -375,7 +426,7 @@ def parallelStages = prepareDynamatrix(
                 this.dynamatrixAxesLabels = [this.dynamatrixAxesLabels]
                 return true
             } else {
-                if (!errs.equals("")) errs += "\n"
+                //if (!errs.equals("")) errs += "\n"
                 errs += "Not sure what type 'dynamatrixAxesLabels' is: ${Utils.castString(this.dynamatrixAxesLabels)}"
                 //this.dynamatrixAxesLabels = null
             }
