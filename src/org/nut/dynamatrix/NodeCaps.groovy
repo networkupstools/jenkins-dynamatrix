@@ -249,6 +249,8 @@ class NodeCaps {
         def debugErrors = this.shouldDebugErrors()
         def debugTrace = this.shouldDebugTrace()
 
+        if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): called to look for: ${Utils.castString(axis)}"
+
         if (node == null)
             return res
 

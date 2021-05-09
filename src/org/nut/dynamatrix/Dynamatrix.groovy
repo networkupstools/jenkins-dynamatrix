@@ -196,6 +196,10 @@ def parallelStages = prepareDynamatrix(
         // [ [OS, ARCH, CLANGVER], [OS, ARCH, GCCVER] ]
         // ...and preferably really sorted :)
         effectiveAxes = Utils.cartesianSquared(effectiveAxes).sort()
+        if (effectiveAxes.size() == 1 && !Utils.isList(effectiveAxes[0])) {
+            // We want set of sets for processing below
+            effectiveAxes = [effectiveAxes]
+        }
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
 
         //nodeCaps.enableDebugTrace = true
@@ -215,7 +219,9 @@ def parallelStages = prepareDynamatrix(
                 // we would pick supported values for, by current node:
                 def axisCombos = []
                 for (axis in axisSet) {
+                    if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}'..."
                     def tmpset = nodeCaps.resolveAxisValues(axis, nodeName, true)
+                    if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}': got tmpset: ${Utils.castString(tmpset)}"
                     // Got at least one usable key=value string?
                     if (tmpset != null && tmpset.size() > 0) {
                         // TODO: Value constraints and classification
@@ -268,6 +274,7 @@ def parallelStages = prepareDynamatrix(
                 // where each of nodeAxisCombos contains a set of axisValues
                 if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
                 def tmp = Utils.cartesianSquared(nodeAxisCombos).sort()
+                if (tmp?.size() == 1 && !Utils.isList(tmp[0])) { tmp = [tmp] }
                 if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
                 // Add members of tmp (many sets of unique key=value combos
                 // for each axis) as direct members of buildLabelCombosFlat
