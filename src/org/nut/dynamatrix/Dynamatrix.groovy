@@ -741,12 +741,31 @@ def parallelStages = prepareDynamatrix(
             // copy a unique object, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()
             String stageName = dsbc.stageName()
+            String matrixTag = null
+            if (true) { //scope
+                def mtMatcher = stageName =~ ~/^(\S*MATRIX_TAG="[^"]+") .*$/
+                if (mtMatcher.find()) {
+                    matrixTag = mtMatcher[0][1]?.replaceAll('"', '')?.trim()
+                    if ("".equals(matrixTag)) matrixTag = null
+                }
+            }
 
             if (debugMilestonesDetails
             //|| debugMilestones
             //|| debugTrace
             ) {
                 this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName}"
+            }
+
+            // Named closure to call below
+            def payload = {
+                generatedBuildWrapperLayer1(stageName, dsbc, body).call()
+            }
+
+            // Pattern for code change on the fly:
+            if (matrixTag != null) {
+                def payloadTmp = payload
+                payload = { script.withEnv([matrixTag]) { payloadTmp() } }
             }
 
             // Note: non-declarative pipeline syntax inside the generated stages
@@ -762,7 +781,7 @@ def parallelStages = prepareDynamatrix(
 //                        script.stage("NODEWRAP: " + stageName) {
                             if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'"
                             script.node (dsbc.buildLabelExpression) {
-                                generatedBuildWrapperLayer1(stageName, dsbc, body).call()
+                                payload()
                             } // node
 //                        } // stage needed to house the "node"
                     } // new parallelStages[] entry
@@ -773,7 +792,7 @@ def parallelStages = prepareDynamatrix(
 //                        script.stage("NODEWRAP-ANON: " + stageName) {
                             if (dsbc.enableDebugTrace) script.echo "Requesting a node for stage '${stageName}'"
                             script.node {
-                                generatedBuildWrapperLayer1(stageName, dsbc, body).call()
+                                payload()
                             } // node
 //                        } // stage needed to house the "node"
                     } // new parallelStages[] entry
@@ -785,7 +804,7 @@ def parallelStages = prepareDynamatrix(
                 // default node, if any (or fails if none is set and is needed)
                 parallelStages["NO-NODE: " + stageName] = {
                     if (dsbc.enableDebugTrace) script.echo "Not requesting any node for stage '${stageName}'"
-                    generatedBuildWrapperLayer1(stageName, dsbc, body).call()
+                    payload()
                 } // new parallelStages[] entry
 
             } // if got agent-label
