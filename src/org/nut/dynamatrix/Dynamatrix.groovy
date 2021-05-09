@@ -700,13 +700,76 @@ def parallelStages = prepareDynamatrix(
                                 "If that body would call some OS interaction, the stage would fail."
                         }
 
-                        // Pass values by names we want into the user-provided closure
-                        def dsbcBody = dsbc.clone()
-                        dsbc = dsbcBody
-                        def bodyData = [ dsbc: dsbc, stageName: stageName ]
-                        body.delegate = bodyData
-                        body.resolveStrategy = Closure.DELEGATE_FIRST
-                        body.call()
+                        script.echo "Running caller-provided Closure body=${Utils.castString(body)} for stage ${body.delegate.stageName} with dsbc=${Utils.castString(body.delegate.dsbc)}"
+
+                        // Something is very weird with the (ab)use of one
+                        // closure instance defined in pipeline for re-use
+                        // with many different delegated values. It just
+                        // keeps re-using same body.delegate value (or one
+                        // of few, which is even less explicable) most of
+                        // the time not matching the parallel build scenario.
+                        // If the body closure is cloned, it loses even that
+                        // way of delegation setup. Passing same delegation
+                        // by parameter works, so a clumsy but usable case is:
+                        // generatedBuild(...) { delegate ->
+                        //     setDelegate(delegate)
+                        //     echo "${stageName} ==> ${dsbc.clioptSet.toString()}"
+                        // }
+                        body(body.delegate)
+
+/*
+                        def bodyTweak = {
+                            // Pass values by names we want into the user-provided closure
+                            DynamatrixSingleBuildConfig dsbcBody = dsbc.clone()
+                            def sn = "${stageName}" // ensure a copy
+                            //dsbc = dsbcBody.clone()
+                            def bodyData = new LinkedHashMap<Object>([ dsbc: dsbc, dsbcBody: dsbcBody, stageName: sn ])
+                            body.delegate = bodyData
+                            body.resolveStrategy = Closure.DELEGATE_FIRST
+                            //body.resolveStrategy = Closure.OWNER_FIRST
+                            script.echo "Running caller-provided Closure body for stage ${stageName} with dsbc=${Utils.castString(dsbc)}"
+                            //body.call()
+                            body()
+                        }
+                        bodyTweak.call()
+*/
+
+/*
+                        def bodyTweak = {
+                            DynamatrixSingleBuildConfig btdsbc, String btstageName, Closure btbody ->
+                            def bodyData = [:]
+                            bodyData.dsbc = btdsbc
+                            bodyData.stageName = btstageName
+                            btbody.delegate = bodyData
+                            btbody.resolveStrategy = Closure.DELEGATE_FIRST
+                            //btbody.resolveStrategy = Closure.OWNER_FIRST
+                            script.echo "Running caller-provided Closure body for stage ${bodyData.stageName} with dsbc=${Utils.castString(bodyData.dsbc)}"
+                            //btbody.call()
+                            btbody.run()
+                        }
+                        bodyTweak.run(dsbc.clone(), "${stageName}", body.clone())
+*/
+
+/*
+                        def sn = "${stageName}" // ensure a copy
+                        //DynamatrixSingleBuildConfig dsbcBody = new DynamatrixSingleBuildConfig(script)
+                        //dsbcBody = dsbc.clone()
+                        def bodyData = new LinkedHashMap<Object>([ dsbc: dsbc, stageName: sn ])
+                        //def bodyData = [ dsbc: dsbc.clone(), stageName: sn ]
+                        //def bodyData = [ dsbc: dsbc, stageName: stageName, script: this.script ]
+
+                        def bodyX = body.rehydrate(bodyData, bodyData, this.script)
+
+                        bodyX.delegate = bodyData
+                        //bodyX.resolveStrategy = Closure.DELEGATE_FIRST
+                        //bodyX.resolveStrategy = Closure.DELEGATE_ONLY
+                        bodyX.resolveStrategy = Closure.OWNER_FIRST
+                        script.echo "Running caller-provided Closure body for stage ${bodyData.stageName} with dsbc=${Utils.castString(bodyData.dsbc)}"
+                        bodyX.call()
+//                        bodyX.clone().call()
+                        //bodyX.run()
+*/
+
                     } // if body
 
                 } // script
@@ -739,7 +802,7 @@ def parallelStages = prepareDynamatrix(
     }
 
 //    @NonCPS
-    def generateBuild(dynacfgOrig = [:], Closure body = null) {
+    def generateBuild(dynacfgOrig = [:], Closure bodyOrig = null) {
         /* Returns a map of stages */
         //def debugErrors = this.shouldDebugErrors()
         //def debugTrace = this.shouldDebugTrace()
@@ -755,6 +818,29 @@ def parallelStages = prepareDynamatrix(
             // copy a unique object, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()
             String stageName = dsbc.stageName()
+
+            Closure body = null
+            if (bodyOrig != null) {
+//                body = { def bodyTmp = bodyOrig.clone() ; return bodyTmp.call(); }
+//                body = bodyOrig.rehydrate(script, this, this)
+//                body = bodyOrig
+
+                def sn = "${stageName}" // ensure a copy
+                //DynamatrixSingleBuildConfig dsbcBody = new DynamatrixSingleBuildConfig(script)
+                //dsbcBody = dsbc.clone()
+                //def bodyData = new LinkedHashMap<Object>([ dsbc: dsbc, stageName: sn ])
+                def bodyData = [ dsbc: dsbc.clone(), stageName: sn ]
+                //def bodyData = [ dsbc: dsbc, stageName: stageName, script: this.script ]
+
+                body = bodyOrig.clone()
+                body = body.rehydrate(bodyData, this.script, body)
+
+                body.delegate = bodyData
+                body.resolveStrategy = Closure.DELEGATE_FIRST
+                //body.resolveStrategy = Closure.DELEGATE_ONLY
+                //body.resolveStrategy = Closure.OWNER_FIRST
+            }
+
             String matrixTag = null
             if (true) { //scope
                 def mtMatcher = stageName =~ ~/^(\S*MATRIX_TAG="[^"]+") .*$/
