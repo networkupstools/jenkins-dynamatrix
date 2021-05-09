@@ -692,6 +692,13 @@ def parallelStages = prepareDynamatrix(
                             script.echo "[WARNING] Running stage: ${stageName} with a body{}, but no node{}. " +
                                 "If that body would call some OS interaction, the stage would fail."
                         }
+
+                        // Pass values by names we want into the user-provided closure
+                        def dsbcBody = dsbc.clone()
+                        dsbc = dsbcBody
+                        def bodyData = [ dsbc: dsbc, stageName: stageName ]
+                        body.delegate = bodyData
+                        body.resolveStrategy = Closure.DELEGATE_FIRST
                         body.call()
                     } // if body
 
