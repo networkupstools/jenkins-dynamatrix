@@ -314,16 +314,16 @@ def parallelStages = prepareDynamatrix(
         def debugMilestones = this.shouldDebugMilestones()
         def debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
-        if (buildLabelsAgents.size() == 0) {
-            if (debugErrors) this.script.println "[ERROR] generateBuildConfigSet() : should call prepareDynamatrix() first, or that found nothing usable"
-            return null
-        }
-
         // Use a separate copy of the configuration for this build
         // since different scenarios may be customized - although
         // they all take off from the same baseline setup...
         DynamatrixConfig dynacfgBuild = this.dynacfg
         dynacfgBuild.initDefault(dynacfgOrig)
+
+        if (buildLabelsAgents.size() == 0 && dynacfgBuild.dynamatrixRequiredLabelCombos.size() == 0) {
+            if (debugErrors) this.script.println "[ERROR] generateBuildConfigSet() : should call prepareDynamatrix() first, or that found nothing usable"
+            return null
+        }
 
         // We will generate build stages for each of the agent labels
         // referenced in this Map's keys. Some labels are announced

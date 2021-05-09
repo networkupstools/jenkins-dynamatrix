@@ -414,7 +414,10 @@ def parallelStages = prepareDynamatrix(
                 // TODO: Check entries if this object that they are strings/patterns
                 if (this.dynamatrixAxesLabels.size() > 0)
                     return true
-                errs += "Initially requested dynamatrixAxesLabels is empty"
+                // Else no automagic... but maybe got strict requirements?
+                if (this.dynamatrixRequiredLabelCombos.size() > 0)
+                    return true
+                errs += "Initially requested dynamatrixAxesLabels and dynamatrixRequiredLabelCombos are both empty"
             } else if (Utils.isString(this.dynamatrixAxesLabels)) {
                 if (this.dynamatrixAxesLabels.equals("")) {
                     this.dynamatrixAxesLabels = null
