@@ -676,6 +676,7 @@ def parallelStages = prepareDynamatrix(
         /* Helper for generatedBuild() below to not repeat the
          * same code structure in different handled situations
          */
+        def debugTrace = this.shouldDebugTrace()
 
         // echo's below are not debug-decorated, in these cases they are the payload
         return {
@@ -684,7 +685,7 @@ def parallelStages = prepareDynamatrix(
 
                     if (body == null) {
                         if (dsbc.requiresBuildNode) {
-                            script.echo "[INFO] Running stage: ${stageName} with no body, so just showing the resulting environment" // + "\n    for ${Utils.castString(dsbc)}"
+                            script.echo "[GENERATED-PARALLELS-INFO] Running stage: ${stageName} with no body, so just showing the resulting environment" // + "\n    for ${Utils.castString(dsbc)}"
                             if (script.isUnix()) {
                                 //script.sh "hostname; set"
                                 script.sh "hostname; set | egrep '^(ARCH|BITS|COMPILER|CSTD|PWD=|OS|CLANGVER|GCCVER|STAGE|NODE|MATRIX_TAG)'"
@@ -692,15 +693,19 @@ def parallelStages = prepareDynamatrix(
                                 script.bat "set"
                             }
                         } else {
-                            script.echo "[INFO] Running stage: ${stageName} with no body, and no node{}. So this is it :)"
+                            script.echo "[GENERATED-PARALLELS-INFO] Running stage: ${stageName} with no body, and no node{}. So this is it :)"
                         } // if node
                     } else {
                         if (!dsbc.requiresBuildNode) {
-                            script.echo "[WARNING] Running stage: ${stageName} with a body{}, but no node{}. " +
+                            script.echo "[GENERATED-PARALLELS-WARNING] " +
+                                "Running stage: ${stageName} with a body{}, but no node{}. " +
                                 "If that body would call some OS interaction, the stage would fail."
                         }
 
-                        script.echo "Running caller-provided Closure body=${Utils.castString(body)} for stage ${body.delegate.stageName} with dsbc=${Utils.castString(body.delegate.dsbc)}"
+                        if (debugTrace) script.echo "[GENERATED-PARALLELS-DEBUG] " +
+                            "Running caller-provided Closure body=${Utils.castString(body)} " +
+                            "for stage ${body.delegate.stageName} with " +
+                            "dsbc=${Utils.castString(body.delegate.dsbc)}"
 
                         // Something is very weird with the (ab)use of one
                         // closure instance defined in pipeline for re-use
@@ -716,59 +721,6 @@ def parallelStages = prepareDynamatrix(
                         //     echo "${stageName} ==> ${dsbc.clioptSet.toString()}"
                         // }
                         body(body.delegate)
-
-/*
-                        def bodyTweak = {
-                            // Pass values by names we want into the user-provided closure
-                            DynamatrixSingleBuildConfig dsbcBody = dsbc.clone()
-                            def sn = "${stageName}" // ensure a copy
-                            //dsbc = dsbcBody.clone()
-                            def bodyData = new LinkedHashMap<Object>([ dsbc: dsbc, dsbcBody: dsbcBody, stageName: sn ])
-                            body.delegate = bodyData
-                            body.resolveStrategy = Closure.DELEGATE_FIRST
-                            //body.resolveStrategy = Closure.OWNER_FIRST
-                            script.echo "Running caller-provided Closure body for stage ${stageName} with dsbc=${Utils.castString(dsbc)}"
-                            //body.call()
-                            body()
-                        }
-                        bodyTweak.call()
-*/
-
-/*
-                        def bodyTweak = {
-                            DynamatrixSingleBuildConfig btdsbc, String btstageName, Closure btbody ->
-                            def bodyData = [:]
-                            bodyData.dsbc = btdsbc
-                            bodyData.stageName = btstageName
-                            btbody.delegate = bodyData
-                            btbody.resolveStrategy = Closure.DELEGATE_FIRST
-                            //btbody.resolveStrategy = Closure.OWNER_FIRST
-                            script.echo "Running caller-provided Closure body for stage ${bodyData.stageName} with dsbc=${Utils.castString(bodyData.dsbc)}"
-                            //btbody.call()
-                            btbody.run()
-                        }
-                        bodyTweak.run(dsbc.clone(), "${stageName}", body.clone())
-*/
-
-/*
-                        def sn = "${stageName}" // ensure a copy
-                        //DynamatrixSingleBuildConfig dsbcBody = new DynamatrixSingleBuildConfig(script)
-                        //dsbcBody = dsbc.clone()
-                        def bodyData = new LinkedHashMap<Object>([ dsbc: dsbc, stageName: sn ])
-                        //def bodyData = [ dsbc: dsbc.clone(), stageName: sn ]
-                        //def bodyData = [ dsbc: dsbc, stageName: stageName, script: this.script ]
-
-                        def bodyX = body.rehydrate(bodyData, bodyData, this.script)
-
-                        bodyX.delegate = bodyData
-                        //bodyX.resolveStrategy = Closure.DELEGATE_FIRST
-                        //bodyX.resolveStrategy = Closure.DELEGATE_ONLY
-                        bodyX.resolveStrategy = Closure.OWNER_FIRST
-                        script.echo "Running caller-provided Closure body for stage ${bodyData.stageName} with dsbc=${Utils.castString(bodyData.dsbc)}"
-                        bodyX.call()
-//                        bodyX.clone().call()
-                        //bodyX.run()
-*/
 
                     } // if body
 
@@ -821,24 +773,10 @@ def parallelStages = prepareDynamatrix(
 
             Closure body = null
             if (bodyOrig != null) {
-//                body = { def bodyTmp = bodyOrig.clone() ; return bodyTmp.call(); }
-//                body = bodyOrig.rehydrate(script, this, this)
-//                body = bodyOrig
-
                 def sn = "${stageName}" // ensure a copy
-                //DynamatrixSingleBuildConfig dsbcBody = new DynamatrixSingleBuildConfig(script)
-                //dsbcBody = dsbc.clone()
-                //def bodyData = new LinkedHashMap<Object>([ dsbc: dsbc, stageName: sn ])
                 def bodyData = [ dsbc: dsbc.clone(), stageName: sn ]
-                //def bodyData = [ dsbc: dsbc, stageName: stageName, script: this.script ]
-
-                body = bodyOrig.clone()
-                body = body.rehydrate(bodyData, this.script, body)
-
-                body.delegate = bodyData
+                body = bodyOrig.clone().rehydrate(bodyData, this.script, body)
                 body.resolveStrategy = Closure.DELEGATE_FIRST
-                //body.resolveStrategy = Closure.DELEGATE_ONLY
-                //body.resolveStrategy = Closure.OWNER_FIRST
             }
 
             String matrixTag = null
