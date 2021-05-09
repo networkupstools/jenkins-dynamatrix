@@ -720,7 +720,12 @@ def parallelStages = prepareDynamatrix(
                         //     setDelegate(delegate)
                         //     echo "${stageName} ==> ${dsbc.clioptSet.toString()}"
                         // }
-                        body(body.delegate)
+                        //body(body.delegate)
+                        def bodyX = { bbody, delegate ->
+                            bbody.setDelegate(delegate)
+                            bbody()
+                        }
+                        bodyX(body, body.delegate)
 
                     } // if body
 
