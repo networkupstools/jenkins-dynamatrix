@@ -243,7 +243,7 @@ def parallelStages = prepareDynamatrix(
             case '':
                 break;
 
-            case 'C':
+            case ['C', 'C-all', 'CXX', 'CXX-all', 'C+CXX', 'C+CXX-all']:
                 this.compilerType = 'C'
                 this.compilerLabel = 'COMPILER'
                 this.compilerTools = ['CC', 'CXX', 'CPP']
@@ -260,10 +260,94 @@ def parallelStages = prepareDynamatrix(
                 // * plain C2x is experimental in GCC (absent in CLANG by some accounts like v13 CLI opts, since 9.x by others)
                 // * C++20 (2a) vs C++23 (2b) also are highly experimental, present in both
                 this.dynamatrixAxesVirtualLabelsMap = [
-                    'CSTDVERSION': ['89', '99', '11', '14', '17', '2x'],
                     'CSTDVARIANT': ['c', 'gnu']
                     ]
 
+                // We support different ways to pre-set the C/C++ language
+                // revisions. As commented elsewhere around, the numbers
+                // and code-names of those do not match well, making it an
+                // exercise for either the user (if they do want a single
+                // version string to mean both languages, and not just a
+                // single-language build), or for us - like done with the
+                // sub-map below. Also, quite a few of the named standard
+                // revisions are in fact identical or close to that; others
+                // are still highly experimental; so while the '*-all'
+                // suffixed options below allow to use all currently known
+                // values, default lists aim to conserve CI farm resources
+                // and only select meaningful build combinations (and also
+                // having fewer candidate choices to filter later).
+                // All variants below should end up populating envvars and
+                // dynamic labels 'CSTDVERSION_c' and/or 'CSTDVERSION_cxx':
+                switch (defaultCfg) {
+                    case 'C-all':
+                        // Add just the "extra" choices for C standard
+                        // revisions and fall through to add common ones:
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_c'] = ['17', '2x']
+                        // __FALL_THROUGH__
+
+                    case 'C':
+                        if (!this.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_c')) {
+                            this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_c'] = []
+                        }
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_c'] += ['89', '99', '11']
+                        break
+
+                    case 'CXX-all':
+                        // Add just the "extra" choices for C++ standard
+                        // revisions and fall through to add common ones:
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_cxx'] = ['03', '2a', '2b']
+                        // __FALL_THROUGH__
+
+                    case 'CXX':
+                        if (!this.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_cxx')) {
+                            this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_cxx'] = []
+                        }
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_cxx'] += ['98', '11', '14', '17']
+                        break
+
+                    case 'C+CXX-all':
+                        // This list with sub-map groups "contemporary"
+                        // versions of the two C/C++ standards together,
+                        // and omits versions that are effectively the
+                        // same (at least in gcc and clang implementations).
+                        // Note sub-map key name "cxx" not "c++" so we
+                        // can safely export resulting envvar names like
+                        // CSTDVERSION_cxx to shells of actual builds:
+
+                        // Add just the "extra" choices for C/C++ standard
+                        // revisions and fall through to add common ones;
+                        // note the literal magic sub-string '${KEY}' here:
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}'] = [
+                            ['c': '11', 'cxx': '14'],
+                            ['c': '2x', 'cxx': '2a'],
+                            ['c': '2x', 'cxx': '2b']
+                        ]
+                        // __FALL_THROUGH__
+
+                    case 'C+CXX':
+                        if (!this.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_${KEY}')) {
+                            this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}'] = []
+                        }
+
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}'] += [
+                            ['c': '89', 'cxx': '98'], // no C++ before 98; no "ansi" handling here so far
+                            ['c': '99', 'cxx': '98'],
+                            // no "c03", skip "c++03" same as "c++98"
+                            ['c': '11', 'cxx': '11'],
+                            ['c': '17', 'cxx': '17'] // note c17 is same as c11, but c++17 differs from c++11
+                        ]
+                        break
+
+                    default:
+                        // Should not get here; let caller figure out
+                        // how to ignore some of the other choices, e.g.
+                        // drop 'c' vs 'gnu' dialect
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}'] += [ 'c': 'ansi', 'cxx': 'ansi' ]
+                        break
+                } // switch choice of dialects
+
+                // Default filter of C/C++ revisions having *decent* support
+                // in/since certain versions of compiler toolkits.
                 // https://en.wikipedia.org/wiki/C17_(C_standard_revision) et al
                 // For GCC support, see:
                 //      https://gcc.gnu.org/onlinedocs/gcc/Standards.html
@@ -273,8 +357,8 @@ def parallelStages = prepareDynamatrix(
                 //          C++11 : since mid-4.x, mostly 4.8+, finished by 4.8.1; good in 4.9+
                 //          C++14 : complete since v5
                 //          C++17 : almost complete by v7, one fix in v8
-                //          C++20 : experimental adding a lot in v8/v9/v10/v11
-                //          C++23 : experimental since v11
+                //          C++20 (2a) : experimental adding a lot in v8/v9/v10/v11
+                //          C++23 (2b) : experimental since v11
                 //      https://gcc.gnu.org/onlinedocs/gcc/C-Dialect-Options.html
                 //          C89=C90 : "forever"?
                 //          C99 : "substantially supported" since v4.5, largely since 3.0+ (https://gcc.gnu.org/c99status.html)
@@ -310,24 +394,24 @@ def parallelStages = prepareDynamatrix(
 
                 this.excludeCombos = [
 
-                    [~/GCCVER=[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90)/],
-                    [~/GCCVER=3([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99)/],
-                    [~/GCCVER=4([^0-9.]|$)/, ~/CSTDVERSION=(?!89|90|98|99)/],
-                    [~/GCCVER=4\.[0-4]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99)/],
-                    [~/GCCVER=4\.([5-7]([^0-9.]|$|\.[0-9]+)|8(\.0|[^0-9.]|$))/, ~/CSTDVERSION=(?!89|90|98|99|03)/],
-                    [~/GCCVER=4\.(8\.[1-9][0-9]*|(9|1[0-9]+)([^0-9.]|$|\.[0-9]+))/, ~/CSTDVERSION=(?!89|98|99|03|11)/],
-                    [~/GCCVER=([5-7]|8\.0)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|98|99|03|11|14)/],
-                    [~/GCCVER=8([^0-9.]|$)/, ~/CSTDVERSION=(?!89|90|98|99|03|11|14)/],
-                    [~/GCCVER=(8\.[1-9][0-9]*)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|98|99|03|11|14|17)/],
-                    [~/GCCVER=(9|[1-9][0-9]+)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|98|99|03|11|14|17|2x)/],
+                    [~/GCCVER=[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90)/],
+                    [~/GCCVER=3([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
+                    [~/GCCVER=4([^0-9.]|$)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
+                    [~/GCCVER=4\.[0-4]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
+                    [~/GCCVER=4\.([5-7]([^0-9.]|$|\.[0-9]+)|8(\.0|[^0-9.]|$))/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03)/],
+                    [~/GCCVER=4\.(8\.[1-9][0-9]*|(9|1[0-9]+)([^0-9.]|$|\.[0-9]+))/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11)/],
+                    [~/GCCVER=([5-7]|8\.0)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11|14)/],
+                    [~/GCCVER=8([^0-9.]|$)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14)/],
+                    [~/GCCVER=(8\.[1-9][0-9]*)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11|14|17)/],
+                    [~/GCCVER=(9|[1-9][0-9]+)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11|14|17|2x)/],
 
-                    [~/CLANGVER=[012]\..+/, ~/CSTDVERSION=(?!89|90|98|99)/],
-                    [~/CLANGVER=3\.[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99)/],
-                    [~/CLANGVER=3\.3([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11)/],
-                    [~/CLANGVER=3\.([4-9]|[1-9][0-9]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11|14)/],
-                    [~/CLANGVER=4([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11|14)/],
-                    [~/CLANGVER=[5-8]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11|14|17)/],
-                    [~/CLANGVER=(9|[1-9][0-9.]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION=(?!89|90|98|99|11|14|17|2x)/]
+                    [~/CLANGVER=[012]\..+/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
+                    [~/CLANGVER=3\.[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
+                    [~/CLANGVER=3\.3([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11)/],
+                    [~/CLANGVER=3\.([4-9]|[1-9][0-9]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14)/],
+                    [~/CLANGVER=4([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14)/],
+                    [~/CLANGVER=[5-8]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14|17)/],
+                    [~/CLANGVER=(9|[1-9][0-9.]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14|17|2x)/]
 
                 ] // excludeCombos
 

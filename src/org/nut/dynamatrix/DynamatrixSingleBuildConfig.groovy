@@ -41,6 +41,8 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     // for configure script).
     // Provided as a set of Strings with key=value pairs like:
     //   ["CSTDVERSION=17", "CSTDVARIANT=gnu"]
+    // or
+    //   ["CSTDVERSION_c=11", "CSTDVERSION_cxx=14", "CSTDVARIANT=c"]
     public Set virtualLabelSet
 
     // Exported additional environment variables for this build, e.g.:
@@ -268,15 +270,25 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         def labelMap = dsbc.getKVMap(false)
 
         String sn = ""
-        if (labelMap.containsKey("CSTDVARIANT") && labelMap.containsKey("CSTDVERSION")) {
-            sn += labelMap["CSTDVARIANT"] + labelMap["CSTDVERSION"]
+        if (labelMap.containsKey("CSTDVARIANT")) {
+            if (labelMap.containsKey("CSTDVERSION")) {
+                sn += labelMap["CSTDVARIANT"] + labelMap["CSTDVERSION"]
+            } else {
+                // e.g. "c99"
+                if (labelMap.containsKey("CSTDVERSION_c"))
+                    sn += labelMap["CSTDVARIANT"] + labelMap["CSTDVERSION_c"]
+                if (!sn.equals("")) sn += "-"
+                // e.g. "gnu++17"
+                if (labelMap.containsKey("CSTDVERSION_cxx"))
+                    sn += labelMap["CSTDVARIANT"] + "++" + labelMap["CSTDVERSION_cxx"]
+            }
         }
 
         if (labelMap.containsKey("COMPILER")) {
             if (!sn.equals("")) sn += "-"
             def COMPILER = labelMap["COMPILER"]
-            sn += COMPILER.toLowerCase() // clang
-            if (labelMap.containsKey(COMPILER + "VER")) { // => clang-9
+            sn += COMPILER.toLowerCase() // e.g. "CLANG" => "clang"
+            if (labelMap.containsKey(COMPILER + "VER")) { // => e.g. "clang-9"
                 sn += "-" + labelMap[COMPILER + "VER"].toLowerCase()
             }
         }
