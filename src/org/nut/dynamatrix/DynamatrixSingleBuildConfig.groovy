@@ -261,6 +261,28 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     }
 
     @NonCPS
+    public static String C_stdarg(String CSTDVARIANT, String CSTDVERSION, Boolean isCXX = false, Boolean useIsCXXforANSI = false) {
+        // This routine might be used to construct actual "-std=..."
+        // argument for a compiler, or for the stage name tag below.
+        // The "useIsCXXforANSI" flag impacts whether we would emit
+        // "ansi++" string or not (makes tag friendlier, arg useless)
+        if (CSTDVERSION == "ansi") {
+            if (isCXX && useIsCXXforANSI) {
+                // for tag
+                return "ansi++"
+            } else {
+                // for arg
+                return "ansi"
+            }
+        }
+
+        String sn = CSTDVARIANT
+        if (isCXX) sn += "++"
+        sn += CSTDVERSION
+        return sn
+    }
+
+    @NonCPS
     public static String C_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
         // Expected axis labels below match presets in DynamatrixConfig("C")
         // and agent labels in examples.
@@ -272,15 +294,19 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         String sn = ""
         if (labelMap.containsKey("CSTDVARIANT")) {
             if (labelMap.containsKey("CSTDVERSION")) {
-                sn += labelMap["CSTDVARIANT"] + labelMap["CSTDVERSION"]
+                sn += C_stdarg(labelMap["CSTDVARIANT"], labelMap["CSTDVERSION"], false)
             } else {
                 // e.g. "c99"
                 if (labelMap.containsKey("CSTDVERSION_c"))
-                    sn += labelMap["CSTDVARIANT"] + labelMap["CSTDVERSION_c"]
+                    sn += C_stdarg(labelMap["CSTDVARIANT"], labelMap["CSTDVERSION_c"], false)
                 if (!sn.equals("")) sn += "-"
                 // e.g. "gnu++17"
                 if (labelMap.containsKey("CSTDVERSION_cxx"))
-                    sn += labelMap["CSTDVARIANT"] + "++" + labelMap["CSTDVERSION_cxx"]
+                    sn += C_stdarg(labelMap["CSTDVARIANT"], labelMap["CSTDVERSION_cxx"], true, true)
+
+                // e.g. "c++98"... or a bogus "gnuansi" to rectify:
+                if ("".equals(sn) && labelMap.containsKey("CSTDVERSION_DEFAULT"))
+                    sn += C_stdarg(labelMap["CSTDVARIANT"], labelMap["CSTDVERSION_DEFAULT"], false)
             }
         }
 
