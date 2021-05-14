@@ -43,14 +43,11 @@ def withEnvOptional(String VAR, String DEFVAL, Closure body) {
     def hits = 0
     def VAL = null
     if (Utils.isStringNotEmpty(env['NODE_NAME'])) {
-        def node = NodeData.getNodeByName(env.NODE_NAME)
-        if (node != null) {
-            for (label in node.labelString.split('[ \r\n\t]+')) {
-                if (label.startsWith("${VAR}=")) {
-                    String[] keyValue = label.split("=", 2)
-                    if (VAL == null) VAL=keyValue[1]
-                    hits ++
-                }
+        for (label in NodeData.getNodeLabelsByName(env.NODE_NAME)) {
+            if (label.startsWith("${VAR}=")) {
+                String[] keyValue = label.split("=", 2)
+                if (VAL == null) VAL=keyValue[1]
+                hits ++
             }
         }
 
@@ -75,10 +72,7 @@ def withEnvOptional(Map VARVAL, Closure body) {
     }
 
     def envmap = [:]
-    def node = null
-    if (Utils.isStringNotEmpty(env['NODE_NAME'])) {
-        node = NodeData.getNodeByName(env.NODE_NAME)
-    }
+    def arrLabels = NodeData.getNodeLabelsByName(env.NODE_NAME)
 
     for (VAR in VARVAL.keySet()) {
         def DEFVAL = VARVAL[VAR]
@@ -88,8 +82,8 @@ def withEnvOptional(Map VARVAL, Closure body) {
 
         def hits = 0
         def VAL = null
-        if (node != null) {
-            for (label in node.labelString.split('[ \r\n\t]+')) {
+        if (arrLabels.size() > 0) {
+            for (label in arrLabels) {
                 if (label.startsWith("${VAR}=")) {
                     String[] keyValue = label.split("=", 2)
                     if (VAL == null) VAL=keyValue[1]

@@ -102,6 +102,23 @@ class NodeData {
         return this.name;
     }
 
+    @NonCPS
+    static String getNodeLabelsStringByName(String name) {
+        if (Utils.isStringNotEmpty(name)) {
+            def node = NodeData.getNodeByName(name)
+            if (node != null) {
+                return node.labelString
+            }
+        }
+        return ""
+    }
+
+    static Set<String> getNodeLabelsByName(String name) {
+        def str = getNodeLabelsStringByName(name).trim()
+        if ("".equals(str)) return []
+        return str.split('[ \r\n\t]+')
+    }
+
     // Other fields are readable directly for now
 }
 
