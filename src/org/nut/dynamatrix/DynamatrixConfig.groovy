@@ -491,7 +491,7 @@ def parallelStages = prepareDynamatrix(
                     }
                 } catch(Exception e) {
                     if (!errs.equals("")) errs += "\n"
-                    def str = "[DEBUG] DynamatrixConfig(Map): ignoring unsupported config key from request: '${k}' => " + dynacfgOrig[k]
+                    def str = "[DEBUG] DynamatrixConfig(Map): ignoring unsupported config key from request: '${k}' => " + dynacfgOrig[k] + " : " + e.toString()
                     errs += str
                     if (debugTrace) this.script.println str
                 }
