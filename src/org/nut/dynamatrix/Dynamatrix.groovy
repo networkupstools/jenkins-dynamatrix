@@ -755,7 +755,9 @@ def parallelStages = prepareDynamatrix(
 //            script.stage(stageName) {
                 if (dsbc.enableDebugTrace) script.echo "Running stage: ${stageName}" + "\n  for ${Utils.castString(dsbc)}"
                 if (dsbc.isAllowedFailure) {
-                    script.catchError(message: message, buildResult: 'SUCCESS', stageResult: 'FAILED') {
+                    script.catchError(message: "Failed stage: ${stageName}" + "\n  for ${Utils.castString(dsbc)}",
+                        buildResult: 'SUCCESS', stageResult: 'FAILED'
+                    ) {
                         generatedBuildWrapperLayer2(stageName, dsbc, body).call()
                     } // catchError
                 } else {
