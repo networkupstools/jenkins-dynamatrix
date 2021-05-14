@@ -85,12 +85,17 @@ class NodeData {
     }
 
     @NonCPS
-    hudson.model.Node getNode() {
+    static hudson.model.Node getNodeByName(String name) {
         def jenkins = Jenkins.getInstanceOrNull()
         if (jenkins != null) {
-            node = jenkins.getNode(this.name)
+            return jenkins.getNode(name)
         }
         return null;
+    }
+
+    @NonCPS
+    hudson.model.Node getNode() {
+        return getNodeByName(this.name);
     }
 
     hudson.model.Node getNodeName() {
