@@ -196,9 +196,29 @@ def parallelStages = prepareDynamatrix(
         // [ [OS, ARCH, CLANGVER], [OS, ARCH, GCCVER] ]
         // ...and preferably really sorted :)
         effectiveAxes = Utils.cartesianSquared(effectiveAxes).sort()
-        if (effectiveAxes.size() == 1 && !Utils.isList(effectiveAxes[0])) {
+        if (effectiveAxes.size() > 0) {
             // We want set of sets for processing below
-            effectiveAxes = [effectiveAxes]
+            def listCount = 0
+            for (def i = 0; i < effectiveAxes.size(); i++) {
+                if (Utils.isList(effectiveAxes[i])) { listCount++ }
+            }
+
+            if (listCount == 0) {
+                // If we only got one list/set like [OS, ARCH] - then
+                // remake it into a set that contains one set
+                effectiveAxes = [effectiveAxes]
+            } else if (listCount != effectiveAxes.size()) {
+                // Turn any non-list/set items into sets of one entry
+                def arr = []
+                for (def i = 0; i < effectiveAxes.size(); i++) {
+                    if (Utils.isList(effectiveAxes[i])) {
+                        arr << effectiveAxes[i]
+                    } else {
+                        arr << [effectiveAxes[i]]
+                    }
+                }
+                effectiveAxes = arr
+            }
         }
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
 
@@ -274,7 +294,13 @@ def parallelStages = prepareDynamatrix(
                 // where each of nodeAxisCombos contains a set of axisValues
                 if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
                 def tmp = Utils.cartesianSquared(nodeAxisCombos).sort()
-                if (tmp?.size() == 1 && !Utils.isList(tmp[0])) { tmp = [tmp] }
+                // Revive combos that had only one hit and were flattened
+                // into single items (strings) instead of Sets (of Sets)
+                if (tmp.size() > 0) {
+                    for (def i = 0; i < tmp.size(); i++) {
+                        if (!Utils.isList(tmp[i])) { tmp[i] = [tmp[i]] }
+                    }
+                }
                 if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
                 // Add members of tmp (many sets of unique key=value combos
                 // for each axis) as direct members of buildLabelCombosFlat
