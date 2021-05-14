@@ -58,6 +58,20 @@ class DynamatrixConfig {
     // doing the build, subject to "excludeCombos" and "allowedFailure"
     // detailed below, but they should not end up in label expressions
     // to match the build agents by Jenkins.
+    // Parsing of dynamatrixAxesVirtualLabelsMap also supports a special
+    // syntax to process sub-maps of linked values that should be together:
+    // for this mode, the key string in dynamatrixAxesVirtualLabelsMap
+    // should contain a verbatim sub-string '${KEY}' which would then be
+    // replaced by key of the sub-map value or by 'DEFAULT' if the item
+    // is not a map; note that like other labels, these would be exported
+    // to shell so compatible names are recommended (e.g. 'cxx' not 'c++'):
+    //    dynamatrixAxesVirtualLabelsMap: [
+    //      'CSTDVERSION_${KEY}': [ ['c': '89', 'cxx': '98'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx: '17'] ],
+    //      'CSTDVARIANT': ['c', 'gnu'],
+    //    ]
+    // WARNING: main-map keys that do not contain a '${KEY}' (or have
+    // value types that are not a sub-map) would be assigned via toString()
+    // and can lead to bogus results like `CSTDVERSION="[c:89, cxx:98]"`.
     public Map dynamatrixAxesVirtualLabelsMap = [:]
 
     // Set of (Sets of envvars to export) - the resulting build matrix

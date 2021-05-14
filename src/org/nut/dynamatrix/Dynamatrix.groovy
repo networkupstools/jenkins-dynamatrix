@@ -355,14 +355,29 @@ def parallelStages = prepareDynamatrix(
             if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): dynamatrixAxesVirtualLabelsMap: ${dynacfgBuild.dynamatrixAxesVirtualLabelsMap}"
             Set dynamatrixAxesVirtualLabelsCombos = []
             for (k in dynacfgBuild.dynamatrixAxesVirtualLabelsMap.keySet()) {
+                // Keys of the map, e.g. 'CSTDVARIANT' for strings ('c', 'gnu')
+                // or 'CSTDVERSION_${KEY}' for submaps (['c': '99', 'cxx': '98'])
                 def vals = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[k]
                 if (!Utils.isList(vals) || vals.size() == 0) continue
 
                 // Collect possible values of this one key
                 Set keyvalues = []
                 for (v in vals) {
-                    // Store each value of the provided axis as a set with one item
-                    Set vv = ["${k}=${v}"]
+                    // Store each value of the provided axis as a set with
+                    // one item (if a string) or more (if an expanded map)
+                    Set vv = []
+                    if (Utils.isMap(v) && k.contains('${KEY}')) {
+                        for (subk in v.keySet()) {
+                            def dk = k.replaceFirst(/\$\{KEY\}/, subk)
+                            vv << "${dk}=${v[subk]}"
+                        }
+                    }
+
+                    if (vv.size() == 0) {
+                        def dk = k.replaceFirst(/\$\{KEY\}/, 'DEFAULT')
+                        vv = ["${dk}=${v}"]
+                    }
+
                     keyvalues << vv
                 }
 
