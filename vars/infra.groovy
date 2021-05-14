@@ -1,3 +1,6 @@
+import org.nut.dynamatrix.dynamatrixGlobalState;
+import org.nut.dynamatrix.Utils;
+
 /*
  * Return the label (expression) string for a worker that handles
  * git checkouts and stashing of the source for other build agents.
@@ -5,6 +8,26 @@
  * internet access, possibly reference git repository cache, etc.
  */
 def labelDefaultWorker() {
-    // TODO: Global/modifiable config point?
+    // Global/modifiable config point:
+    if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelDefaultWorker)) {
+        return dynamatrixGlobalState.labelDefaultWorker
+    }
     return "master-worker"
 }
+
+def labelCheckoutWorker() {
+    // Global/modifiable config point:
+    if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelCheckoutWorker)) {
+        return dynamatrixGlobalState.labelCheckoutWorker
+    }
+    return labelDefaultWorker()
+}
+
+def labelDocumentationWorker() {
+    // Global/modifiable config point:
+    if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelDocumentationWorker)) {
+        return dynamatrixGlobalState.labelDocumentationWorker
+    }
+    return labelDefaultWorker()
+}
+
