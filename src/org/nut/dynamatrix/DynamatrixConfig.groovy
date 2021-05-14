@@ -10,6 +10,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  */
 class DynamatrixConfig {
     private def script
+    public def stageNameFunc = null
     public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
@@ -348,6 +349,11 @@ def parallelStages = prepareDynamatrix(
                 if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): calling initDefault(${str}) first")
                 this.initDefault(str)
                 dynacfgOrig.remove('defaultDynamatrixConfig')
+            }
+
+            if (dynacfgOrig.containsKey('stageNameFunc')) {
+                this.stageNameFunc = dynacfgOrig.stageNameFunc
+                dynacfgOrig.remove('stageNameFunc')
             }
         }
 

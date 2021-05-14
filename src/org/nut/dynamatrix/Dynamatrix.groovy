@@ -542,8 +542,12 @@ def parallelStages = prepareDynamatrix(
             // One of (several possible) combinations of node labels:
             dsbcBle.buildLabelExpression = ble
             dsbcBle.buildLabelSet = buildLabelsAgentsBuild[ble]
-            if (dynamatrixGlobalState.stageNameFunc != null)
-                dsbcBle.stageNameFunc = dynamatrixGlobalState.stageNameFunc
+            if (dynacfgBuild.stageNameFunc != null) {
+                dsbcBle.stageNameFunc = dynacfgBuild.stageNameFunc
+            } else {
+                if (dynamatrixGlobalState.stageNameFunc != null)
+                    dsbcBle.stageNameFunc = dynamatrixGlobalState.stageNameFunc
+            }
 
             // Roll the snowball, let it grow!
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
