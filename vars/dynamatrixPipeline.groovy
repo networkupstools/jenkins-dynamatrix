@@ -131,17 +131,11 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
     def stagesShellcheck = [:]
 
-    pipeline {
-        agent none
-        options {
-            skipDefaultCheckout()
-        }
-        stages {
+    node(infra.labelDefaultWorker()) { // any
+        stage("Initial discovery") {
+            parallel (
 
-            stage("Initial discovery") {
-                parallel {
-
-                    stage("Stash source for workers") {
+                "Stash source for workers": {
 /*
  * NOTE: For quicker builds, it is recommended to set up the pipeline job
  * using this Jenkinsfile to refer to a local copy of the Git repository
@@ -149,147 +143,141 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
  * shallow checkouts (depth=1). Longer history may make sense for release
  * builds with changelog generation, but not for quick test iterations.
  */
-                        agent { label infra.labelCheckoutWorker() }
-                        steps {
-                            stashCleanSrc(stashnameSrc)
+                    node(infra.labelCheckoutWorker()) {
+                        stashCleanSrc(stashnameSrc)
                         }
-                    } // stage - stash
+                    }
+                }, // stage - stash
 
-                    stage("Discover build matrix") {
-                        // Relatively quick discovery (e.g. filtering axes
-                        // by regexes takes long when many build agents are
-                        // involved, so that part happens in parallel to
-                        // this shellcheck and also a spellcheck, which can
-                        // be prepared quickly):
-                        steps {
-                            script {
-                                // Have some defaults, if only to have all
-                                // expected fields defined and node caps cached
-                                dynamatrix.prepareDynamatrix(dynacfgBase)
+                "Discover build matrix": {
+                    // Relatively quick discovery (e.g. filtering axes
+                    // by regexes takes long when many build agents are
+                    // involved, so that part happens in parallel to
+                    // this shellcheck and also a spellcheck, which can
+                    // be prepared quickly):
 
-                                // In outer layer, select all suitable builders;
-                                // In inner layer, unpack+config the source on
-                                // that chosen host once, and use that workspace
-                                // for distinct test stages with different shells.
-                                // Note that BO UI might not render them separately
-                                // (seems to only render the first mentioned stage),
-                                // but "Classic UI" Pipeline Steps tree should...
-                                //println "SHELLCHECK: ${Utils.castString(dynacfgPipeline.shellcheck)}"
-                                if (dynacfgPipeline.shellcheck.single != null || dynacfgPipeline.shellcheck.multi != null) {
-                                    //println "Discovering stagesShellcheck..."
-                                    stagesShellcheck = dynamatrix.generateBuild([
-                                        dynamatrixAxesLabels: [~/^OS_.+/],
-                                        mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
-                                        stageNameFunc: { DynamatrixSingleBuildConfig dsbc ->
-                                                // TODO: Offload to a routine and reference by name here?
-                                                // A direct Closure seems to confuse Jenkins/Groovy CPS
-                                                def labelMap = dsbc.getKVMap(false)
-                                                String sn = ""
-                                                if (labelMap.containsKey("OS_FAMILY"))
-                                                    sn += labelMap.OS_FAMILY + "-"
-                                                if (labelMap.containsKey("OS_DISTRO"))
-                                                    sn += labelMap.OS_DISTRO + "-"
-                                                return "MATRIX_TAG=${sn}shellcheck"
+                    // Have some defaults, if only to have all
+                    // expected fields defined and node caps cached
+                    dynamatrix.prepareDynamatrix(dynacfgBase)
+
+                    // In outer layer, select all suitable builders;
+                    // In inner layer, unpack+config the source on
+                    // that chosen host once, and use that workspace
+                    // for distinct test stages with different shells.
+                    // Note that BO UI might not render them separately
+                    // (seems to only render the first mentioned stage),
+                    // but "Classic UI" Pipeline Steps tree should...
+                    //println "SHELLCHECK: ${Utils.castString(dynacfgPipeline.shellcheck)}"
+                    if (dynacfgPipeline.shellcheck.single != null || dynacfgPipeline.shellcheck.multi != null) {
+                        //println "Discovering stagesShellcheck..."
+                        stagesShellcheck = dynamatrix.generateBuild([
+                            dynamatrixAxesLabels: [~/^OS_.+/],
+                            mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
+                            stageNameFunc: { DynamatrixSingleBuildConfig dsbc ->
+                                    // TODO: Offload to a routine and reference by name here?
+                                    // A direct Closure seems to confuse Jenkins/Groovy CPS
+                                    def labelMap = dsbc.getKVMap(false)
+                                    String sn = ""
+                                    if (labelMap.containsKey("OS_FAMILY"))
+                                        sn += labelMap.OS_FAMILY + "-"
+                                    if (labelMap.containsKey("OS_DISTRO"))
+                                        sn += labelMap.OS_DISTRO + "-"
+                                    return "MATRIX_TAG=${sn}shellcheck"
+                                }
+                            ]) { delegate -> setDelegate(delegate)
+                                //SCR//script {
+                                    def MATRIX_TAG = delegate.stageName - ~/^MATRIX_TAG=/
+
+                                    // Let BO render all this work somehow at least
+                                    // It also tends to say "QueuedWaiting for run to start"
+                                    // until everything is done... Classic UI flowGraphTable
+                                    // fares a lot better but less user-friently to glance.
+                                    stage("shellcheck for ${MATRIX_TAG}") {
+                                        // On current node/workspace, prepare source once for
+                                        // tests that are not expected to impact each other
+                                        stage("prep for ${MATRIX_TAG}") {
+                                            sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
+                                            infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+                                                unstashCleanSrc(stashnameSrc)
+                                                sh """ ${dynacfgPipeline.prepconf} && ${dynacfgPipeline.configure} """
                                             }
-                                        ]) { delegate -> setDelegate(delegate)
-                                            //SCR//script {
-                                                def MATRIX_TAG = delegate.stageName - ~/^MATRIX_TAG=/
+                                        }
 
-                                                // Let BO render all this work somehow at least
-                                                // It also tends to say "QueuedWaiting for run to start"
-                                                // until everything is done... Classic UI flowGraphTable
-                                                // fares a lot better but less user-friently to glance.
-                                                stage("shellcheck for ${MATRIX_TAG}") { 
-                                                    // On current node/workspace, prepare source once for
-                                                    // tests that are not expected to impact each other
-                                                    stage("prep for ${MATRIX_TAG}") {
-                                                        sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
-                                                        infra.withEnvOptional(dynacfgPipeline.defaultTools) {
-                                                            unstashCleanSrc(stashnameSrc)
-                                                            sh """ ${dynacfgPipeline.prepconf} && ${dynacfgPipeline.configure} """
-                                                        }
-                                                    }
-
-                                                    def stagesShellcheckNode = [:]
-                                                    // Iterate with separate verdicts when/if `make shellcheck`
-                                                    // (or equivalent) actually supports various $SHELL tests
-                                                    if (dynacfgPipeline.shellcheck.multi != null) {
-                                                        if (dynacfgPipeline.shellcheck.multiLabel != null) {
-                                                            if (env.NODE_LABELS && env.NODE_NAME) {
-                                                                for (label in NodeData.getNodeLabelsByName(env.NODE_NAME)) {
-                                                                    if (label.startsWith("${dynacfgPipeline.shellcheck.multiLabel}=")) {
-                                                                        String[] keyValue = label.split("=", 2)
-                                                                        String SHELL_PROGS=keyValue[1]
-                                                                        stagesShellcheckNode["Test with ${SHELL_PROGS} for ${MATRIX_TAG}"] = {
-                                                                            def msgFail = "Failed stage: ${stageName}" + "\n  for ${Utils.castString(dsbc)}"
-                                                                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
-                                                                                withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
-                                                                                    infra.withEnvOptional(dynacfgPipeline.defaultTools) {
-                                                                                        sh """ set +x
-                                                                                        echo "Shell-dependent testing with shell '${SHELL_PROGS}' on `uname -a || hostname || true` system"
-                                                                                        ${dynacfgPipeline.shellcheck.multi}
-                                                                                        """
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        } // added stage
+                                        def stagesShellcheckNode = [:]
+                                        // Iterate with separate verdicts when/if `make shellcheck`
+                                        // (or equivalent) actually supports various $SHELL tests
+                                        if (dynacfgPipeline.shellcheck.multi != null) {
+                                            if (dynacfgPipeline.shellcheck.multiLabel != null) {
+                                                if (env.NODE_LABELS && env.NODE_NAME) {
+                                                    for (label in NodeData.getNodeLabelsByName(env.NODE_NAME)) {
+                                                        if (label.startsWith("${dynacfgPipeline.shellcheck.multiLabel}=")) {
+                                                            String[] keyValue = label.split("=", 2)
+                                                            String SHELL_PROGS=keyValue[1]
+                                                            stagesShellcheckNode["Test with ${SHELL_PROGS} for ${MATRIX_TAG}"] = {
+                                                                def msgFail = "Failed stage: ${stageName} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(dsbc)}"
+                                                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
+                                                                    withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
+                                                                        infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+                                                                            sh """ set +x
+                                                                            echo "Shell-dependent testing with shell '${SHELL_PROGS}' on `uname -a || hostname || true` system"
+                                                                            ${dynacfgPipeline.shellcheck.multi}
+                                                                            """
+                                                                        }
                                                                     }
                                                                 }
-                                                            }
-                                                        }
-
-                                                        // TOTHINK: Skip agent that does not declare any shell labels?..
-                                                        if (stagesShellcheckNode.size() == 0) {
-                                                            stagesShellcheckNode["Test with default shell(s) for ${MATRIX_TAG}"] = {
-                                                                infra.withEnvOptional(dynacfgPipeline.defaultTools) {
-                                                                    sh """ set +x
-                                                                    echo "Shell-dependent testing with default shell on `uname -a || hostname || true` system"
-                                                                    ${dynacfgPipeline.shellcheck.multi}
-                                                                    """
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-
-                                                    if (dynacfgPipeline.shellcheck.single != null) {
-                                                        stagesShellcheckNode["Generic-shell test for ${MATRIX_TAG}"] = {
-                                                            infra.withEnvOptional(dynacfgPipeline.defaultTools) {
-                                                                sh """ set +x
-                                                                echo "Generic-shell test (with recipe defaults) on `uname -a || hostname || true` system"
-                                                                ${dynacfgPipeline.shellcheck.single}
-                                                                """
-                                                            }
-                                                        }
-                                                    }
-
-                                                    stagesShellcheckNode.each { name, closure ->
-                                                        stage(name) {
-                                                            closure()
+                                                            } // added stage
                                                         }
                                                     }
                                                 }
-                                            //SCR//} // script{} for big shellcheck test on one hit
-                                        } // generateBuild + closure for one hit of stagesShellcheck
-                                } // if dynacfgPipeline.shellcheck
+                                            }
 
-                                println "Discovered ${stagesShellcheck.size()} stagesShellcheck builds"
-                            } // script for stage("Discover build matrix")
-                        } // steps
-                        /* As noted above, any relatively heavy axis filters,
-                         * which need many seconds to process just to decide
-                         * what should be built this time, should happen in
-                         * the next stage along with quick tests - like the
-                         * spellcheck and shellcheck targets.
-                         */
-                    } // stage - discover the matrix
+                                            // TOTHINK: Skip agent that does not declare any shell labels?..
+                                            if (stagesShellcheckNode.size() == 0) {
+                                                stagesShellcheckNode["Test with default shell(s) for ${MATRIX_TAG}"] = {
+                                                    infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+                                                        sh """ set +x
+                                                        echo "Shell-dependent testing with default shell on `uname -a || hostname || true` system"
+                                                        ${dynacfgPipeline.shellcheck.multi}
+                                                        """
+                                                    }
+                                                }
+                                            }
+                                        }
 
-                } // parallel-initial
-            } // stage-initial
+                                        if (dynacfgPipeline.shellcheck.single != null) {
+                                            stagesShellcheckNode["Generic-shell test for ${MATRIX_TAG}"] = {
+                                                infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+                                                    sh """ set +x
+                                                    echo "Generic-shell test (with recipe defaults) on `uname -a || hostname || true` system"
+                                                    ${dynacfgPipeline.shellcheck.single}
+                                                    """
+                                                }
+                                            }
+                                        }
 
-        } // stages
-    } // pipeline
+                                        stagesShellcheckNode.each { name, closure ->
+                                            stage(name) {
+                                                closure()
+                                            }
+                                        }
+                                    }
+                                //SCR//} // script{} for big shellcheck test on one hit
+                            } // generateBuild + closure for one hit of stagesShellcheck
+                    } // if dynacfgPipeline.shellcheck
 
-    // Rest of code continues like a scripted pipeline
+                    println "Discovered ${stagesShellcheck.size()} stagesShellcheck builds"
+
+                    /* As noted above, any relatively heavy axis filters,
+                     * which need many seconds to process just to decide
+                     * what should be built this time, should happen in
+                     * the next stage along with quick tests - like the
+                     * spellcheck and shellcheck targets.
+                     */
+                } // stage - discover the matrix
+
+            ) // parallel-initial
+        } // stage-initial
+
 /*
     stage("Run quick tests and prepare the big dynamatrix") {
         parallel ([
@@ -318,6 +306,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     } // stage-quick
 */
 
+/*
     def par1 = stagesShellcheck
 
     if (dynacfgPipeline.spellcheck != null) {
@@ -337,6 +326,54 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     stage("Quick tests and prepare the bigger dynamatrix") {
         parallel par1
     } // stage-quick
+*/
+
+        // Do not mix parallel and usual sub-stages inside the
+        // stage below - at least, BO does not render that well
+        // and it may cause (or not?) CPS faults somehow...
+        stage("Quick tests and prepare the bigger dynamatrix") {
+            echo "Beginning quick-test stage"
+            def par1 = stagesShellcheck
+
+            if (dynacfgPipeline.spellcheck != null) {
+                par1["spellcheck"] = {
+                    node(infra.labelDocumentationWorker()) {
+                        infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+                            unstashCleanSrc(stashnameSrc)
+                            sh """ ${dynacfgPipeline.prepconf} && ${dynacfgPipeline.configure} """
+                            sh """ ${dynacfgPipeline.spellcheck} """
+                        }
+                    }
+                } // spellcheck
+            }
+
+//            par1.failFast = false
+
+//            stage("Par 1") {
+                parallel par1
+//            }
+//            stage("Summarize quick-test results - 1") {
+//                echo "[Quick tests and prepare the bigger dynamatrix - 1] ${currentBuild.result}"
+    //            if (currentBuild.result != 'SUCCESS') {
+    //                error "Quick-test and/or preparation of larger test matrix failed"
+    //            }
+//            } // stage-quick-summary
+        } // stage-quick
+
+        // Something in our dynamatrix wrappings precludes seeing
+        // what failed on high-level in the parallel block above
+        // or even failing the build (partially intended - we did
+        // want all shell/spell tests to complete and only fail
+        // afterwards if needed... but expected that stage above
+        // cause the build abortion if applicable)
+        stage("Summarize quick-test results") {
+            echo "[Quick tests and prepare the bigger dynamatrix] ${currentBuild.result}"
+            if (currentBuild.result != 'SUCCESS') {
+                error "Quick-test and/or preparation of larger test matrix failed"
+            }
+        } // stage-quick-summary
+
+    } // node to manage the pipeline
 
 }
 
