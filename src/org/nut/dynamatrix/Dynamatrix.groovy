@@ -726,7 +726,7 @@ def parallelStages = prepareDynamatrix(
         // echo's below are not debug-decorated, in these cases they are the payload
         return {
             script.withEnv(dsbc.getKVSet().sort()) { // by side effect, sorting turns the Set into an array
-                script.script {
+//SCR//                script.script {
 
                     if (body == null) {
                         if (dsbc.requiresBuildNode) {
@@ -778,7 +778,7 @@ def parallelStages = prepareDynamatrix(
 
                     } // if body
 
-                } // script
+//SCR//                } // script
             } // withEnv
         } // return a Closure
 
