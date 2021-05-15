@@ -319,6 +319,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 */
 
     def par1 = stagesShellcheck
+
     if (dynacfgPipeline.spellcheck != null) {
         par1["spellcheck"] = {
             node(infra.labelDocumentationWorker()) {
@@ -330,6 +331,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             }
         } // spellcheck
     }
+
+    par1.failFast = false
 
     stage("Quick tests and prepare the bigger dynamatrix") {
         parallel par1
