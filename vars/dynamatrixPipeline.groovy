@@ -88,6 +88,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     } else {
         dynacfgPipeline['spellcheck'] = null
     }
+    //println "SPELLCHECK: " + Utils.castString(dynacfgPipeline['spellcheck'])
 
     if (dynacfgPipeline.containsKey('shellcheck')) {
         if (Utils.isMap(dynacfgPipeline['shellcheck'])) {
@@ -123,6 +124,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         dynacfgPipeline['shellcheck']['multi'] = null
         dynacfgPipeline['shellcheck']['multiLabel'] = null
     }
+    //println "SHELLCHECK: " + Utils.castString(dynacfgPipeline['shellcheck'])
 
     Dynamatrix dynamatrix = new Dynamatrix(this)
     def stashnameSrc = 'src-checkedout'
@@ -172,7 +174,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 // Note that BO UI might not render them separately
                                 // (seems to only render the first mentioned stage),
                                 // but "Classic UI" Pipeline Steps tree should...
+                                //println "SHELLCHECK: ${Utils.castString(dynacfgPipeline.shellcheck)}"
                                 if (dynacfgPipeline.shellcheck.single != null || dynacfgPipeline.shellcheck.multi != null) {
+                                    //println "Discovering stagesShellcheck..."
                                     stagesShellcheck = dynamatrix.generateBuild([
                                         dynamatrixAxesLabels: [~/^OS_.+/],
                                         mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
