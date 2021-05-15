@@ -192,7 +192,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                                 return "MATRIX_TAG=${sn}shellcheck"
                                             }
                                         ]) { delegate -> setDelegate(delegate)
-                                            script {
+                                            //SCR//script {
                                                 def MATRIX_TAG = delegate.stageName - ~/^MATRIX_TAG=/
 
                                                 // Let BO render all this work somehow at least
@@ -268,12 +268,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                                         }
                                                     }
                                                 }
-                                            }
+                                            //SCR//} // script{} for big shellcheck test on one hit
                                         } // generateBuild + closure for one hit of stagesShellcheck
                                 } // if dynacfgPipeline.shellcheck
 
                                 println "Discovered ${stagesShellcheck.size()} stagesShellcheck builds"
-                            } // script
+                            } // script for stage("Discover build matrix")
                         } // steps
                         /* As noted above, any relatively heavy axis filters,
                          * which need many seconds to process just to decide
