@@ -208,8 +208,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                                 def stagesShellcheckNode = [:]
                                                 // Iterate with separate verdicts when/if `make shellcheck`
                                                 // (or equivalen) actually supports various $SHELL tests
-                                                if (dynacfgPipeline.shellcheck.multi != null && dynacfgPipeline.shellcheck.multiLabel != null) {
-                                                    if (env.NODE_LABELS && env.NODE_NAME) {
+                                                if (dynacfgPipeline.shellcheck.multi != null) {
+                                                    if (env.NODE_LABELS && env.NODE_NAME &&  dynacfgPipeline.shellcheck.multiLabel != null) {
                                                         for (label in NodeData.getNodeLabelsByName(env.NODE_NAME)) {
                                                             if (label.startsWith("${dynacfgPipeline.shellcheck.multiLabel}=")) {
                                                                 String[] keyValue = label.split("=", 2)
