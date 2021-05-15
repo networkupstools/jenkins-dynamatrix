@@ -724,7 +724,7 @@ def parallelStages = prepareDynamatrix(
         def debugTrace = this.shouldDebugTrace()
 
         // echo's below are not debug-decorated, in these cases they are the payload
-        return {
+//CLS//        return {
             script.withEnv(dsbc.getKVSet().sort()) { // by side effect, sorting turns the Set into an array
 //SCR//                script.script {
 
@@ -780,7 +780,7 @@ def parallelStages = prepareDynamatrix(
 
 //SCR//                } // script
             } // withEnv
-        } // return a Closure
+//CLS//        } // return a Closure
 
     }
 
@@ -792,7 +792,7 @@ def parallelStages = prepareDynamatrix(
          * the string around.
          */
 
-        return {
+//CLS//        return {
 //            script.stage(stageName) {
                 if (dsbc.enableDebugTrace) script.echo "Running stage: ${stageName}" + "\n  for ${Utils.castString(dsbc)}"
                 if (dsbc.isAllowedFailure) {
@@ -800,13 +800,13 @@ def parallelStages = prepareDynamatrix(
                         message: "Failed stage which is allowed to fail: ${stageName}" + "\n  for ${Utils.castString(dsbc)}",
                         buildResult: 'SUCCESS', stageResult: 'FAILED'
                     ) {
-                        generatedBuildWrapperLayer2(stageName, dsbc, body).call()
+                        generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
                     } // catchError
                 } else {
-                    generatedBuildWrapperLayer2(stageName, dsbc, body).call()
+                    generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
                 } // if allowedFailure
 //            } // stage
-        } // return a Closure
+//CLS//        } // return a Closure
 
     }
 
@@ -854,7 +854,7 @@ def parallelStages = prepareDynamatrix(
 
             // Named closure to call below
             def payload = {
-                generatedBuildWrapperLayer1(stageName, dsbc, body).call()
+                generatedBuildWrapperLayer1(stageName, dsbc, body)//CLS//.call()
             }
 
             // Pattern for code change on the fly:
