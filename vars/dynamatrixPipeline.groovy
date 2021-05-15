@@ -17,6 +17,11 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 
     dynacfgPipeline['spellcheck'] = false //true
     dynacfgPipeline['shellcheck'] = true
+    dynacfgPipeline['NUT-shellcheck'] = [
+        'single': '( \${MAKE} shellcheck )',
+        'multi': '(cd tests && SHELL_PROGS="$SHELL_PROGS" ./nut-driver-enumerator-test.sh )',
+        'multiLabel': 'SHELL_PROGS'
+    ]
 
     dynacfgBase['commonLabelExpr'] = 'nut-builder'
     dynacfgBase['dynamatrixAxesLabels'] = [~/^OS_.+/]
@@ -52,14 +57,19 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     }
 
     // Sanity-check the pipeline options
-    // Not using closures to make sure envvars are expanded during
-    // shell execution and not at an earlier processing stage
+    // Not using closures to make sure envvars are expanded during real
+    // shell execution and not at an earlier processing stage by Groovy -
+    // so below we define many subshelled blocks in parentheses that would
+    // be "pasted" into the `sh` steps.
+
+    // Initialize default `make` implementation to use (there are many), etc.:
     if (!dynacfgPipeline.containsKey('defaultTools')) {
         dynacfgPipeline['defaultTools'] = [
             'MAKE': 'make'
         ]
     }
 
+    // Subshell common operations to prepare codebase:
     if (!dynacfgPipeline.containsKey('prepconf')) {
         dynacfgPipeline['prepconf'] = "( if [ -x ./autogen.sh ]; then ./autogen.sh || exit; else if [ -s configure.ac ] ; then mkdir -p config && autoreconf --install --force --verbose -I config || exit ; fi; fi ; [ -x configure ] || exit )"
     }
@@ -68,6 +78,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         dynacfgPipeline['configure'] = "( [ -x configure ] || exit ; ./configure \${CONFIG_OPTS} )"
     }
 
+    // Sanity-check certain build milestones expecting certain cfg structure:
     if (dynacfgPipeline.containsKey('spellcheck')) {
         if ("${dynacfgPipeline['spellcheck']}".trim().equals("true")) {
             dynacfgPipeline['spellcheck'] = '( \${MAKE} spellcheck )'
@@ -158,13 +169,16 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 // In inner layer, unpack+config the source on
                                 // that chosen host once, and use that workspace
                                 // for distinct test stages with different shells.
-                                // Note that BO UI might not render them separately,
+                                // Note that BO UI might not render them separately
+                                // (seems to only render the first mentioned stage),
                                 // but "Classic UI" Pipeline Steps tree should...
                                 if (dynacfgPipeline.shellcheck.single != null || dynacfgPipeline.shellcheck.multi != null) {
                                     stagesShellcheck = dynamatrix.generateBuild([
                                         dynamatrixAxesLabels: [~/^OS_.+/],
                                         mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
                                         stageNameFunc: { DynamatrixSingleBuildConfig dsbc ->
+                                                // TODO: Offload to a routine and reference by name here?
+                                                // A direct Closure seems to confuse Jenkins/Groovy CPS
                                                 def labelMap = dsbc.getKVMap(false)
                                                 String sn = ""
                                                 if (labelMap.containsKey("OS_FAMILY"))
