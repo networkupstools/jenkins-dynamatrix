@@ -193,8 +193,6 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                             }
                                         ]) { delegate -> setDelegate(delegate)
                                             script {
-                                                // On current node/workspace, prepare source once for
-                                                // tests that are not expected to impact each other
                                                 def MATRIX_TAG = delegate.stageName - ~/^MATRIX_TAG=/
 
                                                 // Let BO render all this work somehow at least
@@ -202,6 +200,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                                 // until everything is done... Classic UI flowGraphTable
                                                 // fares a lot better but less user-friently to glance.
                                                 stage("shellcheck for ${MATRIX_TAG}") { 
+                                                    // On current node/workspace, prepare source once for
+                                                    // tests that are not expected to impact each other
                                                     stage("prep for ${MATRIX_TAG}") {
                                                         sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
                                                         infra.withEnvOptional(dynacfgPipeline.defaultTools) {
