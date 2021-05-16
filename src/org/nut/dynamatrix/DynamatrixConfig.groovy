@@ -415,6 +415,8 @@ def parallelStages = prepareDynamatrix(
 
                 ] // excludeCombos
 
+                if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(String): initialized with defaultCfg = ${Utils.castString(defaultCfg)} to ${Utils.castString(this)}")
+
                 break;
 
             default:
