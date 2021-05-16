@@ -366,18 +366,25 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
                                 def changedFiles = listChangedFiles()
                                 if (changedFiles.size() > 0) {
+                                    def skip = true
+
                                     for (cf in changedFiles) {
-                                        if (!(cf ==~ sb.appliesToChangedFilesRegex)) {
-                                            // A changed file name did NOT match
+                                        if (cf ==~ sb.appliesToChangedFilesRegex) {
+                                            // A changed file name did match
                                             // the regex for files covered by a
-                                            // scenario, so this scenario does
-                                            // not apply to this changeset and
-                                            // should be skipped
-                                            if (dynamatrixGlobalState.enableDebugTrace)
-                                                echo "SKIP: Changeset included file name '${cf}' which did not match the pattern ${sb.appliesToChangedFilesRegex} for this filter configuration"
-                                            countFiltersSkipped++
-                                            return // continue
+                                            // scenario, so this scenario should
+                                            // apply to this changeset and not
+                                            // skipped
+                                            skip = false
+                                            break
                                         }
+                                    }
+
+                                    if (skip) {
+                                        if (dynamatrixGlobalState.enableDebugTrace)
+                                            echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this filter configuration"
+                                        countFiltersSkipped++
+                                        return // continue
                                     }
                                 } else {
                                     if (dynamatrixGlobalState.enableDebugTrace)
