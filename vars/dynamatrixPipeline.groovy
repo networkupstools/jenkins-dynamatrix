@@ -45,6 +45,19 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     dynamatrixGlobalState.enableDebugMilestonesDetails = true
     }
 
+@NonCPS
+def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
+    // TODO: Offload to a routine and reference by name here?
+    // A direct Closure seems to confuse Jenkins/Groovy CPS
+    def labelMap = dsbc.getKVMap(false)
+    String sn = ""
+    if (labelMap.containsKey("OS_FAMILY"))
+        sn += labelMap.OS_FAMILY + "-"
+    if (labelMap.containsKey("OS_DISTRO"))
+        sn += labelMap.OS_DISTRO + "-"
+    return "MATRIX_TAG=${sn}shellcheck"
+}
+
     if (!dynacfgBase.containsKey('defaultDynamatrixConfig')) {
         dynacfgBase['defaultDynamatrixConfig'] = "C+CXX"
     }
@@ -173,17 +186,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         stagesShellcheck = dynamatrix.generateBuild([
                             dynamatrixAxesLabels: [~/^OS_.+/],
                             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
-                            stageNameFunc: { DynamatrixSingleBuildConfig dsbc ->
-                                    // TODO: Offload to a routine and reference by name here?
-                                    // A direct Closure seems to confuse Jenkins/Groovy CPS
-                                    def labelMap = dsbc.getKVMap(false)
-                                    String sn = ""
-                                    if (labelMap.containsKey("OS_FAMILY"))
-                                        sn += labelMap.OS_FAMILY + "-"
-                                    if (labelMap.containsKey("OS_DISTRO"))
-                                        sn += labelMap.OS_DISTRO + "-"
-                                    return "MATRIX_TAG=${sn}shellcheck"
-                                }
+                            stageNameFunc: this.&stageNameFunc_Shellcheck
                             ]) { delegate -> setDelegate(delegate)
                                 //SCR//script {
                                     def MATRIX_TAG = delegate.stageName - ~/^MATRIX_TAG=/
