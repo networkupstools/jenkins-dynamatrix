@@ -142,8 +142,9 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
     Dynamatrix dynamatrix = new Dynamatrix(this)
     def stashnameSrc = 'src-checkedout'
 
-    // To hop over CPS limitations, we first store our Map as a Set of tuples,
-    // then convert back for `parallel`. Go figure...
+    // To hop over CPS limitations, we first store our stages
+    // (generated inside CPS code) as a Set of tuples, then
+    // convert into a Map just for `parallel`. Go figure...
     def stagesShellcheck_arr = []
 
     node(infra.labelDefaultWorker()) {
