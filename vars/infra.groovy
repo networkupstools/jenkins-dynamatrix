@@ -43,7 +43,7 @@ def withEnvOptional(String VAR, String DEFVAL, Closure body) {
     def hits = 0
     def VAL = null
     if (Utils.isStringNotEmpty(env['NODE_NAME'])) {
-        for (label in NodeData.getNodeLabelsByName(env.NODE_NAME)) {
+        NodeData.getNodeLabelsByName(env.NODE_NAME).each() { label ->
             if (label.startsWith("${VAR}=")) {
                 String[] keyValue = label.split("=", 2)
                 if (VAL == null) VAL=keyValue[1]
@@ -74,16 +74,16 @@ def withEnvOptional(Map VARVAL, Closure body) {
     def envmap = [:]
     def arrLabels = NodeData.getNodeLabelsByName(env.NODE_NAME)
 
-    for (VAR in VARVAL.keySet()) {
+    VARVAL.keySet().each() {VAR ->
         def DEFVAL = VARVAL[VAR]
         if (Utils.isStringNotEmpty(env[VAR]) || envmap.containsKey(VAR)) {
-            continue
+            return
         }
 
         def hits = 0
         def VAL = null
         if (arrLabels.size() > 0) {
-            for (label in arrLabels) {
+            arrLabels.each() {label ->
                 if (label.startsWith("${VAR}=")) {
                     String[] keyValue = label.split("=", 2)
                     if (VAL == null) VAL=keyValue[1]
@@ -104,7 +104,7 @@ def withEnvOptional(Map VARVAL, Closure body) {
 
     if (envmap.size() > 0) {
         def envarr = []
-        for (k in envmap.keySet()) {
+        envmap.keySet().each() {k ->
             envarr << "${k}=${envmap[k]}"
         }
         //return withEnv(envmap, body)

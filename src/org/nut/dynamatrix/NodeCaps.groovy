@@ -68,8 +68,8 @@ class NodeCaps {
         }
 
         if (builders != null) {
-            for (hudson.model.Node node : builders) {
-                if (node == null) continue
+            builders.each() {hudson.model.Node node ->
+                if (node == null) return
                 if (this.enableDebugTrace) this.script.println("NodeCaps: looking for node data: ${Utils.castString(node)}")
                 nodeData[node.getNodeName()] = new NodeData(node)
             }
@@ -99,10 +99,10 @@ class NodeCaps {
             //this.script.println "[DEBUG] raw nodeCaps: " + this
             this.script.println "[DEBUG] nodeCaps.labelExpression: " + this.labelExpression
             this.script.println "[DEBUG] nodeCaps.nodeData.size(): " + this.nodeData.size()
-            for (nodeName in this.nodeData.keySet()) {
-                if (nodeName == null) continue
+            this.nodeData.keySet().each() {nodeName ->
+                if (nodeName == null) return
                 this.script.println "[DEBUG] nodeCaps.nodeData[${nodeName}].labelMap.size()\t: " + this.nodeData[nodeName].labelMap.size()
-                for (String label : this.nodeData[nodeName].labelMap.keySet()) {
+                this.nodeData[nodeName].labelMap.keySet().each() {String label ->
                     this.script.println "[DEBUG] nodeCaps.nodeData[${nodeName}].labelMap['${label}']\t: ${Utils.castString(this.nodeData[nodeName].labelMap[label])}"
                 }
             }
@@ -161,16 +161,16 @@ class NodeCaps {
                 // of the variable axis itself (like fixed 'COMPILER'
                 // string for variable part '${COMPILER}' in originally
                 // requested axis name '${COMPILER}VAR').
-                for (expandedAxisName in this.resolveAxisName(varAxis)) {
-                    if (!Utils.isStringNotEmpty(expandedAxisName)) continue;
+                this.resolveAxisName(varAxis).each() {expandedAxisName ->
+                    if (!Utils.isStringNotEmpty(expandedAxisName)) return;
 
                     // This layer of recursion gets us fixed-string name
                     // variants of the variable axis (like 'GCC' and
                     // 'CLANG' for variable '${COMPILER}' in originally
                     // requested axis name '${COMPILER}VAR').
                     // Pattern looks into nodeCaps.
-                    for (expandedAxisValue in this.resolveAxisValues(expandedAxisName)) {
-                        if (!Utils.isStringNotEmpty(expandedAxisValue)) continue;
+                    this.resolveAxisValues(expandedAxisName).each() {expandedAxisValue ->
+                        if (!Utils.isStringNotEmpty(expandedAxisValue)) return;
 
                         // In the original axis like '${COMPILER}VER' apply current item
                         // from expandedAxisValue like 'GCC' (or 'CLANG' in next loop)
@@ -205,17 +205,17 @@ class NodeCaps {
 
         if (Utils.isRegex(axis)) {
             // Return label keys which match the expression
-            for (nodeName in this.nodeData.keySet()) {
-                if (nodeName == null) continue
+            this.nodeData.keySet().each() {nodeName ->
+                if (nodeName == null) return
 
-                for (String label : this.nodeData[nodeName].labelMap.keySet()) {
+                this.nodeData[nodeName].labelMap.keySet().each() {String label ->
                     if (debugTrace) {
                         this.script.println "[DEBUG] resolveAxisName(): label: ${Utils.castString(label)}"
                         this.script.println "[DEBUG] resolveAxisName(): value: ${Utils.castString(this.nodeData[nodeName].labelMap[label])}"
                     }
-                    if (label == null) continue
+                    if (label == null) return
                     label = label.trim()
-                    if (label.equals("")) continue
+                    if (label.equals("")) return
                     if (label =~ axis && !label.contains("=")) {
                         if (debugTrace) this.script.println "[DEBUG] resolveAxisName(): label matched axis as regex"
                         res << label
@@ -286,14 +286,14 @@ class NodeCaps {
 
         if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): looking for: ${Utils.castString(axis)}"
 
-        for (String label : this.nodeData[node].labelMap.keySet()) {
+        this.nodeData[node].labelMap.keySet().each() {String label ->
             if (debugTrace) {
                 this.script.println "[DEBUG] resolveAxisValues(): label: ${Utils.castString(label)}"
                 this.script.println "[DEBUG] resolveAxisValues(): value: ${Utils.castString(this.nodeData[node].labelMap[label])}"
             }
-            if (label == null) continue
+            if (label == null) return
             label = label.trim()
-            if (label.equals("")) continue
+            if (label.equals("")) return
 
             def val = this.nodeData[node].labelMap[label]
             if (Utils.isString(val)) {
@@ -384,8 +384,8 @@ class NodeCaps {
 
         if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${returnAssignments}): looking for: ${Utils.castString(axis)}"
 
-        for (nodeName in this.nodeData.keySet()) {
-            if (nodeName == null) continue
+        this.nodeData.keySet().each() {nodeName ->
+            if (nodeName == null) return
             def nres = resolveAxisValues(axis, nodeName, returnAssignments)
             if (nres != null && nres.size() > 0)
                 res << nres

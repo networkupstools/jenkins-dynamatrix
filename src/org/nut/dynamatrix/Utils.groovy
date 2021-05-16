@@ -123,7 +123,7 @@ class Utils {
          * is not too hot in practice anyway.
          */
         Iterable res = []
-        for (a in arr) {
+        arr.each() {a ->
             if (res.size() == 0) {
                 res = a
             } else {
@@ -157,7 +157,7 @@ class Utils {
         if (isMap(orig)) {
             if (isMap(addon)) {
                 if (debug) println "Both orig and addon are Maps, concatenate recursively:\n  ${orig}\n+ ${addon}\n"
-                for (k in addon.keySet()) {
+                addon.keySet().each() {k ->
                     if (orig.containsKey(k)) {
                         if (debug) println "+ Merging orig[${k}]=${orig[k]} with addon[${k}]=${addon[k]}"
                         orig[k] = mergeMapSet(orig[k], addon[k])

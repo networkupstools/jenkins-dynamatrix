@@ -170,20 +170,20 @@ def parallelStages = prepareDynamatrix(
         // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
         // other configs for same builder would not query and parse real Jenkins
         // worker labels again and again.
-        nodeCaps = new NodeCaps(
+        this.nodeCaps = new NodeCaps(
             this.script,
             dynacfg.commonLabelExpr,
             dynamatrixGlobalState.enableDebugTrace,
             dynamatrixGlobalState.enableDebugErrors)
-        nodeCaps.optionalPrintDebug()
+        this.nodeCaps.optionalPrintDebug()
 
         // Original request could have regexes or groovy-style substitutions
         // to expand. The effectiveAxes is generally a definitive set of
         // sets of exact axis names, e.g. ['ARCH', 'CLANGVER', 'OS'] and
         // ['ARCH', 'GCCVER', 'OS'] as expanded from '${COMPILER}VER' part:
         effectiveAxes = []
-        for (axis in dynacfg.dynamatrixAxesLabels) {
-            TreeSet effAxis = nodeCaps.resolveAxisName(axis).sort()
+        dynacfg.dynamatrixAxesLabels.each() {axis ->
+            TreeSet effAxis = this.nodeCaps.resolveAxisName(axis).sort()
             if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
             effectiveAxes << effAxis
         }
@@ -222,25 +222,25 @@ def parallelStages = prepareDynamatrix(
         }
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
 
-        //nodeCaps.enableDebugTrace = true
+        //this.nodeCaps.enableDebugTrace = true
         // Prepare all possible combos of requested axes (meaning we can
         // request a build agent label "A && B && C" and all of those
         // would work with our currently defined agents). The buildLabels
         // are expected to provide good uniqueness thanks to the SortedSet
         // of effectiveAxes and their values that we would look into.
         buildLabelCombos = []
-        for (nodeName in nodeCaps.nodeData.keySet()) {
+        this.nodeCaps.nodeData.keySet().each() {nodeName ->
             // Looking at each node separately allows us to be sure that any
             // combo of axis-values (all of which it allegedly provides)
             // can be fulfilled
             def nodeAxisCombos = []
-            for (axisSet in effectiveAxes) {
+            effectiveAxes.each() {axisSet ->
                 // Now looking at one definitive set of axis names that
                 // we would pick supported values for, by current node:
                 def axisCombos = []
-                for (axis in axisSet) {
+                axisSet.each() {axis ->
                     if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}'..."
-                    def tmpset = nodeCaps.resolveAxisValues(axis, nodeName, true)
+                    def tmpset = this.nodeCaps.resolveAxisValues(axis, nodeName, true)
                     if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}': got tmpset: ${Utils.castString(tmpset)}"
                     // Got at least one usable key=value string?
                     if (tmpset != null && tmpset.size() > 0) {
@@ -287,8 +287,8 @@ def parallelStages = prepareDynamatrix(
         // ]
 
         buildLabelCombosFlat = []
-        for (nodeResults in buildLabelCombos) {
-            for (nodeAxisCombos in nodeResults) {
+        buildLabelCombos.each() {nodeResults ->
+            nodeResults.each() {nodeAxisCombos ->
                 // this nodeResults contains the set of sets of label values
                 // supported for one of the original effectiveAxes requirements,
                 // where each of nodeAxisCombos contains a set of axisValues
@@ -313,7 +313,7 @@ def parallelStages = prepareDynamatrix(
         // agent requirements of generated pipeline stages:
         buildLabelsAgents = mapBuildLabelExpressions(buildLabelCombosFlat)
         def blaStr = ""
-        for (ble in buildLabelsAgents.keySet()) {
+        buildLabelsAgents.keySet().each() {ble ->
             blaStr += "\n    '${ble}' => " + buildLabelsAgents[ble]
         }
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): detected ${buildLabelsAgents.size()} buildLabelsAgents combos:" + blaStr
@@ -330,7 +330,7 @@ def parallelStages = prepareDynamatrix(
 
         // Equivalent to buildLabelsAgents in the class
         def blaMap = [:]
-        for (combo in blcSet) {
+        blcSet.each() {combo ->
             // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
             // ble == build label expression
             String ble = String.join('&&', combo).replaceAll('\\s+', '&&')
@@ -380,20 +380,20 @@ def parallelStages = prepareDynamatrix(
             // Map of "axis: [array, of, values]"
             if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): dynamatrixAxesVirtualLabelsMap: ${dynacfgBuild.dynamatrixAxesVirtualLabelsMap}"
             Set dynamatrixAxesVirtualLabelsCombos = []
-            for (k in dynacfgBuild.dynamatrixAxesVirtualLabelsMap.keySet()) {
+            dynacfgBuild.dynamatrixAxesVirtualLabelsMap.keySet().each() {k ->
                 // Keys of the map, e.g. 'CSTDVARIANT' for strings ('c', 'gnu')
                 // or 'CSTDVERSION_${KEY}' for submaps (['c': '99', 'cxx': '98'])
                 def vals = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[k]
-                if (!Utils.isList(vals) || vals.size() == 0) continue
+                if (!Utils.isList(vals) || vals.size() == 0) return
 
                 // Collect possible values of this one key
                 Set keyvalues = []
-                for (v in vals) {
+                vals.each() {v ->
                     // Store each value of the provided axis as a set with
                     // one item (if a string) or more (if an expanded map)
                     Set vv = []
                     if (Utils.isMap(v) && k.contains('${KEY}')) {
-                        for (subk in v.keySet()) {
+                        v.keySet().each() {subk ->
                             def dk = k.replaceFirst(/\$\{KEY\}/, subk)
                             vv << "${dk}=${v[subk]}"
                         }
@@ -483,7 +483,7 @@ def parallelStages = prepareDynamatrix(
             def removed = 0
             if (buildLabelsAgentsBuild.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
-                for (ble in buildLabelsAgentsBuild.keySet()) {
+                buildLabelsAgentsBuild.keySet().each() {ble ->
                     dsbc.buildLabelExpression = ble
                     dsbc.buildLabelSet = buildLabelsAgentsBuild[ble]
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
@@ -496,7 +496,7 @@ def parallelStages = prepareDynamatrix(
 
             if (virtualAxes.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
-                for (virtualLabelSet in virtualAxes) {
+                virtualAxes.each() {virtualLabelSet ->
                     dsbc.virtualLabelSet = virtualLabelSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         virtualAxes.remove(virtualLabelSet)
@@ -508,7 +508,7 @@ def parallelStages = prepareDynamatrix(
 
             if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
-                for (envvarSet in dynacfgBuild.dynamatrixAxesCommonEnv) {
+                dynacfgBuild.dynamatrixAxesCommonEnv.each() {envvarSet ->
                     dsbc.envvarSet = envvarSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonEnv.remove(envvarSet)
@@ -520,7 +520,7 @@ def parallelStages = prepareDynamatrix(
 
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
-                for (clioptSet in dynacfgBuild.dynamatrixAxesCommonOpts) {
+                dynacfgBuild.dynamatrixAxesCommonOpts.each() {clioptSet ->
                     dsbc.clioptSet = clioptSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonOpts.remove(clioptSet)
@@ -571,7 +571,7 @@ def parallelStages = prepareDynamatrix(
         def removedTotal = 0
         def allowedToFailTotal = 0
         Set<DynamatrixSingleBuildConfig> dsbcSet = []
-        for (ble in buildLabelsAgentsBuild.keySet()) {
+        buildLabelsAgentsBuild.keySet().each() {ble ->
             // We can generate numerous build configs below that
             // would all require this (or identical) agent by its
             // build label expression, so prepare the shared part:
@@ -593,7 +593,7 @@ def parallelStages = prepareDynamatrix(
             // Roll the snowball, let it grow!
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
-                for (clioptSet in dynacfgBuild.dynamatrixAxesCommonOpts) {
+                dynacfgBuild.dynamatrixAxesCommonOpts.each() {clioptSet ->
                     DynamatrixSingleBuildConfig dsbcBleTmp = dsbcBle.clone()
                     dsbcBleTmp.clioptSet = clioptSet
                     dsbcBleSetTmp += dsbcBleTmp
@@ -605,8 +605,8 @@ def parallelStages = prepareDynamatrix(
 
             if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
-                for (envvarSet in dynacfgBuild.dynamatrixAxesCommonEnv) {
-                    for (DynamatrixSingleBuildConfig tmp in dsbcBleSet) {
+                dynacfgBuild.dynamatrixAxesCommonEnv.each() {envvarSet ->
+                    dsbcBleSet.each() {DynamatrixSingleBuildConfig tmp ->
                         DynamatrixSingleBuildConfig dsbcBleTmp = tmp.clone()
                         dsbcBleTmp.envvarSet = envvarSet
                         dsbcBleSetTmp += dsbcBleTmp
@@ -618,9 +618,9 @@ def parallelStages = prepareDynamatrix(
             if (virtualAxes.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
                 if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): COMBINING: virtualAxes: ${Utils.castString(virtualAxes)}\nvs. dsbcBleSet: ${dsbcBleSet}"
-                for (virtualLabelSet in virtualAxes) {
+                virtualAxes.each() {virtualLabelSet ->
                     //if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
-                    for (DynamatrixSingleBuildConfig tmp in dsbcBleSet) {
+                    dsbcBleSet.each() {DynamatrixSingleBuildConfig tmp ->
                         DynamatrixSingleBuildConfig dsbcBleTmp = tmp.clone()
                         //if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
                         dsbcBleTmp.virtualLabelSet = virtualLabelSet
@@ -632,7 +632,7 @@ def parallelStages = prepareDynamatrix(
 
             if (debugMilestonesDetails) {
                 this.script.println "[DEBUG] generateBuildConfigSet(): BEFORE EXCLUSIONS: collected ${dsbcBleSet.size()} combos for individual builds with agent build label expression '${ble}'"
-                for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                dsbcBleSet.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->
                         this.script.println "[DEBUG] generateBuildConfigSet(): selected combo: ${dsbcBleTmp}"
                 }
             }
@@ -644,7 +644,7 @@ def parallelStages = prepareDynamatrix(
             // cases (e.g. don't want this "compiler + Crevision" on that OS,
             // but want it on another)
             if (dynacfgBuild.excludeCombos.size() > 0) {
-                for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                dsbcBleSet.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         // TODO: track isExcluded or just delete items?
                         dsbcBleTmp.isExcluded = true
@@ -656,7 +656,7 @@ def parallelStages = prepareDynamatrix(
             }
 
             if (dynacfgBuild.allowedFailure.size() > 0) {
-                for (DynamatrixSingleBuildConfig dsbcBleTmp in dsbcBleSet) {
+                dsbcBleSet.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.allowedFailure)) {
                         allowedToFailBle++
                         if (dynacfgBuild.runAllowedFailure) {
@@ -709,7 +709,7 @@ def parallelStages = prepareDynamatrix(
         }
 
         if (debugMilestonesDetails) {
-            for (DynamatrixSingleBuildConfig dsbc in dsbcSet) {
+            dsbcSet.each() {DynamatrixSingleBuildConfig dsbc ->
                 this.script.println "[DEBUG] generateBuildConfigSet(): selected combo: ${dsbc}"
             }
         }
@@ -823,7 +823,7 @@ def parallelStages = prepareDynamatrix(
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
         Map parallelStages = [:]
-        for (DynamatrixSingleBuildConfig dsbcTmp in dsbcSet) {
+        dsbcSet.each() {DynamatrixSingleBuildConfig dsbcTmp ->
             // copy a unique object, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()
             String stageName = dsbc.stageName()

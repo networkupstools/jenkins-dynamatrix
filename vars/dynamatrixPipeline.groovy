@@ -209,7 +209,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         if (dynacfgPipeline.shellcheck.multi != null) {
                                             if (dynacfgPipeline.shellcheck.multiLabel != null) {
                                                 if (env.NODE_LABELS && env.NODE_NAME) {
-                                                    for (label in NodeData.getNodeLabelsByName(env.NODE_NAME)) {
+                                                    NodeData.getNodeLabelsByName(env.NODE_NAME).each() {label ->
                                                         if (label.startsWith("${dynacfgPipeline.shellcheck.multiLabel}=")) {
                                                             String[] keyValue = label.split("=", 2)
                                                             String SHELL_PROGS=keyValue[1]

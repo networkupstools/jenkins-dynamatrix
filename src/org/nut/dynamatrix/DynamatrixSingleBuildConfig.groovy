@@ -172,7 +172,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     //    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc
     @NonCPS
     public static String C_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
-        return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.C_StageNameTagValue(dsbc) + '" && ' + dsbc.defaultStageName()
+        return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.C_StageNameTagValue(dsbc) + "\" && " + dsbc.defaultStageName()
     }
 
     @NonCPS
@@ -188,7 +188,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         Set labelSet = (buildLabelSet + virtualLabelSet + envvarSet).flatten()
         labelSet.remove(null)
         labelSet.remove("")
-        for (String label in labelSet) {
+        labelSet.each() {String label ->
             // Split composite labels like "COMPILER=CLANG CLANGVER=9", if any
             if (label =~ /\s+/) {
                 labelSet.remove(label)
@@ -228,16 +228,16 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
         def labelSet = getKVSet()
         def labelMap = [:]
-        for (String label in labelSet) {
-            if (!Utils.isStringNotEmpty(label)) continue
+        labelSet.each() {String label ->
+            if (!Utils.isStringNotEmpty(label)) return
             label = label.trim()
             try {
-                if ("".equals(label)) continue
+                if ("".equals(label)) return
             } catch (Exception e) {
                 def emsg = "Expected key-value string, got label=${Utils.castString(label)}: " + e.toString()
                 if (debugErrors) {
                     script.println "[ERROR] Skipped item: ${emsg}"
-                    continue
+                    return
                 } else {
                     throw new Exception(emsg)
                 }
@@ -399,17 +399,17 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         // How many constraint hits did we score?
         def hits = 0
         def crit = 0
-        for (regexConstraint in combo) {
+        combo.each() {regexConstraint ->
             // Currently we only support regex matches here
             if (!Utils.isRegex(regexConstraint)) {
                 if (debugErrors) this.script.println ("[ERROR] matchesConstraintsCombo(): invalid input item type, skipped: ${Utils.castString(regexConstraint)}")
-                continue
+                return
             }
             crit++
 
             Boolean hadHit = false
 
-            for (label in buildLabelSet) {
+            buildLabelSet.each() {label ->
                 if (label =~ regexConstraint) {
                     if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): buildLabelSet for ${Utils.castString(this)} matched ${Utils.castString(label)} - hit with ${regexConstraint}")
                     hadHit = true
@@ -418,7 +418,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             }
 
             if (!hadHit) {
-                for (label in virtualLabelSet) {
+                virtualLabelSet.each() {label ->
                     if (label =~ regexConstraint) {
                         if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): virtualLabelSet for ${Utils.castString(this)} matched ${Utils.castString(label)} - hit with ${regexConstraint}")
                         hadHit = true
@@ -428,7 +428,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             }
 
             if (!hadHit) {
-                for (envvarval in envvarSet) {
+                 envvarSet.each() {envvarval ->
                     if (envvarval =~ regexConstraint) {
                         if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): envvarSet for ${Utils.castString(this)} matched ${Utils.castString(envvarval)} - hit with ${regexConstraint}")
                         hadHit = true
@@ -438,7 +438,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             }
 
             if (!hadHit) {
-                for (cliopt in clioptSet) {
+                clioptSet.each() {cliopt ->
                     if (cliopt =~ regexConstraint) {
                         if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): clioptSet for ${Utils.castString(this)} matched ${Utils.castString(cliopt)} - hit with ${regexConstraint}")
                         hadHit = true
@@ -484,7 +484,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             return false
         }
 
-        for (combo in combos) {
+        combos.each() {combo ->
             if (this.matchesConstraintsCombo(combo)) {
                 if (debugTrace) this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} matched ${Utils.castString(combo)}")
                 return true

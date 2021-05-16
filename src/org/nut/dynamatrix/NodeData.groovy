@@ -60,10 +60,10 @@ class NodeData {
         // mapped to Sets of one or more values right away. We also save the
         // original unique "key-value" strings mapped to "null".
         def labelMap = [:]
-        for (String label : labelSet) {
-            if (label == null) continue
+        labelSet.each() {String label ->
+            if (label == null) return
             label = label.trim()
-            if (label.equals("")) continue
+            if (label.equals("")) return
 
             if (label.contains("=")) {
                 // Save custom mapping:
