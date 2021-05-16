@@ -47,3 +47,32 @@ def branchDefaultStable() {
     return "master"
     // return "main"
 }
+
+/**
+ * Compares the current branch and target branch and list the changed files.
+ *
+ * @return the PR or directly branch changed files.
+ */
+def listChangedFiles() {
+    // Is this a Git-driven build? And a PR at that?
+    if (env?.CHANGE_TARGET && env?.GIT_COMMIT) {
+        // Inspired by https://issues.jenkins.io/browse/JENKINS-54285?focusedCommentId=353839
+        return sh(
+            script: "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_COMMIT}",
+            returnStdout: true
+        ).split('\n')
+    }
+
+    // https://stackoverflow.com/a/59462020/4715872
+    def changedFiles = []
+    def changeLogSets = currentBuild.changeSets
+    for (entries in changeLogSets) {
+        for (entry in entries) {
+            for (file in entry.affectedFiles) {
+                //echo "Found changed file: ${file.path}"
+                changedFiles += "${file.path}"
+            }
+        }
+    }
+    return changedFiles
+}
