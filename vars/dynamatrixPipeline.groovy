@@ -26,6 +26,27 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
     dynacfgBase['commonLabelExpr'] = 'nut-builder'
     dynacfgBase['dynamatrixAxesLabels'] = [~/^OS_.+/]
 
+    dynacfgBase.getParStages = { Closure body ->
+        return prepareDynamatrix([
+            commonLabelExpr: dynacfgBase.commonLabelExpr,
+            defaultDynamatrixConfig: dynacfgBase.defaultDynamatrixConfig,
+
+            dynamatrixAxesVirtualLabelsMap: [
+                'BITS': [32, 64],
+                // 'CSTDVERSION': ['03', '2a'],
+                'CSTDVERSION_${KEY}': [ ['c': '03', 'cxx': '03'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx': '2a'], 'ansi' ],
+                'CSTDVARIANT': ['gnu']
+                ],
+
+            mergeMode: [ 'dynamatrixAxesVirtualLabelsMap': 'merge', 'excludeCombos': 'merge' ],
+            allowedFailure: [ [~/CSTDVARIANT=c/] ],
+            runAllowedFailure: true,
+            excludeCombos: [ [~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/] ],
+            //dynamatrixAxesLabels: [~/^OS_DISTRO/, '${COMPILER}VER', 'ARCH${ARCH_BITS}']
+            dynamatrixAxesLabels: [~/^OS/, '${COMPILER}VER', 'ARCH${ARCH_BITS}']
+            ], body)
+    }
+
 // and lower in code
 
                             stashCleanSrc(stashnameSrc) {
@@ -91,6 +112,10 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         dynacfgPipeline['configure'] = "( [ -x configure ] || exit ; ./configure \${CONFIG_OPTS} )"
     }
 
+    if (!dynacfgPipeline.containsKey('failFast')) {
+        dynacfgPipeline.failFast = true
+    }
+
     // Sanity-check certain build milestones expecting certain cfg structure:
     if (dynacfgPipeline.containsKey('spellcheck')) {
         if ("${dynacfgPipeline['spellcheck']}".trim().equals("true")) {
@@ -147,6 +172,9 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
     // convert into a Map just for `parallel`. Go figure...
     def stagesShellcheck_arr = []
 
+    // This is hopefully safer, called not from CPS constraints
+    def stagesBinBuild = [:]
+
     node(infra.labelDefaultWorker()) {
         skipDefaultCheckout()
 
@@ -181,7 +209,7 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                     }
                 }, // stage - stash
 
-                "Discover build matrix": {
+                "Discover quick build matrix": {
                     // Relatively quick discovery (e.g. filtering axes
                     // by regexes takes long when many build agents are
                     // involved, so that part happens in parallel to
@@ -363,6 +391,8 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
             ) // parallel-initial
         } // stage-initial
 
+        // Rest of code continues like a scripted pipeline
+
 /*
     stage("Run quick tests and prepare the big dynamatrix") {
         parallel ([
@@ -444,15 +474,31 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
 
 //            par1.failFast = false
 
-//            stage("Par 1") {
-                parallel par1
-//            }
-//            stage("Summarize quick-test results - 1") {
-//                echo "[Quick tests and prepare the bigger dynamatrix - 1] ${currentBuild.result}"
-    //            if (currentBuild.result != 'SUCCESS') {
-    //                error "Quick-test and/or preparation of larger test matrix failed"
-    //            }
-//            } // stage-quick-summary
+            if (dynacfgBase.getParStages) {
+                par1["Discover slow build matrix"] = {
+                    if (dynacfgBase.containsKey('bodyParStages')) {
+                        stagesBinBuild = dynacfgBase.getParStages(dynacfgBase.bodyParStages)
+                    } else {
+                        stagesBinBuild = dynacfgBase.getParStages(null)
+                    }
+                    stagesBinBuild.failFast = dynacfgPipeline.failFast
+                }
+            }
+
+            // Walk the plank
+            parallel par1
+
+/*
+            // This stage is not really visible in results UI
+            // so better use the separate road-bump below
+            stage("Summarize quick-test results - 1") {
+                echo "[Quick tests and prepare the bigger dynamatrix - 1] ${currentBuild.result}"
+                if (currentBuild.result != 'SUCCESS') {
+                    error "Quick-test and/or preparation of larger test matrix failed"
+                }
+            } // stage-quick-summary #1
+*/
+
         } // stage-quick
 
         // Something in our dynamatrix wrappings precludes seeing
@@ -463,6 +509,7 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         // cause the build abortion if applicable)
         stage("Summarize quick-test results") {
             echo "[Quick tests and prepare the bigger dynamatrix] ${currentBuild.result}"
+            echo "Discovered ${stagesBinBuild.size()} 'slow build' combos to run"
             if (currentBuild.result != 'SUCCESS') {
                 error "Quick-test and/or preparation of larger test matrix failed"
             }
