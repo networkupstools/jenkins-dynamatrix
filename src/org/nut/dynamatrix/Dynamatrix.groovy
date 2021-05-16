@@ -810,8 +810,12 @@ def parallelStages = prepareDynamatrix(
 
     }
 
+    def generateBuild(Map dynacfgOrig = [:], Closure bodyOrig = null) {
+        return generateBuild(dynacfgOrig, false, bodyOrig)
+    }
+
 //    @NonCPS
-    def generateBuild(dynacfgOrig = [:], returnSet = false, Closure bodyOrig = null) {
+    def generateBuild(Map dynacfgOrig = [:], Boolean returnSet, Closure bodyOrig = null) {
         /* Returns a map of stages.
          * Or a Set, if called from inside a pipeline stage (CPS code).
          */
