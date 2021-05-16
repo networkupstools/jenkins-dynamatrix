@@ -15,7 +15,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  * to produce several "closely related" build stages re-using the same
  * set of build agents and project configurations.
  */
-class Dynamatrix {
+class Dynamatrix implements Cloneable {
     // Class-shared cache of the collected nodeCaps per label expression
     // so we only query Jenkins core once for those, even if we prepare
     // many build scenarios:
@@ -47,6 +47,15 @@ class Dynamatrix {
         this.dynacfg = new DynamatrixConfig(script)
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    }
+
+    public boolean canEqual(java.lang.Object other) {
+        return other instanceof Dynamatrix
+    }
+
+    @Override
+    public Dynamatrix clone() throws CloneNotSupportedException {
+        return (Dynamatrix) super.clone();
     }
 
     public NodeCaps getNodeCaps(String labelExpr = null) {

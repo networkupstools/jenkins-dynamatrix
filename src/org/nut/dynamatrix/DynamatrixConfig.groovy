@@ -8,7 +8,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  * customized run Dynamatrix routines, while some defaults can be
  * applied so needed fields are all "defined" when we look at them.
  */
-class DynamatrixConfig {
+class DynamatrixConfig implements Cloneable {
     private def script
     public def stageNameFunc = null
     public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
@@ -231,6 +231,15 @@ def parallelStages = prepareDynamatrix(
     public DynamatrixConfig(Object script, String defaultCfg) {
         this.script = script
         this.initDefault(defaultCfg)
+    }
+
+    public boolean canEqual(java.lang.Object other) {
+        return other instanceof DynamatrixConfig
+    }
+
+    @Override
+    public DynamatrixConfig clone() throws CloneNotSupportedException {
+        return (DynamatrixConfig) super.clone();
     }
 
     public def initDefault(String defaultCfg) {
