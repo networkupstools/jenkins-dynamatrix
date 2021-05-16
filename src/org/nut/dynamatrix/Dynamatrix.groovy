@@ -811,8 +811,10 @@ def parallelStages = prepareDynamatrix(
     }
 
 //    @NonCPS
-    def generateBuild(dynacfgOrig = [:], Closure bodyOrig = null) {
-        /* Returns a map of stages */
+    def generateBuild(dynacfgOrig = [:], returnSet = false, Closure bodyOrig = null) {
+        /* Returns a map of stages.
+         * Or a Set, if called from inside a pipeline stage (CPS code).
+         */
         //def debugErrors = this.shouldDebugErrors()
         //def debugTrace = this.shouldDebugTrace()
         //def debugMilestones = this.shouldDebugMilestones()
@@ -822,7 +824,7 @@ def parallelStages = prepareDynamatrix(
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
-        Map parallelStages = [:]
+        Set parallelStages = []
         dsbcSet.each() {DynamatrixSingleBuildConfig dsbcTmp ->
             // copy a unique object, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()
@@ -872,41 +874,48 @@ def parallelStages = prepareDynamatrix(
 
                 if (Utils.isStringNotEmpty(dsbc.buildLabelExpression)) {
 
-                    parallelStages["WITHAGENT: " + stageName] = {
+                    parallelStages << ["WITHAGENT: " + stageName, {
 //                        script.stage("NODEWRAP: " + stageName) {
                             if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'"
                             script.node (dsbc.buildLabelExpression) {
                                 payload()
                             } // node
 //                        } // stage needed to house the "node"
-                    } // new parallelStages[] entry
+                    }] // new parallelStages[] entry
 
                 } else {
 
-                    parallelStages["WITHAGENT-ANON: " + stageName] = {
+                    parallelStages << ["WITHAGENT-ANON: " + stageName, {
 //                        script.stage("NODEWRAP-ANON: " + stageName) {
                             if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'"
                             script.node {
                                 payload()
                             } // node
 //                        } // stage needed to house the "node"
-                    } // new parallelStages[] entry
+                    }] // new parallelStages[] entry
 
                 }
             } else {
 
                 // no "${dsbc.buildLabelExpression}" - so runs on job's
                 // default node, if any (or fails if none is set and is needed)
-                parallelStages["NO-NODE: " + stageName] = {
+                parallelStages << ["NO-NODE: " + stageName, {
                     if (dsbc.enableDebugTrace) script.echo "Not requesting any node for stage '${stageName}'"
                     payload()
-                } // new parallelStages[] entry
+                }] // new parallelStages[] entry
 
             } // if got agent-label
 
         }
 
-        return parallelStages
+        if (returnSet) {
+            return parallelStages
+        } else {
+            // Scope the Map for sake of CPS conversions where we don't want them
+            def parallelStages_map = [:]
+            parallelStages.each {tup -> parallelStages_map[tup[0]] = tup[1] }
+            return parallelStages_map
+        }
     } // generateBuild()
 
 }
