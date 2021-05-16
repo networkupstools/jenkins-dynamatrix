@@ -144,7 +144,23 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
 
     def stagesShellcheck = [:]
 
-    node(infra.labelDefaultWorker()) { // any
+    node(infra.labelDefaultWorker()) {
+        skipDefaultCheckout()
+
+        // Avoid occasional serialization of pipeline during run:
+        // despite best efforts, a Map is sometimes seen here and
+        // confuses CPS, about 50% of the runs. Without an active
+        // serialization, it works better, and faster (less I/O).
+        // We do not much care to "resume" a pipeline run, if the
+        // Jenkins instance is restarted while it runs.
+        // Also enable other "options" (in Declarative parlance).
+        disableResume()
+        properties([
+            durabilityHint('PERFORMANCE_OPTIMIZED'),
+            [$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false],
+            throttleJobProperty(categories: [], limitOneJobWithMatchingParams: false, maxConcurrentPerNode: 0, maxConcurrentTotal: 0, paramsToUseForLimit: '', throttleEnabled: false, throttleOption: 'project')
+        ])
+
         stage("Initial discovery") {
             parallel (
 
