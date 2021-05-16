@@ -142,7 +142,9 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
     Dynamatrix dynamatrix = new Dynamatrix(this)
     def stashnameSrc = 'src-checkedout'
 
-    def stagesShellcheck = [:]
+    // To hop over CPS limitations, we first store our Map as a Set of tuples,
+    // then convert back for `parallel`. Go figure...
+    def stagesShellcheck_arr = []
 
     node(infra.labelDefaultWorker()) {
         skipDefaultCheckout()
@@ -199,11 +201,11 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                     //println "SHELLCHECK: ${Utils.castString(dynacfgPipeline.shellcheck)}"
                     if (dynacfgPipeline.shellcheck.single != null || dynacfgPipeline.shellcheck.multi != null) {
                         //println "Discovering stagesShellcheck..."
-                        stagesShellcheck = dynamatrix.generateBuild([
+                        stagesShellcheck_arr = dynamatrix.generateBuild([
                             dynamatrixAxesLabels: [~/^OS_.+/],
                             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
                             stageNameFunc: this.&stageNameFunc_Shellcheck
-                            ]) { delegate -> setDelegate(delegate)
+                            ], true) { delegate -> setDelegate(delegate)
                                 //SCR//script {
                                     def MATRIX_TAG = delegate.stageName - ~/^MATRIX_TAG=/
 
@@ -222,17 +224,23 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                             }
                                         }
 
-                                        def stagesShellcheckNode = [:]
+                                        // Jenkins Groovy CPS does not like to track a Map
+                                        // since it (or its iterator) can not be serialized.
+                                        // Instead we will keep an array of tuples and use
+                                        // that below to launch the generated substages.
+                                        // Loosely inspired by ideas from https://stackoverflow.com/a/40166064/4715872
+                                        def stagesShellcheckNode = []
                                         // Iterate with separate verdicts when/if `make shellcheck`
                                         // (or equivalent) actually supports various $SHELL tests
                                         if (dynacfgPipeline.shellcheck.multi != null) {
                                             if (dynacfgPipeline.shellcheck.multiLabel != null) {
                                                 if (env.NODE_LABELS && env.NODE_NAME) {
-                                                    NodeData.getNodeLabelsByName(env.NODE_NAME).each() {label ->
+                                                    NodeData.getNodeLabelsByName(env.NODE_NAME).each { label ->
                                                         if (label.startsWith("${dynacfgPipeline.shellcheck.multiLabel}=")) {
                                                             String[] keyValue = label.split("=", 2)
                                                             String SHELL_PROGS=keyValue[1]
-                                                            stagesShellcheckNode["Test with ${SHELL_PROGS} for ${MATRIX_TAG}"] = {
+                                                            def stagesShellcheckNode_key = "Test with ${SHELL_PROGS} for ${MATRIX_TAG}"
+                                                            def stagesShellcheckNode_val = {
                                                                 def msgFail = "Failed stage: ${stageName} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(dsbc)}"
                                                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
                                                                     withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
@@ -245,6 +253,8 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                                                     }
                                                                 }
                                                             } // added stage
+                                                            def stagesShellcheckNode_tuple = [stagesShellcheckNode_key, stagesShellcheckNode_val]
+                                                            stagesShellcheckNode << stagesShellcheckNode_tuple
                                                         }
                                                     }
                                                 }
@@ -252,39 +262,57 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
 
                                             // TOTHINK: Skip agent that does not declare any shell labels?..
                                             if (stagesShellcheckNode.size() == 0) {
-                                                stagesShellcheckNode["Test with default shell(s) for ${MATRIX_TAG}"] = {
+                                                def stagesShellcheckNode_tuple = ["Test with default shell(s) for ${MATRIX_TAG}", {
                                                     infra.withEnvOptional(dynacfgPipeline.defaultTools) {
                                                         sh """ set +x
                                                         echo "Shell-dependent testing with default shell on `uname -a || hostname || true` system"
                                                         ${dynacfgPipeline.shellcheck.multi}
                                                         """
                                                     }
-                                                }
+                                                }]
+                                                stagesShellcheckNode << stagesShellcheckNode_tuple
                                             }
                                         }
 
                                         if (dynacfgPipeline.shellcheck.single != null) {
-                                            stagesShellcheckNode["Generic-shell test for ${MATRIX_TAG}"] = {
+                                            def stagesShellcheckNode_tuple = ["Generic-shell test for ${MATRIX_TAG}", {
                                                 infra.withEnvOptional(dynacfgPipeline.defaultTools) {
                                                     sh """ set +x
                                                     echo "Generic-shell test (with recipe defaults) on `uname -a || hostname || true` system"
                                                     ${dynacfgPipeline.shellcheck.single}
                                                     """
                                                 }
-                                            }
+                                            }]
+                                            stagesShellcheckNode << stagesShellcheckNode_tuple
                                         }
 
-                                        stagesShellcheckNode.each { name, closure ->
+                                        println "Discovered ${stagesShellcheckNode.size()} stagesShellcheckNode sub-stages for ${MATRIX_TAG}"
+
+/*
+                                        stagesShellcheckNode.each { stagesShellcheckNode_tuple ->
+                                            def name = stagesShellcheckNode_tuple[0] // stagesShellcheckNode_key
+                                            def closure = stagesShellcheckNode_tuple[1] // stagesShellcheckNode_val
                                             stage(name) {
                                                 closure()
                                             }
+                                        }
+*/
+                                        if (true) {
+                                            def stagesPar = [:]
+                                            stagesShellcheckNode.each { stagesShellcheckNode_tuple ->
+                                                def name = stagesShellcheckNode_tuple[0] // stagesShellcheckNode_key
+                                                def closure = stagesShellcheckNode_tuple[1] // stagesShellcheckNode_val
+                                                stagesPar[name] = closure
+                                            }
+                                            parallel stagesPar
+                                            //parallel stagesShellcheckNode
                                         }
                                     }
                                 //SCR//} // script{} for big shellcheck test on one hit
                             } // generateBuild + closure for one hit of stagesShellcheck
                     } // if dynacfgPipeline.shellcheck
 
-                    println "Discovered ${stagesShellcheck.size()} stagesShellcheck builds"
+                    println "Discovered ${stagesShellcheck_arr.size()} stagesShellcheck_arr platform builds"
 
                     /* As noted above, any relatively heavy axis filters,
                      * which need many seconds to process just to decide
@@ -352,6 +380,16 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         // and it may cause (or not?) CPS faults somehow...
         stage("Quick tests and prepare the bigger dynamatrix") {
             echo "Beginning quick-test stage"
+
+            // Restore Map from Set, as needed for `parallel`
+            println "Restoring discovered stagesShellcheck platform builds from Set to Map..."
+            def stagesShellcheck = [:]
+            stagesShellcheck_arr.each {tup ->
+                println "Restoring stagesShellcheck platform build: ${Utils.castString(tup)}"
+                stagesShellcheck[tup[0]] = tup[1]
+            }
+            println "Discovered ${stagesShellcheck.size()} stagesShellcheck platform builds: ${Utils.castString(stagesShellcheck)}"
+
             def par1 = stagesShellcheck
 
             if (dynacfgPipeline.spellcheck != null) {
