@@ -359,6 +359,36 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 }
                             }
 
+                            // By default we run all otherwise not disabled
+                            // scenarios... but really, some test cases do
+                            // not make sense for certain changes and are a
+                            // waste of roud-trip time and compute resources.
+                            if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
+                                def changedFiles = listChangedFiles()
+                                if (changedFiles.size() > 0) {
+                                    for (cf in changedFiles) {
+                                        if (!(cf ==~ sb.appliesToChangedFilesRegex)) {
+                                            // A changed file name did NOT match
+                                            // the regex for files covered by a
+                                            // scenario, so this scenario does
+                                            // not apply to this changeset and
+                                            // should be skipped
+                                            if (dynamatrixGlobalState.enableDebugTrace)
+                                                echo "SKIP: Changeset included file name '${cf}' which did not match the pattern ${sb.appliesToChangedFilesRegex} for this filter configuration"
+                                            countFiltersSkipped++
+                                            return // continue
+                                        }
+                                    }
+                                } else {
+                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                        echo "WARNING: while handling appliesToChangedFilesRegex='${appliesToChangedFilesRegex.toString()}' " +
+                                            "the listChangedFiles() call returned an " +
+                                            "empty list, thus either we had no changes " +
+                                            "(would a re-run do that?) or had some error?.. " +
+                                            "So build everything to be safe."
+                                }
+                            }
+
                             // NOTE/TODO: Seems this trick does not work well,
                             // perhaps with because a node() gets optionally
                             // defined in the executed stage body. Maybe we
