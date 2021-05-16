@@ -409,12 +409,13 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
             Boolean hadHit = false
 
-            buildLabelSet.each() {label ->
+            buildLabelSet.find {label ->
                 if (label =~ regexConstraint) {
                     if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): buildLabelSet for ${Utils.castString(this)} matched ${Utils.castString(label)} - hit with ${regexConstraint}")
                     hadHit = true
-                    break
+                    return true // break
                 }
+                return false // keep looping
             }
 
             if (!hadHit) {
@@ -422,8 +423,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                     if (label =~ regexConstraint) {
                         if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): virtualLabelSet for ${Utils.castString(this)} matched ${Utils.castString(label)} - hit with ${regexConstraint}")
                         hadHit = true
-                        break
+                        return true // break
                     }
+                    return false // keep looping
                 }
             }
 
@@ -432,8 +434,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                     if (envvarval =~ regexConstraint) {
                         if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): envvarSet for ${Utils.castString(this)} matched ${Utils.castString(envvarval)} - hit with ${regexConstraint}")
                         hadHit = true
-                        break
+                        return true // break
                     }
+                    return false // keep looping
                 }
             }
 
@@ -442,8 +445,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                     if (cliopt =~ regexConstraint) {
                         if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): clioptSet for ${Utils.castString(this)} matched ${Utils.castString(cliopt)} - hit with ${regexConstraint}")
                         hadHit = true
-                        break
+                        return true // break
                     }
+                    return false // keep looping
                 }
             }
 
