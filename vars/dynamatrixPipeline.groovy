@@ -209,6 +209,12 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                 //SCR//script {
                                     def MATRIX_TAG = delegate.stageName - ~/^MATRIX_TAG=/
 
+                                    // Cache faults of sub-tests as a fault of this big stage,
+                                    // but let them all pass first so we know all shells which
+                                    // complain and not just the first one per host
+                                    // See also https://stackoverflow.com/a/58737417/4715872
+                                    def bigStageResult = 'SUCCESS'
+
                                     // Let BO render all this work somehow at least
                                     // It also tends to say "QueuedWaiting for run to start"
                                     // until everything is done... Classic UI flowGraphTable
@@ -222,6 +228,7 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                                 unstashCleanSrc(stashnameSrc)
                                                 sh """ ${dynacfgPipeline.prepconf} && ${dynacfgPipeline.configure} """
                                             }
+                                            return true
                                         }
 
                                         // Jenkins Groovy CPS does not like to track a Map
@@ -242,6 +249,7 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                                             def stagesShellcheckNode_key = "Test with ${SHELL_PROGS} for ${MATRIX_TAG}"
                                                             def stagesShellcheckNode_val = {
                                                                 def msgFail = "Failed stage: ${stageName} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(dsbc)}"
+                                                                def didFail = true
                                                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
                                                                     withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
                                                                         infra.withEnvOptional(dynacfgPipeline.defaultTools) {
@@ -251,7 +259,22 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                                                             """
                                                                         }
                                                                     }
+                                                                    didFail = false
                                                                 }
+
+                                                                if (didFail) {
+                                                                    // Track the big-stage fault to explode in the end:
+                                                                    bigStageResult = 'FAILURE'
+                                                                    // Track the small-stage fault in a way that we can continue with other sub-stages:
+                                                                    //echo msgFail
+                                                                    currentBuild.result = 'FAILURE'
+                                                                    manager.buildFailure()
+                                                                    // Using unstable here to signal that something is
+                                                                    // wrong with the stage verdict; given the earlier
+                                                                    // harsher FAILURE that would be the verdict used.
+                                                                    unstable(msgFail)
+                                                                }
+                                                                return didFail
                                                             } // added stage
                                                             def stagesShellcheckNode_tuple = [stagesShellcheckNode_key, stagesShellcheckNode_val]
                                                             stagesShellcheckNode << stagesShellcheckNode_tuple
@@ -269,6 +292,7 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                                         ${dynacfgPipeline.shellcheck.multi}
                                                         """
                                                     }
+                                                    return true
                                                 }]
                                                 stagesShellcheckNode << stagesShellcheckNode_tuple
                                             }
@@ -282,6 +306,7 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                                     ${dynacfgPipeline.shellcheck.single}
                                                     """
                                                 }
+                                                return true
                                             }]
                                             stagesShellcheckNode << stagesShellcheckNode_tuple
                                         }
@@ -293,7 +318,7 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                             def name = stagesShellcheckNode_tuple[0] // stagesShellcheckNode_key
                                             def closure = stagesShellcheckNode_tuple[1] // stagesShellcheckNode_val
                                             stage(name) {
-                                                closure()
+                                                return closure.call()
                                             }
                                         }
 */
@@ -308,6 +333,18 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                             //parallel stagesShellcheckNode
                                         }
                                     }
+
+                                    // Even if our bigStageResult is not set (is success)
+                                    // but some other way of providing the verdict failed,
+                                    // it can not get any better. So we can just assign.
+                                    currentBuild.result = bigStageResult
+                                    if (bigStageResult == 'FAILURE') {
+                                        def msg = "FATAL: shellcheck for ${MATRIX_TAG} failed in at least one sub-test above"
+                                        //echo msg
+                                        manager.buildFailure()
+                                        //error msg
+                                        unstable(msg)
+                                }
                                 //SCR//} // script{} for big shellcheck test on one hit
                             } // generateBuild + closure for one hit of stagesShellcheck
                     } // if dynacfgPipeline.shellcheck
