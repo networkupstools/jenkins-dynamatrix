@@ -202,9 +202,13 @@ really a good thing:
 * https://tomd.xyz/jenkins-shared-library/
 * https://medium.com/@werne2j/jenkins-shared-libraries-part-1-5ba3d072536a
 * https://medium.com/@werne2j/how-to-build-your-own-jenkins-shared-library-9dc129db260c
-* https://medium.com/@werne2j/unit-testing-a-jenkins-shared-library-9bfb6b599748
+* https://medium.com/@werne2j/unit-testing-a-jenkins-shared-library-9bfb6b599748 --
+  about testing with maven and Jenkins-Spock library
 * https://medium.com/@werne2j/collecting-code-coverage-for-a-jenkins-shared-library-c2d8f502732e
-
+* https://medium.com/disney-streaming/testing-jenkins-shared-libraries-4d4939406fa2 --
+  about testing with gradle and Jenkins Pipeline Unit library
+* https://dev.to/kuperadrian/how-to-setup-a-unit-testable-jenkins-shared-pipeline-library-2e62 --
+  about testing with gradle, mockito and IntelliJ IDEA integration and injectable contexts
 
 Standard reading library:
 
