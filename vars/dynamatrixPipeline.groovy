@@ -21,7 +21,8 @@ import org.nut.dynamatrix.*;
     dynacfgPipeline['NUT-shellcheck'] = [
         'single': '( \${MAKE} shellcheck )',
         'multi': '(cd tests && SHELL_PROGS="$SHELL_PROGS" ./nut-driver-enumerator-test.sh )',
-        'multiLabel': 'SHELL_PROGS'
+        'multiLabel': 'SHELL_PROGS',
+        'skipShells': [ 'zsh', 'tcsh', 'csh' ]
     ]
 
     dynacfgBase['commonLabelExpr'] = 'nut-builder'
@@ -284,6 +285,13 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                                                         if (label.startsWith("${dynacfgPipeline.shellcheck.multiLabel}=")) {
                                                             String[] keyValue = label.split("=", 2)
                                                             String SHELL_PROGS=keyValue[1]
+                                                            if (Utils.isListNotEmpty(dynacfgPipeline.shellcheck.skipShells)) {
+                                                                // TODO: Variant with Map for "shell on OS"? e.g. ['zsh': /.*(inux|indows).*/]
+                                                                if (SHELL_PROGS in dynacfgPipeline.shellcheck.skipShells) {
+                                                                    echo "SKIP SHELLCHECK with ${SHELL_PROGS} for ${MATRIX_TAG}"
+                                                                    return
+                                                                }
+                                                            }
                                                             def stagesShellcheckNode_key = "Test with ${SHELL_PROGS} for ${MATRIX_TAG}"
                                                             def stagesShellcheckNode_val = {
                                                                 def msgFail = "Failed stage: ${stageName} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(dsbc)}"
