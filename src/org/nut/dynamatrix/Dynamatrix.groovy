@@ -84,12 +84,12 @@ class Dynamatrix implements Cloneable {
 
     @NonCPS
     public Boolean shouldDebugMilestones() {
-        return ( (this.enableDebugMilestones|| this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
+        return ( (this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
     }
 
     @NonCPS
     public Boolean shouldDebugMilestonesDetails() {
-        return ( (this.enableDebugMilestonesDetails || this.enableDebugMilestones || this.enableDebugTrace) && this.script != null)
+        return ( (this.enableDebugMilestonesDetails || this.enableDebugTrace) && this.script != null)
     }
 
 
