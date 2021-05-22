@@ -359,7 +359,7 @@ def parallelStages = prepareDynamatrix(
         // Use a separate copy of the configuration for this build
         // since different scenarios may be customized - although
         // they all take off from the same baseline setup...
-        DynamatrixConfig dynacfgBuild = this.dynacfg
+        DynamatrixConfig dynacfgBuild = this.dynacfg.clone()
         dynacfgBuild.initDefault(dynacfgOrig)
 
         if (buildLabelsAgents.size() == 0 && dynacfgBuild.dynamatrixRequiredLabelCombos.size() == 0) {
