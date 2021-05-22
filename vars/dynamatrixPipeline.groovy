@@ -243,15 +243,17 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                     //println "SHELLCHECK: ${Utils.castString(dynacfgPipeline.shellcheck)}"
                     if (dynacfgPipeline.shellcheck.single != null || dynacfgPipeline.shellcheck.multi != null) {
                         //println "Discovering stagesShellcheck..."
-                        Dynamatrix dynamatrixShell = new Dynamatrix(this)
-                        dynamatrixShell.prepareDynamatrix([
+                        // Note: Different label set, different dynamatrix
+                        // instance (inside step), though hopefully same
+                        // cached NodeCaps array reused
+                        stagesShellcheck_arr = prepareDynamatrix([
                             dynamatrixAxesLabels: [~/^OS_.+/],
                             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
                             stageNameFunc: DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
                             // EXAMPLE: Can use a pipeline-provided method, see above in this file:
                             //stageNameFunc: this.&stageNameFunc_Shellcheck
-                            ])
-                        stagesShellcheck_arr = dynamatrixShell.generateBuild([:], true) { delegate -> setDelegate(delegate)
+                            ],
+                            true) { delegate -> setDelegate(delegate)
                                 //SCR//script {
                                     def MATRIX_TAG = delegate.stageName.trim() - ~/^MATRIX_TAG="*/ - ~/"*$/
 
