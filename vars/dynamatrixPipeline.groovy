@@ -24,7 +24,8 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
     ]
 
     dynacfgBase['commonLabelExpr'] = 'nut-builder'
-    dynacfgBase['dynamatrixAxesLabels'] = [~/^OS_.+/]
+    dynacfgBase['dynamatrixAxesLabels'] = //[~/^OS_.+/]
+        ['OS_FAMILY', 'OS_DISTRO', '${COMPILER}VER', 'ARCH${ARCH_BITS}']
 
     dynacfgBase.getParStages = { Closure body ->
         return prepareDynamatrix([
@@ -34,18 +35,22 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
             dynamatrixAxesVirtualLabelsMap: [
                 'BITS': [32, 64],
                 // 'CSTDVERSION': ['03', '2a'],
-                'CSTDVERSION_${KEY}': [ ['c': '03', 'cxx': '03'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx': '2a'], 'ansi' ],
+                //'CSTDVERSION_${KEY}': [ ['c': '03', 'cxx': '03'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx': '2a'], 'ansi' ],
+                //'CSTDVERSION_${KEY}': [ ['c': '03', 'cxx': '03'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx': '2a'] ],
+                'CSTDVERSION_${KEY}': [ ['c': '99', 'cxx': '11'] ],
                 'CSTDVARIANT': ['gnu']
                 ],
 
             mergeMode: [ 'dynamatrixAxesVirtualLabelsMap': 'merge', 'excludeCombos': 'merge' ],
             allowedFailure: [ [~/CSTDVARIANT=c/] ],
             runAllowedFailure: true,
-            excludeCombos: [ [~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/] ],
             //dynamatrixAxesLabels: [~/^OS_DISTRO/, '${COMPILER}VER', 'ARCH${ARCH_BITS}']
-            dynamatrixAxesLabels: [~/^OS/, '${COMPILER}VER', 'ARCH${ARCH_BITS}']
+            //dynamatrixAxesLabels: [~/^OS/, '${COMPILER}VER', 'ARCH${ARCH_BITS}']
+            excludeCombos: [ [~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/] ]
             ], body)
     }
+
+    //dynacfgPipeline.bodyParStages = {}
 
 // and lower in code
 
