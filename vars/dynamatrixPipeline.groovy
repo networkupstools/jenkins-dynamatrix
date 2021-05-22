@@ -279,6 +279,8 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         stage("Quick tests and prepare the bigger dynamatrix") {
             echo "Beginning quick-test stage"
 
+            // Convert back from the Set of tuples we used to
+            // avoid storing a Map for too long - and making CPS sad
             def par1 = shellcheck.makeMap(stagesShellcheck_arr)
 
             if (dynacfgPipeline.spellcheck != null) {
