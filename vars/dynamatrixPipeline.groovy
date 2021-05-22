@@ -74,6 +74,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     dynamatrixGlobalState.enableDebugMilestonesDetails = true
     }
 
+/*
+// EXAMPLE: The pipeline can define and pass (below)
+// a custom routine to name generated stages.
+// Currently the code below defaults to using library-provided method.
 @NonCPS
 def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
     // TODO: Offload to a routine and reference by name here?
@@ -84,8 +88,9 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         sn += labelMap.OS_FAMILY + "-"
     if (labelMap.containsKey("OS_DISTRO"))
         sn += labelMap.OS_DISTRO + "-"
-    return "MATRIX_TAG=${sn}shellcheck"
+    return "MATRIX_TAG=\"${sn}shellcheck\""
 }
+*/
 
     if (!dynacfgBase.containsKey('defaultDynamatrixConfig')) {
         dynacfgBase['defaultDynamatrixConfig'] = "C+CXX"
@@ -242,11 +247,13 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                         dynamatrixShell.prepareDynamatrix([
                             dynamatrixAxesLabels: [~/^OS_.+/],
                             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
-                            stageNameFunc: this.&stageNameFunc_Shellcheck
+                            stageNameFunc: DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
+                            // EXAMPLE: Can use a pipeline-provided method, see above in this file:
+                            //stageNameFunc: this.&stageNameFunc_Shellcheck
                             ])
                         stagesShellcheck_arr = dynamatrixShell.generateBuild([:], true) { delegate -> setDelegate(delegate)
                                 //SCR//script {
-                                    def MATRIX_TAG = delegate.stageName - ~/^MATRIX_TAG=/
+                                    def MATRIX_TAG = delegate.stageName.trim() - ~/^MATRIX_TAG="*/ - ~/"*$/
 
                                     // Cache faults of sub-tests as a fault of this big stage,
                                     // but let them all pass first so we know all shells which
