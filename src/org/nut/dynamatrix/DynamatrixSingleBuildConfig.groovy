@@ -371,11 +371,12 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     } // C_StageNameTagValue(dsbc)
 
 
-    public Boolean matchesConstraintsCombo (ArrayList combo) {
+    public boolean matchesConstraintsCombo (ArrayList combo) {
         return matchesConstraintsCombo(new LinkedHashSet(combo))
     }
 
-    public Boolean matchesConstraintsCombo (Set combo) {
+    // Tight loop below, use primitive boolean type (not class) to be faster
+    public boolean matchesConstraintsCombo (Set combo) {
         /* Returns "true" if the current object hits all constraints
          * in combo, which may be used for detecting (and possibly
          * filtering away) excluded setups or allowed failures.
@@ -407,7 +408,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             }
             crit++
 
-            Boolean hadHit = false
+            boolean hadHit = false
 
             buildLabelSet.find {label ->
                 if (label =~ regexConstraint) {
@@ -469,11 +470,11 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return res
     } // matchesConstraintsCombo (Set)
 
-    public Boolean matchesConstraints (ArrayList combos) {
+    public boolean matchesConstraints (ArrayList combos) {
         return matchesConstraints(new LinkedHashSet(combos))
     }
 
-    public Boolean matchesConstraints (Set combos) {
+    public boolean matchesConstraints (Set combos) {
         /* Call matchesConstraintsCombo() for each combo in the larger
          * set of combos (like allowedFailure[] or excludeCombos[] in the
          * class DynamatrixConfig) to see if the current object hits any.
