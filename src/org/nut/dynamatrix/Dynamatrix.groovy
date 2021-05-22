@@ -480,7 +480,7 @@ def parallelStages = prepareDynamatrix(
                         "expecting to process ${countCombos} combinations " +
                         "of requested matrix axis values, against " +
                         "${dynacfgBuild.excludeCombos.size()} excludeCombos and " +
-                        "${dynacfgBuild.allowedFailures.size()} allowedFailures. " +
+                        "${dynacfgBuild.allowedFailure.size()} allowedFailure cases. " +
                         "This can take some time."
                 }
             }
