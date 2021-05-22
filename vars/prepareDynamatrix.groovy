@@ -74,10 +74,13 @@ prepareDynamatrix([
 
 /* Returns a map of stages */
 def call(dynacfgOrig = [:], Closure body = null) {
-    println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy"
+    //if (dynamatrixGlobalState.enableDebugErrors) println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy step"
 
     // Have some defaults, if only to have all expected fields defined
     Dynamatrix dynamatrix = new Dynamatrix(this)
     dynamatrix.prepareDynamatrix(dynacfgOrig)
+
+    // We use a custom "dynamatrix" instance here, so no further
+    // customizations for generateBuild are needed => passing null
     return dynamatrix.generateBuild(null, body)
 }
