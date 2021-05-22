@@ -538,9 +538,9 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         // afterwards if needed... but expected that stage above
         // cause the build abortion if applicable)
         stage("Summarize quick-test results") {
+            echo "[Quick tests and prepare the bigger dynamatrix] Discovered ${stagesBinBuild.size()-1} 'slow build' combos to run"
             echo "[Quick tests and prepare the bigger dynamatrix] ${currentBuild.result}"
-            echo "Discovered ${stagesBinBuild.size()-1} 'slow build' combos to run"
-            if (!currentBuild.result in [null, 'SUCCESS']) {
+            if (!(currentBuild.result in [null, 'SUCCESS'])) {
                 error "Quick-test and/or preparation of larger test matrix failed"
             }
         } // stage-quick-summary
