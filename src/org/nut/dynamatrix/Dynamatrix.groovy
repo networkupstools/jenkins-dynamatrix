@@ -395,7 +395,7 @@ def parallelStages = prepareDynamatrix(
                 // Keys of the map, e.g. 'CSTDVARIANT' for strings ('c', 'gnu')
                 // or 'CSTDVERSION_${KEY}' for submaps (['c': '99', 'cxx': '98'])
                 def vals = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[k]
-                if (!Utils.isList(vals) || vals.size() == 0) return
+                if (!Utils.isList(vals) || vals.size() == 0) return // continue
 
                 // Collect possible values of this one key
                 Set keyvalues = []

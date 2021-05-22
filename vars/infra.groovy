@@ -77,7 +77,7 @@ def withEnvOptional(Map VARVAL, Closure body) {
     VARVAL.keySet().each() {VAR ->
         def DEFVAL = VARVAL[VAR]
         if (Utils.isStringNotEmpty(env[VAR]) || envmap.containsKey(VAR)) {
-            return
+            return // continue
         }
 
         def hits = 0

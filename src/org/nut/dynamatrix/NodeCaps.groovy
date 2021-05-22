@@ -100,7 +100,7 @@ class NodeCaps {
             this.script.println "[DEBUG] nodeCaps.labelExpression: " + this.labelExpression
             this.script.println "[DEBUG] nodeCaps.nodeData.size(): " + this.nodeData.size()
             this.nodeData.keySet().each() {nodeName ->
-                if (nodeName == null) return
+                if (nodeName == null) return // continue
                 this.script.println "[DEBUG] nodeCaps.nodeData[${nodeName}].labelMap.size()\t: " + this.nodeData[nodeName].labelMap.size()
                 this.nodeData[nodeName].labelMap.keySet().each() {String label ->
                     this.script.println "[DEBUG] nodeCaps.nodeData[${nodeName}].labelMap['${label}']\t: ${Utils.castString(this.nodeData[nodeName].labelMap[label])}"
@@ -162,7 +162,7 @@ class NodeCaps {
                 // string for variable part '${COMPILER}' in originally
                 // requested axis name '${COMPILER}VAR').
                 this.resolveAxisName(varAxis).each() {expandedAxisName ->
-                    if (!Utils.isStringNotEmpty(expandedAxisName)) return;
+                    if (!Utils.isStringNotEmpty(expandedAxisName)) return; // continue
 
                     // This layer of recursion gets us fixed-string name
                     // variants of the variable axis (like 'GCC' and
@@ -170,7 +170,7 @@ class NodeCaps {
                     // requested axis name '${COMPILER}VAR').
                     // Pattern looks into nodeCaps.
                     this.resolveAxisValues(expandedAxisName).each() {expandedAxisValue ->
-                        if (!Utils.isStringNotEmpty(expandedAxisValue)) return;
+                        if (!Utils.isStringNotEmpty(expandedAxisValue)) return; // continue
 
                         // In the original axis like '${COMPILER}VER' apply current item
                         // from expandedAxisValue like 'GCC' (or 'CLANG' in next loop)
@@ -206,16 +206,16 @@ class NodeCaps {
         if (Utils.isRegex(axis)) {
             // Return label keys which match the expression
             this.nodeData.keySet().each() {nodeName ->
-                if (nodeName == null) return
+                if (nodeName == null) return // continue
 
                 this.nodeData[nodeName].labelMap.keySet().each() {String label ->
                     if (debugTrace) {
                         this.script.println "[DEBUG] resolveAxisName(): label: ${Utils.castString(label)}"
                         this.script.println "[DEBUG] resolveAxisName(): value: ${Utils.castString(this.nodeData[nodeName].labelMap[label])}"
                     }
-                    if (label == null) return
+                    if (label == null) return // continue
                     label = label.trim()
-                    if (label.equals("")) return
+                    if (label.equals("")) return // continue
                     if (label =~ axis && !label.contains("=")) {
                         if (debugTrace) this.script.println "[DEBUG] resolveAxisName(): label matched axis as regex"
                         res << label
@@ -291,9 +291,9 @@ class NodeCaps {
                 this.script.println "[DEBUG] resolveAxisValues(): label: ${Utils.castString(label)}"
                 this.script.println "[DEBUG] resolveAxisValues(): value: ${Utils.castString(this.nodeData[node].labelMap[label])}"
             }
-            if (label == null) return
+            if (label == null) return // continue
             label = label.trim()
-            if (label.equals("")) return
+            if (label.equals("")) return // continue
 
             def val = this.nodeData[node].labelMap[label]
             if (Utils.isString(val)) {
@@ -385,7 +385,7 @@ class NodeCaps {
         if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${returnAssignments}): looking for: ${Utils.castString(axis)}"
 
         this.nodeData.keySet().each() {nodeName ->
-            if (nodeName == null) return
+            if (nodeName == null) return // continue
             def nres = resolveAxisValues(axis, nodeName, returnAssignments)
             if (nres != null && nres.size() > 0)
                 res << nres

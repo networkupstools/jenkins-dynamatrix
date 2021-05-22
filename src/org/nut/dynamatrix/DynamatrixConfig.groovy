@@ -474,7 +474,7 @@ def parallelStages = prepareDynamatrix(
             dynacfgOrig.keySet().each() {k ->
                 if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): checking dynacfgOrig[${k}] = ${Utils.castString(dynacfgOrig[k])}")
 
-                if (k.equals("mergeMode")) return
+                if (k.equals("mergeMode")) return // continue
                 try {
                     def mergeMode = "replace"
                     try {
