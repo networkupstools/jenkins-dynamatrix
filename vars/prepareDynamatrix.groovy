@@ -72,8 +72,14 @@ prepareDynamatrix([
 
  */
 
-/* Returns a map of stages */
+/* Returns a map of stages
+ * Or a Set, if called from inside a pipeline stage (CPS code).
+ */
 def call(dynacfgOrig = [:], Closure body = null) {
+    return call(dynacfgOrig, false, body)
+}
+
+def call(dynacfgOrig = [:], Boolean returnSet, Closure body = null) {
     //if (dynamatrixGlobalState.enableDebugErrors) println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy step"
 
     // Have some defaults, if only to have all expected fields defined
@@ -82,5 +88,5 @@ def call(dynacfgOrig = [:], Closure body = null) {
 
     // We use a custom "dynamatrix" instance here, so no further
     // customizations for generateBuild are needed => passing null
-    return dynamatrix.generateBuild(null, body)
+    return dynamatrix.generateBuild(null, returnSet, body)
 }
