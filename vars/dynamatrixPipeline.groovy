@@ -19,6 +19,7 @@ import org.nut.dynamatrix.*;
     dynacfgPipeline['spellcheck'] = false //true
     dynacfgPipeline['shellcheck'] = true
     dynacfgPipeline['NUT-shellcheck'] = [
+        //'stageNameFunc': null,
         'single': '( \${MAKE} shellcheck )',
         'multi': '(cd tests && SHELL_PROGS="$SHELL_PROGS" ./nut-driver-enumerator-test.sh )',
         'multiLabel': 'SHELL_PROGS',
@@ -88,8 +89,9 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         sn += labelMap.OS_FAMILY + "-"
     if (labelMap.containsKey("OS_DISTRO"))
         sn += labelMap.OS_DISTRO + "-"
-    return "MATRIX_TAG=\"${sn}shellcheck\""
+    return "MATRIX_TAG=\"${sn}shellcheckCustom\""
 }
+//dynacfgPipeline.shellcheck.stageNameFunc = this.&stageNameFunc_Shellcheck
 */
 
     if (!dynacfgBase.containsKey('defaultDynamatrixConfig')) {
@@ -175,6 +177,10 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         dynacfgPipeline['shellcheck']['multi'] = null
         dynacfgPipeline['shellcheck']['multiLabel'] = null
     }
+    if (!dynacfgPipeline.shellcheck.stageNameFunc) {
+        dynacfgPipeline.shellcheck.stageNameFunc = DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
+    }
+
     //println "SHELLCHECK: " + Utils.castString(dynacfgPipeline['shellcheck'])
 
     Dynamatrix dynamatrix = new Dynamatrix(this)
@@ -249,9 +255,7 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                         stagesShellcheck_arr = prepareDynamatrix([
                             dynamatrixAxesLabels: [~/^OS_.+/],
                             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
-                            stageNameFunc: DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
-                            // EXAMPLE: Can use a pipeline-provided method, see above in this file:
-                            //stageNameFunc: this.&stageNameFunc_Shellcheck
+                            stageNameFunc: dynacfgPipeline.shellcheck.stageNameFunc
                             ],
                             true) { delegate -> setDelegate(delegate)
                                 //SCR//script {
