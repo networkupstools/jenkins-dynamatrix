@@ -11,6 +11,7 @@ import org.nut.dynamatrix.*;
 // For in-place tests as Replay pipeline:
 @Library('jenkins-dynamatrix') _
 import org.nut.dynamatrix.dynamatrixGlobalState;
+import org.nut.dynamatrix.*;
 
     def dynacfgBase = [:]
     def dynacfgPipeline = [:]
@@ -27,10 +28,10 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
     dynacfgBase['dynamatrixAxesLabels'] = //[~/^OS_.+/]
         ['OS_FAMILY', 'OS_DISTRO', '${COMPILER}VER', 'ARCH${ARCH_BITS}']
 
-    dynacfgBase.getParStages = { Closure body ->
-        return prepareDynamatrix([
-            commonLabelExpr: dynacfgBase.commonLabelExpr,
-            defaultDynamatrixConfig: dynacfgBase.defaultDynamatrixConfig,
+    dynacfgPipeline.getParStages = { dynamatrix, Closure body ->
+        return dynamatrix.generateBuild([
+            //commonLabelExpr: dynacfgBase.commonLabelExpr,
+            //defaultDynamatrixConfig: dynacfgBase.defaultDynamatrixConfig,
 
             dynamatrixAxesVirtualLabelsMap: [
                 'BITS': [32, 64],
@@ -44,8 +45,9 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
             mergeMode: [ 'dynamatrixAxesVirtualLabelsMap': 'merge', 'excludeCombos': 'merge' ],
             allowedFailure: [ [~/CSTDVARIANT=c/] ],
             runAllowedFailure: true,
-            //dynamatrixAxesLabels: [~/^OS_DISTRO/, '${COMPILER}VER', 'ARCH${ARCH_BITS}']
-            //dynamatrixAxesLabels: [~/^OS/, '${COMPILER}VER', 'ARCH${ARCH_BITS}']
+            //dynamatrixAxesLabels: [~/^OS_DISTRO/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+            //dynamatrixAxesLabels: ['OS_FAMILY', 'OS_DISTRO', '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+            //dynamatrixAxesLabels: [~/^OS/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
             excludeCombos: [ [~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/] ]
             ], body)
     }
@@ -235,11 +237,13 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
                     //println "SHELLCHECK: ${Utils.castString(dynacfgPipeline.shellcheck)}"
                     if (dynacfgPipeline.shellcheck.single != null || dynacfgPipeline.shellcheck.multi != null) {
                         //println "Discovering stagesShellcheck..."
-                        stagesShellcheck_arr = dynamatrix.generateBuild([
+                        Dynamatrix dynamatrixShell = new Dynamatrix(this)
+                        dynamatrixShell.prepareDynamatrix([
                             dynamatrixAxesLabels: [~/^OS_.+/],
                             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
                             stageNameFunc: this.&stageNameFunc_Shellcheck
-                            ], true) { delegate -> setDelegate(delegate)
+                            ])
+                        stagesShellcheck_arr = dynamatrixShell.generateBuild([:], true) { delegate -> setDelegate(delegate)
                                 //SCR//script {
                                     def MATRIX_TAG = delegate.stageName - ~/^MATRIX_TAG=/
 
@@ -479,12 +483,12 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
 
 //            par1.failFast = false
 
-            if (dynacfgBase.getParStages) {
+            if (dynacfgPipeline.getParStages) {
                 par1["Discover slow build matrix"] = {
-                    if (dynacfgBase.containsKey('bodyParStages')) {
-                        stagesBinBuild = dynacfgBase.getParStages(dynacfgBase.bodyParStages)
+                    if (dynacfgPipeline.containsKey('bodyParStages')) {
+                        stagesBinBuild = dynacfgPipeline.getParStages(dynamatrix, dynacfgPipeline.bodyParStages)
                     } else {
-                        stagesBinBuild = dynacfgBase.getParStages(null)
+                        stagesBinBuild = dynacfgPipeline.getParStages(dynamatrix, null)
                     }
                     stagesBinBuild.failFast = dynacfgPipeline.failFast
                 }
@@ -514,8 +518,8 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         // cause the build abortion if applicable)
         stage("Summarize quick-test results") {
             echo "[Quick tests and prepare the bigger dynamatrix] ${currentBuild.result}"
-            echo "Discovered ${stagesBinBuild.size()} 'slow build' combos to run"
-            if (currentBuild.result != 'SUCCESS') {
+            echo "Discovered ${stagesBinBuild.size()-1} 'slow build' combos to run"
+            if (!currentBuild.result in [null, 'SUCCESS']) {
                 error "Quick-test and/or preparation of larger test matrix failed"
             }
         } // stage-quick-summary
