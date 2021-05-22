@@ -404,7 +404,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             // Currently we only support regex matches here
             if (!Utils.isRegex(regexConstraint)) {
                 if (debugErrors) this.script.println ("[ERROR] matchesConstraintsCombo(): invalid input item type, skipped: ${Utils.castString(regexConstraint)}")
-                return
+                return // skip
             }
             crit++
 
@@ -420,7 +420,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             }
 
             if (!hadHit) {
-                virtualLabelSet.each() {label ->
+                virtualLabelSet.find {label ->
                     if (label =~ regexConstraint) {
                         if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): virtualLabelSet for ${Utils.castString(this)} matched ${Utils.castString(label)} - hit with ${regexConstraint}")
                         hadHit = true
@@ -431,7 +431,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             }
 
             if (!hadHit) {
-                 envvarSet.each() {envvarval ->
+                 envvarSet.find {envvarval ->
                     if (envvarval =~ regexConstraint) {
                         if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): envvarSet for ${Utils.castString(this)} matched ${Utils.castString(envvarval)} - hit with ${regexConstraint}")
                         hadHit = true
@@ -442,7 +442,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             }
 
             if (!hadHit) {
-                clioptSet.each() {cliopt ->
+                clioptSet.find {cliopt ->
                     if (cliopt =~ regexConstraint) {
                         if (debugTrace) this.script.println ("[DEBUG] matchesConstraintsCombo(): clioptSet for ${Utils.castString(this)} matched ${Utils.castString(cliopt)} - hit with ${regexConstraint}")
                         hadHit = true
@@ -489,15 +489,21 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             return false
         }
 
-        combos.each() {combo ->
+        boolean res = combos.any {combo ->
             if (this.matchesConstraintsCombo(combo)) {
-                if (debugTrace) this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} matched ${Utils.castString(combo)}")
-                return true
+                if (debugTrace)
+                    this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} " +
+                        "matched ${Utils.castString(combo)}")
+                return true // break with a hit
             }
+            return false // continue looping
         }
+        if (res) return true
 
         // None of the combos matched this object
-        if (debugTrace) this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} did not match ${Utils.castString(combos)}")
+        if (debugTrace)
+            this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} " +
+                "did not match ${Utils.castString(combos)}")
         return false
     } // matchesConstraints (Set)
 
