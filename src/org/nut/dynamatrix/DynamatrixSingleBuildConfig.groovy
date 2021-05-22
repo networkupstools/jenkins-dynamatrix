@@ -370,6 +370,44 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return sn
     } // C_StageNameTagValue(dsbc)
 
+    // One implementation that pipelines can assign:
+    //    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&Shellcheck_StageNameTagFunc
+    //    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
+    // For platform, in which we can then group-test several shells:
+    @NonCPS
+    public static String ShellcheckPlatform_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
+        return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.ShellcheckPlatform_StageNameTagValue(dsbc) + '"'
+    }
+
+    @NonCPS
+    public static String ShellcheckPlatform_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
+        def labelMap = dsbc.getKVMap(false)
+        String sn = ""
+        if (labelMap.containsKey("OS_FAMILY"))
+            sn += labelMap.OS_FAMILY + "-"
+        if (labelMap.containsKey("OS_DISTRO"))
+            sn += labelMap.OS_DISTRO + "-"
+        return "${sn}shellcheck"
+    }
+
+    // If a particular shell (or several) has been chosen for one test stage:
+    @NonCPS
+    public static String Shellcheck_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
+        return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.Shellcheck_StageNameTagValue(dsbc) + '"'
+    }
+
+    @NonCPS
+    public static String Shellcheck_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
+        def labelMap = dsbc.getKVMap(false)
+        String sn = ""
+        if (labelMap.containsKey("OS_FAMILY"))
+            sn += labelMap.OS_FAMILY + "-"
+        if (labelMap.containsKey("OS_DISTRO"))
+            sn += labelMap.OS_DISTRO + "-"
+        if (labelMap.containsKey("SHELL_PROGS"))
+            sn += labelMap.SHELL_PROGS.trim().replaceAll("\\s", "-") + "-"
+        return "${sn}shellcheck"
+    }
 
     public boolean matchesConstraintsCombo (ArrayList combo) {
         return matchesConstraintsCombo(new LinkedHashSet(combo))
