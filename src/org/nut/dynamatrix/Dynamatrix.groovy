@@ -378,8 +378,10 @@ def parallelStages = prepareDynamatrix(
             // key=value pairs into a Map, to process similar to
             // labels announced by build nodes, including use in
             // `agent { label 'expr' }` clauses
+            if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): buildLabelsAgentsBuild before requiredLabelCombos: ${buildLabelsAgentsBuild}"
             buildLabelsAgentsBuild += mapBuildLabelExpressions(dynacfgBuild.dynamatrixRequiredLabelCombos)
         }
+        if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): buildLabelsAgentsBuild: ${buildLabelsAgentsBuild}"
 
         // Here we will collect axes that come from optional dynacfg fields
         Set virtualAxes = []
@@ -642,7 +644,7 @@ def parallelStages = prepareDynamatrix(
             if (debugMilestonesDetails) {
                 this.script.println "[DEBUG] generateBuildConfigSet(): BEFORE EXCLUSIONS: collected ${dsbcBleSet.size()} combos for individual builds with agent build label expression '${ble}'"
                 dsbcBleSet.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->
-                        this.script.println "[DEBUG] generateBuildConfigSet(): selected combo: ${dsbcBleTmp}"
+                        this.script.println "[DEBUG] generateBuildConfigSet(): selected combo candidate: ${dsbcBleTmp}"
                 }
             }
 
@@ -719,7 +721,7 @@ def parallelStages = prepareDynamatrix(
 
         if (debugMilestonesDetails) {
             dsbcSet.each() {DynamatrixSingleBuildConfig dsbc ->
-                this.script.println "[DEBUG] generateBuildConfigSet(): selected combo: ${dsbc}"
+                this.script.println "[DEBUG] generateBuildConfigSet(): selected combo final: ${dsbc}"
             }
         }
 
