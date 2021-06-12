@@ -136,17 +136,7 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
     }
 
     // Sanity-check certain build milestones expecting certain cfg structure:
-    if (dynacfgPipeline.containsKey('spellcheck')) {
-        if ("${dynacfgPipeline['spellcheck']}".trim().equals("true")) {
-            dynacfgPipeline['spellcheck'] = '( \${MAKE} spellcheck )'
-        } else if ("${dynacfgPipeline['spellcheck']}".trim().equals("false")) {
-            dynacfgPipeline['spellcheck'] = null
-        }
-    } else {
-        dynacfgPipeline['spellcheck'] = null
-    }
-    //println "SPELLCHECK: " + Utils.castString(dynacfgPipeline['spellcheck'])
-
+    dynacfgPipeline = spellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = shellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
 
     Dynamatrix dynamatrix = new Dynamatrix(this)
@@ -283,17 +273,8 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
             // avoid storing a Map for too long - and making CPS sad
             def par1 = shellcheck.makeMap(stagesShellcheck_arr)
 
-            if (dynacfgPipeline.spellcheck != null) {
-                par1["spellcheck"] = {
-                    node(infra.labelDocumentationWorker()) {
-                        infra.withEnvOptional(dynacfgPipeline.defaultTools) {
-                            unstashCleanSrc(dynacfgPipeline.stashnameSrc)
-                            sh """ ${dynacfgPipeline.prepconf} && ${dynacfgPipeline.configure} """
-                            sh """ ${dynacfgPipeline.spellcheck} """
-                        }
-                    }
-                } // spellcheck
-            }
+            // Nothing gets added (empty [:] ignored) if not enabled:
+            par1 += spellcheck.makeMap(dynacfgPipeline)
 
 //            par1.failFast = false
 
