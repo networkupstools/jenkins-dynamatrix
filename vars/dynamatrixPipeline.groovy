@@ -64,23 +64,12 @@ import org.nut.dynamatrix.*;
 
  */
 
-def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
-    // Hacky big switch for a max debug option
-    if (true)
-    if (false)
-    {
-    dynamatrixGlobalState.enableDebugTrace = true
-    dynamatrixGlobalState.enableDebugErrors = true
-    dynamatrixGlobalState.enableDebugMilestones = true
-    dynamatrixGlobalState.enableDebugMilestonesDetails = true
-    }
-
 /*
 // EXAMPLE: The pipeline can define and pass (below)
 // a custom routine to name generated stages.
 // Currently the code below defaults to using library-provided method.
 @NonCPS
-def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
+def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
     // TODO: Offload to a routine and reference by name here?
     // A direct Closure seems to confuse Jenkins/Groovy CPS
     def labelMap = dsbc.getKVMap(false)
@@ -91,8 +80,22 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
         sn += labelMap.OS_DISTRO + "-"
     return "MATRIX_TAG=\"${sn}shellcheckCustom\""
 }
-//dynacfgPipeline.shellcheck.stageNameFunc = this.&stageNameFunc_Shellcheck
+//dynacfgPipeline.shellcheck.stageNameFunc = this.&stageNameFunc_ShellcheckCustom
 */
+
+def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
+    // dynacfgBase = Base configuration for Dynamatrix for this pipeline
+    // dynacfgPipeline = Step-dependent setup in sub-maps
+
+    // Hacky big switch for a max debug option
+    if (true)
+    if (false)
+    {
+    dynamatrixGlobalState.enableDebugTrace = true
+    dynamatrixGlobalState.enableDebugErrors = true
+    dynamatrixGlobalState.enableDebugMilestones = true
+    dynamatrixGlobalState.enableDebugMilestonesDetails = true
+    }
 
     if (!dynacfgBase.containsKey('defaultDynamatrixConfig')) {
         dynacfgBase['defaultDynamatrixConfig'] = "C+CXX"
@@ -241,7 +244,6 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
 
             // Walk the plank
             parallel par1
-
         } // stage-quick
 
         // Something in our dynamatrix wrappings precludes seeing
