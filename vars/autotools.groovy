@@ -37,6 +37,18 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         if (!dynacfgPipeline.containsKey('configure')) {
             dynacfgPipeline['configure'] = "( [ -x configure ] || exit ; ./configure \${CONFIG_OPTS} )"
         }
+
+        if (!dynacfgPipeline.containsKey('build')) {
+            dynacfgPipeline['build'] = "( \${MAKE} all )"
+        }
+
+        if (!dynacfgPipeline.containsKey('check')) {
+            dynacfgPipeline['check'] = "( \${MAKE} check )"
+        }
+
+        if (!dynacfgPipeline.containsKey('distcheck')) {
+            dynacfgPipeline['distcheck'] = "( \${MAKE} distcheck )"
+        }
     }
 
     return dynacfgPipeline
