@@ -131,6 +131,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
     // Sanity-check the pipeline options
     dynacfgPipeline = sanityCheckDynacfgPipeline(dynacfgPipeline)
+    dynacfgPipeline = configureEnvvars.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = autotools.sanityCheckDynacfgPipeline(dynacfgPipeline)
 
     // Sanity-check certain build milestones expecting certain cfg structure:
