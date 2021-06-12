@@ -56,11 +56,7 @@ import org.nut.dynamatrix.*;
 
     //dynacfgPipeline.bodyParStages = {}
 
-// and lower in code
-
-                            stashCleanSrc(dynacfgPipeline.stashnameSrc) {
-                                git (url: "/home/jim/nut-DMF", branch: "fightwarn")
-                            }
+    dynacfgPipeline.bodyStashCmd = { git (url: "/home/jim/nut-DMF", branch: "fightwarn") }
 
  */
 
@@ -180,8 +176,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
  * builds with changelog generation, but not for quick test iterations.
  */
                     node(infra.labelCheckoutWorker()) {
-                        stashCleanSrc(dynacfgPipeline.stashnameSrc)
-                        }
+                        stashCleanSrc(dynacfgPipeline.stashnameSrc, dynacfgPipeline?.bodyStashCmd)
                     }
                 }, // stage - stash
 
