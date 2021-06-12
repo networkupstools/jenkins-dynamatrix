@@ -213,56 +213,6 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
 
         // Rest of code continues like a scripted pipeline
 
-/*
-    stage("Run quick tests and prepare the big dynamatrix") {
-        parallel ([
-
-            "shellchecks": {
-                stagesShellcheck.each { name, closure ->
-                    stage(name) {
-                        closure()
-                    }
-                }
-            },
-
-            "spellcheck": {
-                if (dynacfgPipeline.spellcheck != null) {
-                    node(infra.labelDocumentationWorker()) {
-                        infra.withEnvOptional(dynacfgPipeline.defaultTools) {
-                            unstashCleanSrc(dynacfgPipeline.stashnameSrc)
-                            sh """ ${dynacfgPipeline.prepconf} && ${dynacfgPipeline.configure} """
-                            sh """ ${dynacfgPipeline.spellcheck} """
-                        }
-                    }
-                }
-            } // spellcheck
-
-        ]) // parallel-quick
-    } // stage-quick
-*/
-
-/*
-    def par1 = stagesShellcheck
-
-    if (dynacfgPipeline.spellcheck != null) {
-        par1["spellcheck"] = {
-            node(infra.labelDocumentationWorker()) {
-                infra.withEnvOptional(dynacfgPipeline.defaultTools) {
-                    unstashCleanSrc(dynacfgPipeline.stashnameSrc)
-                    sh """ ${dynacfgPipeline.prepconf} && ${dynacfgPipeline.configure} """
-                    sh """ ${dynacfgPipeline.spellcheck} """
-                }
-            }
-        } // spellcheck
-    }
-
-    par1.failFast = false
-
-    stage("Quick tests and prepare the bigger dynamatrix") {
-        parallel par1
-    } // stage-quick
-*/
-
         // Do not mix parallel and usual sub-stages inside the
         // stage below - at least, BO does not render that well
         // and it may cause (or not?) CPS faults somehow...
@@ -292,17 +242,6 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
             // Walk the plank
             parallel par1
 
-/*
-            // This stage is not really visible in results UI
-            // so better use the separate road-bump below
-            stage("Summarize quick-test results - 1") {
-                echo "[Quick tests and prepare the bigger dynamatrix - 1] ${currentBuild.result}"
-                if (currentBuild.result != 'SUCCESS') {
-                    error "Quick-test and/or preparation of larger test matrix failed"
-                }
-            } // stage-quick-summary #1
-*/
-
         } // stage-quick
 
         // Something in our dynamatrix wrappings precludes seeing
@@ -322,4 +261,3 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
     } // node to manage the pipeline
 
 }
-
