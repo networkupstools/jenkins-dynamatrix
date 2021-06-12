@@ -40,32 +40,38 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
 
         if (!dynacfgPipeline.containsKey('configureEnvvars')) {
             dynacfgPipeline['configureEnvvars'] = """ {
+USE_COMPILER=""
+if [ -n "\${CLANGVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "clang" -o "\${COMPILER}" = "CLANG" ]; then
+    USE_COMPILER="clang"
+else if [ -n "\${GCCVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "gcc" -o "\${COMPILER}" = "GCC" ]; then
+    USE_COMPILER="gcc"
+fi
+
 case "\${CONFIG_OPTS}" in
     *" CC="*) ;;
     CC=*) ;;
-    *)  if [ -n "\${CLANGVER}" ]; then
-            CONFIG_OPTS="\${CONFIG_OPTS} CC=clang-\${CLANGVER}"
-        else if [ -n "\${GCCVER}" ]; then
-            CONFIG_OPTS="\${CONFIG_OPTS} CC=gcc-\${GCCVER}"
-        fi; fi
+    *)  case "\${USE_COMPILER}" in
+            clang)  CONFIG_OPTS="\${CONFIG_OPTS} CC=clang-\${CLANGVER}" ;;
+            gcc)    CONFIG_OPTS="\${CONFIG_OPTS} CC=gcc-\${GCCVER}" ;;
+        esac
         ;;
 esac
 
 case "\${CONFIG_OPTS}" in
     *" CXX="*) ;;
     CXX=*) ;;
-    *)  if [ -n "\${CLANGVER}" ]; then
-            CONFIG_OPTS="\${CONFIG_OPTS} CXX=clang++-\${CLANGVER}"
-        else if [ -n "\${GCCVER}" ]; then
-            CONFIG_OPTS="\${CONFIG_OPTS} CXX=g++-\${GCCVER}"
-        fi; fi
+    *)  case "\${USE_COMPILER}" in
+            clang)  CONFIG_OPTS="\${CONFIG_OPTS} CXX=clang++-\${CLANGVER}" ;;
+            gcc)    CONFIG_OPTS="\${CONFIG_OPTS} CXX=g++-\${GCCVER}" ;;
+        esac
         ;;
 esac
 
 case "\${CONFIG_OPTS}" in
     *" CPP="*) ;;
     CPP=*) ;;
-    *)  if [ -n "\${CLANGVER}" ]; then
+    *)  case "\${USE_COMPILER}" in
+          clang)
             if command -v "clang-cpp-\${CLANGVER}" >/dev/null ; then
                 CONFIG_OPTS="\${CONFIG_OPTS} CPP=clang-cpp-\${CLANGVER}"
             else
@@ -73,11 +79,13 @@ case "\${CONFIG_OPTS}" in
                     CONFIG_OPTS="\${CONFIG_OPTS} CPP=clang-cpp"
                 fi
             fi
-        else if [ -n "\${GCCVER}" ]; then
+            ;;
+          gcc)
             if command -v "cpp-\${GCCVER}" >/dev/null ; then
                 CONFIG_OPTS="\${CONFIG_OPTS} CPP=cpp-\${GCCVER}"
             fi
-        fi; fi
+            ;;
+        esac
         ;;
 esac
 
