@@ -211,7 +211,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             // Nothing gets added (empty [:] ignored) if not enabled:
             par1 += spellcheck.makeMap(dynacfgPipeline)
 
-//            par1.failFast = false
+            // For this stage, we do not want parallel build scenarios
+            // aborted if stuff breaks in one codepath, it is relatively
+            // small and fast anyway:
+            par1.failFast = false
 
             if (dynacfgPipeline.getParStages) {
                 par1["Discover slow build matrix"] = {
