@@ -70,8 +70,7 @@ import org.nut.dynamatrix.*;
 // Currently the code below defaults to using library-provided method.
 @NonCPS
 def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
-    // TODO: Offload to a routine and reference by name here?
-    // A direct Closure seems to confuse Jenkins/Groovy CPS
+    // NOTE: A direct Closure seems to confuse Jenkins/Groovy CPS, so using a func
     def labelMap = dsbc.getKVMap(false)
     String sn = ""
     if (labelMap.containsKey("OS_FAMILY"))
