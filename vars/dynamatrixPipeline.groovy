@@ -86,6 +86,10 @@ def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
 def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     // Base defaults not too specific for any particular toolchain we would use
 
+    if (!dynacfgPipeline.containsKey('buildSystem')) {
+        dynacfgPipeline.buildSystem = 'autotools'
+    }
+
     // Initialize default `make` implementation to use (there are many), etc.:
     if (!dynacfgPipeline.containsKey('defaultTools')) {
         dynacfgPipeline['defaultTools'] = [
