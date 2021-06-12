@@ -83,6 +83,27 @@ def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
 //dynacfgPipeline.shellcheck.stageNameFunc = this.&stageNameFunc_ShellcheckCustom
 */
 
+def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
+    // Base defaults not too specific for any particular toolchain we would use
+
+    // Initialize default `make` implementation to use (there are many), etc.:
+    if (!dynacfgPipeline.containsKey('defaultTools')) {
+        dynacfgPipeline['defaultTools'] = [
+            'MAKE': 'make'
+        ]
+    }
+
+    if (!dynacfgPipeline.stashnameSrc) {
+        dynacfgPipeline.stashnameSrc = 'src-checkedout'
+    }
+
+    if (!dynacfgPipeline.containsKey('failFast')) {
+        dynacfgPipeline.failFast = true
+    }
+
+    return dynacfgPipeline
+}
+
 def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     // dynacfgBase = Base configuration for Dynamatrix for this pipeline
     // dynacfgPipeline = Step-dependent setup in sub-maps
@@ -110,15 +131,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     }
 
     // Sanity-check the pipeline options
+    dynacfgPipeline = sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = autotools.sanityCheckDynacfgPipeline(dynacfgPipeline)
-
-    if (!dynacfgPipeline.stashnameSrc) {
-        dynacfgPipeline.stashnameSrc = 'src-checkedout'
-    }
-
-    if (!dynacfgPipeline.containsKey('failFast')) {
-        dynacfgPipeline.failFast = true
-    }
 
     // Sanity-check certain build milestones expecting certain cfg structure:
     dynacfgPipeline = spellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
