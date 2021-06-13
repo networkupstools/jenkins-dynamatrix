@@ -81,7 +81,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                         // tests that are not expected to impact each other
                         stage("prep for ${MATRIX_TAG}") {
                             sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
-                            infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+                            withEnvOptional(dynacfgPipeline.defaultTools) {
                                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
                                 sh """ ${dynacfgPipeline.prepconf} && ${dynacfgPipeline.configure} """
                             }
@@ -116,7 +116,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                                                 def didFail = true
                                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
                                                     withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
-                                                        infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+                                                        withEnvOptional(dynacfgPipeline.defaultTools) {
                                                             sh """ set +x
                                                             echo "Shell-dependent testing with shell '${SHELL_PROGS}' on `uname -a || hostname || true` system"
                                                             ${dynacfgPipeline.shellcheck.multi}
@@ -150,7 +150,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                             // TOTHINK: Skip agent that does not declare any shell labels?..
                             if (stagesShellcheckNode.size() == 0) {
                                 def stagesShellcheckNode_tuple = ["Test with default shell(s) for ${MATRIX_TAG}", {
-                                    infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+                                    withEnvOptional(dynacfgPipeline.defaultTools) {
                                         sh """ set +x
                                         echo "Shell-dependent testing with default shell on `uname -a || hostname || true` system"
                                         ${dynacfgPipeline.shellcheck.multi}
@@ -164,7 +164,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
 
                         if (dynacfgPipeline.shellcheck.single != null) {
                             def stagesShellcheckNode_tuple = ["Generic-shell test for ${MATRIX_TAG}", {
-                                infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+                                withEnvOptional(dynacfgPipeline.defaultTools) {
                                     sh """ set +x
                                     echo "Generic-shell test (with recipe defaults) on `uname -a || hostname || true` system"
                                     ${dynacfgPipeline.shellcheck.single}
