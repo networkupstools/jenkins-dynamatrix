@@ -18,18 +18,30 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     if (!dynacfgPipeline.containsKey('configureEnvvars')) {
         dynacfgPipeline['configureEnvvars'] = """ {
 USE_COMPILER=""
+USE_COMPILER_VERSION_SUFFIX=""
 if [ -n "\${CLANGVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "clang" -o "\${COMPILER}" = "CLANG" ]; then
     USE_COMPILER="clang"
+    USE_COMPILER_VERSION_SUFFIX="-\${CLANGVER}"
 else if [ -n "\${GCCVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "gcc" -o "\${COMPILER}" = "GCC" ]; then
     USE_COMPILER="gcc"
+    USE_COMPILER_VERSION_SUFFIX="-\${GCCVER}"
+fi
+
+# Possibly: default system compiler, version not specified?
+if [ -z "\${USE_COMPILER}" ]; then
+    if [ "\${COMPILER}" = "clang" -o "\${COMPILER}" = "CLANG" ]; then
+        USE_COMPILER="clang"
+    else if [ "\${COMPILER}" = "gcc" -o "\${COMPILER}" = "GCC" ]; then
+        USE_COMPILER="gcc"
+    fi
 fi
 
 case "\${CONFIG_OPTS}" in
     *" CC="*) ;;
     CC=*) ;;
     *)  case "\${USE_COMPILER}" in
-            clang)  CONFIG_OPTS="\${CONFIG_OPTS} CC=clang-\${CLANGVER}" ;;
-            gcc)    CONFIG_OPTS="\${CONFIG_OPTS} CC=gcc-\${GCCVER}" ;;
+            clang)  CONFIG_OPTS="\${CONFIG_OPTS} CC=clang\${USE_COMPILER_VERSION_SUFFIX}" ;;
+            gcc)    CONFIG_OPTS="\${CONFIG_OPTS} CC=gcc\${USE_COMPILER_VERSION_SUFFIX}" ;;
         esac
         ;;
 esac
@@ -38,8 +50,8 @@ case "\${CONFIG_OPTS}" in
     *" CXX="*) ;;
     CXX=*) ;;
     *)  case "\${USE_COMPILER}" in
-            clang)  CONFIG_OPTS="\${CONFIG_OPTS} CXX=clang++-\${CLANGVER}" ;;
-            gcc)    CONFIG_OPTS="\${CONFIG_OPTS} CXX=g++-\${GCCVER}" ;;
+            clang)  CONFIG_OPTS="\${CONFIG_OPTS} CXX=clang++\${USE_COMPILER_VERSION_SUFFIX}" ;;
+            gcc)    CONFIG_OPTS="\${CONFIG_OPTS} CXX=g++\${USE_COMPILER_VERSION_SUFFIX}" ;;
         esac
         ;;
 esac
@@ -62,6 +74,7 @@ case "\${CONFIG_OPTS}" in
                 CONFIG_OPTS="\${CONFIG_OPTS} CPP=cpp-\${GCCVER}"
             fi
             ;;
+          # else let config script find some "cpp" it would like
         esac
         ;;
 esac
