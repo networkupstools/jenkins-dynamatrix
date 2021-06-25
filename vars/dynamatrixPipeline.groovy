@@ -5,6 +5,7 @@
  * OS_FAMILY, OS_DISTRO, COMPILER, ${COMPILER}VER (e.g. GCCVER),
  * SHELL_PROGS, MAKE, ARCH_BITS, ARCH${ARCH_BITS} (e.g. ARCH32)
  */
+import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
 /*
@@ -30,7 +31,11 @@ import org.nut.dynamatrix.*;
     dynacfgBase['dynamatrixAxesLabels'] = //[~/^OS_.+/]
         ['OS_FAMILY', 'OS_DISTRO', '${COMPILER}VER', 'ARCH${ARCH_BITS}']
 
-    dynacfgPipeline.getParStages = { dynamatrix, Closure body ->
+    // Set of dynamatrix configuration selection filters and actual building
+    // and/or testing closures to prepare some "slow build" matrix cells,
+    // which may adhere or not to the same code pattern (body closure).
+    dynacfgPipeline.slowBuild = [
+      [getParStages: { dynamatrix, Closure body ->
         return dynamatrix.generateBuild([
             //commonLabelExpr: dynacfgBase.commonLabelExpr,
             //defaultDynamatrixConfig: dynacfgBase.defaultDynamatrixConfig,
@@ -52,9 +57,10 @@ import org.nut.dynamatrix.*;
             //dynamatrixAxesLabels: [~/^OS/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
             excludeCombos: [ [~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/] ]
             ], body)
-    }
-
-    //dynacfgPipeline.bodyParStages = {}
+        },
+        bodyParStages: null
+        //bodyParStages: {}
+    ]]
 
     dynacfgPipeline.bodyStashCmd = { git (url: "/home/jim/nut-DMF", branch: "fightwarn") }
 
@@ -229,14 +235,35 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             // small and fast anyway:
             par1.failFast = false
 
-            if (dynacfgPipeline.getParStages) {
+            if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
                 par1["Discover slow build matrix"] = {
-                    if (dynacfgPipeline.containsKey('bodyParStages')) {
-                        stagesBinBuild = dynacfgPipeline.getParStages(dynamatrix, dynacfgPipeline.bodyParStages)
-                    } else {
-                        stagesBinBuild = dynacfgPipeline.getParStages(dynamatrix, null)
+                    def count = 0
+                    // The "slowBuild" is a set of Maps, each of them describes
+                    // a dynamatrix selection filter. Having a series of those
+                    // with conditions known to developer of the pipeline (and
+                    // project it represents) can be more efficient than making
+                    // a huge matrix of virtual or agent-driven labels and then
+                    // filtering away lots of "excludeCombos" from that.
+                    dynacfgPipeline.slowBuild.each { def sb ->
+                        if (dynamatrixGlobalState.enableDebugTrace) {
+                            echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
+                        }
+                        if (Utils.isClosureNotEmpty(sb?.getParStages)) {
+                            count ++
+                            if (Utils.isClosure(sb?.bodyParStages)) {
+                                // body may be empty {}, if user wants so
+                                stagesBinBuild += sb.getParStages(dynamatrix, sb.bodyParStages)
+                            } else {
+                                stagesBinBuild += sb.getParStages(dynamatrix, null)
+                            }
+                        }
                     }
-                    stagesBinBuild.failFast = dynacfgPipeline.failFast
+                    if (stagesBinBuild.size() == 0) {
+                        echo "Did not discover any 'slow build' configurations over ${count} filter definition(s) tried"
+                    } else {
+                        echo "Discovered ${stagesBinBuild.size()} 'slow build' configurations over ${count} filter definition(s) tried"
+                        stagesBinBuild.failFast = dynacfgPipeline.failFast
+                    }
                 }
             }
 
@@ -251,8 +278,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         // afterwards if needed... but expected that stage above
         // cause the build abortion if applicable)
         stage("Summarize quick-test results") {
-            echo "[Quick tests and prepare the bigger dynamatrix] Discovered ${stagesBinBuild.size()-1} 'slow build' combos to run"
-            echo "[Quick tests and prepare the bigger dynamatrix] ${currentBuild.result}"
+            echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${stagesBinBuild.size()-1} 'slow build' combos to run"
+            echo "[Quick tests and prepare the bigger dynamatrix summary] ${currentBuild.result}"
             if (!(currentBuild.result in [null, 'SUCCESS'])) {
                 error "Quick-test and/or preparation of larger test matrix failed"
             }
