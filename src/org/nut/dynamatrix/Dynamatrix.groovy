@@ -494,7 +494,8 @@ def parallelStages = prepareDynamatrix(
             def removed = 0
             if (buildLabelsAgentsBuild.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
-                buildLabelsAgentsBuild.keySet().each() {ble ->
+                def tmp = buildLabelsAgentsBuild.clone()
+                tmp.keySet().each() {ble ->
                     dsbc.buildLabelExpression = ble
                     dsbc.buildLabelSet = buildLabelsAgentsBuild[ble]
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
@@ -507,7 +508,8 @@ def parallelStages = prepareDynamatrix(
 
             if (virtualAxes.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
-                virtualAxes.each() {virtualLabelSet ->
+                def tmp = virtualAxes.clone()
+                tmp.each() {virtualLabelSet ->
                     dsbc.virtualLabelSet = virtualLabelSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         virtualAxes.remove(virtualLabelSet)
@@ -519,7 +521,8 @@ def parallelStages = prepareDynamatrix(
 
             if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
-                dynacfgBuild.dynamatrixAxesCommonEnv.each() {envvarSet ->
+                def tmp = dynacfgBuild.dynamatrixAxesCommonEnv.clone()
+                tmp.each() {envvarSet ->
                     dsbc.envvarSet = envvarSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonEnv.remove(envvarSet)
@@ -531,7 +534,8 @@ def parallelStages = prepareDynamatrix(
 
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
-                dynacfgBuild.dynamatrixAxesCommonOpts.each() {clioptSet ->
+                def tmp = dynacfgBuild.dynamatrixAxesCommonOpts.clone()
+                tmp.each() {clioptSet ->
                     dsbc.clioptSet = clioptSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonOpts.remove(clioptSet)
@@ -655,7 +659,8 @@ def parallelStages = prepareDynamatrix(
             // cases (e.g. don't want this "compiler + Crevision" on that OS,
             // but want it on another)
             if (dynacfgBuild.excludeCombos.size() > 0) {
-                dsbcBleSet.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->
+                def tmp = dsbcBleSet.clone()
+                tmp.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         // TODO: track isExcluded or just delete items?
                         dsbcBleTmp.isExcluded = true
@@ -667,7 +672,8 @@ def parallelStages = prepareDynamatrix(
             }
 
             if (dynacfgBuild.allowedFailure.size() > 0) {
-                dsbcBleSet.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->
+                def tmp = dsbcBleSet.clone()
+                tmp.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->
                     if (dsbcBleTmp.matchesConstraints(dynacfgBuild.allowedFailure)) {
                         allowedToFailBle++
                         if (dynacfgBuild.runAllowedFailure) {
