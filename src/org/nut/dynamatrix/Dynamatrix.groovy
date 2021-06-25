@@ -486,6 +486,13 @@ def parallelStages = prepareDynamatrix(
             }
         }
 
+        // FIXME: Clean up unresolvable combos that appeared from expansion
+        // like "${COMPILER}VER" axis and "CLANGVER=11" announced by an agent
+        // but that agent does not announce a "COMPILER=CLANG". Such build
+        // candidates should be ignored; currently they hang waiting for a
+        // worker to implement them. Note this concept differs from some
+        // requiredCombos we might use to have Jenkins boot some workers.
+
         // Quick safe pre-filter, in case that user-provided constraints
         // only impact one type of axis:
         if (dynacfgBuild.excludeCombos.size() > 0) {
