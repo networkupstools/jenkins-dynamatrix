@@ -22,7 +22,7 @@ class Utils {
     public static final def classesClosures = [org.jenkinsci.plugins.workflow.cps.CpsClosure2, groovy.lang.Closure, Closure]
 
     @NonCPS
-    public static Boolean isString(obj) {
+    public static boolean isString(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesStrings) return true;
         if (obj instanceof String) return true;
@@ -32,7 +32,7 @@ class Utils {
     }
 
     @NonCPS
-    public static Boolean isRegex(obj) {
+    public static boolean isRegex(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesRegex) return true;
         if (obj instanceof java.util.regex.Pattern) return true;
@@ -40,21 +40,21 @@ class Utils {
     }
 
     @NonCPS
-    public static Boolean isStringOrRegex(obj) {
+    public static boolean isStringOrRegex(obj) {
         if (obj == null) return false;
         if (isString(obj) || isRegex(obj)) return true;
         return false;
     }
 
     @NonCPS
-    public static Boolean isStringNotEmpty(obj) {
+    public static boolean isStringNotEmpty(obj) {
         if (!isString(obj)) return false;
         if ("".equals(obj)) return false;
         return true;
     }
 
     @NonCPS
-    public static Boolean isStringOrRegexNotEmpty(obj) {
+    public static boolean isStringOrRegexNotEmpty(obj) {
         if (isString(obj)) {
             if ("".equals(obj)) return false;
             return true;
@@ -65,7 +65,7 @@ class Utils {
     }
 
     @NonCPS
-    public static Boolean isMap(obj) {
+    public static boolean isMap(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesMaps) return true;
         if (obj instanceof Map) return true;
@@ -73,13 +73,13 @@ class Utils {
     }
 
     @NonCPS
-    public static Boolean isMapNotEmpty(obj) {
+    public static boolean isMapNotEmpty(obj) {
         if (!isMap(obj)) return false;
         return (obj.size() > 0)
     }
 
     @NonCPS
-    public static Boolean isList(obj) {
+    public static boolean isList(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesLists) return true;
         if (obj instanceof Set) return true;
@@ -90,13 +90,13 @@ class Utils {
     }
 
     @NonCPS
-    public static Boolean isListNotEmpty(obj) {
+    public static boolean isListNotEmpty(obj) {
         if (!isList(obj)) return false;
         return (obj.size() > 0)
     }
 
     @NonCPS
-    public static Boolean isNode(obj) {
+    public static boolean isNode(obj) {
         if (obj == null) return false;
         if (obj.getClass() in [hudson.model.Node] || obj in hudson.model.Node) return true;
         if (obj instanceof hudson.model.Node) return true;
@@ -104,7 +104,7 @@ class Utils {
     }
 
     @NonCPS
-    public static Boolean isClosure(obj) {
+    public static boolean isClosure(obj) {
         if (obj == null) return false;
         if (obj.getClass() in classesClosures) return true;
         if (obj in org.jenkinsci.plugins.workflow.cps.CpsClosure2) return true;
@@ -115,7 +115,7 @@ class Utils {
     }
 
     @NonCPS
-    public static Boolean isClosureNotEmpty(obj) {
+    public static boolean isClosureNotEmpty(obj) {
         if (!isClosure(obj)) return false;
         return ( obj != {} )
     }
@@ -151,7 +151,7 @@ class Utils {
         return res
     }
 
-    static def mergeMapSet(orig, addon, Boolean debug = false) {
+    static def mergeMapSet(orig, addon, boolean debug = false) {
         // Note: debug println() below might not go anywhere
 
         /* For objects that are like an Array, List or Set, this routine
