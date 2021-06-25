@@ -18,9 +18,9 @@ class NodeCaps {
 
     def script
 
-    private Boolean isInitialized = false
-    public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
-    public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    private boolean isInitialized = false
+    public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
     // What we looked for (null means all known nodes):
     public final String labelExpression
@@ -31,7 +31,7 @@ class NodeCaps {
     // uniqueness...
     public final Map<String, NodeData> nodeData
 
-    public NodeCaps(script, String builderLabel = null, Boolean debugTrace = null, Boolean debugErrors = null) {
+    public NodeCaps(script, String builderLabel = null, boolean debugTrace = null, boolean debugErrors = null) {
         /*
          * Collect all info about useful build agents in one collection:
          * Returns a Map with names of currently known agent which matched the
@@ -80,12 +80,12 @@ class NodeCaps {
     }
 
     @NonCPS
-    public Boolean shouldDebugTrace() {
+    public boolean shouldDebugTrace() {
         return ( this.enableDebugTrace && this.script != null)
     }
 
     @NonCPS
-    public Boolean shouldDebugErrors() {
+    public boolean shouldDebugErrors() {
         return ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
     }
 
@@ -227,7 +227,7 @@ class NodeCaps {
         return res.flatten()
     }
 
-    def resolveAxisValues(Object axis, node, Boolean returnAssignments = false) {
+    def resolveAxisValues(Object axis, node, boolean returnAssignments = false) {
         /* Look into a single node */
 
         /* For a fixed-string name or regex pattern, return a flattened Set of
@@ -307,7 +307,7 @@ class NodeCaps {
             // TODO: If labelFixed is not empty, check if this node contains
             // all the labels and values listed in that part of our query
 
-            Boolean hit = false
+            boolean hit = false
             if (debugTrace) {
                 this.script.println "[DEBUG]   resolveAxisValues(${node}, ${returnAssignments}): " +
                     "looking for: ${Utils.castString(axis)}    " +
@@ -359,7 +359,7 @@ class NodeCaps {
         return res.flatten()
     }
 
-    def resolveAxisValues(Object axis, Boolean returnAssignments = false) {
+    def resolveAxisValues(Object axis, boolean returnAssignments = false) {
         /* See comments in the per-node variant above - this method calls
          * it for all selected and cached nodes, and aggregates the results
          */
