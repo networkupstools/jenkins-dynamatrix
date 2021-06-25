@@ -119,15 +119,43 @@ case "\${CONFIG_OPTS}" in
         ;;
 esac
 
-if [ -n "\${STDARG}" ]; then
-    CONFIG_OPTS="\${CONFIG_OPTS} CFLAGS=\${STDARG}"
+BITSARG=""
+case "\${CONFIG_OPTS}" in
+    *m16*|*m32*|*m64*|*m128*) ;;
+    *)
+        if [ -n "\${ARCH_BITS}" ] && [ "\${ARCH_BITS}" -gt 0 ] ; then
+            BITSARG="-m\${ARCH_BITS}"
+        else if [ -n "\${BITS}" ] && [ "\${BITS}" -gt 0 ] ; then
+            BITSARG="-m\${BITS}"
+        fi; fi
+        ;;
+esac
+
+if [ -n "\${STDARG}" ] || [ -n "\${BITSARG}" ]; then
+    case "\${CONFIG_OPTS}" in
+        *" CFLAGS="*|CFLAGS=*)
+            CONFIG_OPTS="`echo "\${CONFIG_OPTS}" | sed "s,CFLAGS=,CFLAGS='\${STDARG} \${BITSARG} ',"`" ;;
+        *) CONFIG_OPTS="\${CONFIG_OPTS} CFLAGS='\${STDARG} \${BITSARG}'" ;;
+    esac
 fi
 
-if [ -n "\${STDXXARG}" ]; then
-    CONFIG_OPTS="\${CONFIG_OPTS} CXXFLAGS=\${STDXXARG}"
+if [ -n "\${STDXXARG}" ] || [ -n "\${BITSARG}" ]; then
+    case "\${CONFIG_OPTS}" in
+        *" CXXFLAGS="*|CXXFLAGS=*)
+            CONFIG_OPTS="`echo "\${CONFIG_OPTS}" | sed "s,CXXFLAGS=,CXXFLAGS='\${STDXXARG} \${BITSARG} ',"`" ;;
+        *) CONFIG_OPTS="\${CONFIG_OPTS} CXXFLAGS='\${STDXXARG} \${BITSARG}'" ;;
+    esac
 fi
 
-export CONFIG_OPTS STDARG STDXXARG
+if [ -n "\${BITSARG}" ]; then
+    case "\${CONFIG_OPTS}" in
+        *" LDFLAGS="*|LDFLAGS=*)
+            CONFIG_OPTS="`echo "\${CONFIG_OPTS}" | sed "s,LDFLAGS=,LDFLAGS='\${BITSARG} ',"`" ;;
+        *) CONFIG_OPTS="\${CONFIG_OPTS} LDFLAGS='\${BITSARG}'" ;;
+    esac
+fi
+
+export CONFIG_OPTS STDARG STDXXARG BITSARG
 
 } """
     } // configureEnvvars
