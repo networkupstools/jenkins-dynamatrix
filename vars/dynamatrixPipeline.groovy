@@ -31,6 +31,15 @@ import org.nut.dynamatrix.*;
     dynacfgBase['dynamatrixAxesLabels'] = //[~/^OS_.+/]
         ['OS_FAMILY', 'OS_DISTRO', '${COMPILER}VER', 'ARCH${ARCH_BITS}']
 
+    // This closure can be used for slowBuild detailed below, if you just want
+    // some same rituals to happen in all executed cases, to avoid repetitive
+    // copy-pasting of a closure (or a named reference to one). The body can
+    // use delegated dynamatrix variables such as "dsbc" and "stageName" as
+    // well as exported envvars for the shell code (label values etc.), e.g.:
+    //dynacfgPipeline.slowBuildDefaultBody = { delegate -> setDelegate(delegate)
+    //  echo "Running default custom build for '${stageName}' ==> ${dsbc.clioptSet.toString()}"
+    //  sh """ hostname; date -u; echo "\${MATRIX_TAG}"; set | sort -n """ }
+
     // Set of dynamatrix configuration selection filters and actual building
     // and/or testing closures to prepare some "slow build" matrix cells,
     // which may adhere or not to the same code pattern (body closure).
@@ -254,7 +263,11 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 // body may be empty {}, if user wants so
                                 stagesBinBuild += sb.getParStages(dynamatrix, sb.bodyParStages)
                             } else {
-                                stagesBinBuild += sb.getParStages(dynamatrix, null)
+                                if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
+                                    stagesBinBuild += sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                                } else {
+                                    stagesBinBuild += sb.getParStages(dynamatrix, null)
+                                }
                             }
                         }
                     }
