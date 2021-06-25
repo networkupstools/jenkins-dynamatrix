@@ -246,7 +246,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
             if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
                 par1["Discover slow build matrix"] = {
-                    def count = 0
+                    def countFiltersSeen = 0
+                    def countFiltersSkipped = 0
                     // The "slowBuild" is a set of Maps, each of them describes
                     // a dynamatrix selection filter. Having a series of those
                     // with conditions known to developer of the pipeline (and
@@ -258,7 +259,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
                         }
                         if (Utils.isClosureNotEmpty(sb?.getParStages)) {
-                            count ++
+                            countFiltersSeen ++
                             if (Utils.isClosure(sb?.bodyParStages)) {
                                 // body may be empty {}, if user wants so
                                 stagesBinBuild += sb.getParStages(dynamatrix, sb.bodyParStages)
@@ -269,12 +270,19 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     stagesBinBuild += sb.getParStages(dynamatrix, null)
                                 }
                             }
+                        } else {
+                            if (dynamatrixGlobalState.enableDebugTrace)
+                                echo "SKIP: No (valid) filter definition in this entry"
+                            countFiltersSkipped++
                         }
                     }
+
+                    String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
+                        "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
                     if (stagesBinBuild.size() == 0) {
-                        echo "Did not discover any 'slow build' configurations over ${count} filter definition(s) tried"
+                        echo "Did not discover any ${sbSummarySuffix}"
                     } else {
-                        echo "Discovered ${stagesBinBuild.size()} 'slow build' configurations over ${count} filter definition(s) tried"
+                        echo "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
                         stagesBinBuild.failFast = dynacfgPipeline.failFast
                     }
                 }
