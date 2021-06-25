@@ -324,6 +324,17 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             }
         } // stage-quick-summary
 
+        if (stagesBinBuild.size() > 1) {
+            echo "Scheduling ${stagesBinBuild.size} stages for the 'slow build' dynamatrix, running this can take a long while..."
+            stage("Run the bigger dynamatrix") {
+                parallel stagesBinBuild
+            }
+            echo "Completed the 'slow build' dynamatrix"
+        } else {
+            // TODO: `unstable` this?
+            echo "No stages were prepared for the 'slow build' dynamatrix, so completing the job"
+        }
+
     } // node to manage the pipeline
 
 }
