@@ -817,7 +817,9 @@ def parallelStages = prepareDynamatrix(
                         message: "Failed stage which is allowed to fail: ${stageName}" + "\n  for ${Utils.castString(dsbc)}",
                         buildResult: 'SUCCESS', stageResult: 'FAILURE'
                     ) {
-                        generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
+                        script.withEnv(['CI_ALLOWED_FAILURE=true']) {
+                            generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
+                        }
                     } // catchError
                 } else {
                     generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
