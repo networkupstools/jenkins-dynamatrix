@@ -19,6 +19,7 @@ class Utils {
     public static final def classesStringOrRegex = classesStrings + classesRegex
     public static final def classesMaps = [Map, LinkedHashMap, HashMap]
     public static final def classesLists = [ArrayList, List, Set, TreeSet, LinkedHashSet, Object[]]
+    public static final def classesClosures = [org.jenkinsci.plugins.workflow.cps.CpsClosure2, groovy.lang.Closure, Closure]
 
     @NonCPS
     public static Boolean isString(obj) {
@@ -100,6 +101,23 @@ class Utils {
         if (obj.getClass() in [hudson.model.Node] || obj in hudson.model.Node) return true;
         if (obj instanceof hudson.model.Node) return true;
         return false;
+    }
+
+    @NonCPS
+    public static Boolean isClosure(obj) {
+        if (obj == null) return false;
+        if (obj.getClass() in classesClosures) return true;
+        if (obj in org.jenkinsci.plugins.workflow.cps.CpsClosure2) return true;
+        if (obj in groovy.lang.Closure) return true;
+        if (obj instanceof org.jenkinsci.plugins.workflow.cps.CpsClosure2) return true;
+        if (obj instanceof groovy.lang.Closure) return true;
+        return false;
+    }
+
+    @NonCPS
+    public static Boolean isClosureNotEmpty(obj) {
+        if (!isClosure(obj)) return false;
+        return ( obj != {} )
     }
 
     @NonCPS
