@@ -185,17 +185,20 @@ class DynamatrixSingleBuildConfig implements Cloneable {
          * to for practical purposes (consumer should check it if important)
          */
         // All labels of the world, unite!
-        Set labelSet = (buildLabelSet + virtualLabelSet + envvarSet).flatten()
-        labelSet.remove(null)
-        labelSet.remove("")
-        labelSet.each() {String label ->
+        Set labelSet1 = (buildLabelSet + virtualLabelSet + envvarSet).flatten()
+        labelSet1.remove(null)
+        labelSet1.remove("")
+        Set labelSet = []
+        labelSet1.each() {String label ->
             // Split composite labels like "COMPILER=CLANG CLANGVER=9", if any
+            // and avoid removing from inside the loop over same Set
             if (label =~ /\s+/) {
-                labelSet.remove(label)
                 Set tmpSet = label.split(/\s/)
                 tmpSet.remove(null)
                 tmpSet.remove("")
                 labelSet += tmpSet
+            } else {
+                labelSet.add(label)
             }
         }
         labelSet.remove(null)
