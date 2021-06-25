@@ -24,10 +24,10 @@ class Dynamatrix implements Cloneable {
     // Have some defaults, if only to have all expected fields defined
     private DynamatrixConfig dynacfg
     private def script
-    public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
-    public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
-    public Boolean enableDebugMilestones = dynamatrixGlobalState.enableDebugMilestones
-    public Boolean enableDebugMilestonesDetails = dynamatrixGlobalState.enableDebugMilestonesDetails
+    public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    public boolean enableDebugMilestones = dynamatrixGlobalState.enableDebugMilestones
+    public boolean enableDebugMilestonesDetails = dynamatrixGlobalState.enableDebugMilestonesDetails
 
     // Store values populated by prepareDynamatrix() so further generateBuild()
     // and practical generateBuildConfigSet() calls can use these quickly.
@@ -73,22 +73,22 @@ class Dynamatrix implements Cloneable {
     }
 
     @NonCPS
-    public Boolean shouldDebugTrace() {
+    public boolean shouldDebugTrace() {
         return ( this.enableDebugTrace && this.script != null)
     }
 
     @NonCPS
-    public Boolean shouldDebugErrors() {
+    public boolean shouldDebugErrors() {
         return ( (this.enableDebugErrors || this.enableDebugTrace) && this.script != null)
     }
 
     @NonCPS
-    public Boolean shouldDebugMilestones() {
+    public boolean shouldDebugMilestones() {
         return ( (this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
     }
 
     @NonCPS
-    public Boolean shouldDebugMilestonesDetails() {
+    public boolean shouldDebugMilestonesDetails() {
         return ( (this.enableDebugMilestonesDetails || this.enableDebugTrace) && this.script != null)
     }
 
@@ -826,7 +826,7 @@ def parallelStages = prepareDynamatrix(
     }
 
 //    @NonCPS
-    def generateBuild(Map dynacfgOrig = [:], Boolean returnSet, Closure bodyOrig = null) {
+    def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Closure bodyOrig = null) {
         /* Returns a map of stages.
          * Or a Set, if called from inside a pipeline stage (CPS code).
          */
