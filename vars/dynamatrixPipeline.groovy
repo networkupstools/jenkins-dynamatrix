@@ -67,6 +67,8 @@ import org.nut.dynamatrix.*;
             excludeCombos: [ [~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/] ]
             ], body)
         },
+        //branchRegexSource: ~/^PR-.+$/,
+        //branchRegexTarget: ~/^(master|main|stable)$/,
         bodyParStages: null
         //bodyParStages: {}
     ]]
@@ -260,6 +262,22 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         }
                         if (Utils.isClosureNotEmpty(sb?.getParStages)) {
                             countFiltersSeen ++
+                            if (Utils.isRegex(sb?.branchRegexSource) && Utils.isStringNotEmpty(env?.BRANCH_NAME)) {
+                                if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
+                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                        echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ${sb.branchRegexSource} for this filter configuration"
+                                    countFiltersSkipped++
+                                    return // continue
+                                }
+                            }
+                            if (Utils.isRegex(sb?.branchRegexTarget) && Utils.isStringNotEmpty(env?.TARGET_BRANCH)) {
+                                if (!(env.TARGET_BRANCH ==~ sb.branchRegexTarget)) {
+                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                        echo "SKIP: Target branch name '${env.TARGET_BRANCH}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
+                                    countFiltersSkipped++
+                                    return // continue
+                                }
+                            }
                             if (Utils.isClosure(sb?.bodyParStages)) {
                                 // body may be empty {}, if user wants so
                                 stagesBinBuild += sb.getParStages(dynamatrix, sb.bodyParStages)
