@@ -15,24 +15,30 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     // Sanity-check the pipeline options, these are relevant for several
     // build systems alike (autotools, ci_build, probably cmake, etc...)
 
+    // TODO: Handle ARCH as "-arch x86_64" for C(XX)FLAGS and "-melf_x86_64" for LDFLAGS
+
     if (!dynacfgPipeline.containsKey('configureEnvvars')) {
         dynacfgPipeline['configureEnvvars'] = """ {
 USE_COMPILER=""
 USE_COMPILER_VERSION_SUFFIX=""
 if [ -n "\${CLANGVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "clang" -o "\${COMPILER}" = "CLANG" ]; then
-    USE_COMPILER="clang"
-    USE_COMPILER_VERSION_SUFFIX="-\${CLANGVER}"
-else if [ -n "\${GCCVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "gcc" -o "\${COMPILER}" = "GCC" ]; then
-    USE_COMPILER="gcc"
-    USE_COMPILER_VERSION_SUFFIX="-\${GCCVER}"
+        USE_COMPILER="clang"
+        USE_COMPILER_VERSION_SUFFIX="-\${CLANGVER}"
+else
+    if [ -n "\${GCCVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "gcc" -o "\${COMPILER}" = "GCC" ]; then
+        USE_COMPILER="gcc"
+        USE_COMPILER_VERSION_SUFFIX="-\${GCCVER}"
+    fi
 fi
 
 # Possibly: default system compiler, version not specified?
 if [ -z "\${USE_COMPILER}" ]; then
     if [ "\${COMPILER}" = "clang" -o "\${COMPILER}" = "CLANG" ]; then
-        USE_COMPILER="clang"
-    else if [ "\${COMPILER}" = "gcc" -o "\${COMPILER}" = "GCC" ]; then
-        USE_COMPILER="gcc"
+            USE_COMPILER="clang"
+    else
+        if [ "\${COMPILER}" = "gcc" -o "\${COMPILER}" = "GCC" ]; then
+            USE_COMPILER="gcc"
+        fi
     fi
 fi
 
@@ -124,10 +130,12 @@ case "\${CONFIG_OPTS}" in
     *m16*|*m32*|*m64*|*m128*) ;;
     *)
         if [ -n "\${ARCH_BITS}" ] && [ "\${ARCH_BITS}" -gt 0 ] ; then
-            BITSARG="-m\${ARCH_BITS}"
-        else if [ -n "\${BITS}" ] && [ "\${BITS}" -gt 0 ] ; then
-            BITSARG="-m\${BITS}"
-        fi; fi
+                BITSARG="-m\${ARCH_BITS}"
+        else
+            if [ -n "\${BITS}" ] && [ "\${BITS}" -gt 0 ] ; then
+                BITSARG="-m\${BITS}"
+            fi
+        fi
         ;;
 esac
 
