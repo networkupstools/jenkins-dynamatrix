@@ -11,8 +11,8 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 class DynamatrixSingleBuildConfig implements Cloneable {
     private def script = null
     def stageNameFunc = null
-    public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
-    public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
     // Most of our builds require a build agent, usually one with
     // specific capabilities as selected by label expression below,
@@ -103,12 +103,12 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     }
 
     @NonCPS
-    public Boolean shouldDebugTrace() {
+    public boolean shouldDebugTrace() {
         return ( this.enableDebugTrace && this.script != null)
     }
 
     @NonCPS
-    public Boolean shouldDebugErrors() {
+    public boolean shouldDebugErrors() {
         return ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
     }
 
@@ -205,7 +205,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     }
 
     @NonCPS
-    public Map getKVMap(Boolean storeNulls = false) {
+    public Map getKVMap(boolean storeNulls = false) {
         /* Return the map with (not-null and unique) key=values represented
          * by whichever is populated of the: build agent labels, virtual
          * labels, and envvars (but not the CLI options). Any composite
@@ -261,7 +261,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     }
 
     @NonCPS
-    public static String C_stdarg(String CSTDVARIANT, String CSTDVERSION, Boolean isCXX = false, Boolean useIsCXXforANSI = false) {
+    public static String C_stdarg(String CSTDVARIANT, String CSTDVERSION, boolean isCXX = false, boolean useIsCXXforANSI = false) {
         // This routine might be used to construct actual "-std=..."
         // argument for a compiler, or for the stage name tag below.
         // The "useIsCXXforANSI" flag impacts whether we would emit
