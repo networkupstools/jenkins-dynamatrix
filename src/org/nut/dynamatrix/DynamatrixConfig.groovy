@@ -11,8 +11,8 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 class DynamatrixConfig implements Cloneable {
     private def script
     public def stageNameFunc = null
-    public Boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
-    public Boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
     // Define fields to satisfy the build example below
     //    commonLabelExpr: 'nut-builder',
@@ -219,12 +219,12 @@ def parallelStages = prepareDynamatrix(
     }
 
     @NonCPS
-    public Boolean shouldDebugTrace() {
+    public boolean shouldDebugTrace() {
         return ( this.enableDebugTrace && this.script != null)
     }
 
     @NonCPS
-    public Boolean shouldDebugErrors() {
+    public boolean shouldDebugErrors() {
         return ( (this.enableDebugErrors || this.enableDebugTrace) && this.script != null)
     }
 
