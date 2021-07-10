@@ -149,60 +149,6 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
 
         echo msg
 
-        def cmdLabel = ""
-        // Build a multiline shell script
-        // TOTHINK: Split that into many shell steps (each with configureEnvvars
-        // re-run or some re-import of the first generated value, if needed),
-        // and/or sequential stages to visualize in BO UI build progress?
-        def cmd = """ """
-        if (!dynacfgPipeline?.traceBuildShell) cmd = """ set +x
-"""
-
-        if (dynacfgPipeline?.buildSystem) {
-            cmdLabel = "With ${dynacfgPipeline.buildSystem}: "
-        }
-
-        if (dynacfgPipeline?.configureEnvvars) {
-            cmd += """ ${dynacfgPipeline?.configureEnvvars}
-"""
-            cmdLabel += "configureEnvvars "
-        }
-
-        if (dynacfgPipeline?.prepconf) {
-            cmd += """ ${dynacfgPipeline?.prepconf}
-"""
-            cmdLabel += "prepconf "
-        }
-
-        if (dynacfgPipeline?.configure) {
-            cmd += """ ${dynacfgPipeline?.configure}
-"""
-            cmdLabel += "configure "
-        }
-
-        if (dynacfgPipeline?.build) {
-            cmd += """ ${dynacfgPipeline?.build}
-"""
-            cmdLabel += "build "
-        }
-
-        if (dynacfgPipeline?.check) {
-            cmd += """ ${dynacfgPipeline?.check}
-"""
-            cmdLabel += "check "
-        }
-
-        if (dynacfgPipeline?.distcheck) {
-            cmd += """ ${dynacfgPipeline?.distcheck}
-"""
-            cmdLabel += "distcheck "
-        }
-
-        if (stageName)
-            cmdLabel = cmdLabel.trim() + " for ${stageName}"
-
-        def shRes = sh (script: cmd, returnStatus: true, label: cmdLabel.trim())
-
         // Strive for unique name prefix across many similar builds executed
         def archPrefix = id
         if (stageName)
@@ -211,8 +157,136 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         if (archPrefix.length() > 250) { // Help filesystems that limit filename size
             archPrefix = "MD5_" + archPrefix.md5()
         }
+
+        // Build a multiline shell script
+        // Split that into many shell steps (each with configureEnvvars
+        // re-run or some re-import of the first generated value, if needed),
+        // and/or sequential stages to visualize in BO UI build progress
+        def cmdCommonLabel = ""
+        def cmdPrepLabel = ""
+        def cmdBuildLabel = ""
+        def cmdTest1Label = ""
+        def cmdTest2Label = ""
+
+        def cmdCommon = """ """
+        def cmdPrep = ""
+        def cmdBuild = ""
+        def cmdTest1 = ""
+        def cmdTest2 = ""
+        if (!dynacfgPipeline?.traceBuildShell) {
+            cmdCommon = """ set +x
+"""
+        }
+
+        if (dynacfgPipeline?.buildSystem) {
+            cmdCommonLabel = "With ${dynacfgPipeline.buildSystem}: "
+        }
+
+        if (dynacfgPipeline?.configureEnvvars) {
+            // Might be better to evict into cmdPrep alone, but for e.g.
+            // the ci_build.sh tooling defaults, we only call "check"
+            // and that handles everything for the BIUILD_TYPE requested
+            cmdCommon += """ ${dynacfgPipeline?.configureEnvvars}
+"""
+            cmdCommonLabel += "configureEnvvars "
+        }
+
+        if (dynacfgPipeline?.prepconf) {
+            cmdPrep += """ ${dynacfgPipeline?.prepconf}
+"""
+            cmdPrepLabel += "prepconf "
+        }
+
+        if (dynacfgPipeline?.configure) {
+            cmdPrep += """ ${dynacfgPipeline?.configure}
+"""
+            cmdPrepLabel += "configure "
+        }
+
+        if (dynacfgPipeline?.build) {
+            cmdBuild += """ ${dynacfgPipeline?.build}
+"""
+            cmdBuildLabel += "build "
+        }
+
+        if (dynacfgPipeline?.check) {
+            cmdTest1 += """ ${dynacfgPipeline?.check}
+"""
+            cmdTest1Label += "check "
+        }
+
+        if (dynacfgPipeline?.distcheck) {
+            cmdTest2 += """ ${dynacfgPipeline?.distcheck}
+"""
+            cmdTest2Label += "distcheck "
+        }
+
+        if (stageName) {
+            if (cmdPrepLabel != "")
+                cmdPrepLabel = cmdPrepLabel.trim() + " for ${stageName}"
+            if (cmdBuildLabel != "")
+                cmdBuildLabel = cmdBuildLabel.trim() + " for ${stageName}"
+            if (cmdTest1Label != "")
+                cmdTest1Label = cmdTest2Label.trim() + " for ${stageName}"
+            if (cmdTest2Label != "")
+                cmdTest2Label = cmdTest2Label.trim() + " for ${stageName}"
+        }
+
+        def shRes = 0
+        if (cmdPrep != "") {
+            stage('Prep') {
+                def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
+                if (res != 0) {
+                    shRes = res
+                    error "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
+                }
+            }
+        }
+
+        if (cmdBuild != "") {
+            stage('Build') {
+                def res = sh (script: cmdCommon + cmdBuild, returnStatus: true, label: (cmdCommonLabel + cmdBuildLabel.trim()))
+                if (res != 0) {
+                    shRes = res
+                    error "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
+                }
+            }
+        }
+
+        def nameTest1 = "Test1"
+        def nameTest2 = "Test2"
+
+        if ( (cmdTest1 != "" && cmdTest2 == "")
+        &&   (cmdTest1 == "" && cmdTest2 != "")
+        ) {
+            nameTest1 = "Test"
+            nameTest2 = "Test"
+        }
+
+        if (cmdTest1 != "") {
+            stage(nameTest1) {
+                def res = sh (script: cmdCommon + cmdTest1, returnStatus: true, label: (cmdCommonLabel + cmdTest1Label.trim()))
+                if (res != 0) {
+                    shRes = res
+                    error "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
+                }
+            }
+        }
+
+        if (cmdTest2 != "") {
+            stage(nameTest2) {
+                def res = sh (script: cmdCommon + cmdTest2, returnStatus: true, label: (cmdCommonLabel + cmdTest2Label.trim()))
+                if (res != 0) {
+                    shRes = res
+                    error "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
+                }
+            }
+        }
+
+        // Capture this after all the stages, different tools
+        // might generate the files at different times
         sh """ if [ -s config.log ]; then gzip < config.log > '${archPrefix}--config.log.gz' || true ; fi """
-        archiveArtifacts (artifacts: "${archPrefix}--config.log.gz", allowEmptyArchive: true)
+        archiveArtifacts (artifacts: "${archPrefix}--*", allowEmptyArchive: true)
 
     def i = null
     switch (compilerTool) {
