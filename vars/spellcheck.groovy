@@ -15,14 +15,18 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 
 // Don't forget to call the sanity-checker below during pipeline init...
 // or maybe do it from the routine here?
-// Note that this code relies on mode data points than just dynacfgPipeline.shellcheck.*
+// Note that this code relies on more data points than just
+// dynacfgPipeline.spellcheck.*
 
 def call(dynacfgPipeline = [:]) {
-    if (dynacfgPipeline.spellcheck && dynacfgPipeline.prepconf && dynacfgPipeline.configure) {
+    if (dynacfgPipeline.spellcheck) {
         node(infra.labelDocumentationWorker()) {
             infra.withEnvOptional(dynacfgPipeline.defaultTools) {
                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
-                sh """ ${dynacfgPipeline.prepconf} && ${dynacfgPipeline.configure} """
+                if (dynacfgPipeline.prepconf)
+                    sh """ ${dynacfgPipeline.prepconf} """
+                if (dynacfgPipeline.configure)
+                    sh """ ${dynacfgPipeline.configure} """
                 sh """ ${dynacfgPipeline.spellcheck} """
             }
         }
@@ -49,7 +53,9 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     } else {
         dynacfgPipeline['spellcheck'] = null
     }
-    //println "SPELLCHECK: " + Utils.castString(dynacfgPipeline['spellcheck'])
+
+    if (dynamatrixGlobalState.enableDebugTrace)
+        println "SPELLCHECK: " + Utils.castString(dynacfgPipeline['spellcheck'])
 
     return dynacfgPipeline
 }
