@@ -3,7 +3,7 @@ import org.nut.dynamatrix.*;
 /*
  * Run one combination of settings in the matrix for chosen compiler, etc.
  */
-void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
+void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String stageName = null) {
     // Values in env.* inspected below come from the anticipated build
     // matrix settings (agent labels, etc.), configureEnvvars.groovy and
     // tool configuration like autotools.groovy or ci_build.groovy
@@ -148,6 +148,8 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
         }
 
         id = id.trim().replaceAll(/\\s+/, '_')
+        if (stageName)
+            msg = msg.trim() + " for ${stageName}"
 
         echo msg
 
@@ -200,6 +202,8 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
             cmdLabel += "distcheck "
         }
 
+        if (stageName)
+            cmdLabel = cmdLabel.trim() + " for ${stageName}"
         sh (script: cmd, label: cmdLabel.trim())
 
     } // warnError + sh
