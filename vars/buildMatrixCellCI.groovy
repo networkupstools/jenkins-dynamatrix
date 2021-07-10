@@ -203,8 +203,16 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
 
         def shRes = sh (script: cmd, returnStatus: true, label: cmdLabel.trim())
 
-        sh """ if [ -s config.log ]; then gzip < config.log > '${id}--config.log.gz' || true ; fi """
-        archiveArtifacts (artifacts: "${id}--config.log.gz", allowEmptyArchive: true)
+        // Strive for unique name prefix across many similar builds executed
+        def archPrefix = id
+        if (stageName)
+            archPrefix += "--" + stageName
+        archPrefix = archPrefix.trim().replaceAll(/\s+/, '').replaceAll(/[^\p{Alnum}-_]+/, '-')
+        if (archPrefix.length() > 250) { // Help filesystems that limit filename size
+            archPrefix = "MD5_" + archPrefix.md5()
+        }
+        sh """ if [ -s config.log ]; then gzip < config.log > '${archPrefix}--config.log.gz' || true ; fi """
+        archiveArtifacts (artifacts: "${archPrefix}--config.log.gz", allowEmptyArchive: true)
 
     def i = null
     switch (compilerTool) {
