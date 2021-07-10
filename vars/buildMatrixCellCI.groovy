@@ -22,8 +22,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
     // Allowed elements are characters, digits, dashes and underscores
     // (more precisely, the ID must match the regular expression `\p{Alnum}[\p{Alnum}-_]*`
     def id = ""
-    // Not warnError() because dynamatrix wraps with that for cells allowed to fail
-    catchError(message: 'Build-and-check step failed, proceeding to cover the rest of matrix') {
+
         def msg = "Building with "
         if (env?.COMPILER) {
             id = env.COMPILER.toUpperCase().trim()
@@ -201,9 +200,8 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
 
         if (stageName)
             cmdLabel = cmdLabel.trim() + " for ${stageName}"
-        sh (script: cmd, label: cmdLabel.trim())
 
-    } // warnError + sh
+        def shRes = sh (script: cmd, returnStatus: true, label: cmdLabel.trim())
 
     def i = null
     switch (compilerTool) {
@@ -223,6 +221,15 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             dynamatrixGlobalState.issueAnalysis << i
         } else {
             publishIssues issues: [i], filters: [includePackage('io.jenkins.plugins.analysis.*')]
+        }
+    }
+
+    if (shRes != 0) {
+        def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
+        if (dsbc?.isAllowedFailure) {
+            unstable msgFail
+        } else {
+            error msgFail
         }
     }
 } // buildMatrixCellCI()
