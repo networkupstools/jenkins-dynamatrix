@@ -280,6 +280,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         }
 
         String sn = CSTDVARIANT
+        if (sn == null || sn == "") sn = "c"
         if (isCXX) sn += "++"
         sn += CSTDVERSION
         return sn

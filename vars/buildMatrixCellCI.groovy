@@ -14,6 +14,8 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
 
     // for analysis part after the build
     def compilerTool = null
+    // Allowed elements are characters, digits, dashes and underscores
+    // (more precisely, the ID must match the regular expression `\p{Alnum}[\p{Alnum}-_]*`
     def id = ""
     warnError(message: 'Build-and-check step failed, proceeding to cover the rest of matrix') {
         def msg = "Building with "
@@ -22,7 +24,14 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
             switch (env.COMPILER) {
                 case ['gcc', 'GCC']:
                     compilerTool = 'gcc'
-                    if (env?.GCCVER) id += "-${env.GCCVER}"
+                    if (env?.GCCVER) {
+                        id += "-${env.GCCVER}"
+                        try {
+                            if (env?.GCCVER.replaceAll(/\..*$/, '').toInteger() < 4) {
+                                compilerTool = 'gcc3'
+                            }
+                        } catch (Throwable n) {}
+                    }
                     break
                 case ['clang', 'CLANG']:
                     compilerTool = 'clang'
@@ -40,6 +49,11 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
             if (env?.GCCVER) {
                 id = "GCC-${env.GCCVER}"
                 compilerTool = 'gcc'
+                try {
+                    if (env?.GCCVER.replaceAll(/\..*$/, '').toInteger() < 4) {
+                        compilerTool = 'gcc3'
+                    }
+                } catch (Throwable n) {}
             } else if (env?.CLANGVER) {
                 id = "CLANG-${env.CLANGVER}"
                 compilerTool = 'clang'
@@ -49,43 +63,68 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
         }
         if (id != "") msg += "${id} "
 
-        if (env?.STDARG) {
-            id += ":${env.STDARG}"
-            msg += ("STD=${env.STDARG} " - ~/-std=/)
+        if (env?.CSTDVERSION_c) {
+            def tmp = DynamatrixSingleBuildConfig.C_stdarg(env?.CSTDVARIANT, env?.CSTDVERSION_c, false)
+            id += "_${tmp}"
+            msg += "STD=${tmp} "
+        } else {
+            if (env?.STDARG) {
+                id += "_${env.STDARG}"
+                msg += ("STD=${env.STDARG} " - ~/-std=/)
+            }
         }
 
-        if (env?.STDXXARG) {
-            id += ":${env.STDXXARG}"
-            msg += ("STD=${env.STDXXARG} " - ~/-std=/)
+        if (env?.CSTDVERSION_cxx) {
+            def tmp = DynamatrixSingleBuildConfig.C_stdarg(env?.CSTDVARIANT, env?.CSTDVERSION_cxx, true, true)
+            id += "_${tmp}".replaceAll(/\+/, 'x')
+            msg += "STD=${tmp} "
+        } else {
+            if (env?.STDXXARG) {
+                id += "_${env.STDXXARG}"
+                msg += ("STD=${env.STDXXARG} " - ~/-std=/)
+            }
         }
 
         if (env?.BUILD_WARNOPT) {
-            id += ":WARN=${env.BUILD_WARNOPT}"
+            id += "_WARN=${env.BUILD_WARNOPT}"
             msg += "WARN=${env.BUILD_WARNOPT} "
         }
 
-        if (env?.ARCHARG || env?.BITSARG || env?.OS_FAMILY || env?.OS_DISTRO) {
-            id += "@"
+        if (env?.ARCHARG || env?.BITSARG || env?.ARCH_BITS || env?.BITS || env["ARCH${ARCH_BITS}"] || env["ARCH${BITS}"] || env?.OS_FAMILY || env?.OS_DISTRO) {
             msg += "on "
-            if (env?.ARCHARG) {
-                id += "${env.ARCHARG}"
-                msg += ("${env.ARCHARG} " - ~/-arch[ =]/)
-                if (env?.BITSARG) { id += ":" }
+            if (env["ARCH${ARCH_BITS}"]) {
+                id += "_${env["ARCH${ARCH_BITS}"]}"
+                msg += "${env["ARCH${ARCH_BITS}"]} "
+            } else if (env["ARCH${BITS}"]) {
+                id += "_${env["ARCH${BITS}"]}"
+                msg += "${env["ARCH${BITS}"]} "
+            } else {
+                if (env?.ARCHARG) {
+                    id += "_${env.ARCHARG}"
+                    msg += ("${env.ARCHARG} " - ~/-arch[ =]/)
+                }
             }
 
-            if (env?.BITSARG) {
-                id += "${env.BITSARG}"
-                msg += ("${env.BITSARG} " - ~/-m/) + "-bit "
+            if (env?.ARCH_BITS) {
+                id += "_${env.ARCH_BITS}"
+                msg += "${env.ARCH_BITS} "
+            } else if (env?.BITS) {
+                id += "_${env.BITS}"
+                msg += "${env.BITS} "
+            } else {
+                if (env?.BITSARG) {
+                    id += "_${env.BITSARG}"
+                    msg += ("${env.BITSARG} " - ~/-m/) + "-bit "
+                }
             }
 
             if (env?.OS_FAMILY || env?.OS_DISTRO) {
-                if (id[-1] != '@') id += ":"
                 if (env?.OS_FAMILY && env?.OS_DISTRO) {
-                    id += "${env.OS_FAMILY}-${env.OS_DISTRO}"
+                    id += "_${env.OS_FAMILY}-${env.OS_DISTRO}"
                     msg += "${env.OS_FAMILY}-${env.OS_DISTRO} "
                 } else {
                     // Only one of those strings is present
-                    id += "${env.OS_FAMILY}${env.OS_DISTRO}"
+                    id += "_${env.OS_FAMILY}${env.OS_DISTRO}"
                     msg += "${env.OS_FAMILY}${env.OS_DISTRO} "
                 }
             }
@@ -150,10 +189,13 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
     def i = null
     switch (compilerTool) {
         case 'gcc':
-            i = scanForIssues tool: gcc(name: id)
+            i = scanForIssues tool: gcc(id: id)
+            break
+        case 'gcc3':
+            i = scanForIssues tool: gcc3(id: id)
             break
         case 'clang':
-            i = scanForIssues tool: clang(name: id)
+            i = scanForIssues tool: clang(id: id)
             break
     }
     if (i != null) {
