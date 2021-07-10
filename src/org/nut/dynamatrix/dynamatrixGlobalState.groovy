@@ -15,6 +15,9 @@ class dynamatrixGlobalState {
     // Something with tools to generate MAN, PDF, HTML... and to spell-check:
     static String labelDocumentationWorker = null
 
+    // For build quality evolution analysis, which branch is the reference?
+    static String branchDefaultStable = null
+
     // These settings can make constructors of NodeCaps and NodeData more
     // verbose (when called from wrapping code that passes these args)
     static Boolean enableDebugTrace = false

@@ -1,3 +1,4 @@
+import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
 void call(String sJOB_NAME, String sBRANCH_NAME, String sTARGET_BRANCH = "master") {
@@ -9,10 +10,10 @@ void call(String sJOB_NAME, String sBRANCH_NAME, String sTARGET_BRANCH = "master
             issues: dynamatrixGlobalState.issueAnalysis,
             filters: [includePackage('io.jenkins.plugins.analysis.*')]
     }
-} // doSummarizeIssues()
+} // doSummarizeIssues(args)
 
 void call() {
-    def sTARGET_BRANCH = "master"
+    def sTARGET_BRANCH = infra.branchDefaultStable()
     try {
         // Can fail if not set by pipeline (not a PR build)
         sTARGET_BRANCH = "${TARGET_BRANCH}"
@@ -23,4 +24,4 @@ void call() {
     }
 
     doSummarizeIssues("${JOB_NAME}", "${BRANCH_NAME}", sTARGET_BRANCH)
-}
+} // doSummarizeIssues()

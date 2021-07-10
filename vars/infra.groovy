@@ -31,3 +31,12 @@ def labelDocumentationWorker() {
     return labelDefaultWorker()
 }
 
+def branchDefaultStable() {
+    if (Utils.isStringNotEmpty(dynamatrixGlobalState.branchDefaultStable)) {
+        return dynamatrixGlobalState.branchDefaultStable
+    }
+
+    // TODO: Detect via Git or SCM REST API somehow?
+    return "master"
+    // return "main"
+}
