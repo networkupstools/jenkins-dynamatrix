@@ -128,6 +128,10 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         dynacfgPipeline.delayedIssueAnalysis = true
     }
 
+    if (!dynacfgPipeline.containsKey('traceBuildShell')) {
+        dynacfgPipeline.traceBuildShell = true
+    }
+
     return dynacfgPipeline
 }
 

@@ -98,7 +98,8 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
         echo msg
 
         // Build a multiline shell script
-        def cmd = """ set +x
+        def cmd = """ """
+        if (!dynacfgPipeline?.traceBuildShell) cmd = """ set +x
 """
 
         if (dynacfgPipeline?.configureEnvvars) cmd += """ ${dynacfgPipeline?.configureEnvvars}
