@@ -26,7 +26,8 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
     // Allowed elements are characters, digits, dashes and underscores
     // (more precisely, the ID must match the regular expression `\p{Alnum}[\p{Alnum}-_]*`
     def id = ""
-    warnError(message: 'Build-and-check step failed, proceeding to cover the rest of matrix') {
+    // Not warnError() because dynamatrix wraps with that for cells allowed to fail
+    catchError(message: 'Build-and-check step failed, proceeding to cover the rest of matrix') {
         def msg = "Building with "
         if (env?.COMPILER) {
             id = env.COMPILER.toUpperCase().trim()
