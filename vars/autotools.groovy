@@ -35,7 +35,7 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.containsKey('configure')) {
-            dynacfgPipeline['configure'] = " ( [ -x configure ] || exit; eval ./configure \${CONFIG_OPTS} ) "
+            dynacfgPipeline['configure'] = " ( [ -x configure ] || exit; eval \${CONFIG_ENVVARS} ./configure \${CONFIG_OPTS} ) "
         }
 
         if (!dynacfgPipeline.containsKey('build')) {

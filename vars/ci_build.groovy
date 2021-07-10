@@ -48,19 +48,12 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
             dynacfgPipeline['build'] = null
         }
 
-        // CONFIG_OPTS are set by code in configureEnvvars.groovy
+        // CONFIG_ENVVARS are set by code in configureEnvvars.groovy
         if (!dynacfgPipeline.containsKey('check')) {
             dynacfgPipeline['check'] = """ (
 [ -x ./ci_build.sh ] || exit
 
-if [ -n "\${CONFIG_OPTS}" ]; then
-    eval "\${CONFIG_OPTS}"
-fi
-unset CONFIG_OPTS
-
-export BUILD_TYPE BUILD_WARNOPT BUILD_WARNFATAL CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS CI_TIME CI_TRACE
-
-./ci_build.sh
+eval \${CONFIG_ENVVARS} ./ci_build.sh \${CONFIG_OPTS}
 ) """
         }
 

@@ -48,42 +48,42 @@ if [ -z "\${USE_COMPILER}" ]; then
     fi
 fi
 
-case "\${CONFIG_OPTS}" in
+case "\${CONFIG_ENVVARS}" in
     *" CC="*) ;;
     CC=*) ;;
     *)  case "\${USE_COMPILER}" in
-            clang)  CONFIG_OPTS="\${CONFIG_OPTS} CC=clang\${USE_COMPILER_VERSION_SUFFIX}" ;;
-            gcc)    CONFIG_OPTS="\${CONFIG_OPTS} CC=gcc\${USE_COMPILER_VERSION_SUFFIX}" ;;
+            clang)  CONFIG_ENVVARS="\${CONFIG_ENVVARS} CC=clang\${USE_COMPILER_VERSION_SUFFIX}" ;;
+            gcc)    CONFIG_ENVVARS="\${CONFIG_ENVVARS} CC=gcc\${USE_COMPILER_VERSION_SUFFIX}" ;;
         esac
         ;;
 esac
 
-case "\${CONFIG_OPTS}" in
+case "\${CONFIG_ENVVARS}" in
     *" CXX="*) ;;
     CXX=*) ;;
     *)  case "\${USE_COMPILER}" in
-            clang)  CONFIG_OPTS="\${CONFIG_OPTS} CXX=clang++\${USE_COMPILER_VERSION_SUFFIX}" ;;
-            gcc)    CONFIG_OPTS="\${CONFIG_OPTS} CXX=g++\${USE_COMPILER_VERSION_SUFFIX}" ;;
+            clang)  CONFIG_ENVVARS="\${CONFIG_ENVVARS} CXX=clang++\${USE_COMPILER_VERSION_SUFFIX}" ;;
+            gcc)    CONFIG_ENVVARS="\${CONFIG_ENVVARS} CXX=g++\${USE_COMPILER_VERSION_SUFFIX}" ;;
         esac
         ;;
 esac
 
-case "\${CONFIG_OPTS}" in
+case "\${CONFIG_ENVVARS}" in
     *" CPP="*) ;;
     CPP=*) ;;
     *)  case "\${USE_COMPILER}" in
           clang)
             if command -v "clang-cpp-\${CLANGVER}" >/dev/null ; then
-                CONFIG_OPTS="\${CONFIG_OPTS} CPP=clang-cpp-\${CLANGVER}"
+                CONFIG_ENVVARS="\${CONFIG_ENVVARS} CPP=clang-cpp-\${CLANGVER}"
             else
                 if command -v "clang-cpp" >/dev/null ; then
-                    CONFIG_OPTS="\${CONFIG_OPTS} CPP=clang-cpp"
+                    CONFIG_ENVVARS="\${CONFIG_ENVVARS} CPP=clang-cpp"
                 fi
             fi
             ;;
           gcc)
             if command -v "cpp-\${GCCVER}" >/dev/null ; then
-                CONFIG_OPTS="\${CONFIG_OPTS} CPP=cpp-\${GCCVER}"
+                CONFIG_ENVVARS="\${CONFIG_ENVVARS} CPP=cpp-\${GCCVER}"
             fi
             ;;
           # else let config script find some "cpp" it would like
@@ -95,7 +95,7 @@ esac
 # just without a standard revision spec... Or with just one of those.
 STDARG=""
 STDXXARG=""
-case "\${CONFIG_OPTS}" in
+case "\${CONFIG_ENVVARS}" in
     *" -std="*) ;;
     "-std="*) ;;
     *)  # Adjust versions used for plain C (noop if only -std=c++... is passed by user)
@@ -113,7 +113,7 @@ case "\${CONFIG_OPTS}" in
         ;;
 esac
 
-case "\${CONFIG_OPTS}" in
+case "\${CONFIG_ENVVARS}" in
     *" -std="*++*) ;;
     "-std="*++*) ;;
     *)  # Adjust versions used
@@ -132,7 +132,7 @@ case "\${CONFIG_OPTS}" in
 esac
 
 BITSARG=""
-case "\${CONFIG_OPTS}" in
+case "\${CONFIG_ENVVARS}" in
     *m16*|*m32*|*m64*|*m128*) ;;
     *)
         if [ -n "\${ARCH_BITS}" ] && [ "\${ARCH_BITS}" -gt 0 ] ; then
@@ -146,30 +146,30 @@ case "\${CONFIG_OPTS}" in
 esac
 
 if [ -n "\${STDARG}" ] || [ -n "\${BITSARG}" ]; then
-    case "\${CONFIG_OPTS}" in
+    case "\${CONFIG_ENVVARS}" in
         *" CFLAGS="*|CFLAGS=*)
-            CONFIG_OPTS="`echo "\${CONFIG_OPTS}" | sed "s,CFLAGS=,CFLAGS='\${STDARG} \${BITSARG} ',"`" ;;
-        *) CONFIG_OPTS="\${CONFIG_OPTS} CFLAGS='\${STDARG} \${BITSARG}'" ;;
+            CONFIG_ENVVARS="`echo "\${CONFIG_ENVVARS}" | sed "s,CFLAGS=,CFLAGS='\${STDARG} \${BITSARG} ',"`" ;;
+        *) CONFIG_ENVVARS="\${CONFIG_ENVVARS} CFLAGS='\${STDARG} \${BITSARG}'" ;;
     esac
 fi
 
 if [ -n "\${STDXXARG}" ] || [ -n "\${BITSARG}" ]; then
-    case "\${CONFIG_OPTS}" in
+    case "\${CONFIG_ENVVARS}" in
         *" CXXFLAGS="*|CXXFLAGS=*)
-            CONFIG_OPTS="`echo "\${CONFIG_OPTS}" | sed "s,CXXFLAGS=,CXXFLAGS='\${STDXXARG} \${BITSARG} ',"`" ;;
-        *) CONFIG_OPTS="\${CONFIG_OPTS} CXXFLAGS='\${STDXXARG} \${BITSARG}'" ;;
+            CONFIG_ENVVARS="`echo "\${CONFIG_ENVVARS}" | sed "s,CXXFLAGS=,CXXFLAGS='\${STDXXARG} \${BITSARG} ',"`" ;;
+        *) CONFIG_ENVVARS="\${CONFIG_ENVVARS} CXXFLAGS='\${STDXXARG} \${BITSARG}'" ;;
     esac
 fi
 
 if [ -n "\${BITSARG}" ]; then
-    case "\${CONFIG_OPTS}" in
+    case "\${CONFIG_ENVVARS}" in
         *" LDFLAGS="*|LDFLAGS=*)
-            CONFIG_OPTS="`echo "\${CONFIG_OPTS}" | sed "s,LDFLAGS=,LDFLAGS='\${BITSARG} ',"`" ;;
-        *) CONFIG_OPTS="\${CONFIG_OPTS} LDFLAGS='\${BITSARG}'" ;;
+            CONFIG_ENVVARS="`echo "\${CONFIG_ENVVARS}" | sed "s,LDFLAGS=,LDFLAGS='\${BITSARG} ',"`" ;;
+        *) CONFIG_ENVVARS="\${CONFIG_ENVVARS} LDFLAGS='\${BITSARG}'" ;;
     esac
 fi
 
-export CONFIG_OPTS STDARG STDXXARG BITSARG
+export CONFIG_ENVVARS STDARG STDXXARG BITSARG
 
 } """
     } // configureEnvvars

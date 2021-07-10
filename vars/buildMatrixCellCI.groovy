@@ -11,11 +11,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
     // NOTE: Currently the values set ONLY by configureEnvvars.groovy
     // are not yet set and so not exposed in env[] by the time we build
     // the ID string below. In fact, it may be too complex to reliably
-    // extract CONFIG_OPTS set in shell back to groovy and shell again.
-
-    // TODO: Separate CONFIG_OPTS that so far set options for ./configure
-    // script envvar-style and can be prefixed to ./ci_build.sh script,
-    // vs a list of "real" options that would be suffixed on command line?
+    // extract CONFIG_ENVVARS set in shell back to groovy and shell again.
 
     // TODO: Pass into build additional hints that may be in dsbc, e.g.
     // clioptSet - but gotta decide to which tool they should go and when
