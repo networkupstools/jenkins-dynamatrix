@@ -15,7 +15,13 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     // Sanity-check the pipeline options, these are relevant for several
     // build systems alike (autotools, ci_build, probably cmake, etc...)
 
-    // TODO: Handle ARCH as "-arch x86_64" for C(XX)FLAGS and "-melf_x86_64" for LDFLAGS
+    // TODO: Handle ARCH as "-(m)arch=x86_64" for C(XX)FLAGS and
+    //  "-melf_x86_64" for LDFLAGS
+    // TODO: Handle cross-compiler names like "arm-linux-gnueabi-gcc(-10)"
+    //  and their different flags like "-mbe32" instead of "-m32"
+    // Perhaps those more complicated setups should be passed with (virtual?)
+    // axes and corresponding exported envvars, and handle the possibility
+    // of explicit CC, CFLAGS and so on below.
 
     if (!dynacfgPipeline.containsKey('configureEnvvars')) {
         dynacfgPipeline['configureEnvvars'] = """ {

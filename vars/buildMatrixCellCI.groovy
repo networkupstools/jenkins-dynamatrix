@@ -8,6 +8,15 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
     // matrix settings (agent labels, etc.), configureEnvvars.groovy and
     // tool configuration like autotools.groovy or ci_build.groovy
 
+    // NOTE: Currently the values set ONLY by configureEnvvars.groovy
+    // are not yet set and so not exposed in env[] by the time we build
+    // the ID string below. In fact, it may be too complex to reliably
+    // extract CONFIG_OPTS set in shell back to groovy and shell again.
+
+    // TODO: Separate CONFIG_OPTS that so far set options for ./configure
+    // script envvar-style and can be prefixed to ./ci_build.sh script,
+    // vs a list of "real" options that would be suffixed on command line?
+
     // TODO: Pass into build additional hints that may be in dsbc, e.g.
     // clioptSet - but gotta decide to which tool they should go and when
     // (e.g. configure script takes some opts, ci_build normally does not)
@@ -22,6 +31,12 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
         if (env?.COMPILER) {
             id = env.COMPILER.toUpperCase().trim()
             switch (env.COMPILER) {
+                // TODO: Handle alternately-named cross-compilers like packaged
+                // like "arm-linux-gnueabi-gcc(-10)" or third-party snapshots
+                // named like "arm-linux-gnueabi-20140823-20131011-gcc-4.8.1"
+                // Note that would also need some cooperation from agent labels
+                // and generic "${COMPILER}VER" support, possibly some use of
+                // dynamatrixAxesCommonOpts and/or dynamatrixAxesCommonEnv
                 case ['gcc', 'GCC']:
                     compilerTool = 'gcc'
                     if (env?.GCCVER) {
@@ -138,6 +153,9 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
 
         def cmdLabel = ""
         // Build a multiline shell script
+        // TOTHINK: Split that into many shell steps (each with configureEnvvars
+        // re-run or some re-import of the first generated value, if needed),
+        // and/or sequential stages to visualize in BO UI build progress?
         def cmd = """ """
         if (!dynacfgPipeline?.traceBuildShell) cmd = """ set +x
 """
