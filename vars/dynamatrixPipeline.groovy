@@ -17,6 +17,7 @@ import org.nut.dynamatrix.*;
     def dynacfgBase = [:]
     def dynacfgPipeline = [:]
 
+    dynacfgPipeline['stylecheck'] = false //true
     dynacfgPipeline['spellcheck'] = false //true
     dynacfgPipeline['shellcheck'] = true
     dynacfgPipeline['NUT-shellcheck'] = [
@@ -167,6 +168,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     dynacfgPipeline = autotools.sanityCheckDynacfgPipeline(dynacfgPipeline)
 
     // Sanity-check certain build milestones expecting certain cfg structure:
+    dynacfgPipeline = stylecheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = spellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = shellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
 
@@ -217,8 +219,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     // Relatively quick discovery (e.g. filtering axes
                     // by regexes takes long when many build agents are
                     // involved, so that part happens in parallel to
-                    // this shellcheck and also a spellcheck, which can
-                    // be prepared quickly):
+                    // this shellcheck and also optional spellcheck and/or
+                    // stylecheck, which presumably can be prepared quickly):
 
                     // Have some defaults, if only to have all
                     // expected fields defined and node caps cached
@@ -234,7 +236,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                      * which need many seconds to process just to decide
                      * what should be built this time, should happen in
                      * the next stage along with quick tests - like the
-                     * spellcheck and shellcheck targets.
+                     * stylecheck, spellcheck and shellcheck targets.
                      */
                 } // stage - discover the matrix
 
@@ -255,6 +257,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
             // Nothing gets added (empty [:] ignored) if not enabled:
             par1 += spellcheck.makeMap(dynacfgPipeline)
+            par1 += stylecheck.makeMap(dynacfgPipeline)
 
             // For this stage, we do not want parallel build scenarios
             // aborted if stuff breaks in one codepath, it is relatively
