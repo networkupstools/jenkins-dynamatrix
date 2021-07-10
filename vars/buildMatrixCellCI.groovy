@@ -97,25 +97,53 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null) {
 
         echo msg
 
+        def cmdLabel = ""
         // Build a multiline shell script
         def cmd = """ """
         if (!dynacfgPipeline?.traceBuildShell) cmd = """ set +x
 """
 
-        if (dynacfgPipeline?.configureEnvvars) cmd += """ ${dynacfgPipeline?.configureEnvvars}
-"""
-        if (dynacfgPipeline?.prepconf) cmd += """ ${dynacfgPipeline?.prepconf}
-"""
-        if (dynacfgPipeline?.configure) cmd += """ ${dynacfgPipeline?.configure}
-"""
-        if (dynacfgPipeline?.build) cmd += """ ${dynacfgPipeline?.build}
-"""
-        if (dynacfgPipeline?.check) cmd += """ ${dynacfgPipeline?.check}
-"""
-        if (dynacfgPipeline?.distcheck) cmd += """ ${dynacfgPipeline?.distcheck}
-"""
+        if (dynacfgPipeline?.buildSystem) {
+            cmdLabel = "With ${dynacfgPipeline.buildSystem}: "
+        }
 
-        sh cmd
+        if (dynacfgPipeline?.configureEnvvars) {
+            cmd += """ ${dynacfgPipeline?.configureEnvvars}
+"""
+            cmdLabel += "configureEnvvars "
+        }
+
+        if (dynacfgPipeline?.prepconf) {
+            cmd += """ ${dynacfgPipeline?.prepconf}
+"""
+            cmdLabel += "prepconf "
+        }
+
+        if (dynacfgPipeline?.configure) {
+            cmd += """ ${dynacfgPipeline?.configure}
+"""
+            cmdLabel += "configure "
+        }
+
+        if (dynacfgPipeline?.build) {
+            cmd += """ ${dynacfgPipeline?.build}
+"""
+            cmdLabel += "build "
+        }
+
+        if (dynacfgPipeline?.check) {
+            cmd += """ ${dynacfgPipeline?.check}
+"""
+            cmdLabel += "check "
+        }
+
+        if (dynacfgPipeline?.distcheck) {
+            cmd += """ ${dynacfgPipeline?.distcheck}
+"""
+            cmdLabel += "distcheck "
+        }
+
+        sh (script: cmd, label: cmdLabel.trim())
 
     } // warnError + sh
 
