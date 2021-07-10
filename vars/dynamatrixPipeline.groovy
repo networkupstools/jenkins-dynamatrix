@@ -124,6 +124,10 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         dynacfgPipeline.failFast = true
     }
 
+    if (!dynacfgPipeline.containsKey('delayedIssueAnalysis')) {
+        dynacfgPipeline.delayedIssueAnalysis = true
+    }
+
     return dynacfgPipeline
 }
 
@@ -337,6 +341,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 parallel stagesBinBuild
             }
             echo "Completed the 'slow build' dynamatrix"
+            stage("Analyze the bigger dynamatrix") { // TOTHINK: post{always{...}} to the above? Is there one in scripted pipeline?
+                doSummarizeIssues()
+            }
         } else {
             // TODO: `unstable` this?
             echo "No stages were prepared for the 'slow build' dynamatrix, so completing the job"
