@@ -203,6 +203,9 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
 
         def shRes = sh (script: cmd, returnStatus: true, label: cmdLabel.trim())
 
+        sh """ if [ -s config.log ]; then gzip < config.log > '${id}--config.log.gz' || true ; fi """
+        archiveArtifacts (artifacts: "${id}--config.log.gz", allowEmptyArchive: true)
+
     def i = null
     switch (compilerTool) {
         case 'gcc':
