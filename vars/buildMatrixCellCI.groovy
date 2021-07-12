@@ -203,7 +203,11 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             cmdPrepLabel += "configure "
         }
 
-        if (dynacfgPipeline?.build) {
+        if (dynacfgPipeline?.buildQuiet) {
+            cmdBuild += """ ${dynacfgPipeline?.buildQuiet}
+"""
+            cmdBuildLabel += "buildQuiet "
+        } else if (dynacfgPipeline?.build) {
             cmdBuild += """ ${dynacfgPipeline?.build}
 """
             cmdBuildLabel += "build "

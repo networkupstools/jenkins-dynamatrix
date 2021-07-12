@@ -48,6 +48,10 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
             dynacfgPipeline['build'] = null
         }
 
+        if (!dynacfgPipeline.containsKey('buildQuiet')) {
+            dynacfgPipeline['buildQuiet'] = null
+        }
+
         // CONFIG_ENVVARS are set by code in configureEnvvars.groovy
         if (!dynacfgPipeline.containsKey('check')) {
             dynacfgPipeline['check'] = """ (
