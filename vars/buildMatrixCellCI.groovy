@@ -233,7 +233,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             if (cmdBuildLabel != "")
                 cmdBuildLabel = cmdBuildLabel.trim() + " for ${stageName}"
             if (cmdTest1Label != "")
-                cmdTest1Label = cmdTest2Label.trim() + " for ${stageName}"
+                cmdTest1Label = cmdTest1Label.trim() + " for ${stageName}"
             if (cmdTest2Label != "")
                 cmdTest2Label = cmdTest2Label.trim() + " for ${stageName}"
         }
