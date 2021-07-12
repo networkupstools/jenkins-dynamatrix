@@ -314,7 +314,13 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
                 // job should call doSummarizeIssues() in the end
                 dynamatrixGlobalState.issueAnalysis << i
             } else {
-                publishIssues issues: [i], filters: [includePackage('io.jenkins.plugins.analysis.*')]
+                doSummarizeIssues([i], id + "--analysis", id + "--analysis")
+/*
+                publishIssues (
+                    issues: [i],
+                    filters: [includePackage('io.jenkins.plugins.analysis.*')]
+                    )
+*/
             }
         }
     }
