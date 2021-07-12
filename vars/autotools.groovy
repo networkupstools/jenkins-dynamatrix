@@ -43,7 +43,8 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.containsKey('buildQuiet')) {
-            dynacfgPipeline['buildQuiet'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} -k -j4 all >/dev/null 2>&1 && echo "SUCCESS" && exit 0; echo "First attempt failed (\$?), retrying to log what did:"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
+            //dynacfgPipeline['buildQuiet'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} -k -j4 all >/dev/null 2>&1 && echo "SUCCESS" && exit 0; echo "First attempt failed (\$?), retrying to log what did:"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
+            dynacfgPipeline['buildQuiet'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} -k -j4 all >/dev/null 2>&1 && echo "Seemingly a SUCCESS" ; echo "First attempt finished (\$?), retrying to log what fails (if any):"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
         if (!dynacfgPipeline.containsKey('check')) {
