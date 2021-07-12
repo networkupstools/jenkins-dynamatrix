@@ -148,12 +148,11 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         if (stageName)
             msg = msg.trim() + " for ${stageName}"
 
-
         // Strive for unique name prefix across many similar builds executed
         def archPrefix = id
         if (stageName)
             archPrefix += "--" + stageName
-        archPrefix = archPrefix.trim().replaceAll(/\s+/, '').replaceAll(/[^\p{Alnum}-_]+/, '-')
+        archPrefix = archPrefix.trim().replaceAll(/\s+/, '').replaceAll(/[^\p{Alnum}-_=+.]+/, '-')
         if (archPrefix.length() > 250) { // Help filesystems that limit filename size
             archPrefix = "MD5_" + archPrefix.md5()
         }
