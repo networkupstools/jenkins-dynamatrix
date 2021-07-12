@@ -1,4 +1,5 @@
-import org.nut.dynamatrix.*;
+import org.nut.dynamatrix.dynamatrixGlobalState
+import org.nut.dynamatrix.*
 
 /*
  * Run one combination of settings in the matrix for chosen compiler, etc.
@@ -234,6 +235,9 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         def shRes = 0
         stage('Prep') {
             echo msg
+            //if (dynamatrixGlobalState.enableDebugTrace)
+            //if (dynacfgPipeline?.configureEnvvars)
+                sh label: 'Report compilers', script: cmdCommon + """ ( eval \$CONFIG_ENVVARS; echo "CC: \$CC => `command -v "\$CC"`"; echo "CXX: \$CXX => `command -v "\$CXX"`" ; hostname; ) ; """
             if (cmdPrep != "") {
                 def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
                 if (res != 0) {
