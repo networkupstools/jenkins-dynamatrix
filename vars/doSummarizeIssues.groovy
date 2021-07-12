@@ -19,10 +19,12 @@ void call(def issueAnalysisArr, String id, String name) {
     def sTARGET_BRANCH = infra.branchDefaultStable()
     try {
         // Can fail if not set by pipeline (not a PR build)
-        sTARGET_BRANCH = "${TARGET_BRANCH}"
+        if (TARGET_BRANCH != null && TARGET_BRANCH != "")
+            sTARGET_BRANCH = "${TARGET_BRANCH}"
     } catch (Throwable t1) {
         try {
-            sTARGET_BRANCH = "${env.TARGET_BRANCH}"
+            if (env.TARGET_BRANCH != null && env.TARGET_BRANCH != "")
+                sTARGET_BRANCH = "${env.TARGET_BRANCH}"
         } catch (Throwable t2) {}
     }
 
