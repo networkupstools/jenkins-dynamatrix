@@ -169,7 +169,7 @@ if [ -n "\${BITSARG}" ]; then
     esac
 fi
 
-export CONFIG_ENVVARS STDARG STDXXARG BITSARG
+export CONFIG_ENVVARS STDARG STDXXARG BITSARG CC CXX CFLAGS CXXFLAGS LDFLAGS
 
 } """
     } // configureEnvvars
