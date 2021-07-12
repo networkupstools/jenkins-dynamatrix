@@ -144,7 +144,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             msg += "platform"
         }
 
-        id = id.trim().replaceAll(/\\s+/, '_')
+        id = id.trim().replaceAll(/\\s+/, '_').replaceAll(/[^\p{Alnum}-_]/, '_')
         if (stageName)
             msg = msg.trim() + " for ${stageName}"
 
