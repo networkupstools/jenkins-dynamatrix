@@ -196,39 +196,33 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         }
 
         // Note: log files below are used for warnings-ng processing
-        // and will be removed before the build.
+        // and their namesakes will be removed before the build.
         // TODO: invent a way around `git status` violations for projects that care?
         if (dynacfgPipeline?.prepconf) {
-            cmdPrep += """ ${dynacfgPipeline?.prepconf} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.prepconf.log || RES=\$? ; exit \$RES )
-"""
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.prepconf}", ".ci.${archPrefix}.prepconf.log")
             cmdPrepLabel += "prepconf "
         }
 
         if (dynacfgPipeline?.configure) {
-            cmdPrep += """ ${dynacfgPipeline?.configure} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.prepconf.log || RES=\$? ; exit \$RES )
-"""
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.configure}", ".ci.${archPrefix}.prepconf.log")
             cmdPrepLabel += "configure "
         }
 
         if (dynacfgPipeline?.buildQuiet) {
-            cmdBuild += """ ${dynacfgPipeline?.buildQuiet} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.build.log || RES=\$? ; exit \$RES )
-"""
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildQuiet}", ".ci.${archPrefix}.build.log")
             cmdBuildLabel += "buildQuiet "
         } else if (dynacfgPipeline?.build) {
-            cmdBuild += """ ${dynacfgPipeline?.build} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.build.log || RES=\$? ; exit \$RES )
-"""
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.build}", ".ci.${archPrefix}.build.log")
             cmdBuildLabel += "build "
         }
 
         if (dynacfgPipeline?.check) {
-            cmdTest1 += """ ${dynacfgPipeline?.check} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.check.log || RES=\$? ; exit \$RES )
-"""
+            cmdTest1 += cmdlineBuildLogged("${dynacfgPipeline.check}", ".ci.${archPrefix}.check.log")
             cmdTest1Label += "check "
         }
 
         if (dynacfgPipeline?.distcheck) {
-            cmdTest2 += """ ${dynacfgPipeline?.distcheck} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.distcheck.log || RES=\$? ; exit \$RES )
-"""
+            cmdTest2 += cmdlineBuildLogged("${dynacfgPipeline.distcheck}", ".ci.${archPrefix}.distcheck.log")
             cmdTest2Label += "distcheck "
         }
 
@@ -345,3 +339,25 @@ if [ -s config.log ]; then gzip < config.log > '.ci.${archPrefix}.config.log.gz'
         }
     }
 } // buildMatrixCellCI()
+
+def cmdlineBuildLogged(def cmd, def logfile) {
+    return """ RES=0; touch '${logfile}'
+tail -f '${logfile}' &
+CILOGPID=\$!
+( ${cmd} ) >> '${logfile}' 2>&1 || RES=\$?
+kill "\$CILOGPID" >/dev/null 2>&1
+[ \$RES = 0 ] || exit \$RES
+"""
+
+    // Initial implementation just piped to `tee` but not all shells support
+    // "pipefail" or similar tricks in a consistent manner.
+//   return """ ${cmd} 2>&1 | (RES=\$? ; tee -a '${logfile}' || RES=\$? ; exit \$RES )
+//"""
+
+    // The original implementation was to just run the command -
+    // but warnings-ng only had the whole job log to parse then
+//   return """ ${cmd}
+//"""
+
+}
+
