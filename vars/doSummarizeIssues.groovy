@@ -1,18 +1,21 @@
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
-void call(String sJOB_NAME, String sBRANCH_NAME, String sTARGET_BRANCH = "master") {
-    if (dynamatrixGlobalState.issueAnalysis.size() > 0) {
+void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String sBRANCH_NAME, String sTARGET_BRANCH) {
+    if (issueAnalysisArr.size() > 0) {
         // Compare issues that are new/fixed compared to specified branch
         def reference = sJOB_NAME.replace(sBRANCH_NAME, sTARGET_BRANCH)
-        publishIssues id: 'analysis', name: 'All Issues',
+        publishIssues (
+            id: id,
+            name: name,
             referenceJobName: reference,
-            issues: dynamatrixGlobalState.issueAnalysis,
+            issues: issueAnalysisArr,
             filters: [includePackage('io.jenkins.plugins.analysis.*')]
+            )
     }
 } // doSummarizeIssues(args)
 
-void call() {
+void call(def issueAnalysisArr, String id, String name) {
     def sTARGET_BRANCH = infra.branchDefaultStable()
     try {
         // Can fail if not set by pipeline (not a PR build)
@@ -23,5 +26,9 @@ void call() {
         } catch (Throwable t2) {}
     }
 
-    doSummarizeIssues("${JOB_NAME}", "${BRANCH_NAME}", sTARGET_BRANCH)
+    doSummarizeIssues(issueAnalysisArr, id, name, "${JOB_NAME}", "${BRANCH_NAME}", sTARGET_BRANCH)
+} // doSummarizeIssues(arr)
+
+void call() {
+    doSummarizeIssues(dynamatrixGlobalState.issueAnalysis, 'analysis', 'All Issues')
 } // doSummarizeIssues()
