@@ -147,7 +147,6 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         if (stageName)
             msg = msg.trim() + " for ${stageName}"
 
-        echo msg
 
         // Strive for unique name prefix across many similar builds executed
         def archPrefix = id
@@ -233,22 +232,23 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         }
 
         def shRes = 0
-        if (cmdPrep != "") {
-            stage('Prep') {
+        stage('Prep') {
+            echo msg
+            if (cmdPrep != "") {
                 def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
                 if (res != 0) {
                     shRes = res
-                    error "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
+                    unstable "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
                 }
             }
         }
 
-        if (cmdBuild != "") {
+        if (cmdBuild != "" && shRes == 0) {
             stage('Build') {
                 def res = sh (script: cmdCommon + cmdBuild, returnStatus: true, label: (cmdCommonLabel + cmdBuildLabel.trim()))
                 if (res != 0) {
                     shRes = res
-                    error "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
+                    unstable "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
                 }
             }
         }
@@ -263,49 +263,51 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             nameTest2 = "Test"
         }
 
-        if (cmdTest1 != "") {
+        if (cmdTest1 != "" && shRes == 0) {
             stage(nameTest1) {
                 def res = sh (script: cmdCommon + cmdTest1, returnStatus: true, label: (cmdCommonLabel + cmdTest1Label.trim()))
                 if (res != 0) {
                     shRes = res
-                    error "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
+                    unstable "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
                 }
             }
         }
 
-        if (cmdTest2 != "") {
+        if (cmdTest2 != "" && shRes == 0) {
             stage(nameTest2) {
                 def res = sh (script: cmdCommon + cmdTest2, returnStatus: true, label: (cmdCommonLabel + cmdTest2Label.trim()))
                 if (res != 0) {
                     shRes = res
-                    error "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
+                    unstable "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
                 }
             }
         }
 
+    stage('Collect results') {
         // Capture this after all the stages, different tools
         // might generate the files at different times
         sh """ if [ -s config.log ]; then gzip < config.log > '${archPrefix}--config.log.gz' || true ; fi """
         archiveArtifacts (artifacts: "${archPrefix}--*", allowEmptyArchive: true)
 
-    def i = null
-    switch (compilerTool) {
-        case 'gcc':
-            i = scanForIssues tool: gcc(id: id)
-            break
-        case 'gcc3':
-            i = scanForIssues tool: gcc3(id: id)
-            break
-        case 'clang':
-            i = scanForIssues tool: clang(id: id)
-            break
-    }
-    if (i != null) {
-        if (dynacfgPipeline?.delayedIssueAnalysis) {
-            // job should call doSummarizeIssues() in the end
-            dynamatrixGlobalState.issueAnalysis << i
-        } else {
-            publishIssues issues: [i], filters: [includePackage('io.jenkins.plugins.analysis.*')]
+        def i = null
+        switch (compilerTool) {
+            case 'gcc':
+                i = scanForIssues tool: gcc(id: id)
+                break
+            case 'gcc3':
+                i = scanForIssues tool: gcc3(id: id)
+                break
+            case 'clang':
+                i = scanForIssues tool: clang(id: id)
+                break
+        }
+        if (i != null) {
+            if (dynacfgPipeline?.delayedIssueAnalysis) {
+                // job should call doSummarizeIssues() in the end
+                dynamatrixGlobalState.issueAnalysis << i
+            } else {
+                publishIssues issues: [i], filters: [includePackage('io.jenkins.plugins.analysis.*')]
+            }
         }
     }
 
