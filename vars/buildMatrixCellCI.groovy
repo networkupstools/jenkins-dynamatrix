@@ -153,7 +153,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         if (stageName)
             archPrefix += "--" + stageName
         archPrefix = archPrefix.trim().replaceAll(/\s+/, '').replaceAll(/[^\p{Alnum}-_=+.]+/, '-')
-        if (archPrefix.length() > 250) { // Help filesystems that limit filename size
+        if (archPrefix.length() > 230) { // Help filesystems that limit filename size
             archPrefix = "MD5_" + archPrefix.md5()
         }
 
@@ -190,36 +190,39 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             cmdCommonLabel += "configureEnvvars "
         }
 
+        // Note: log files below are used for warnings-ng processing
+        // and will be removed before the build.
+        // TODO: invent a way around `git status` violations for projects that care?
         if (dynacfgPipeline?.prepconf) {
-            cmdPrep += """ ${dynacfgPipeline?.prepconf}
+            cmdPrep += """ ${dynacfgPipeline?.prepconf} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.prepconf.log || RES=\$? ; exit \$RES )
 """
             cmdPrepLabel += "prepconf "
         }
 
         if (dynacfgPipeline?.configure) {
-            cmdPrep += """ ${dynacfgPipeline?.configure}
+            cmdPrep += """ ${dynacfgPipeline?.configure} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.prepconf.log || RES=\$? ; exit \$RES )
 """
             cmdPrepLabel += "configure "
         }
 
         if (dynacfgPipeline?.buildQuiet) {
-            cmdBuild += """ ${dynacfgPipeline?.buildQuiet}
+            cmdBuild += """ ${dynacfgPipeline?.buildQuiet} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.build.log || RES=\$? ; exit \$RES )
 """
             cmdBuildLabel += "buildQuiet "
         } else if (dynacfgPipeline?.build) {
-            cmdBuild += """ ${dynacfgPipeline?.build}
+            cmdBuild += """ ${dynacfgPipeline?.build} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.build.log || RES=\$? ; exit \$RES )
 """
             cmdBuildLabel += "build "
         }
 
         if (dynacfgPipeline?.check) {
-            cmdTest1 += """ ${dynacfgPipeline?.check}
+            cmdTest1 += """ ${dynacfgPipeline?.check} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.check.log || RES=\$? ; exit \$RES )
 """
             cmdTest1Label += "check "
         }
 
         if (dynacfgPipeline?.distcheck) {
-            cmdTest2 += """ ${dynacfgPipeline?.distcheck}
+            cmdTest2 += """ ${dynacfgPipeline?.distcheck} 2>&1 | (RES=\$? ; tee -a .ci.${archPrefix}.distcheck.log || RES=\$? ; exit \$RES )
 """
             cmdTest2Label += "distcheck "
         }
@@ -238,6 +241,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         def shRes = 0
         stage('Prep') {
             echo msg
+            sh " rm -f .ci.*.log* "
             //if (dynamatrixGlobalState.enableDebugTrace)
             //if (dynacfgPipeline?.configureEnvvars)
                 sh label: 'Report compilers', script: cmdCommon + """ ( eval \$CONFIG_ENVVARS; echo "CC: \$CC => `command -v "\$CC"`"; echo "CXX: \$CXX => `command -v "\$CXX"`" ; hostname; ) ; """
@@ -293,19 +297,16 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
     stage('Collect results') {
         // Capture this after all the stages, different tools
         // might generate the files at different times
-        sh """ if [ -s config.log ]; then gzip < config.log > '${archPrefix}--config.log.gz' || true ; fi """
-        archiveArtifacts (artifacts: "${archPrefix}--*", allowEmptyArchive: true)
-
         def i = null
         switch (compilerTool) {
             case 'gcc':
-                i = scanForIssues tool: gcc(id: id)
+                i = scanForIssues tool: gcc(id: id, pattern: '.ci.*.log')
                 break
             case 'gcc3':
-                i = scanForIssues tool: gcc3(id: id)
+                i = scanForIssues tool: gcc3(id: id, pattern: '.ci.*.log')
                 break
             case 'clang':
-                i = scanForIssues tool: clang(id: id)
+                i = scanForIssues tool: clang(id: id, pattern: '.ci.*.log')
                 break
         }
         if (i != null) {
@@ -322,6 +323,12 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
 */
             }
         }
+
+        sh label: 'Compress collected logs', script: """
+if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
+if [ -s config.log ]; then gzip < config.log > '.ci.${archPrefix}.config.log.gz' || true ; fi
+"""
+        archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
     }
 
     if (shRes != 0) {
