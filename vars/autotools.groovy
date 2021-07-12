@@ -39,7 +39,7 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.containsKey('build')) {
-            dynacfgPipeline['build'] = "( eval \${MAKE} \${MAKE_OPTS} all )"
+            dynacfgPipeline['build'] = "( eval \${MAKE} \${MAKE_OPTS} -k all )"
         }
 
         if (!dynacfgPipeline.containsKey('check')) {
