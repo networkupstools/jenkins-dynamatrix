@@ -1,6 +1,8 @@
 import org.nut.dynamatrix.dynamatrixGlobalState
 import org.nut.dynamatrix.*
 
+import java.security.MessageDigest // md5
+
 /*
  * Run one combination of settings in the matrix for chosen compiler, etc.
  */
@@ -154,7 +156,8 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             archPrefix += "--" + stageName
         archPrefix = archPrefix.trim().replaceAll(/\s+/, '').replaceAll(/[^\p{Alnum}-_=+.]+/, '-')
         if (archPrefix.length() > 230) { // Help filesystems that limit filename size
-            archPrefix = "MD5_" + archPrefix.md5()
+            archPrefix = "MD5_" + MessageDigest.getInstance("MD5").digest(archPrefix.bytes).encodeHex().toString().trim()
+            //groovy-2.5//archPrefix = "MD5_" + archPrefix.md5().trim()
         }
 
         // Build a multiline shell script
