@@ -312,17 +312,14 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
                 break
         }
         if (i != null) {
+            dynamatrixGlobalState.issueAnalysis << i
             if (dynacfgPipeline?.delayedIssueAnalysis) {
                 // job should call doSummarizeIssues() in the end
-                dynamatrixGlobalState.issueAnalysis << i
+                // for aggregated results over all build codepaths
+                echo "Collected issues analysis was logged to make a big summary in the end"
             } else {
+                // Publish individual build scenario results now
                 doSummarizeIssues([i], id + "--analysis", id + "--analysis")
-/*
-                publishIssues (
-                    issues: [i],
-                    filters: [includePackage('io.jenkins.plugins.analysis.*')]
-                    )
-*/
             }
         }
 
