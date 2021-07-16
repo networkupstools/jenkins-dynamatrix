@@ -302,12 +302,39 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     return // continue
                                 }
                             }
-                            if (Utils.isRegex(sb?.branchRegexTarget) && Utils.isStringNotEmpty(env?.TARGET_BRANCH)) {
-                                if (!(env.TARGET_BRANCH ==~ sb.branchRegexTarget)) {
+                            if (Utils.isRegex(sb?.branchRegexTarget)) {
+                                if (Utils.isStringNotEmpty(env?.TARGET_BRANCH)
+                                && (!(env.TARGET_BRANCH ==~ sb.branchRegexTarget))
+                                ) {
                                     if (dynamatrixGlobalState.enableDebugTrace)
                                         echo "SKIP: Target branch name '${env.TARGET_BRANCH}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
                                     countFiltersSkipped++
                                     return // continue
+                                }
+
+                                def _TARGET_BRANCH = null
+                                try {
+                                    // May be not defined
+                                    _TARGET_BRANCH = TARGET_BRANCH
+                                } catch (Throwable t) {}
+
+                                if (Utils.isStringNotEmpty(_TARGET_BRANCH)
+                                && (!(_TARGET_BRANCH ==~ sb.branchRegexTarget))
+                                ) {
+                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                        echo "SKIP: Target branch name '${_TARGET_BRANCH}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
+                                    countFiltersSkipped++
+                                    return // continue
+                                }
+
+                                if ( !Utils.isStringNotEmpty(env?.TARGET_BRANCH)
+                                &&   !Utils.isStringNotEmpty(_TARGET_BRANCH)
+                                ) {
+                                    // If callers want some setup only for PR
+                                    // builds, they can use the source branch
+                                    // regex set to /^PR-\d+$/
+                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                        echo "Target branch name is not set for this build (not a PR?), so ignoring the pattern ${sb.branchRegexTarget} set for this filter configuration"
                                 }
                             }
                             if (Utils.isClosure(sb?.bodyParStages)) {
