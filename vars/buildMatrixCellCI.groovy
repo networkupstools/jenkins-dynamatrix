@@ -296,6 +296,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
     stage('Collect results') {
         // Capture this after all the stages, different tools
         // might generate the files at different times
+        // Needs Warnings-NG plugin, Forensics API plugin, Git Forensics plugin...
         def i = null
         switch (compilerTool) {
             case 'gcc':

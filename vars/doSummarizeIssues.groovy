@@ -4,6 +4,7 @@ import org.nut.dynamatrix.*;
 void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String sBRANCH_NAME, String sTARGET_BRANCH) {
     if (issueAnalysisArr.size() > 0) {
         // Compare issues that are new/fixed compared to specified branch
+        // TODO: Update according to https://github.com/jenkinsci/warnings-ng-plugin/blob/master/doc/Documentation.md#configure-the-selection-of-the-reference-build-baseline
         def reference = sJOB_NAME.replace(sBRANCH_NAME, sTARGET_BRANCH)
         publishIssues (
             id: id,
