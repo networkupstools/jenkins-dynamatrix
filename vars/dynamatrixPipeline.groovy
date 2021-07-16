@@ -169,10 +169,11 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc
     }
 
-    // Sanity-check the pipeline options
+    // Sanity-check the pipeline options based on settings provided by caller
     dynacfgPipeline = sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = configureEnvvars.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = autotools.sanityCheckDynacfgPipeline(dynacfgPipeline)
+    dynacfgPipeline = ci_build.sanityCheckDynacfgPipeline(dynacfgPipeline)
 
     // Sanity-check certain build milestones expecting certain cfg structure:
     dynacfgPipeline = stylecheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
