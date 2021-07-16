@@ -10,8 +10,8 @@ void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String
             id: id,
             name: name,
             referenceJobName: reference,
-            issues: issueAnalysisArr,
-            filters: [includePackage('io.jenkins.plugins.analysis.*')]
+            //recordIssues-only//filters: [includePackage('io.jenkins.plugins.analysis.*')],
+            issues: issueAnalysisArr
             )
     }
 } // doSummarizeIssues(args)
