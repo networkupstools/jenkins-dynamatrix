@@ -349,7 +349,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         if (stagesBinBuild.size() > 1) {
             echo "Scheduling ${stagesBinBuild.size} stages for the 'slow build' dynamatrix, running this can take a long while..."
             stage("Run the bigger dynamatrix") {
-                parallel stagesBinBuild
+                // This parallel, unlike "par1" above, tends to
+                // preclude further processing if it fails and
+                // so avoids detailing the failure analysis
+                warnError(message: "Not all of the 'slow build' succeeded; proceeding to analyze the results") {
+                    parallel stagesBinBuild
+                }
             }
             echo "Completed the 'slow build' dynamatrix"
             stage("Analyze the bigger dynamatrix") { // TOTHINK: post{always{...}} to the above? Is there one in scripted pipeline?
