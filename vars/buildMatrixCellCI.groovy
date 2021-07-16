@@ -240,7 +240,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         def shRes = 0
         stage('Prep') {
             echo msg
-            sh " rm -f .ci.*.log* "
+            sh " rm -f .ci*.log* "
             //if (dynamatrixGlobalState.enableDebugTrace)
             //if (dynacfgPipeline?.configureEnvvars)
                 sh label: 'Report compilers', script: cmdCommon + """ ( eval \$CONFIG_ENVVARS; echo "CC: \$CC => `command -v "\$CC"`"; echo "CXX: \$CXX => `command -v "\$CXX"`" ; hostname; ) ; """
@@ -297,18 +297,30 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         // Capture this after all the stages, different tools
         // might generate the files at different times
         // Needs Warnings-NG plugin, Forensics API plugin, Git Forensics plugin...
-        // TODO: Strip workspace paths and relative-to-rootfs (../../../usr/include)
+
+        // Strip workspace paths and relative-to-rootfs (../../../usr/include)
         // from inspected logs, by sed or by some tool args?..
+        sh label: 'Sanitize paths in build log files', script: """
+for F in .ci.*.log ; do
+    [ -s "\$F" ] || continue
+    sed -e "s|`pwd`||" \\
+        -e "s|\${WORKSPACE}||" \\
+        -e "s|\${WORKSPACE_TMP}||" \\
+        -e "s|\\.\\.\\(/\\.\\.\\)*/\\(usr|lib|lib[0-9]*\\)/|/\\2/|" \\
+        < "\$F" > ".ci-sanitizedPaths.\$F"
+done
+"""
+
         def i = null
         switch (compilerTool) {
             case 'gcc':
-                i = scanForIssues tool: gcc(id: id, pattern: '.ci.*.log')
+                i = scanForIssues tool: gcc(id: id, pattern: '.ci-sanitizedPaths.*.log')
                 break
             case 'gcc3':
-                i = scanForIssues tool: gcc3(id: id, pattern: '.ci.*.log')
+                i = scanForIssues tool: gcc3(id: id, pattern: '.ci-sanitizedPaths.*.log')
                 break
             case 'clang':
-                i = scanForIssues tool: clang(id: id, pattern: '.ci.*.log')
+                i = scanForIssues tool: clang(id: id, pattern: '.ci-sanitizedPaths.*.log')
                 break
         }
         if (i != null) {
