@@ -297,6 +297,8 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         // Capture this after all the stages, different tools
         // might generate the files at different times
         // Needs Warnings-NG plugin, Forensics API plugin, Git Forensics plugin...
+        // TODO: Strip workspace paths and relative-to-rootfs (../../../usr/include)
+        // from inspected logs, by sed or by some tool args?..
         def i = null
         switch (compilerTool) {
             case 'gcc':
