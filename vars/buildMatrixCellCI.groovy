@@ -341,10 +341,12 @@ if [ -s config.log ]; then gzip < config.log > '.ci.${archPrefix}.config.log.gz'
 } // buildMatrixCellCI()
 
 def cmdlineBuildLogged(def cmd, def logfile) {
+    // A little sleep allows "tail" to show the last lines of that build log
     return """ RES=0; touch '${logfile}'
 tail -f '${logfile}' &
 CILOGPID=\$!
 ( ${cmd} ) >> '${logfile}' 2>&1 || RES=\$?
+sleep 1; echo ''
 kill "\$CILOGPID" >/dev/null 2>&1
 [ \$RES = 0 ] || exit \$RES
 """
