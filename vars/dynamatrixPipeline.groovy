@@ -52,34 +52,37 @@ import org.nut.dynamatrix.*;
     // and/or testing closures to prepare some "slow build" matrix cells,
     // which may adhere or not to the same code pattern (body closure).
     dynacfgPipeline.slowBuild = [
-      [getParStages: { dynamatrix, Closure body ->
-        return dynamatrix.generateBuild([
-            //commonLabelExpr: dynacfgBase.commonLabelExpr,
-            //defaultDynamatrixConfig: dynacfgBase.defaultDynamatrixConfig,
+      [name: 'Optional name to help in debug tracing',
+       //disabled: true,
+       getParStages: { dynamatrix, Closure body ->
+            return dynamatrix.generateBuild([
+                //commonLabelExpr: dynacfgBase.commonLabelExpr,
+                //defaultDynamatrixConfig: dynacfgBase.defaultDynamatrixConfig,
 
-            dynamatrixAxesVirtualLabelsMap: [
-                'BITS': [32, 64],
-                // 'CSTDVERSION': ['03', '2a'],
-                //'CSTDVERSION_${KEY}': [ ['c': '03', 'cxx': '03'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx': '2a'], 'ansi' ],
-                //'CSTDVERSION_${KEY}': [ ['c': '03', 'cxx': '03'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx': '2a'] ],
-                'CSTDVERSION_${KEY}': [ ['c': '99', 'cxx': '11'] ],
-                'CSTDVARIANT': ['gnu']
-                ],
+                dynamatrixAxesVirtualLabelsMap: [
+                    'BITS': [32, 64],
+                    // 'CSTDVERSION': ['03', '2a'],
+                    //'CSTDVERSION_${KEY}': [ ['c': '03', 'cxx': '03'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx': '2a'], 'ansi' ],
+                    //'CSTDVERSION_${KEY}': [ ['c': '03', 'cxx': '03'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx': '2a'] ],
+                    'CSTDVERSION_${KEY}': [ ['c': '99', 'cxx': '11'] ],
+                    'CSTDVARIANT': ['gnu']
+                    ],
 
-            mergeMode: [ 'dynamatrixAxesVirtualLabelsMap': 'merge', 'excludeCombos': 'merge' ],
-            allowedFailure: [ [~/CSTDVARIANT=c/] ],
-            runAllowedFailure: true,
-            //dynamatrixAxesLabels: [~/^OS_DISTRO/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
-            //dynamatrixAxesLabels: ['OS_FAMILY', 'OS_DISTRO', '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
-            //dynamatrixAxesLabels: [~/^OS/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
-            excludeCombos: [ [~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/] ]
-            ], body)
-        },
+                mergeMode: [ 'dynamatrixAxesVirtualLabelsMap': 'merge', 'excludeCombos': 'merge' ],
+                allowedFailure: [ [~/CSTDVARIANT=c/] ],
+                runAllowedFailure: true,
+                //dynamatrixAxesLabels: [~/^OS_DISTRO/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+                //dynamatrixAxesLabels: ['OS_FAMILY', 'OS_DISTRO', '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+                //dynamatrixAxesLabels: [~/^OS/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+                excludeCombos: [ [~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/] ]
+                ], body)
+            }, // getParStages
         //branchRegexSource: ~/^PR-.+$/,
         //branchRegexTarget: ~/^(master|main|stable)$/,
         bodyParStages: null
         //bodyParStages: {}
-    ]]
+      ] // one slowBuild filter configuration
+    ]
 
     dynacfgPipeline.bodyStashCmd = { git (url: "/home/jim/nut-DMF", branch: "fightwarn") }
 
@@ -284,6 +287,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         }
                         if (Utils.isClosureNotEmpty(sb?.getParStages)) {
                             countFiltersSeen ++
+                            if (sb?.disabled) {
+                                if (dynamatrixGlobalState.enableDebugTrace)
+                                    echo "SKIP: This filter configuration is marked as disabled for this run"
+                                countFiltersSkipped++
+                                return // continue
+                            }
                             if (Utils.isRegex(sb?.branchRegexSource) && Utils.isStringNotEmpty(env?.BRANCH_NAME)) {
                                 if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
                                     if (dynamatrixGlobalState.enableDebugTrace)
