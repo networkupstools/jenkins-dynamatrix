@@ -19,14 +19,14 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 // dynacfgPipeline.spellcheck.*
 
 def call(dynacfgPipeline = [:]) {
-    if (dynacfgPipeline.spellcheck) {
+    if (dynacfgPipeline?.spellcheck) {
         node(infra.labelDocumentationWorker()) {
             infra.withEnvOptional(dynacfgPipeline.defaultTools) {
                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
-                if (dynacfgPipeline.prepconf)
-                    sh """ ${dynacfgPipeline.prepconf} """
-                if (dynacfgPipeline.configure)
-                    sh """ ${dynacfgPipeline.configure} """
+                if (dynacfgPipeline?.buildPhases?.prepconf)
+                    sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+                if (dynacfgPipeline?.buildPhases?.configure)
+                    sh """ ${dynacfgPipeline.buildPhases.configure} """
                 sh """ ${dynacfgPipeline.spellcheck} """
             }
         }
@@ -35,7 +35,7 @@ def call(dynacfgPipeline = [:]) {
 
 def makeMap(dynacfgPipeline = [:]) {
     def par = [:]
-    if (dynacfgPipeline.spellcheck != null) {
+    if (dynacfgPipeline?.spellcheck != null) {
         par["spellcheck"] = {
             spellcheck(dynacfgPipeline)
         } // spellcheck

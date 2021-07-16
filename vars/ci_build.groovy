@@ -35,38 +35,42 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
             ]
         }
 
+        if (!dynacfgPipeline.containsKey('buildPhases')) {
+            dynacfgPipeline.buildPhases = [:]
+        }
+
         // Subshell common operations to prepare codebase:
-        if (!dynacfgPipeline.containsKey('prepconf')) {
-            dynacfgPipeline['prepconf'] = null
+        if (!dynacfgPipeline.buildPhases.containsKey('prepconf')) {
+            dynacfgPipeline.buildPhases['prepconf'] = null
         }
 
-        if (!dynacfgPipeline.containsKey('configure')) {
-            dynacfgPipeline['configure'] = null
+        if (!dynacfgPipeline.buildPhases.containsKey('configure')) {
+            dynacfgPipeline.buildPhases['configure'] = null
         }
 
-        if (!dynacfgPipeline.containsKey('build')) {
-            dynacfgPipeline['build'] = null
+        if (!dynacfgPipeline.buildPhases.containsKey('build')) {
+            dynacfgPipeline.buildPhases['build'] = null
         }
 
-        if (!dynacfgPipeline.containsKey('buildQuiet')) {
-            dynacfgPipeline['buildQuiet'] = null
+        if (!dynacfgPipeline.buildPhases.containsKey('buildQuiet')) {
+            dynacfgPipeline.buildPhases['buildQuiet'] = null
         }
 
-        if (!dynacfgPipeline.containsKey('buildQuietCautious')) {
-            dynacfgPipeline['buildQuietCautious'] = null
+        if (!dynacfgPipeline.buildPhases.containsKey('buildQuietCautious')) {
+            dynacfgPipeline.buildPhases['buildQuietCautious'] = null
         }
 
         // CONFIG_ENVVARS are set by code in configureEnvvars.groovy
-        if (!dynacfgPipeline.containsKey('check')) {
-            dynacfgPipeline['check'] = """ (
+        if (!dynacfgPipeline.buildPhases.containsKey('check')) {
+            dynacfgPipeline.buildPhases['check'] = """ (
 [ -x ./ci_build.sh ] || exit
 
 eval \${CONFIG_ENVVARS} ./ci_build.sh \${CONFIG_OPTS}
 ) """
         }
 
-        if (!dynacfgPipeline.containsKey('distcheck')) {
-            dynacfgPipeline['distcheck'] = null
+        if (!dynacfgPipeline.buildPhases.containsKey('distcheck')) {
+            dynacfgPipeline.buildPhases['distcheck'] = null
         }
     }
 

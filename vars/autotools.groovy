@@ -29,33 +29,37 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
             ]
         }
 
+        if (!dynacfgPipeline.containsKey('buildPhases')) {
+            dynacfgPipeline.buildPhases = [:]
+        }
+
         // Subshell common operations to prepare codebase:
-        if (!dynacfgPipeline.containsKey('prepconf')) {
-            dynacfgPipeline['prepconf'] = "( if [ -x ./autogen.sh ]; then ./autogen.sh || exit; else if [ -s configure.ac ] ; then mkdir -p config && autoreconf --install --force --verbose -I config || exit ; fi; fi ; [ -x configure ] || exit )"
+        if (!dynacfgPipeline.buildPhases.containsKey('prepconf')) {
+            dynacfgPipeline.buildPhases['prepconf'] = "( if [ -x ./autogen.sh ]; then ./autogen.sh || exit; else if [ -s configure.ac ] ; then mkdir -p config && autoreconf --install --force --verbose -I config || exit ; fi; fi ; [ -x configure ] || exit )"
         }
 
-        if (!dynacfgPipeline.containsKey('configure')) {
-            dynacfgPipeline['configure'] = " ( [ -x configure ] || exit; eval \${CONFIG_ENVVARS} time ./configure \${CONFIG_OPTS} ) "
+        if (!dynacfgPipeline.buildPhases.containsKey('configure')) {
+            dynacfgPipeline.buildPhases['configure'] = " ( [ -x configure ] || exit; eval \${CONFIG_ENVVARS} time ./configure \${CONFIG_OPTS} ) "
         }
 
-        if (!dynacfgPipeline.containsKey('build')) {
-            dynacfgPipeline['build'] = "( eval time \${MAKE} \${MAKE_OPTS} -k all )"
+        if (!dynacfgPipeline.buildPhases.containsKey('build')) {
+            dynacfgPipeline.buildPhases['build'] = "( eval time \${MAKE} \${MAKE_OPTS} -k all )"
         }
 
-        if (!dynacfgPipeline.containsKey('buildQuiet')) {
-            dynacfgPipeline['buildQuiet'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} -k -j4 all >/dev/null 2>&1 && echo "SUCCESS" && exit 0; echo "First attempt failed (\$?), retrying to log what did:"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
+        if (!dynacfgPipeline.buildPhases.containsKey('buildQuiet')) {
+            dynacfgPipeline.buildPhases['buildQuiet'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} -k -j4 all >/dev/null 2>&1 && echo "SUCCESS" && exit 0; echo "First attempt failed (\$?), retrying to log what did:"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
-        if (!dynacfgPipeline.containsKey('buildQuietCautious')) {
-            dynacfgPipeline['buildQuietCautious'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} -k -j4 all >/dev/null 2>&1 && echo "Seemingly a SUCCESS" ; echo "First attempt finished (\$?), retrying to log what fails (if any):"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
+        if (!dynacfgPipeline.buildPhases.containsKey('buildQuietCautious')) {
+            dynacfgPipeline.buildPhases['buildQuietCautious'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} -k -j4 all >/dev/null 2>&1 && echo "Seemingly a SUCCESS" ; echo "First attempt finished (\$?), retrying to log what fails (if any):"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
-        if (!dynacfgPipeline.containsKey('check')) {
-            dynacfgPipeline['check'] = "( eval time \${MAKE} \${MAKE_OPTS} check )"
+        if (!dynacfgPipeline.buildPhases.containsKey('check')) {
+            dynacfgPipeline.buildPhases['check'] = "( eval time \${MAKE} \${MAKE_OPTS} check )"
         }
 
-        if (!dynacfgPipeline.containsKey('distcheck')) {
-            dynacfgPipeline['distcheck'] = "( eval time \${MAKE} \${MAKE_OPTS} distcheck )"
+        if (!dynacfgPipeline.buildPhases.containsKey('distcheck')) {
+            dynacfgPipeline.buildPhases['distcheck'] = "( eval time \${MAKE} \${MAKE_OPTS} distcheck )"
         }
     }
 

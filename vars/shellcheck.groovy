@@ -53,7 +53,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
     // (seems to only render the first mentioned stage),
     // but "Classic UI" Pipeline Steps tree should...
     //println "SHELLCHECK: ${Utils.castString(dynacfgPipeline.shellcheck)}"
-    if (dynacfgPipeline.shellcheck.single != null || dynacfgPipeline.shellcheck.multi != null) {
+    if (dynacfgPipeline?.shellcheck?.single != null || dynacfgPipeline?.shellcheck?.multi != null) {
         //println "Discovering stagesShellcheck..."
         // Note: Different label set, different dynamatrix
         // instance (inside step), though hopefully same
@@ -83,10 +83,10 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                             sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
                             withEnvOptional(dynacfgPipeline.defaultTools) {
                                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
-                                if (dynacfgPipeline.prepconf)
-                                    sh """ ${dynacfgPipeline.prepconf} """
-                                if (dynacfgPipeline.configure)
-                                    sh """ ${dynacfgPipeline.configure} """
+                                if (dynacfgPipeline?.buildPhases?.prepconf)
+                                    sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+                                if (dynacfgPipeline?.buildPhases?.configure)
+                                    sh """ ${dynacfgPipeline.buildPhases.configure} """
                             }
                             return true
                         }

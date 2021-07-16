@@ -19,14 +19,14 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 // dynacfgPipeline.stylecheck.*
 
 def call(dynacfgPipeline = [:]) {
-    if (dynacfgPipeline.stylecheck) {
+    if (dynacfgPipeline?.stylecheck) {
         node(infra.labelDocumentationWorker()) {
-            infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+            infra.withEnvOptional(dynacfgPipeline?.defaultTools) {
                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
-                if (dynacfgPipeline.prepconf)
-                    sh """ ${dynacfgPipeline.prepconf} """
-                if (dynacfgPipeline.configure)
-                    sh """ ${dynacfgPipeline.configure} """
+                if (dynacfgPipeline?.buildPhases?.prepconf)
+                    sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+                if (dynacfgPipeline?.buildPhases?.configure)
+                    sh """ ${dynacfgPipeline.buildPhases.configure} """
                 sh """ ${dynacfgPipeline.stylecheck} """
             }
         }
@@ -35,7 +35,7 @@ def call(dynacfgPipeline = [:]) {
 
 def makeMap(dynacfgPipeline = [:]) {
     def par = [:]
-    if (dynacfgPipeline.stylecheck != null) {
+    if (dynacfgPipeline?.stylecheck != null) {
         par["stylecheck"] = {
             stylecheck(dynacfgPipeline)
         } // stylecheck

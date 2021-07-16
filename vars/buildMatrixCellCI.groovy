@@ -198,31 +198,31 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         // Note: log files below are used for warnings-ng processing
         // and their namesakes will be removed before the build.
         // TODO: invent a way around `git status` violations for projects that care?
-        if (dynacfgPipeline?.prepconf) {
-            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.prepconf}", ".ci.${archPrefix}.prepconf.log")
+        if (dynacfgPipeline?.buildPhases?.prepconf) {
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.prepconf}", ".ci.${archPrefix}.prepconf.log")
             cmdPrepLabel += "prepconf "
         }
 
-        if (dynacfgPipeline?.configure) {
-            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.configure}", ".ci.${archPrefix}.prepconf.log")
+        if (dynacfgPipeline?.buildPhases?.configure) {
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.configure}", ".ci.${archPrefix}.prepconf.log")
             cmdPrepLabel += "configure "
         }
 
-        if (dynacfgPipeline?.buildQuiet) {
-            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildQuiet}", ".ci.${archPrefix}.build.log")
+        if (dynacfgPipeline?.buildPhases?.buildQuiet) {
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.buildQuiet}", ".ci.${archPrefix}.build.log")
             cmdBuildLabel += "buildQuiet "
-        } else if (dynacfgPipeline?.build) {
-            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.build}", ".ci.${archPrefix}.build.log")
+        } else if (dynacfgPipeline?.buildPhases?.build) {
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.build}", ".ci.${archPrefix}.build.log")
             cmdBuildLabel += "build "
         }
 
-        if (dynacfgPipeline?.check) {
-            cmdTest1 += cmdlineBuildLogged("${dynacfgPipeline.check}", ".ci.${archPrefix}.check.log")
+        if (dynacfgPipeline?.buildPhases?.check) {
+            cmdTest1 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.check}", ".ci.${archPrefix}.check.log")
             cmdTest1Label += "check "
         }
 
-        if (dynacfgPipeline?.distcheck) {
-            cmdTest2 += cmdlineBuildLogged("${dynacfgPipeline.distcheck}", ".ci.${archPrefix}.distcheck.log")
+        if (dynacfgPipeline?.buildPhases?.distcheck) {
+            cmdTest2 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.distcheck}", ".ci.${archPrefix}.distcheck.log")
             cmdTest2Label += "distcheck "
         }
 
