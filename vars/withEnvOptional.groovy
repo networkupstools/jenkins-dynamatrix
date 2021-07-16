@@ -7,7 +7,7 @@ import org.nut.dynamatrix.Utils;
  * or the provided default.
  */
 def call(String VAR, String DEFVAL, Closure body) {
-    if (env.containsKey(VAR)) {
+    if (VAR == null || env.containsKey(VAR)) {
         return body()
     }
 
@@ -38,7 +38,7 @@ def call(String VAR, String DEFVAL, Closure body) {
 }
 
 def call(Map VARVAL, Closure body) {
-    if (VARVAL.size() == 0) {
+    if (VARVAL == null || VARVAL.size() == 0) {
         return body()
     }
 
