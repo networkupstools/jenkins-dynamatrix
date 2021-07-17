@@ -305,6 +305,9 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         // Capture this after all the stages: different tools
         // might generate the files at different times
         // Needs Warnings-NG plugin, Forensics API plugin, Git Forensics plugin...
+        echo "Completed with result ${shRes} (" +
+            (shRes == 0 ? "SUCCESS" : ( (dsbc?.isAllowedFailure) ? "ALLOWED " : "" ) + "FAILURE") +
+            ")" + (dsbc == null ? "" : " this build configuration: " + dsbc.toString())
 
         // Strip workspace paths and relative-to-rootfs (../../../usr/include)
         // from inspected logs, by sed or by some tool args?..
