@@ -365,16 +365,17 @@ if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
 if [ -s config.log ]; then gzip < config.log > '.ci.${archPrefix}.config.log.gz' || true ; fi
 """
         archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
-    }
 
-    if (shRes != 0) {
-        def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
-        if (dsbc?.isAllowedFailure) {
-            unstable msgFail
-        } else {
-            error msgFail
+        if (shRes != 0) {
+            def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
+            if (dsbc?.isAllowedFailure) {
+                unstable msgFail
+            } else {
+                error msgFail
+            }
         }
-    }
+    } // stage for results of the single build scenario
+
 } // buildMatrixCellCI()
 
 def cmdlineBuildLogged(def cmd, def logfile) {
