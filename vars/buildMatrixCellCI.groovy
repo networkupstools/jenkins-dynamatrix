@@ -270,7 +270,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         def nameTest2 = "Test2"
 
         if ( (cmdTest1 != "" && cmdTest2 == "")
-        &&   (cmdTest1 == "" && cmdTest2 != "")
+        ||   (cmdTest1 == "" && cmdTest2 != "")
         ) {
             nameTest1 = "Test"
             nameTest2 = "Test"
