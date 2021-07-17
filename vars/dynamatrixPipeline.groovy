@@ -285,6 +285,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     dynacfgPipeline.slowBuild.each { def sb ->
                         if (dynamatrixGlobalState.enableDebugTrace) {
                             echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
+                        } else if (sb?.name) {
+                            echo "Inspecting a slow build filter configuration: ${sb.name}"
                         }
                         if (Utils.isClosureNotEmpty(sb?.getParStages)) {
                             countFiltersSeen ++
