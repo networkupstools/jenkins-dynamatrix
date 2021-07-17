@@ -241,7 +241,9 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         }
 
         def shRes = 0
-        stage('Prep') {
+        def strMayFail = ""
+        if (dsbc?.isAllowedFailure) strMayFail += " (may fail)"
+        stage('Prep' + strMayFail) {
             echo msg
             sh " rm -f .ci*.log* "
             //if (dynamatrixGlobalState.enableDebugTrace)
@@ -257,7 +259,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         }
 
         if (cmdBuild != "" && shRes == 0) {
-            stage('Build') {
+            stage('Build' + strMayFail) {
                 def res = sh (script: cmdCommon + cmdBuild, returnStatus: true, label: (cmdCommonLabel + cmdBuildLabel.trim()))
                 if (res != 0) {
                     shRes = res
@@ -277,7 +279,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         }
 
         if (cmdTest1 != "" && shRes == 0) {
-            stage(nameTest1) {
+            stage(nameTest1 + strMayFail) {
                 def res = sh (script: cmdCommon + cmdTest1, returnStatus: true, label: (cmdCommonLabel + cmdTest1Label.trim()))
                 if (res != 0) {
                     shRes = res
@@ -287,7 +289,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         }
 
         if (cmdTest2 != "" && shRes == 0) {
-            stage(nameTest2) {
+            stage(nameTest2 + strMayFail) {
                 def res = sh (script: cmdCommon + cmdTest2, returnStatus: true, label: (cmdCommonLabel + cmdTest2Label.trim()))
                 if (res != 0) {
                     shRes = res
@@ -301,7 +303,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
     def resName = "Collect results"
     if (stageName != null && stageName != "")
         resName = "Results for ${stageName}"
-    stage("${resName}") {
+    stage("${resName}" + strMayFail) {
         // Capture this after all the stages: different tools
         // might generate the files at different times
         // Needs Warnings-NG plugin, Forensics API plugin, Git Forensics plugin...
