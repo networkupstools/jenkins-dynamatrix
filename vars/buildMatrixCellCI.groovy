@@ -155,9 +155,12 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         if (stageName)
             archPrefix += "--" + stageName
         archPrefix = archPrefix.trim().replaceAll(/\s+/, '').replaceAll(/[^\p{Alnum}-_=+.]+/, '-')
-        if (archPrefix.length() > 230) { // Help filesystems that limit filename size
-            archPrefix = "MD5_" + MessageDigest.getInstance("MD5").digest(archPrefix.bytes).encodeHex().toString().trim()
+        if (archPrefix.length() > 100) { // Help filesystems that limit filename or path size
+            def hash = "MD5_" + MessageDigest.getInstance("MD5").digest(archPrefix.bytes).encodeHex().toString().trim()
             //groovy-2.5//archPrefix = "MD5_" + archPrefix.md5().trim()
+            echo "Archived log prefix for this build '${archPrefix}' was too long, so truncating it to ${hash}"
+            sh """ echo '${hash} => ${archPrefix}' > '.ci.${hash}.hashed.log' """
+            archPrefix = hash
         }
 
         // Build a multiline shell script
