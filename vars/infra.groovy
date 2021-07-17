@@ -12,7 +12,7 @@ def labelDefaultWorker() {
     if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelDefaultWorker)) {
         return dynamatrixGlobalState.labelDefaultWorker
     }
-    return "master-worker"
+    return 'master-worker'
 }
 
 def labelCheckoutWorker() {
@@ -28,6 +28,13 @@ def labelDocumentationWorker() {
     if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelDocumentationWorker)) {
         return dynamatrixGlobalState.labelDocumentationWorker
     }
+
+    // Do any nodes declare a capability to build any doc types
+    // that the hosted projects might need?
+    def nodeList = nodesByLabel (label: 'doc-builder', offline: true)
+    if (nodeList.size() > 0)
+        return 'doc-builder'
+
     return labelDefaultWorker()
 }
 
