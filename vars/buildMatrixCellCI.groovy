@@ -275,7 +275,16 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         ||   (cmdTest1 == "" && cmdTest2 != "")
         ) {
             nameTest1 = "Test"
-            nameTest2 = "Test"
+
+            // ci_build all-in-one?
+            if (cmdBuild == "")
+                nameTest1 = "Build+Test"
+
+            // any ci_build scenario hints?
+            if (env.BUILD_TYPE)
+                nameTest1 += " ${env.BUILD_TYPE}"
+
+            nameTest2 = nameTest1
         }
 
         if (cmdTest1 != "" && shRes == 0) {
