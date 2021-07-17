@@ -296,8 +296,13 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             }
         }
 
-    stage('Collect results') {
-        // Capture this after all the stages, different tools
+    // This name might go to e.g. notifications (of success/fail)
+    // so the string better be unique and meaningful
+    def resName = "Collect results"
+    if (stageName != null && stageName != "")
+        resName = "Results for ${stageName}"
+    stage("${resName}") {
+        // Capture this after all the stages: different tools
         // might generate the files at different times
         // Needs Warnings-NG plugin, Forensics API plugin, Git Forensics plugin...
 
