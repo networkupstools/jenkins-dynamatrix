@@ -11,10 +11,14 @@ void call(String stashName, Closure scmbody = null) {
     dir("${workspace}@script") {
         deleteDir()
     }
+
     if (scmbody == null) {
         checkout scm
     } else {
         scmbody()
     }
-    stash stashName
+
+    // Be sure to get also "hidden" files like .* in Unix customs => .git*
+    // so avoid default exclude patterns
+    stash (name: stashName, useDefaultExcludes: false)
 } // stashCleanSrc()
