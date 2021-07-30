@@ -23,17 +23,28 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     // axes and corresponding exported envvars, and handle the possibility
     // of explicit CC, CFLAGS and so on below.
 
+    // Note that some distributions name their binaries e.g. "gcc-10" while
+    // others use "gcc10"; USE_COMPILER_VERSION_SUFFIX below tries to adapt
+
     if (!dynacfgPipeline.containsKey('configureEnvvars')) {
         dynacfgPipeline['configureEnvvars'] = """ {
 USE_COMPILER=""
 USE_COMPILER_VERSION_SUFFIX=""
 if [ -n "\${CLANGVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "clang" -o "\${COMPILER}" = "CLANG" ]; then
         USE_COMPILER="clang"
-        USE_COMPILER_VERSION_SUFFIX="-\${CLANGVER}"
+        if command -v "\${USE_COMPILER}\${CLANGVER}" > /dev/null ; then
+            USE_COMPILER_VERSION_SUFFIX="\${CLANGVER}"
+        else
+            USE_COMPILER_VERSION_SUFFIX="-\${CLANGVER}"
+        fi
 else
     if [ -n "\${GCCVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "gcc" -o "\${COMPILER}" = "GCC" ]; then
         USE_COMPILER="gcc"
-        USE_COMPILER_VERSION_SUFFIX="-\${GCCVER}"
+        if command -v "\${USE_COMPILER}\${GCCVER}" > /dev/null ; then
+            USE_COMPILER_VERSION_SUFFIX="\${GCCVER}"
+        else
+            USE_COMPILER_VERSION_SUFFIX="-\${GCCVER}"
+        fi
     fi
 fi
 
