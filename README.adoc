@@ -46,6 +46,17 @@ benefit of several FOSS projects, one of the label patterns allows
 to declare that this worker is suitable for (and contributes to)
 builds of a particular project.
 
+This library is designed to provide a number of classes for larger
+pieces of code as separate compiliation units (my first stint with
+standard pipeline `matrix{}` failed due to resulting method binary
+exceeding 64K) and as separate callable routines. While it may be
+helpful to directly use `prepareDynamatrix()` in some cases, many
+practical jobs would define a `dynacfgBase` with common dynamatrix
+properties for a suitable node and a `dynacfgPipeline` with certain
+fields such as the closure(s) to run dozens of times, and pass that
+to a `dynamatrixPipeline(dynacfgBase, dynacfgPipeline)` call that
+implements the pipeline in a reusable fashion.
+
 Example configuration
 ~~~~~~~~~~~~~~~~~~~~~
 
