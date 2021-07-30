@@ -357,14 +357,16 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         echo "Target branch name is not set for this build (not a PR?), so ignoring the pattern ${sb.branchRegexTarget} set for this filter configuration"
                                 }
                             }
-                            if (Utils.isClosure(sb?.bodyParStages)) {
-                                // body may be empty {}, if user wants so
-                                stagesBinBuild += sb.getParStages(dynamatrix, sb.bodyParStages)
-                            } else {
-                                if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                                    stagesBinBuild += sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                            withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().replaceAll("'", '').replaceAll('"', '').replaceAll(/\\s/, '_') : "N/A" )]) {
+                                if (Utils.isClosure(sb?.bodyParStages)) {
+                                    // body may be empty {}, if user wants so
+                                    stagesBinBuild += sb.getParStages(dynamatrix, sb.bodyParStages)
                                 } else {
-                                    stagesBinBuild += sb.getParStages(dynamatrix, null)
+                                    if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
+                                        stagesBinBuild += sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                                    } else {
+                                        stagesBinBuild += sb.getParStages(dynamatrix, null)
+                                    }
                                 }
                             }
                         } else {
