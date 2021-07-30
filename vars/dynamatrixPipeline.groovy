@@ -226,7 +226,13 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
  * shallow checkouts (depth=1). Longer history may make sense for release
  * builds with changelog generation, but not for quick test iterations.
  */
-                    node(infra.labelCheckoutWorker()) {
+                    if (infra.labelCheckoutWorker() != infra.labelDefaultWorker()) {
+                        node(infra.labelCheckoutWorker()) {
+                            stashCleanSrc(dynacfgPipeline.stashnameSrc, dynacfgPipeline?.bodyStashCmd)
+                        }
+                    } else {
+                        // Already on worker suitable for checkouts,
+                        // do not need to block requiring a node here
                         stashCleanSrc(dynacfgPipeline.stashnameSrc, dynacfgPipeline?.bodyStashCmd)
                     }
                 }, // stage - stash
