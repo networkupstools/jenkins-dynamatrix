@@ -140,6 +140,76 @@ def parallelStages = prepareDynamatrix(
 
  */
 
+    def needsPrepareDynamatrixClone(dynacfgOrig = [:]) {
+        // Return true if dynacfgOrig contains fields used in
+        // prepareDynamatrix() that need recalculation or otherwise
+        // would be ignored by generateBuild()
+
+        if (Utils.isListNotEmpty(dynacfgOrig?.requiredNodelabels)) {
+            if (Utils.isListNotEmpty(dynacfg.requiredNodelabels)) {
+                if (dynacfg.requiredNodelabels != dynacfgOrig.requiredNodelabels) {
+                    // Different set than before
+                    return true;
+                }
+            } else {
+                // There was no constraint before
+                return true;
+            }
+        } // there is no else: if original dynamatrix had the constraint, we do not clear it
+
+        if (Utils.isListNotEmpty(dynacfgOrig?.excludedNodelabels)) {
+            if (Utils.isListNotEmpty(dynacfg.excludedNodelabels)) {
+                if (dynacfg.excludedNodelabels != dynacfgOrig.excludedNodelabels) {
+                    // Different set than before
+                    return true;
+                }
+            } else {
+                // There was no constraint before
+                return true;
+            }
+        } // there is no else: if original dynamatrix had the constraint, we do not clear it
+
+        if (Utils.isListNotEmpty(dynacfgOrig?.dynamatrixAxesLabels)) {
+            if (Utils.isListNotEmpty(dynacfg.dynamatrixAxesLabels)) {
+                if (dynacfg.dynamatrixAxesLabels != dynacfgOrig.dynamatrixAxesLabels) {
+                    // Different set than before
+                    return true;
+                }
+            } else {
+                // There was no constraint before? Should not get here...
+                return true;
+            }
+        } // there is no else: if original dynamatrix had the constraint, we do not clear it
+
+        if (Utils.isStringNotEmpty(dynacfgOrig?.commonLabelExpr)) {
+            if (Utils.isStringNotEmpty(dynacfg.commonLabelExpr)) {
+                if (dynacfg.commonLabelExpr != dynacfgOrig.commonLabelExpr) {
+                    // Different set than before
+                    return true;
+                }
+            } else {
+                // There was no constraint before? Should not get here...
+                return true;
+            }
+        } // there is no else: if original dynamatrix had the constraint, we do not clear it
+
+        // No critical fields redefined
+        return false
+    }
+
+    static def clearNeedsPrepareDynamatrixClone(dynacfgOrig = [:]) {
+        def dc = dynacfgOrig.clone()
+        if (dc?.commonLabelExpr)
+            dc.remove('commonLabelExpr')
+        if (dc?.dynamatrixAxesLabels)
+            dc.remove('dynamatrixAxesLabels')
+        if (dc?.excludedNodelabels)
+            dc.remove('excludedNodelabels')
+        if (dc?.requiredNodelabels)
+            dc.remove('requiredNodelabels')
+        return dc
+    }
+
     def prepareDynamatrix(dynacfgOrig = [:]) {
         def debugErrors = this.shouldDebugErrors()
         def debugTrace = this.shouldDebugTrace()
@@ -179,9 +249,36 @@ def parallelStages = prepareDynamatrix(
         // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
         // other configs for same builder would not query and parse real Jenkins
         // worker labels again and again.
+        def commonLabelExpr = dynacfg.commonLabelExpr
+        if (Utils.isListNotEmpty(dynacfg.requiredNodelabels)) {
+            def le = null
+            dynacfg.requiredNodelabels.each() { l ->
+                if (le == null) {
+                    le = l
+                } else {
+                    le += "&&" + l
+                }
+            }
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Added requiredNodelabels: " + le
+            commonLabelExpr += " && (${le})"
+        }
+
+        if (Utils.isListNotEmpty(dynacfg.excludedNodelabels)) {
+            def le = null
+            dynacfg.excludedNodelabels.each() { l ->
+                if (le == null) {
+                    le = "!" + l
+                } else {
+                    le += "&&!" + l
+                }
+            }
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Added excludedNodelabels: " + le
+            commonLabelExpr += " && (${le})"
+        }
+
         this.nodeCaps = new NodeCaps(
             this.script,
-            dynacfg.commonLabelExpr,
+            commonLabelExpr,
             dynamatrixGlobalState.enableDebugTrace,
             dynamatrixGlobalState.enableDebugErrors)
         this.nodeCaps.optionalPrintDebug()
@@ -480,6 +577,8 @@ def parallelStages = prepareDynamatrix(
                         "expecting to process ${countCombos} combinations " +
                         "of requested matrix axis values, against " +
                         "${dynacfgBuild.excludeCombos.size()} excludeCombos and " +
+                        "${dynacfgBuild.requiredNodelabels.size()} requiredNodelabels and " +
+                        "${dynacfgBuild.excludedNodelabels.size()} excludedNodelabels and " +
                         "${dynacfgBuild.allowedFailure.size()} allowedFailure cases. " +
                         "This can take some time."
                 }
@@ -849,6 +948,22 @@ def parallelStages = prepareDynamatrix(
         //def debugTrace = this.shouldDebugTrace()
         //def debugMilestones = this.shouldDebugMilestones()
         def debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+
+        if (needsPrepareDynamatrixClone(dynacfgOrig)) {
+            if (debugMilestonesDetails
+            //|| debugMilestones
+            //|| debugErrors
+            //|| debugTrace
+            ) {
+                this.script.println "[DEBUG] generateBuild(): running a configuration that needs a new dynamatrix in a clone"
+            }
+
+            def dmClone = this.clone()
+            dmClone.prepareDynamatrix(dynacfgOrig)
+            return dmClone.generateBuild(
+                clearNeedsPrepareDynamatrixClone(dynacfgOrig),
+                returnSet, bodyOrig)
+        }
 
         def dsbcSet = generateBuildConfigSet(dynacfgOrig)
 

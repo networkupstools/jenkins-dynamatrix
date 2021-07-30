@@ -146,6 +146,17 @@ class DynamatrixConfig implements Cloneable {
     //    excludeCombos: [[~/OS=openindiana/, ~/CLANGVER=9/, ~/ARCH=x86/], [~/GCCVER=4\.[0-7]\..+/, ~/std.+=+(!?89|98|99|03)/], [~/GCCVER=4\.([8-9]|1[0-9]+)\..+/, ~/std.+=+(!?89|98|99|03|11)/]]
     public Set excludeCombos = []
 
+    // Beside values that are permutated in the matrix combos, we can
+    // also use other labels declared by build agents to filter further.
+    // This differs from dynamatrixRequiredLabelCombos above which add
+    // combinations on top of filtered permutations and might cause some
+    // build agents to be deployed, etc. to fulfill that requirement.
+    // Here we *filter away* combos that would land to nodes that *have*
+    // labels which match any of excludedNodelabels, or that *do not have*
+    // labels which match all of requiredNodelabels.
+    public Set requiredNodelabels = []
+    public Set excludedNodelabels = []
+
     @NonCPS
     @Override
     public String toString() {
@@ -164,6 +175,8 @@ class DynamatrixConfig implements Cloneable {
                 ",\n    allowedFailure: '${allowedFailure}'" +
                 ",\n    runAllowedFailure: '${runAllowedFailure}'" +
                 ",\n    excludeCombos: '${excludeCombos}'" +
+                ",\n    requiredNodelabels: '${requiredNodelabels}'" +
+                ",\n    excludedNodelabels: '${excludedNodelabels}'" +
                 "\n}" ;
     }
 
