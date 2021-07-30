@@ -394,8 +394,11 @@ sleep 1; echo ''
 kill "\$CILOGPID" >/dev/null 2>&1
 ( # cat helps avoid errors due to expansion of cmd (et al) as shell-parsable code
   printf "FINISHED with exit-code \$RES "
-  cat << 'EOF'
+  cat << EOF
 cmd: ${cmd}
+EOF
+  cat << 'EOF'
+cmdOrig: ${cmd}
 ...for stageName: ${stageName}
 ...logged into: ${logfile}
 EOF
