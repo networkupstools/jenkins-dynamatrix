@@ -389,6 +389,16 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${stagesBinBuild.size()-1} 'slow build' combos to run"
             echo "[Quick tests and prepare the bigger dynamatrix summary] ${currentBuild.result}"
             if (!(currentBuild.result in [null, 'SUCCESS'])) {
+                if (Utils.isClosure(dynacfgPipeline?.notifyHandler)) {
+                    try {
+                        // Can depend on plugins not available at this Jenkins
+                        // instance, e.g. instant-messaging and IRC plugins
+                        dynacfgPipeline.notifyHandler()
+                    } catch (Throwable t) {
+                        echo "WARNING: Tried to notify about build result (${currentBuild.result}) by user-provided method, and failed to"
+                    }
+                }
+
                 error "Quick-test and/or preparation of larger test matrix failed"
             }
         } // stage-quick-summary
@@ -410,6 +420,16 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         } else {
             // TODO: `unstable` this?
             echo "No stages were prepared for the 'slow build' dynamatrix, so completing the job"
+        }
+
+        if (Utils.isClosure(dynacfgPipeline?.notifyHandler)) {
+            try {
+                // Can depend on plugins not available at this Jenkins
+                // instance, e.g. instant-messaging and IRC plugins
+                dynacfgPipeline.notifyHandler()
+            } catch (Throwable t) {
+                echo "WARNING: Tried to notify about build result (${currentBuild.result}) by user-provided method, and failed to"
+            }
         }
 
     } // node to manage the pipeline
