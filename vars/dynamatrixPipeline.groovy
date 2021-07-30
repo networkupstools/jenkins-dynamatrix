@@ -204,8 +204,16 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         properties([
             durabilityHint('PERFORMANCE_OPTIMIZED'),
             [$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false],
-            throttleJobProperty(categories: [], limitOneJobWithMatchingParams: false, maxConcurrentPerNode: 0, maxConcurrentTotal: 0, paramsToUseForLimit: '', throttleEnabled: false, throttleOption: 'project')
+            throttleJobProperty(categories: [], limitOneJobWithMatchingParams: false, maxConcurrentPerNode: 0, maxConcurrentTotal: 0, paramsToUseForLimit: '', throttleEnabled: false, throttleOption: 'project'),
+            parameters(Utils.isListNotEmpty(dynacfgPipeline?.paramsList) ? dynacfgPipeline.paramsList : null)
         ])
+
+        if (Utils.isClosure(dynacfgPipeline?.paramsHandler)) {
+            // Optional sanity-checks, assignment of dynacfgPipeline.* fields, etc.
+            stage("Handle build parameters") {
+                dynacfgPipeline.paramsHandler()
+            }
+        }
 
         stage("Initial discovery") {
             parallel (
