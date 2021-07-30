@@ -205,30 +205,30 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         // and their namesakes will be removed before the build.
         // TODO: invent a way around `git status` violations for projects that care?
         if (dynacfgPipeline?.buildPhases?.prepconf) {
-            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.prepconf}", ".ci.${archPrefix}.prepconf.log")
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.prepconf}", ".ci.${archPrefix}.prepconf.log", stageName)
             cmdPrepLabel += "prepconf "
         }
 
         if (dynacfgPipeline?.buildPhases?.configure) {
-            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.configure}", ".ci.${archPrefix}.prepconf.log")
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.configure}", ".ci.${archPrefix}.prepconf.log", stageName)
             cmdPrepLabel += "configure "
         }
 
         if (dynacfgPipeline?.buildPhases?.buildQuiet) {
-            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.buildQuiet}", ".ci.${archPrefix}.build.log")
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.buildQuiet}", ".ci.${archPrefix}.build.log", stageName)
             cmdBuildLabel += "buildQuiet "
         } else if (dynacfgPipeline?.buildPhases?.build) {
-            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.build}", ".ci.${archPrefix}.build.log")
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.build}", ".ci.${archPrefix}.build.log", stageName)
             cmdBuildLabel += "build "
         }
 
         if (dynacfgPipeline?.buildPhases?.check) {
-            cmdTest1 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.check}", ".ci.${archPrefix}.check.log")
+            cmdTest1 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.check}", ".ci.${archPrefix}.check.log", stageName)
             cmdTest1Label += "check "
         }
 
         if (dynacfgPipeline?.buildPhases?.distcheck) {
-            cmdTest2 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.distcheck}", ".ci.${archPrefix}.distcheck.log")
+            cmdTest2 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.distcheck}", ".ci.${archPrefix}.distcheck.log", stageName)
             cmdTest2Label += "distcheck "
         }
 
@@ -378,7 +378,7 @@ if [ -s config.log ]; then gzip < config.log > '.ci.${archPrefix}.config.log.gz'
 
 } // buildMatrixCellCI()
 
-def cmdlineBuildLogged(def cmd, def logfile) {
+def cmdlineBuildLogged(def cmd, def logfile, def stageName) {
     // A little sleep allows "tail" to show the last lines of that build log
     return """ RES=0; touch '${logfile}'
 tail -f '${logfile}' &
@@ -386,6 +386,11 @@ CILOGPID=\$!
 ( ${cmd} ) >> '${logfile}' 2>&1 || RES=\$?
 sleep 1; echo ''
 kill "\$CILOGPID" >/dev/null 2>&1
+echo "FINISHED cmd: ${cmd}" >&2
+echo "...for stageName: ${stageName}" >&2
+echo "...with exit-code \$RES, logged into: ${logfile}" >&2
+echo "NOTE: Saved big job artifacts for this single build scenario usually have same identifier in the middle of file name" >&2
+if [ -s config.log ] ; then echo "...e.g. a (renamed) copy of config.log for this build" >&2 ; fi
 [ \$RES = 0 ] || exit \$RES
 """
 
