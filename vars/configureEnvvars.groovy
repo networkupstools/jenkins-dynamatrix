@@ -26,8 +26,15 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     // Note that some distributions name their binaries e.g. "gcc-10" while
     // others use "gcc10"; USE_COMPILER_VERSION_SUFFIX below tries to adapt
 
+    // For secondary-priority compilers (e.g. when we want to quickly test
+    // a couple of versions most of the time, but can have exhaustive builds
+    // with many implementations in other cases), we can remap variables from
+    // names in the label into ones used below, e.g. `COMPILER=\${xxxCOMPILER}`
+
     if (!dynacfgPipeline.containsKey('configureEnvvars')) {
         dynacfgPipeline['configureEnvvars'] = """ {
+${dynacfgPipeline.containsKey('configureEnvvars_remap') ? "eval ${dynacfgPipeline.configureEnvvars_remap}" : ""}
+
 USE_COMPILER=""
 USE_COMPILER_VERSION_SUFFIX=""
 if [ -n "\${CLANGVER}" ] && [ -z "\${COMPILER}" -o "\${COMPILER}" = "clang" -o "\${COMPILER}" = "CLANG" ]; then
