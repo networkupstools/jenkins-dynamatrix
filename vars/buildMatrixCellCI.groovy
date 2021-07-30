@@ -199,11 +199,14 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             cmdCommonLabel += "configureEnvvars "
         }
 
+        // Note += here: do not want to lose CONFIG_ENVVARS :)
         if (dynacfgPipeline?.traceBuildShell) {
-            cmdCommon = """ set -x
+            cmdCommon += """
+set -x
 """
         } else {
-            cmdCommon = """ set +x
+            cmdCommon += """
+set +x
 """
         }
 
