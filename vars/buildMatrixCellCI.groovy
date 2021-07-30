@@ -392,9 +392,13 @@ CILOGPID=\$!
 ( ${cmd} ) >> '${logfile}' 2>&1 || RES=\$?
 sleep 1; echo ''
 kill "\$CILOGPID" >/dev/null 2>&1
-( echo "FINISHED cmd: ${cmd.replaceAll('"', '\\"')}"
-  echo "...for stageName: ${stageName.replaceAll('"', '\\"')}"
-  echo "...with exit-code \$RES, logged into: ${logfile.replaceAll('"', '\\"')}"
+( # cat helps avoid errors due to expansion of cmd (et al) as shell-parsable code
+  printf "FINISHED with exit-code \$RES "
+  cat << 'EOF'
+cmd: ${cmd}
+...for stageName: ${stageName}
+...logged into: ${logfile}
+EOF
   echo "NOTE: Saved big job artifacts for this single build scenario usually have same identifier in the middle of file name"
   if [ -s config.log ] ; then echo "...e.g. a (renamed) copy of config.log for this build" ; fi
 ) >&2
