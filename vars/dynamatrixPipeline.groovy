@@ -201,12 +201,16 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         // Jenkins instance is restarted while it runs.
         // Also enable other "options" (in Declarative parlance).
         disableResume()
-        properties([
+
+        def pipelineProps = [
             durabilityHint('PERFORMANCE_OPTIMIZED'),
             [$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false],
-            throttleJobProperty(categories: [], limitOneJobWithMatchingParams: false, maxConcurrentPerNode: 0, maxConcurrentTotal: 0, paramsToUseForLimit: '', throttleEnabled: false, throttleOption: 'project'),
-            parameters(Utils.isListNotEmpty(dynacfgPipeline?.paramsList) ? dynacfgPipeline.paramsList : null)
-        ])
+            throttleJobProperty(categories: [], limitOneJobWithMatchingParams: false, maxConcurrentPerNode: 0, maxConcurrentTotal: 0, paramsToUseForLimit: '', throttleEnabled: false, throttleOption: 'project')
+        ]
+        if (Utils.isListNotEmpty(dynacfgPipeline?.paramsList)) {
+            pipelineProps.add(parameters(dynacfgPipeline.paramsList))
+        }
+        properties(pipelineProps)
 
         if (Utils.isClosure(dynacfgPipeline?.paramsHandler)) {
             // Optional sanity-checks, assignment of dynacfgPipeline.* fields, etc.
