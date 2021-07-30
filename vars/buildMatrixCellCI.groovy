@@ -178,7 +178,10 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         def cmdBuild = ""
         def cmdTest1 = ""
         def cmdTest2 = ""
-        if (!dynacfgPipeline?.traceBuildShell_configureEnvvars) {
+        if (dynacfgPipeline?.traceBuildShell_configureEnvvars) {
+            cmdCommon = """ set -x
+"""
+        } else {
             cmdCommon = """ set +x
 """
         }
@@ -196,7 +199,10 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             cmdCommonLabel += "configureEnvvars "
         }
 
-        if (!dynacfgPipeline?.traceBuildShell) {
+        if (dynacfgPipeline?.traceBuildShell) {
+            cmdCommon = """ set -x
+"""
+        } else {
             cmdCommon = """ set +x
 """
         }
