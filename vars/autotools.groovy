@@ -59,7 +59,7 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('distcheck')) {
-            dynacfgPipeline.buildPhases['distcheck'] = "( eval time \${MAKE} \${MAKE_OPTS} distcheck )"
+            dynacfgPipeline.buildPhases['distcheck'] = """( eval \${CONFIG_ENVVARS} time \${MAKE} \${MAKE_OPTS} distcheck DISTCHECK_CONFIGURE_FLAGS="\${CONFIG_OPTS}" )"""
         }
     }
 
