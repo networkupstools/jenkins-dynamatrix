@@ -787,7 +787,7 @@ def parallelStages = prepareDynamatrix(
 
         }
 
-        // TODO: Post-processing related to requiredNodelabels and
+        // Do some post-processing related to requiredNodelabels and
         // excludedNodelabels: if dynacfg.getConstraintsNodelabels()
         // returns a not-empty string, we should loop over all above
         // proposed build combos and see how many nodes match them
@@ -795,6 +795,31 @@ def parallelStages = prepareDynamatrix(
         // still matching, append the constraint to that combo; but
         // if there are zero matches with the constraint considered,
         // remove the combo from proposals.
+        def constraintsNodelabels = dynacfgBuild.getConstraintsNodelabels()
+        if (Utils.isStringNotEmpty(constraintsNodelabels)) {
+            if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): post-processing selected combos with additional Node Labels constraints: ${constraintsNodelabels}"
+            def removedCNL = 0
+
+            // Avoid deleting from the Set instance that we are iterating
+            def tmp = []
+            dsbcSet.each() {DynamatrixSingleBuildConfig dsbc ->
+                def nodeList = this.script.nodesByLabel (label: dsbc.buildLabelExpression + constraintsNodelabels, offline: true)
+
+                if (nodeList.size() > 0) {
+                    // This combo can work with the constraints
+                    dsbc.buildLabelExpression += constraintsNodelabels
+                    tmp += dsbc
+                } else {
+                    // Drop this combo as we can not run it anyway
+                    dsbc.isExcluded = true
+                    removedCNL++
+                    if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): excluded combo: ${dsbc}\nwith Node Labels constraints: ${constraintsNodelabels}"
+                }
+            }
+            dsbcSet = tmp
+
+            if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): excluded ${removedCNL} build combos due to additional Node Labels constraints"
+        }
 
         // Uncomment here to just detail the collected combos:
         //this.enableDebugMilestonesDetails = true
