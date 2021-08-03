@@ -407,6 +407,11 @@ cmdOrig: ${cmd}
 EOF
   echo "NOTE: Saved big job artifacts for this single build scenario usually have same identifier in the middle of file name"
   if [ -s config.log ] ; then echo "...e.g. a (renamed) copy of config.log for this build" ; fi
+  if [ -n "\${CI_SLOW_BUILD_FILTERNAME}" ] ; then
+    cat << EOF
+CI_SLOW_BUILD_FILTERNAME=\${CI_SLOW_BUILD_FILTERNAME}
+EOF
+  fi
 ) >&2
 [ \$RES = 0 ] || exit \$RES
 """
