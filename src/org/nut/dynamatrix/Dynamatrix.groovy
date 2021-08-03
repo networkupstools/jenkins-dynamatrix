@@ -971,9 +971,19 @@ def parallelStages = prepareDynamatrix(
         // when preparing the stages below:
         Set parallelStages = []
         dsbcSet.each() {DynamatrixSingleBuildConfig dsbcTmp ->
-            // copy a unique object, otherwise stuff gets mixed up
+            // copy a unique object ASAP, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()
             String stageName = dsbc.stageName()
+
+            if (dsbc.isExcluded) {
+                if (debugMilestonesDetails
+                //|| debugMilestones
+                //|| debugTrace
+                ) {
+                    this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName} marked isExcluded, skipping"
+                }
+                return // continue
+            }
 
             Closure body = null
             if (bodyOrig != null) {
