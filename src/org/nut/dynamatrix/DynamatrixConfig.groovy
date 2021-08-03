@@ -573,6 +573,43 @@ def parallelStages = prepareDynamatrix(
         return false
     }
 
+    public String getConstraintsNodelabels() {
+        // Returns a valid non-null (maybe empty) string that can be directly
+        // appended to label expressions (starts with "&&" if needed)
+        String commonLabelExpr = ""
+
+        def debugErrors = this.shouldDebugErrors()
+        def debugTrace = this.shouldDebugTrace()
+
+        if (Utils.isListNotEmpty(this.requiredNodelabels)) {
+            def le = null
+            this.requiredNodelabels.each() { l ->
+                if (le == null) {
+                    le = l
+                } else {
+                    le += "&&" + l
+                }
+            }
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Added requiredNodelabels: " + le
+            commonLabelExpr += " && (${le})"
+        }
+
+        if (Utils.isListNotEmpty(this.excludedNodelabels)) {
+            def le = null
+            this.excludedNodelabels.each() { l ->
+                if (le == null) {
+                    le = "!" + l
+                } else {
+                    le += "&&!" + l
+                }
+            }
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Added excludedNodelabels: " + le
+            commonLabelExpr += " && (${le})"
+        }
+
+        return commonLabelExpr
+    }
+
 } // end of class DynamatrixConfig
 
 enum CompilerTypes {

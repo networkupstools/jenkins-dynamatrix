@@ -249,32 +249,7 @@ def parallelStages = prepareDynamatrix(
         // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
         // other configs for same builder would not query and parse real Jenkins
         // worker labels again and again.
-        def commonLabelExpr = dynacfg.commonLabelExpr
-        if (Utils.isListNotEmpty(dynacfg.requiredNodelabels)) {
-            def le = null
-            dynacfg.requiredNodelabels.each() { l ->
-                if (le == null) {
-                    le = l
-                } else {
-                    le += "&&" + l
-                }
-            }
-            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Added requiredNodelabels: " + le
-            commonLabelExpr += " && (${le})"
-        }
-
-        if (Utils.isListNotEmpty(dynacfg.excludedNodelabels)) {
-            def le = null
-            dynacfg.excludedNodelabels.each() { l ->
-                if (le == null) {
-                    le = "!" + l
-                } else {
-                    le += "&&!" + l
-                }
-            }
-            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Added excludedNodelabels: " + le
-            commonLabelExpr += " && (${le})"
-        }
+        def commonLabelExpr = dynacfg.commonLabelExpr + dynacfg.getConstraintsNodelabels()
 
         this.nodeCaps = new NodeCaps(
             this.script,
@@ -811,6 +786,15 @@ def parallelStages = prepareDynamatrix(
             }
 
         }
+
+        // TODO: Post-processing related to requiredNodelabels and
+        // excludedNodelabels: if dynacfg.getConstraintsNodelabels()
+        // returns a not-empty string, we should loop over all above
+        // proposed build combos and see how many nodes match them
+        // with the bigger label expression. If there is one or more
+        // still matching, append the constraint to that combo; but
+        // if there are zero matches with the constraint considered,
+        // remove the combo from proposals.
 
         // Uncomment here to just detail the collected combos:
         //this.enableDebugMilestonesDetails = true
