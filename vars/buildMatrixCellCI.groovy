@@ -340,7 +340,7 @@ for F in .ci.*.log ; do
     sed -e "s|`pwd`||" \\
         -e "s|\${WORKSPACE}||" \\
         -e "s|\${WORKSPACE_TMP}||" \\
-        -e "s/\\.\\.\\(\\/\\.\\.\\)*\\/\\(usr|lib|lib[0-9]*\\)\\//\\/\\2\\//" \\
+        -e "s/\\.\\.\\(\\/\\.\\.\\)*\\/\\(usr|opt|s*bin|lib[0-9]*\\)\\//\\/\\2\\//" \\
         < "\$F" > ".ci-sanitizedPaths.\$F"
 done
 """
