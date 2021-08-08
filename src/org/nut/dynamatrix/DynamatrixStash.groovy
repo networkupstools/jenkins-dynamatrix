@@ -3,6 +3,9 @@ package org.nut.dynamatrix;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
 /* For Jenkins Swarm build agents that dial in to the controller,
  * which themselves may have or not have access to the SCM server,
  * we offer a way for the controller to push sources of the current
@@ -159,6 +162,74 @@ class DynamatrixStash {
         return script.checkout(scmParams)
     }
 
+    static def checkoutSCM(def script, def scmParams, def coRef = null) {
+        // Similar to checkoutGit() above, but for an SCM class; inspired by
+        // https://issues.jenkins.io/browse/JENKINS-43894?focusedCommentId=332158
+        Field field = null
+
+        if (scmParams instanceof hudson.plugins.git.GitSCM) {
+            if (scmParams.hasProperty('branches')) {
+                if (scmParams.branches) {
+                } else {
+                    script.echo "checkoutSCM: failed to set a custom Git checkout: branches field is empty"
+                }
+            } else {
+                script.echo "checkoutSCM: failed to set a custom Git checkout: no branches field is found"
+            }
+
+            def refrepo = getGitRefrepoDir(script)
+            if (refrepo != null) {
+                try {
+                    if (scmParams.hasProperty('extensions')) {
+                        if (scmParams.extensions) {
+                            script.print('has extensions')
+                            def extensions = scmParams.extensions
+
+                            for (int i = 0; i < extensions.size(); i++) {
+                                def extension = extensions[i]
+// Example object name and spec (from a stacktrace): 'private final
+//   java.lang.String hudson.plugins.git.extensions.impl.CloneOption.reference'
+// with class 'java.lang.reflect.Field'
+                                if (extension.hasProperty('reference') && extension.reference instanceof String) {
+                                    def originalReference = extension.reference
+                                    script.print('replacing reference: ' +
+                                        originalReference +
+                                        ' with: ' + refrepo)
+
+                                    // https://gist.github.com/pditommaso/263721865d84dee6ebaf
+                                    field = extension.class.getDeclaredField("reference")
+                                    Field modifiersField = Field.class.getDeclaredField("modifiers")
+                                    modifiersField.setAccessible(true)
+                                    modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
+                                    field.setAccessible(true)
+                                    field.set(extension, refrepo)
+                                }
+                            }
+                        } else {
+                            script.echo "checkoutSCM: failed to set a custom Git refrepo: extensions field is empty"
+/*
+                            // Add the extensions property contents for clone and submodule
+                            field = scmParams.class.getDeclaredField("extensions")
+                            Field modifiersField = Field.class.getDeclaredField("modifiers")
+                            modifiersField.setAccessible(true)
+                            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
+                            field.setAccessible(true)
+                            field.set(extension, refrepo)
+*/
+                        }
+                    } else {
+                        script.echo "checkoutSCM: failed to set a custom Git refrepo: no extensions field found"
+                    }
+                } catch (Throwable t) {
+                    script.echo "checkoutSCM: failed to set a custom Git refrepo: ${t.toString()}"
+                }
+            }
+        }
+
+        script.echo "checkoutSCM: scmParams = ${Utils.castString(scmParams)}"
+        return script.checkout(scmParams)
+    }
+
     static def checkoutCleanSrc(def script, Closure scmbody = null) {
         // Optional closure can fully detail how the code is checked out
         deleteWS(script)
@@ -175,7 +246,8 @@ class DynamatrixStash {
             ) {
                 return checkoutGit(script, scm)
             } else {
-                return script.checkout (scm)
+                return checkoutSCM(script, scm)
+                //return script.checkout (scm)
             }
         } else {
             // Per experience, that body defined in the pipeline script
