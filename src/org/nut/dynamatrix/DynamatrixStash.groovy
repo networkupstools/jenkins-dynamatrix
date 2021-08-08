@@ -77,7 +77,7 @@ class DynamatrixStash {
         return null
     }
 
-    static def checkoutGit(def script, def scmParams = [:], def coRef = null) {
+    static def checkoutGit(def script, Map scmParams = [:], def coRef = null) {
         // Helper to produce a git checkout with the parameter array
         // similar to that of the standard checkout() step, which we
         // can tune here. The optional "coRef" can specify the code
