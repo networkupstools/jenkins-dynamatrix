@@ -66,6 +66,7 @@ class DynamatrixStash {
         // Does the current build agent's set of envvars declare the path?
         if (script?.env?.GIT_REFERENCE_REPO_DIR) {
             def refrepo = "${script.env.GIT_REFERENCE_REPO_DIR}"
+            script.echo "Got GIT_REFERENCE_REPO_DIR='${refrepo}'"
             if (refrepo != "")
                 return refrepo
         }
@@ -102,10 +103,12 @@ class DynamatrixStash {
 */
 
         if (!scmParams.containsKey('$class')) {
+            script.echo "scmParams: inject class"
             scmParams << [$class: 'GitSCM']
         }
 
         if (!scmParams.containsKey('branches') && coRef != null) {
+            script.echo "scmParams: inject branches"
             scmParams << [branches: [[ name: coRef ]] ]
         }
 
@@ -120,12 +123,14 @@ class DynamatrixStash {
                         switch (extset['$class']) {
                             case 'CloneOption':
                                 if (!extset.containsKey('reference')) {
+                                    script.echo "scmParams: inject refrepo to cloneOption"
                                     extset.reference = refrepo
                                 }
                                 seenClone = true
                                 break
                             case 'SubmoduleOption':
                                 if (!extset.containsKey('reference')) {
+                                    script.echo "scmParams: inject refrepo to submoduleOption"
                                     extset.reference = refrepo
                                 }
                                 seenSubmodules = true
@@ -134,12 +139,15 @@ class DynamatrixStash {
                     }
                 }
                 if (!seenClone) {
+                    script.echo "scmParams: inject refrepo to cloneOption"
                     scmParams.extensions += [$class: 'CloneOption', reference: refrepo]
                 }
                 if (!seenSubmodules) {
+                    script.echo "scmParams: inject refrepo to submoduleOption"
                     scmParams.extensions += [$class: 'SubmoduleOption', reference: refrepo]
                 }
             } else {
+                script.echo "scmParams: inject extensions for refrepo"
                 scmParams.extensions = [
                     [$class: 'CloneOption', reference: refrepo],
                     [$class: 'SubmoduleOption', reference: refrepo]
@@ -147,6 +155,7 @@ class DynamatrixStash {
             }
         }
 
+        script.echo "checkoutGit: scmParams = ${Utils.castString(scmParams)}"
         return script.checkout(scmParams)
     }
 
@@ -159,7 +168,11 @@ class DynamatrixStash {
         def scm = script.scm
 
         if (scmbody == null) {
-            if (scm.containsKey('$class') && scm['$class'] in ['GitSCM']) {
+            script.echo "checkoutCleanSrc: scm = ${Utils.castString(scm)}"
+            if (Utils.isMap(scm)
+                && scm.containsKey('$class')
+                && scm['$class'] in ['GitSCM']
+            ) {
                 return checkoutGit(script, scm)
             } else {
                 return script.checkout (scm)
@@ -169,6 +182,7 @@ class DynamatrixStash {
             // sees its methods and vars, no delegation etc. required.
             // It can help the caller to use DynamatrixStash.checkoutGit()
             // in their custom scmbody with the custom scmParams arg...
+            script.echo "checkoutCleanSrc: calling scmbody = ${Utils.castString(scmbody)}"
             return scmbody()
         }
     } // checkoutCleanSrc()
@@ -177,7 +191,9 @@ class DynamatrixStash {
         // Optional closure can fully detail how the code is checked out
         // Remember last used method for this stashName,
         // we may have to replay it on some workers
+        script.echo "Saving scmbody for ${stashName}: ${Utils.castString(scmbody)}"
         stashCode[stashName] = scmbody
+        script.echo "Calling actual checkoutCleanSrc()"
         checkoutCleanSrc(script, scmbody)
     } // checkoutCleanSrc()
 
