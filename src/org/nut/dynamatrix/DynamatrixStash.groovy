@@ -68,7 +68,7 @@ class DynamatrixStash {
 
         // Does the current build agent's set of envvars declare the path?
         if (script?.env?.GIT_REFERENCE_REPO_DIR) {
-            def refrepo = "${script.env.GIT_REFERENCE_REPO_DIR}"
+            String refrepo = "${script.env.GIT_REFERENCE_REPO_DIR}"
             script.echo "Got GIT_REFERENCE_REPO_DIR='${refrepo}'"
             if (refrepo != "")
                 return refrepo
@@ -115,7 +115,7 @@ class DynamatrixStash {
             scmParams << [branches: [[ name: coRef ]] ]
         }
 
-        def refrepo = getGitRefrepoDir(script)
+        String refrepo = getGitRefrepoDir(script)
         if (refrepo != null) {
             if (scmParams.containsKey('extensions')) {
                 def seenClone = false
@@ -177,7 +177,7 @@ class DynamatrixStash {
                 script.echo "checkoutSCM: failed to set a custom Git checkout: no branches field is found"
             }
 
-            def refrepo = getGitRefrepoDir(script)
+            String refrepo = getGitRefrepoDir(script)
             if (refrepo != null) {
                 try {
                     if (scmParams.hasProperty('extensions')) {
