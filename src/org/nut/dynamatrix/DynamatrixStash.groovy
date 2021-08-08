@@ -193,7 +193,7 @@ class DynamatrixStash {
                         field.set(scmParams.branches, newb)
 */
 
-                        script.print("replaced branches with: ${Utils.castString(scmParams.branches)}")
+                        script.print("replaced branches with: ${Utils.castString(scmParams.branches)} (WARNING: This may be ignored by later checkout(), investigating...)")
                     } else {
                         script.echo "checkoutSCM: failed to set a custom Git checkout: branches field is empty"
                     }
@@ -231,7 +231,7 @@ class DynamatrixStash {
                                 }
                             }
                         } else {
-                            script.echo "checkoutSCM: failed to set a custom Git refrepo: extensions field is empty"
+                            script.echo "checkoutSCM: failed to set a custom Git refrepo: extensions field is empty (additions NOT IMPLEMENTED)"
 /*
                             // Add the extensions property contents for clone and submodule
                             field = scmParams.class.getDeclaredField("extensions")
