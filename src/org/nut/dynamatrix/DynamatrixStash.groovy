@@ -80,7 +80,7 @@ class DynamatrixStash {
         return null
     }
 
-    static def checkoutGit(def script, Map scmParams = [:], def coRef = null) {
+    static def checkoutGit(def script, Map scmParams = [:], String coRef = null) {
         // Helper to produce a git checkout with the parameter array
         // similar to that of the standard checkout() step, which we
         // can tune here. The optional "coRef" can specify the code
@@ -162,19 +162,44 @@ class DynamatrixStash {
         return script.checkout(scmParams)
     }
 
-    static def checkoutSCM(def script, def scmParams, def coRef = null) {
+    static def checkoutSCM(def script, def scmParams, String coRef = null) {
         // Similar to checkoutGit() above, but for an SCM class; inspired by
         // https://issues.jenkins.io/browse/JENKINS-43894?focusedCommentId=332158
         Field field = null
 
         if (scmParams instanceof hudson.plugins.git.GitSCM) {
-            if (scmParams.hasProperty('branches')) {
-                if (scmParams.branches) {
+            if (coRef != null) {
+                if (scmParams.hasProperty('branches')) {
+                    if (scmParams.branches) {
+// Example: <class java.util.Collections$SingletonList>([fightwarn])
+                        script.print("has branches: ${Utils.castString(scmParams.branches)}")
+/*
+                        java.util.Collections$SingletonList newb = new java.util.Collections$SingletonList()
+                        newb.add(new hudson.plugins.git.BranchSpec(coRef))
+                        //java.util.List newb = [new hudson.plugins.git.BranchSpec(coRef)]
+*/
+
+                        // Changes type to java.util.List and seems ignored in practice,
+                        // maybe some other fields also set what is checked out?..
+                        scmParams.branches = [new hudson.plugins.git.BranchSpec(coRef)]
+                        //scmParams.branches[0] = new hudson.plugins.git.BranchSpec(coRef)
+
+/*
+                        field = scmParams.class.getDeclaredField("branches")
+                        Field modifiersField = Field.class.getDeclaredField("modifiers")
+                        modifiersField.setAccessible(true)
+                        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
+                        field.setAccessible(true)
+                        field.set(scmParams.branches, newb)
+*/
+
+                        script.print("replaced branches with: ${Utils.castString(scmParams.branches)}")
+                    } else {
+                        script.echo "checkoutSCM: failed to set a custom Git checkout: branches field is empty"
+                    }
                 } else {
-                    script.echo "checkoutSCM: failed to set a custom Git checkout: branches field is empty"
+                    script.echo "checkoutSCM: failed to set a custom Git checkout: no branches field is found"
                 }
-            } else {
-                script.echo "checkoutSCM: failed to set a custom Git checkout: no branches field is found"
             }
 
             String refrepo = getGitRefrepoDir(script)
