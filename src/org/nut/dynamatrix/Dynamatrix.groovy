@@ -585,6 +585,7 @@ def parallelStages = prepareDynamatrix(
                         removed++
                     }
                 }
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: ble: ${buildLabelsAgentsBuild.size()}"
             }
 
             if (virtualAxes.size() > 0) {
@@ -598,6 +599,7 @@ def parallelStages = prepareDynamatrix(
                         removed++
                     }
                 }
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: virtualLabelSet: ${virtualLabelSet.size()}"
             }
 
             if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
@@ -611,6 +613,7 @@ def parallelStages = prepareDynamatrix(
                         removed++
                     }
                 }
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: envvarSet: ${envvarSet.size()}"
             }
 
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
@@ -624,6 +627,7 @@ def parallelStages = prepareDynamatrix(
                         removed++
                     }
                 }
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: clioptSet: ${clioptSet.size()}"
             }
 
             if (removed > 0) {
