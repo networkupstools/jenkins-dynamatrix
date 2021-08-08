@@ -9,14 +9,39 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  * tested build as a stash. There is currently no way to cache it
  * however, so multiple builds landing on same agent suffer this
  * push many times (time, traffic, I/O involved).
+ *
  * For agents that know they can access the original SCM server
  * (e.g. GitHub with public repos and generally available Internet),
  * it may be more optimal to tell them to just check out locally,
  * especially if optimizations like Git reference repository local
- * to that worker are involved.
+ * to that worker are involved. Such agents can declare this by
+ * specifying a node label DYNAMATRIX_UNSTASH_PREFERENCE=... with
+ *   ...=unstash(:stashName)
+ *   ...=scm(:stashName)
+ * The optional ":stashName" suffix allows to limit the preference
+ * to builds of a particular project which uses that string, e.g.
+ * DYNAMATRIX_UNSTASH_PREFERENCE=scm:nut-ci-src
+ * A node may define the default preference and ones customized for
+ * the stashName(s), the latter would be preferred. A node should
+ * not define two or more preferences for same stashName, behavior
+ * would be undefined in that case.
+ *
+ * The original optional "scmbody" Closure used for stashCleanSrc()
+ * with that stashName would be replayed on the agent, if "scm" is
+ * preferred.
+ *
+ * Also, if the current node running unstashCleanSrc() declares a
+ * GIT_REFERENCE_REPO_DIR environment variable, its value would be
+ * injected into GitSCM configuration for repo cloning operations.
+ * For deployments running git-client-plugin with support for fanned
+ * out refrepo like /some/path/${GIT_SUBMODULES}, that suffix string
+ * '/${GIT_SUBMODULES}' should be verbatim in the expanded envvar:
+ *   https://issues.jenkins.io/browse/JENKINS-64383
+ *   https://github.com/jenkinsci/git-client-plugin/pull/644
  */
 
 class DynamatrixStash {
+    private static def stashCode = [:]
 
     static void deleteWS(def script) {
         /* clean up our workspace (current directory) */
@@ -33,15 +58,127 @@ class DynamatrixStash {
         }
     } // deleteWS()
 
-    static void checkoutCleanSrc(def script, String stashName, Closure scmbody = null) {
+    static String getGitRefrepoDir(def script) {
+        // NOTE: Have this logic defined and extensible in one place
+        // Returns the reference repository URL usable by git-client-plugin
+        // or null if none was found.
+
+        // Does the current build agent's set of envvars declare the path?
+        if (script?.env?.GIT_REFERENCE_REPO_DIR) {
+            def refrepo = "${script.env.GIT_REFERENCE_REPO_DIR}"
+            if (refrepo != "")
+                return refrepo
+        }
+
+        // Query Jenkins global config for defaults?..
+
+        // Final answer
+        return null
+    }
+
+    static def checkoutGit(def script, def scmParams = [:], def coRef = null) {
+        // Helper to produce a git checkout with the parameter array
+        // similar to that of the standard checkout() step, which we
+        // can tune here. The optional "coRef" can specify the code
+        // revision to checkout, as branch name e.g. "master", or as
+        // the commit hash identifier, or a tag as "refs/tags/v1.2.3".
+
+        // This routine only intrudes in a few parts of the scmParams
+        // spec, if customized by run-time circumstances and not
+        // specified by caller: the $class, branches, and extensions
+        // for git reference repository.
+
+/* // Example code that caller might directly specify:
+    checkout([$class: 'GitSCM', branches: [[name: "refs/tags/v2.7.4"]],
+        doGenerateSubmoduleConfigurations: false,
+        extensions: [
+            [$class: 'SubmoduleOption', disableSubmodules: false,
+             parentCredentials: false, recursiveSubmodules: false,
+             reference: '', trackingSubmodules: false]
+        ],
+        submoduleCfg: [],
+        userRemoteConfigs: [[url: "https://github.com/networkupstools/nut"]]
+        ])
+*/
+
+        if (!scmParams.containsKey('$class')) {
+            scmParams << [$class: 'GitSCM']
+        }
+
+        if (!scmParams.containsKey('branches') && coRef != null) {
+            scmParams << [branches: [[ name: coRef ]] ]
+        }
+
+        def refrepo = getGitRefrepoDir(script)
+        if (refrepo != null) {
+            if (scmParams.containsKey('extensions')) {
+                def seenClone = false
+                def seenSubmodules = false
+                // TODO? Just detect, do not change the iterated set?
+                scmParams.extensions.each() { extset ->
+                    if (extset.containsKey('$class')) {
+                        switch (extset['$class']) {
+                            case 'CloneOption':
+                                if (!extset.containsKey('reference')) {
+                                    extset.reference = refrepo
+                                }
+                                seenClone = true
+                                break
+                            case 'SubmoduleOption':
+                                if (!extset.containsKey('reference')) {
+                                    extset.reference = refrepo
+                                }
+                                seenSubmodules = true
+                                break
+                        }
+                    }
+                }
+                if (!seenClone) {
+                    scmParams.extensions += [$class: 'CloneOption', reference: refrepo]
+                }
+                if (!seenSubmodules) {
+                    scmParams.extensions += [$class: 'SubmoduleOption', reference: refrepo]
+                }
+            } else {
+                scmParams.extensions = [
+                    [$class: 'CloneOption', reference: refrepo],
+                    [$class: 'SubmoduleOption', reference: refrepo]
+                ]
+            }
+        }
+
+        return script.checkout(scmParams)
+    }
+
+    static def checkoutCleanSrc(def script, Closure scmbody = null) {
         // Optional closure can fully detail how the code is checked out
         deleteWS(script)
 
+        // Per https://plugins.jenkins.io/workflow-scm-step/ the common
+        // "scm" is a Map maintained by the pipeline, so we can tweak it
+        def scm = script.scm
+
         if (scmbody == null) {
-            script.checkout script.scm
+            if (scm.containsKey('$class') && scm['$class'] in ['GitSCM']) {
+                return checkoutGit(script, scm)
+            } else {
+                return script.checkout (scm)
+            }
         } else {
-            scmbody()
+            // Per experience, that body defined in the pipeline script
+            // sees its methods and vars, no delegation etc. required.
+            // It can help the caller to use DynamatrixStash.checkoutGit()
+            // in their custom scmbody with the custom scmParams arg...
+            return scmbody()
         }
+    } // checkoutCleanSrc()
+
+    static void checkoutCleanSrc(def script, String stashName, Closure scmbody = null) {
+        // Optional closure can fully detail how the code is checked out
+        // Remember last used method for this stashName,
+        // we may have to replay it on some workers
+        stashCode[stashName] = scmbody
+        checkoutCleanSrc(script, scmbody)
     } // checkoutCleanSrc()
 
     static void stashCleanSrc(def script, String stashName, Closure scmbody = null) {
@@ -55,6 +192,36 @@ class DynamatrixStash {
 
     static void unstashCleanSrc(def script, String stashName) {
         deleteWS(script)
+        if (script?.env?.NODE_LABELS) {
+            def useMethod = null
+            script.env.NODE_LABELS.split('[ \r\n\t]+').each() { KV ->
+                if (KV =~ /^DYNAMATRIX_UNSTASH_PREFERENCE=.*$/) {
+                    (key, val) = KV.split('=')
+                    if (val == "scm:${stashName}") {
+                        useMethod = 'scm'
+                    }
+                    if (val == "unstash:${stashName}") {
+                        useMethod = 'unstash'
+                    }
+                    if (val in ["scm", "unstash"]) {
+                        if (useMethod == null) {
+                            useMethod = val
+                        }
+                    }
+                }
+            }
+
+            switch (useMethod) {
+                case 'scm':
+                    // The stashCode[stashName] should be defined, maybe null,
+                    // by an earlier stashCleanSrc() with same stashName.
+                    // We error out otherwise, same as would for unstash().
+                    checkoutCleanSrc(script, stashCode[stashName])
+                    return
+                // case 'unstash', null, etc: fall through
+            }
+        }
+
         script.unstash (stashName)
     } // unstashCleanSrc()
 
