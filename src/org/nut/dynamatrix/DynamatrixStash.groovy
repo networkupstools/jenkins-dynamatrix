@@ -187,7 +187,10 @@ class DynamatrixStash {
         }
     } // checkoutCleanSrc()
 
-    static void checkoutCleanSrc(def script, String stashName, Closure scmbody = null) {
+    static void checkoutCleanSrcNamed(def script, String stashName, Closure scmbody = null) {
+        // Different name because groovy gets lost with parameter count
+        // when some can be defaulted
+
         // Optional closure can fully detail how the code is checked out
         // Remember last used method for this stashName,
         // we may have to replay it on some workers
@@ -199,7 +202,7 @@ class DynamatrixStash {
 
     static void stashCleanSrc(def script, String stashName, Closure scmbody = null) {
         // Optional closure can fully detail how the code is checked out
-        checkoutCleanSrc(script, stashName, scmbody)
+        checkoutCleanSrcNamed(script, stashName, scmbody)
 
         // Be sure to get also "hidden" files like .* in Unix customs => .git*
         // so avoid default exclude patterns
