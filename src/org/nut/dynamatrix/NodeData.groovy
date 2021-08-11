@@ -116,6 +116,7 @@ class NodeData {
     static Set<String> getNodeLabelsByName(String name) {
         def str = getNodeLabelsStringByName(name).trim()
         if ("".equals(str)) return []
+        // TODO: investigate regex to keep quoted tokens as one, maybe this: (?<=\")[^\"]*(?=\")|[^\" ]+
         return str.split('[ \r\n\t]+')
     }
 
