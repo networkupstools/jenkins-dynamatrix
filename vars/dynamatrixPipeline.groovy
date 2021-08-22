@@ -417,6 +417,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
         if (stagesBinBuild.size() > 1) {
             echo "Scheduling ${stagesBinBuild.size()-1} stages for the 'slow build' dynamatrix, running this can take a long while..."
+            manager.addShortText("Running ${stagesBinBuild.size()-1} 'slow build' dynamatrix stages")
             stage("Run the bigger dynamatrix (${stagesBinBuild.size()-1} stages)") {
                 // This parallel, unlike "par1" above, tends to
                 // preclude further processing if it fails and
