@@ -801,13 +801,13 @@ def parallelStages = prepareDynamatrix(
         // remove the combo from proposals.
         def constraintsNodelabels = dynacfgBuild.getConstraintsNodelabels()
         if (Utils.isStringNotEmpty(constraintsNodelabels)) {
-            if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): post-processing selected combos with additional Node Labels constraints: ${constraintsNodelabels}"
+            if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): post-processing selected combos with additional Node Labels constraints: (per-DSBC-label) ${constraintsNodelabels}"
             def removedCNL = 0
 
             // Avoid deleting from the Set instance that we are iterating
             def tmp = []
             dsbcSet.each() {DynamatrixSingleBuildConfig dsbc ->
-                def nodeList = this.script.nodesByLabel (label: dsbc.buildLabelExpression + constraintsNodelabels, offline: true)
+                def nodeList = this.script.nodesByLabel (label: (dsbc.buildLabelExpression + constraintsNodelabels), offline: true)
 
                 if (nodeList.size() > 0) {
                     // This combo can work with the constraints
@@ -817,7 +817,7 @@ def parallelStages = prepareDynamatrix(
                     // Drop this combo as we can not run it anyway
                     dsbc.isExcluded = true
                     removedCNL++
-                    if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): excluded combo: ${dsbc}\nwith Node Labels constraints: ${constraintsNodelabels}"
+                    if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): excluded combo: ${dsbc}\nwith Node Labels constraints: (${dsbc.buildLabelExpression}) ${constraintsNodelabels}"
                 }
             }
             dsbcSet = tmp
