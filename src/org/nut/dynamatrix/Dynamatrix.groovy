@@ -494,7 +494,10 @@ def parallelStages = prepareDynamatrix(
                 // Keys of the map, e.g. 'CSTDVARIANT' for strings ('c', 'gnu')
                 // or 'CSTDVERSION_${KEY}' for submaps (['c': '99', 'cxx': '98'])
                 def vals = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[k]
-                if (!Utils.isList(vals) || vals.size() == 0) return // continue
+                if (!Utils.isList(vals) || vals.size() == 0) {
+                    if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): dynamatrixAxesVirtualLabelsMap: SKIPPED key '${k}': its value is not a list: ${Utils.castString(vals)}"
+                    return // continue
+                }
 
                 // Collect possible values of this one key
                 Set keyvalues = []
