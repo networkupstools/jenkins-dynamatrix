@@ -575,7 +575,8 @@ def parallelStages = prepareDynamatrix(
 
     public String getConstraintsNodelabels() {
         // Returns a valid non-null (maybe empty) string that can be directly
-        // appended to label expressions (starts with "&&" if needed)
+        // *appended* to label expressions (starts with "&&" if needed) - so
+        // deliberately does not include this.commonLabelExpr in the return
         String commonLabelExpr = ""
 
         def debugErrors = this.shouldDebugErrors()

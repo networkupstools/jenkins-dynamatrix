@@ -23,7 +23,7 @@ class NodeCaps {
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
     // What we looked for (null means all known nodes):
-    public final String labelExpression
+    public final String labelExpr
 
     // Collected data:
     // TODO: Is a Map needed now that we have a copy of "node" in NodeData?
@@ -31,11 +31,11 @@ class NodeCaps {
     // uniqueness...
     public final Map<String, NodeData> nodeData
 
-    public NodeCaps(script, String builderLabel = null, boolean debugTrace = null, boolean debugErrors = null) {
+    public NodeCaps(script, String labelExpr = null, boolean debugTrace = null, boolean debugErrors = null) {
         /*
          * Collect all info about useful build agents in one collection:
          * Returns a Map with names of currently known agent which matched the
-         * builderLabel (or all agents if builderLabel content is trivial),
+         * labelExpr (or all agents if labelExpr content is trivial),
          * mapped to the Map of nodes' selected metadata including capabilities
          * they declared with further labels mapped as KEY=VALUE entries.
          */
@@ -50,21 +50,21 @@ class NodeCaps {
 
         // Track the original expression, matched or not, in the returned value
         // TODO: Maybe track something else like timestamps?
-        this.labelExpression = builderLabel
+        this.labelExpr = labelExpr
         def nodeData = [:]
 
         // Have it sorted just in case:
         def builders = null
-        if (builderLabel == null || "".equals(builderLabel.trim())) {
+        if (labelExpr == null || "".equals(labelExpr.trim())) {
             def jenkins = Jenkins.getInstanceOrNull()
             if (jenkins != null) {
                 builders = jenkins.getNodes()
                 if (this.enableDebugTrace) this.script.println("NodeCaps: got all defined agents from Jenkins as builders: ${Utils.castString(builders)}")
             }
         } else {
-            Label le = Label.get(builderLabel)
+            Label le = Label.get(labelExpr)
             builders = le.getNodes()
-            if (this.enableDebugTrace) this.script.println("NodeCaps: got builders by label expression '${builderLabel}': ${Utils.castString(builders)}")
+            if (this.enableDebugTrace) this.script.println("NodeCaps: got builders by label expression '${labelExpr}': ${Utils.castString(builders)}")
         }
 
         if (builders != null) {
@@ -97,7 +97,7 @@ class NodeCaps {
 
         try {
             //this.script.println "[DEBUG] raw nodeCaps: " + this
-            this.script.println "[DEBUG] nodeCaps.labelExpression: " + this.labelExpression
+            this.script.println "[DEBUG] nodeCaps.labelExpr: " + this.labelExpr
             this.script.println "[DEBUG] nodeCaps.nodeData.size(): " + this.nodeData.size()
             this.nodeData.keySet().each() {nodeName ->
                 if (nodeName == null) return // continue
