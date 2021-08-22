@@ -39,7 +39,9 @@ class Dynamatrix implements Cloneable {
     Set buildLabelCombosFlat = []
     // This is one useful final result, mapping strings for `agent{label 'expr'}`
     // clauses to arrays of label contents (including "composite" labels where
-    // key=value's are persistently grouped, e.g. "COMPILER=GCC GCCVER=123")
+    // key=value's are persistently grouped, e.g. "COMPILER=GCC GCCVER=123",
+    // and the original label set e.g. "nut-builder" used to initialize the
+    // set of agents this dynamatrix is interested in)
     Map<String, Set> buildLabelsAgents = [:]
 
     public Dynamatrix(Object script) {
@@ -398,6 +400,23 @@ def parallelStages = prepareDynamatrix(
         // array of strings (keys of the BLA Map) we can feed into the
         // agent requirements of generated pipeline stages:
         this.buildLabelsAgents = mapBuildLabelExpressions(this.buildLabelCombosFlat)
+
+        // Finally, prepend into BLA keys the constraints from commonLabelExpr
+        // (the original "request" for suitable workers, and possible optional
+        // further inclusions or exclusions of capability labels). This should
+        // help avoid scheduling builds to agents that have e.g. matching tool
+        // kits, but not the third-party prerequisite packages for a project.
+        if (commonLabelExpr != "") {
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): prepending '(${commonLabelExpr}) && ' to buildLabelsAgents combos..."
+            def tmp = [:]
+            this.buildLabelsAgents.keySet().each() {ble ->
+                // Note, we only prepend to the key (node label string for
+                // eventual use in a build), not the value (array of K=V's)
+                tmp["(${commonLabelExpr}) && (${ble})"] = this.buildLabelsAgents[ble]
+            }
+            this.buildLabelsAgents = tmp
+        }
+
         def blaStr = ""
         this.buildLabelsAgents.keySet().each() {ble ->
             blaStr += "\n    '${ble}' => " + this.buildLabelsAgents[ble]
