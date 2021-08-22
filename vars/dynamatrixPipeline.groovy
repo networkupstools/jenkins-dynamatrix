@@ -398,7 +398,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         // afterwards if needed... but expected that stage above
         // cause the build abortion if applicable)
         stage("Summarize quick-test results") {
-            echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${stagesBinBuild.size()-1} 'slow build' combos to run"
+            echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${Math.max(stagesBinBuild.size()-1, 0)} 'slow build' combos to run"
             echo "[Quick tests and prepare the bigger dynamatrix summary] ${currentBuild.result}"
             if (!(currentBuild.result in [null, 'SUCCESS'])) {
                 if (Utils.isClosure(dynacfgPipeline?.notifyHandler)) {
