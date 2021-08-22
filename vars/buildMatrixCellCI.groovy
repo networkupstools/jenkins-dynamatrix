@@ -375,6 +375,16 @@ if [ -s config.log ]; then gzip < config.log > '.ci.${archPrefix}.config.log.gz'
 """
         archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
 
+        if (!(dsbc?.keepWs)) {
+            // Avoid wasting space on workers; the dynamatrix is not too
+            // well suited for inspecting the builds post-mortem reliably
+            try {
+                cleanWs()
+            } catch (Throwable t) {
+                deleteDir()
+            }
+        }
+
         if (shRes != 0) {
             def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
             if (dsbc?.isAllowedFailure) {

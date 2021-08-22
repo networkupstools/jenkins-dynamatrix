@@ -14,6 +14,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
+    // By default, we wipe workspaces after a build
+    public boolean keepWs = false
+
     // Most of our builds require a build agent, usually one with
     // specific capabilities as selected by label expression below,
     // to run some programs in that OS. For generality's sake, there
