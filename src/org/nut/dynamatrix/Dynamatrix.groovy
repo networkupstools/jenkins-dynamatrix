@@ -833,8 +833,18 @@ def parallelStages = prepareDynamatrix(
 
             // Avoid deleting from the Set instance that we are iterating
             def tmp = []
+            // Avoid spamming the log about same label constraints
+            // (several single-build configs can share those strings)
+            def nodeListCache = [:]
             dsbcSet.each() {DynamatrixSingleBuildConfig dsbc ->
-                def nodeList = this.script.nodesByLabel (label: (dsbc.buildLabelExpression + constraintsNodelabels), offline: true)
+                def blec = (dsbc.buildLabelExpression + constraintsNodelabels).trim().replaceFirst(/^null/, '').replaceFirst(/^ *\&\& */, '').trim()
+                def nodeList
+                if (nodeListCache.containsKey(blec)) {
+                    nodeList = nodeListCache[blec]
+                } else {
+                    nodeList = this.script.nodesByLabel (label: blec, offline: true)
+                    nodeListCache[blec] = nodeList
+                }
 
                 if (nodeList.size() > 0) {
                     // This combo can work with the constraints
