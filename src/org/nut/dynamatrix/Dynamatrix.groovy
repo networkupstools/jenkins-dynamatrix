@@ -585,7 +585,7 @@ def parallelStages = prepareDynamatrix(
                         removed++
                     }
                 }
-                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: ble: ${buildLabelsAgentsBuild.size()}"
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: buildLabelsAgentsBuild(ble's): ${buildLabelsAgentsBuild.size()}"
             }
 
             if (virtualAxes.size() > 0) {
@@ -599,7 +599,7 @@ def parallelStages = prepareDynamatrix(
                         removed++
                     }
                 }
-                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: virtualLabelSet: ${virtualLabelSet.size()}"
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: virtualAxes(virtualLabelSet's): ${virtualAxes.size()}"
             }
 
             if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
@@ -613,7 +613,7 @@ def parallelStages = prepareDynamatrix(
                         removed++
                     }
                 }
-                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: envvarSet: ${envvarSet.size()}"
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: dynamatrixAxesCommonEnv(envvarSet's): ${dynacfgBuild.dynamatrixAxesCommonEnv.size()}"
             }
 
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
@@ -627,7 +627,7 @@ def parallelStages = prepareDynamatrix(
                         removed++
                     }
                 }
-                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: clioptSet: ${clioptSet.size()}"
+                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): remains after quick cleanup: dynamatrixAxesCommonOpts(clioptSet's): ${dynacfgBuild.dynamatrixAxesCommonOpts.size()}"
             }
 
             if (removed > 0) {
