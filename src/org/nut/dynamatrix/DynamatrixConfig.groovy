@@ -47,6 +47,11 @@ class DynamatrixConfig implements Cloneable {
     // compilers available, and yet do not care which specific version
     // numbers our particular agents serve so don't specify them in a
     // dynamatrix specification).
+    // TODO: Similarly, want a way to specify that we only want to run
+    // some dynamatrix scenario once (at all, or per OS type etc.) --
+    // e.g. to test buildability of complete documentation set or some
+    // distcheck target; this is more about tools on agent and recipes
+    // in the Makefiles of the project than about an exhaustive matrix.
 
     // TODO: Need a way to specify optional labels, so that nodes which
     // do not declare any value (e.g. do not state which ARCH(es) they
