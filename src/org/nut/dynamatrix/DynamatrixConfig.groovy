@@ -40,6 +40,14 @@ class DynamatrixConfig implements Cloneable {
     //    dynamatrixAxesLabels: ['OS', '${COMPILER}VER', 'ARCH'],
     public Set dynamatrixAxesLabels = []
 
+    // TODO: Need a way to specify that we only want some extreme value
+    // but not the whole range, somehow specifiable per-system (e.g. to
+    // say that we want the newest GCCVER (and/or CLANGVER) to build a
+    // docs-only scenario where we do not benefit from iterating all
+    // compilers available, and yet do not care which specific version
+    // numbers our particular agents serve so don't specify them in a
+    // dynamatrix specification).
+
     // TODO: Need a way to specify optional labels, so that nodes which
     // do not declare any value (e.g. do not state which ARCH(es) they
     // support) can still be used for some unique build combos ("...but
