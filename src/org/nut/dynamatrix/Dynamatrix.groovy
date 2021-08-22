@@ -401,19 +401,21 @@ def parallelStages = prepareDynamatrix(
         // agent requirements of generated pipeline stages:
         this.buildLabelsAgents = mapBuildLabelExpressions(this.buildLabelCombosFlat)
 
-        // Finally, prepend into BLA keys the constraints from commonLabelExpr
+        // Finally, append into BLA keys the constraints from commonLabelExpr
         // (the original "request" for suitable workers -- note that optional
         // further inclusions or exclusions of capability labels are treated
-        // later). This should help avoid scheduling builds to agents that
+        // later). We append to keep the more "interesting" variable string
+        // part seen early in the logs, stage names, etc.
+        // Overall, this should help avoid scheduling builds to agents that
         // have e.g. matching tool kits, but not the third-party prerequisite
         // packages preinstalled for a particular project.
         if (Utils.isStringNotEmpty(dynacfg.commonLabelExpr)) {
-            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): prepending '(${dynacfg.commonLabelExpr}) && ' to buildLabelsAgents combos..."
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): appending '(${dynacfg.commonLabelExpr}) && ' to buildLabelsAgents combos..."
             def tmp = [:]
             this.buildLabelsAgents.keySet().each() {ble ->
-                // Note, we only prepend to the key (node label string for
+                // Note, we only append to the key (node label string for
                 // eventual use in a build), not the value (array of K=V's)
-                tmp["(${dynacfg.commonLabelExpr}) && (${ble})"] = this.buildLabelsAgents[ble]
+                tmp["(${ble}) && (${dynacfg.commonLabelExpr})"] = this.buildLabelsAgents[ble]
             }
             this.buildLabelsAgents = tmp
         }
