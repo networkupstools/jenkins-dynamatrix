@@ -262,46 +262,46 @@ def parallelStages = prepareDynamatrix(
         // to expand. The effectiveAxes is generally a definitive set of
         // sets of exact axis names, e.g. ['ARCH', 'CLANGVER', 'OS'] and
         // ['ARCH', 'GCCVER', 'OS'] as expanded from '${COMPILER}VER' part:
-        effectiveAxes = []
+        this.effectiveAxes = []
         dynacfg.dynamatrixAxesLabels.each() {axis ->
             TreeSet effAxis = this.nodeCaps.resolveAxisName(axis).sort()
             if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
-            effectiveAxes << effAxis
+            this.effectiveAxes << effAxis
         }
-        effectiveAxes = effectiveAxes.sort()
-        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected effectiveAxes: " + effectiveAxes
+        this.effectiveAxes = this.effectiveAxes.sort()
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected effectiveAxes: " + this.effectiveAxes
 
         // By this point, a request for ['OS', '${COMPILER}VER', ~/ARC.+/]
         // yields [[OS], [ARCH], [CLANGVER, GCCVER]] from which we want to
         // get a set with two sets of axes that can do our separate builds:
         // [ [OS, ARCH, CLANGVER], [OS, ARCH, GCCVER] ]
         // ...and preferably really sorted :)
-        effectiveAxes = Utils.cartesianSquared(effectiveAxes).sort()
-        if (effectiveAxes.size() > 0) {
+        this.effectiveAxes = Utils.cartesianSquared(this.effectiveAxes).sort()
+        if (this.effectiveAxes.size() > 0) {
             // We want set of sets for processing below
             def listCount = 0
-            for (def i = 0; i < effectiveAxes.size(); i++) {
-                if (Utils.isList(effectiveAxes[i])) { listCount++ }
+            for (def i = 0; i < this.effectiveAxes.size(); i++) {
+                if (Utils.isList(this.effectiveAxes[i])) { listCount++ }
             }
 
             if (listCount == 0) {
                 // If we only got one list/set like [OS, ARCH] - then
                 // remake it into a set that contains one set
-                effectiveAxes = [effectiveAxes]
-            } else if (listCount != effectiveAxes.size()) {
+                this.effectiveAxes = [this.effectiveAxes]
+            } else if (listCount != this.effectiveAxes.size()) {
                 // Turn any non-list/set items into sets of one entry
                 def arr = []
-                for (def i = 0; i < effectiveAxes.size(); i++) {
-                    if (Utils.isList(effectiveAxes[i])) {
-                        arr << effectiveAxes[i]
+                for (def i = 0; i < this.effectiveAxes.size(); i++) {
+                    if (Utils.isList(this.effectiveAxes[i])) {
+                        arr << this.effectiveAxes[i]
                     } else {
-                        arr << [effectiveAxes[i]]
+                        arr << [this.effectiveAxes[i]]
                     }
                 }
-                effectiveAxes = arr
+                this.effectiveAxes = arr
             }
         }
-        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + effectiveAxes
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + this.effectiveAxes
 
         //this.nodeCaps.enableDebugTrace = true
         // Prepare all possible combos of requested axes (meaning we can
@@ -309,13 +309,13 @@ def parallelStages = prepareDynamatrix(
         // would work with our currently defined agents). The buildLabels
         // are expected to provide good uniqueness thanks to the SortedSet
         // of effectiveAxes and their values that we would look into.
-        buildLabelCombos = []
+        this.buildLabelCombos = []
         this.nodeCaps.nodeData.keySet().each() {nodeName ->
             // Looking at each node separately allows us to be sure that any
             // combo of axis-values (all of which it allegedly provides)
             // can be fulfilled
             def nodeAxisCombos = []
-            effectiveAxes.each() {axisSet ->
+            this.effectiveAxes.each() {axisSet ->
                 // Now looking at one definitive set of axis names that
                 // we would pick supported values for, by current node:
                 def axisCombos = []
@@ -351,11 +351,11 @@ def parallelStages = prepareDynamatrix(
                 // It is okay if several nodes can run a build
                 // which matches the given requirements
                 nodeAxisCombos = nodeAxisCombos.sort()
-                buildLabelCombos << nodeAxisCombos
+                this.buildLabelCombos << nodeAxisCombos
             }
         }
-        buildLabelCombos = buildLabelCombos.sort()
-        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected buildLabelCombos (still grouped per node): " + buildLabelCombos
+        this.buildLabelCombos = this.buildLabelCombos.sort()
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected buildLabelCombos (still grouped per node): " + this.buildLabelCombos
         // a request for dynamatrixAxesLabels: ['OS', '${COMPILER}VER', ~/ARC.+/]
         // on testbed got us this:
         // [         //### buildLabelCombos itself
@@ -367,8 +367,8 @@ def parallelStages = prepareDynamatrix(
         //  ]        //###  ignored one node that did not declare any ARCH
         // ]
 
-        buildLabelCombosFlat = []
-        buildLabelCombos.each() {nodeResults ->
+        this.buildLabelCombosFlat = []
+        this.buildLabelCombos.each() {nodeResults ->
             nodeResults.each() {nodeAxisCombos ->
                 // this nodeResults contains the set of sets of label values
                 // supported for one of the original effectiveAxes requirements,
@@ -385,19 +385,19 @@ def parallelStages = prepareDynamatrix(
                 if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
                 // Add members of tmp (many sets of unique key=value combos
                 // for each axis) as direct members of buildLabelCombosFlat
-                buildLabelCombosFlat += tmp
+                this.buildLabelCombosFlat += tmp
             }
         }
 
         // Convert Sets of Sets of strings in buildLabelCombos into the
         // array of strings (keys of the BLA Map) we can feed into the
         // agent requirements of generated pipeline stages:
-        buildLabelsAgents = mapBuildLabelExpressions(buildLabelCombosFlat)
+        this.buildLabelsAgents = mapBuildLabelExpressions(this.buildLabelCombosFlat)
         def blaStr = ""
-        buildLabelsAgents.keySet().each() {ble ->
-            blaStr += "\n    '${ble}' => " + buildLabelsAgents[ble]
+        this.buildLabelsAgents.keySet().each() {ble ->
+            blaStr += "\n    '${ble}' => " + this.buildLabelsAgents[ble]
         }
-        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): detected ${buildLabelsAgents.size()} buildLabelsAgents combos:" + blaStr
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): detected ${this.buildLabelsAgents.size()} buildLabelsAgents combos:" + blaStr
 
         return true
     }
@@ -434,7 +434,7 @@ def parallelStages = prepareDynamatrix(
         DynamatrixConfig dynacfgBuild = this.dynacfg.clone()
         dynacfgBuild.initDefault(dynacfgOrig)
 
-        if (buildLabelsAgents.size() == 0 && dynacfgBuild.dynamatrixRequiredLabelCombos.size() == 0) {
+        if (this.buildLabelsAgents.size() == 0 && dynacfgBuild.dynamatrixRequiredLabelCombos.size() == 0) {
             if (debugErrors) this.script.println "[ERROR] generateBuildConfigSet() : should call prepareDynamatrix() first, or that found nothing usable"
             return null
         }
