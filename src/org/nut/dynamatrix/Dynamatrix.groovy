@@ -249,7 +249,12 @@ def parallelStages = prepareDynamatrix(
         // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
         // other configs for same builder would not query and parse real Jenkins
         // worker labels again and again.
-        def commonLabelExpr = dynacfg.commonLabelExpr + dynacfg.getConstraintsNodelabels()
+        def commonLabelExpr = dynacfg.commonLabelExpr
+        if (commonLabelExpr == null) commonLabelExpr = ""
+        commonLabelExpr += dynacfg.getConstraintsNodelabels()
+        // If we had no/null dynacfg.commonLabelExpr, avoid starting with
+        // the "&&" from constraints, if any... and trim() generally:
+        commonLabelExpr = commonLabelExpr.trim().replaceFirst(/^ *\&\& */, '').trim()
 
         this.nodeCaps = new NodeCaps(
             this.script,
