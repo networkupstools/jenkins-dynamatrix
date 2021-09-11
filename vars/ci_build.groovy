@@ -65,7 +65,7 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
             dynacfgPipeline.buildPhases['check'] = """ (
 [ -x ./ci_build.sh ] || exit
 
-eval \${CONFIG_ENVVARS} ./ci_build.sh \${CONFIG_OPTS}
+eval BUILD_TYPE="\${BUILD_TYPE}" \${CONFIG_ENVVARS} ./ci_build.sh \${CONFIG_OPTS}
 ) """
         }
 
