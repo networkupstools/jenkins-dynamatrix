@@ -428,8 +428,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 def txt = "Running ${stagesBinBuild.size()-1} 'slow build' dynamatrix stages"
                 manager.addShortText(txt)
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
+                manager.addInfoBadge(txt)
             } catch (Throwable t) {
-                echo "WARNING: Tried to addShortText() a badge, but failed to; is the Groovy Postbuild plugin installed?"
+                echo "WARNING: Tried to addShortText() amd addInfoBadge)(, but failed to; is the Groovy Postbuild plugin installed?"
             }
             stage("Run the bigger dynamatrix (${stagesBinBuild.size()-1} stages)") {
                 // This parallel, unlike "par1" above, tends to
