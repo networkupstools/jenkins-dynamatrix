@@ -330,7 +330,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         echo "SKIP: Target branch name '${env.TARGET_BRANCH}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
                                     countFiltersSkipped++
                                     return // continue
-                                }
+                                } // else: TARGET_BRANCH is empty (probably not
+                                  // building a PR), or regex matches, so go on
 
                                 def _TARGET_BRANCH = null
                                 try {
