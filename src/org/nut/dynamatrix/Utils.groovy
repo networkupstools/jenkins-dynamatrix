@@ -145,7 +145,14 @@ class Utils {
             // Be more forgiving of parameters that are just arrays of strings, etc.
             if (!(a instanceof java.lang.Iterable)) a = [a]
             if (res.size() == 0) {
-                res = a
+                if (arr.size() == 1) {
+                    // For a single-element source Set, we still want
+                    // to return a Set of Sets to be consistent
+                    res = [a]
+                } else {
+                    // Proceed to multiply below with next arr elements
+                    res = a
+                }
             } else {
                 res = cartesianProduct(res, a)
             }
