@@ -142,6 +142,8 @@ class Utils {
          */
         Iterable res = []
         arr.each() {a ->
+            // Be more forgiving of parameters that are just arrays of strings, etc.
+            if (!(a instanceof java.lang.Iterable)) a = [a]
             if (res.size() == 0) {
                 res = a
             } else {
