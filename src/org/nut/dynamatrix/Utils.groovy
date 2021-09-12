@@ -148,7 +148,8 @@ class Utils {
                 if (arr.size() == 1) {
                     // For a single-element source Set, we still want
                     // to return a Set of Sets to be consistent
-                    res = [a]
+                    //res = [a]
+                    res = cartesianProduct(a, [])
                 } else {
                     // Proceed to multiply below with next arr elements
                     res = a
