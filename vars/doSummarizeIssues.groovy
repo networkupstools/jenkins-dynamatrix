@@ -1,13 +1,13 @@
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
-void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String sBRANCH_NAME, String sTARGET_BRANCH) {
+void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String sBRANCH_NAME, String sCHANGE_TARGET) {
     if (issueAnalysisArr.size() > 0) {
         // Compare issues that are new/fixed compared to specified branch
         // ReferenceJob(Name) is handled according to current version (at this time) of
         //   https://github.com/jenkinsci/warnings-ng-plugin/blob/master/doc/Documentation.md#configure-the-selection-of-the-reference-build-baseline
         // Note: this solution below assumes Git SCM for the project
-        def reference = sJOB_NAME.replace(sBRANCH_NAME, sTARGET_BRANCH)
+        def reference = sJOB_NAME.replace(sBRANCH_NAME, sCHANGE_TARGET)
         discoverGitReferenceBuild referenceJob: reference
         publishIssues (
             id: id,
@@ -20,19 +20,19 @@ void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String
 } // doSummarizeIssues(args)
 
 void call(def issueAnalysisArr, String id, String name) {
-    def sTARGET_BRANCH = infra.branchDefaultStable()
+    def sCHANGE_TARGET = infra.branchDefaultStable()
     try {
         // Can fail if not set by pipeline (not a PR build)
-        if (TARGET_BRANCH != null && TARGET_BRANCH != "")
-            sTARGET_BRANCH = "${TARGET_BRANCH}"
+        if (CHANGE_TARGET != null && CHANGE_TARGET != "")
+            sCHANGE_TARGET = "${CHANGE_TARGET}"
     } catch (Throwable t1) {
         try {
-            if (env.TARGET_BRANCH != null && env.TARGET_BRANCH != "")
-                sTARGET_BRANCH = "${env.TARGET_BRANCH}"
+            if (env.CHANGE_TARGET != null && env.CHANGE_TARGET != "")
+                sCHANGE_TARGET = "${env.CHANGE_TARGET}"
         } catch (Throwable t2) {}
     }
 
-    doSummarizeIssues(issueAnalysisArr, id, name, "${JOB_NAME}", "${BRANCH_NAME}", sTARGET_BRANCH)
+    doSummarizeIssues(issueAnalysisArr, id, name, "${JOB_NAME}", "${BRANCH_NAME}", sCHANGE_TARGET)
 } // doSummarizeIssues(arr)
 
 void call() {

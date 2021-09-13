@@ -323,33 +323,33 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 }
                             }
                             if (Utils.isRegex(sb?.branchRegexTarget)) {
-                                if (Utils.isStringNotEmpty(env?.TARGET_BRANCH)
-                                && (!(env.TARGET_BRANCH ==~ sb.branchRegexTarget))
+                                if (Utils.isStringNotEmpty(env?.CHANGE_TARGET)
+                                && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
                                 ) {
                                     if (dynamatrixGlobalState.enableDebugTrace)
-                                        echo "SKIP: Target branch name '${env.TARGET_BRANCH}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
+                                        echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
                                     countFiltersSkipped++
                                     return // continue
-                                } // else: TARGET_BRANCH is empty (probably not
+                                } // else: CHANGE_TARGET is empty (probably not
                                   // building a PR), or regex matches, so go on
 
-                                def _TARGET_BRANCH = null
+                                def _CHANGE_TARGET = null
                                 try {
                                     // May be not defined
-                                    _TARGET_BRANCH = TARGET_BRANCH
+                                    _CHANGE_TARGET = CHANGE_TARGET
                                 } catch (Throwable t) {}
 
-                                if (Utils.isStringNotEmpty(_TARGET_BRANCH)
-                                && (!(_TARGET_BRANCH ==~ sb.branchRegexTarget))
+                                if (Utils.isStringNotEmpty(_CHANGE_TARGET)
+                                && (!(_CHANGE_TARGET ==~ sb.branchRegexTarget))
                                 ) {
                                     if (dynamatrixGlobalState.enableDebugTrace)
-                                        echo "SKIP: Target branch name '${_TARGET_BRANCH}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
+                                        echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
                                     countFiltersSkipped++
                                     return // continue
                                 }
 
-                                if ( !Utils.isStringNotEmpty(env?.TARGET_BRANCH)
-                                &&   !Utils.isStringNotEmpty(_TARGET_BRANCH)
+                                if ( !Utils.isStringNotEmpty(env?.CHANGE_TARGET)
+                                &&   !Utils.isStringNotEmpty(_CHANGE_TARGET)
                                 ) {
                                     // If callers want some setup only for PR
                                     // builds, they can use the source branch
