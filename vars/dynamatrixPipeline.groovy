@@ -398,7 +398,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // Note: we also report "Running..." more or less
                         // the same message below; but with CI farm contention
                         // much time can be spent before getting to that line
-                        manager.addInfoBadge(sbSummary)
+                        manager.addInfoBadge(text: sbSummary, id: "Discovery-counter")
                         // Add one to the build's info page
                         manager.createSummary(sbSummary)
                     } catch (Throwable t) {
@@ -440,10 +440,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             try {
                 def txt = "Running ${stagesBinBuild.size()-1} 'slow build' dynamatrix stages"
                 manager.addShortText(txt)
+                manager.removeBadges(id: "Discovery-counter")
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
-                manager.addInfoBadge(txt)
             } catch (Throwable t) {
-                echo "WARNING: Tried to addShortText() and addInfoBadge(), but failed to; is the Groovy Postbuild plugin installed?"
+                echo "WARNING: Tried to addShortText(), but failed to; is the Groovy Postbuild plugin installed?"
             }
             stage("Run the bigger dynamatrix (${stagesBinBuild.size()-1} stages)") {
                 // This parallel, unlike "par1" above, tends to
