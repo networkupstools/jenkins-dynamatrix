@@ -400,9 +400,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // much time can be spent before getting to that line
                         manager.addInfoBadge(text: sbSummary, id: "Discovery-counter")
                         // Add one to the build's info page
-                        manager.createSummary(sbSummary)
+                        manager.createSummary(text: sbSummary, icon: 'info.gif')
                     } catch (Throwable t) {
-                        echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the Groovy Postbuild plugin installed?"
+                        echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the Groovy Postbuild plugin and/or jenkins-badge-plugin installed?"
                     }
                 }
             }
