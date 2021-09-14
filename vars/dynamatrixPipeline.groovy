@@ -385,11 +385,22 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                     String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
                         "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
+                    String sbSummary = null
                     if (stagesBinBuild.size() == 0) {
-                        echo "Did not discover any ${sbSummarySuffix}"
+                        sbSummary = "Did not discover any ${sbSummarySuffix}"
                     } else {
-                        echo "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
+                        sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
+                        // Note: adds one more point to stagesBinBuild.size() checked below:
                         stagesBinBuild.failFast = dynacfgPipeline.failFast
+                    }
+                    echo sbSummary
+                    try {
+                        // Note: we also report "Running..." more or less
+                        // the same message below; but with CI farm contention
+                        // much time can be spent before getting to that line
+                        manager.addInfoBadge(sbSummary)
+                    } catch (Throwable t) {
+                        echo "WARNING: Tried to addInfoBadge(), but failed to; is the Groovy Postbuild plugin installed?"
                     }
                 }
             }
@@ -430,7 +441,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
                 manager.addInfoBadge(txt)
             } catch (Throwable t) {
-                echo "WARNING: Tried to addShortText() amd addInfoBadge)(, but failed to; is the Groovy Postbuild plugin installed?"
+                echo "WARNING: Tried to addShortText() and addInfoBadge(), but failed to; is the Groovy Postbuild plugin installed?"
             }
             stage("Run the bigger dynamatrix (${stagesBinBuild.size()-1} stages)") {
                 // This parallel, unlike "par1" above, tends to
