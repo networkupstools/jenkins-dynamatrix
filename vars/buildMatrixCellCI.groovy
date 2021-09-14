@@ -104,14 +104,18 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             msg += "WARN=${env.BUILD_WARNOPT} "
         }
 
-        if (env?.ARCHARG || env?.BITSARG || env?.ARCH_BITS || env?.BITS || env["ARCH${ARCH_BITS}"] || env["ARCH${BITS}"] || env?.OS_FAMILY || env?.OS_DISTRO) {
+        if (env?.ARCHARG || env?.BITSARG || env?.ARCH_BITS || env?.BITS
+            || (env?.ARCH_BITS && env["ARCH${env.ARCH_BITS}"])
+            || (env?.BITS && env["ARCH${env.BITS}"])
+            || env?.OS_FAMILY || env?.OS_DISTRO
+        ) {
             msg += "on "
-            if (env["ARCH${ARCH_BITS}"]) {
-                id += "_${env["ARCH${ARCH_BITS}"]}"
-                msg += "${env["ARCH${ARCH_BITS}"]} "
-            } else if (env["ARCH${BITS}"]) {
-                id += "_${env["ARCH${BITS}"]}"
-                msg += "${env["ARCH${BITS}"]} "
+            if (env?.ARCH_BITS && env["ARCH${env.ARCH_BITS}"]) {
+                id += "_${env["ARCH${env.ARCH_BITS}"]}"
+                msg += "${env["ARCH${env.ARCH_BITS}"]} "
+            } else if (env?.BITS && env["ARCH${env.BITS}"]) {
+                id += "_${env["ARCH${env.BITS}"]}"
+                msg += "${env["ARCH${env.BITS}"]} "
             } else {
                 if (env?.ARCHARG) {
                     id += "_${env.ARCHARG}"
