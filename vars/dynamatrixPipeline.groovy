@@ -403,6 +403,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         manager.createSummary(text: sbSummary, icon: 'info.gif')
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the Groovy Postbuild plugin and/or jenkins-badge-plugin installed?"
+                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                     }
                 }
             }
@@ -428,6 +429,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         dynacfgPipeline.notifyHandler()
                     } catch (Throwable t) {
                         echo "WARNING: Tried to notify about build result (${currentBuild.result}) by user-provided method, and failed to"
+                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                     }
                 }
 
@@ -444,6 +446,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
             } catch (Throwable t) {
                 echo "WARNING: Tried to addShortText(), but failed to; is the Groovy Postbuild plugin installed?"
+                if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
             }
             stage("Run the bigger dynamatrix (${stagesBinBuild.size()-1} stages)") {
                 // This parallel, unlike "par1" above, tends to
@@ -469,6 +472,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 dynacfgPipeline.notifyHandler()
             } catch (Throwable t) {
                 echo "WARNING: Tried to notify about build result (${currentBuild.result}) by user-provided method, and failed to"
+                if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
             }
         }
 
