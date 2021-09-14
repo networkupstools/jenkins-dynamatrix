@@ -399,8 +399,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // the same message below; but with CI farm contention
                         // much time can be spent before getting to that line
                         manager.addInfoBadge(sbSummary)
+                        // Add one to the build's info page
+                        manager.createSummary(sbSummary)
                     } catch (Throwable t) {
-                        echo "WARNING: Tried to addInfoBadge(), but failed to; is the Groovy Postbuild plugin installed?"
+                        echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the Groovy Postbuild plugin installed?"
                     }
                 }
             }
