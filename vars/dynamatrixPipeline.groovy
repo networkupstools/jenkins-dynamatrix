@@ -407,8 +407,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // ugly formatting in job's main page with list of builds):
                         manager.addInfoBadge(sbSummary)
 
-                        // Add a line to the build's info page too:
-                        createSummary(text: sbSummary, icon: '/static/ad6a03f4/images/48x48/notepad.png')
+                        // Add a line to the build's info page too (note the
+                        // path here is somewhat relative to /statix/hexhash/
+                        // that Jenkins adds):
+                        createSummary(text: sbSummary, icon: '/images/48x48/notepad.png')
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
