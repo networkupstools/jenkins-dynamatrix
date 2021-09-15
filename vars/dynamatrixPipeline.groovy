@@ -402,8 +402,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // PostBuild Plugin implementation, but the better
                         // featured jenkins-badge-plugin step
                         addInfoBadge(text: sbSummary, id: "Discovery-counter")
-                        // Add one to the build's info page
-                        createSummary(text: sbSummary, icon: 'info.gif')
+
+                        // Add a line to the build's info page too:
+                        createSummary(text: sbSummary, icon: '/static/ad6a03f4/images/48x48/notepad.png')
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
