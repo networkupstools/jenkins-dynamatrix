@@ -398,11 +398,14 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // Note: we also report "Running..." more or less
                         // the same message below; but with CI farm contention
                         // much time can be spent before getting to that line
-                        manager.addInfoBadge(text: sbSummary, id: "Discovery-counter")
+                        // Note we are not using "manager" leading to Groovy
+                        // PostBuild Plugin implementation, but the better
+                        // featured jenkins-badge-plugin step
+                        addInfoBadge(text: sbSummary, id: "Discovery-counter")
                         // Add one to the build's info page
-                        manager.createSummary(text: sbSummary, icon: 'info.gif')
+                        createSummary(text: sbSummary, icon: 'info.gif')
                     } catch (Throwable t) {
-                        echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the Groovy Postbuild plugin and/or jenkins-badge-plugin installed?"
+                        echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                     }
                 }
@@ -442,10 +445,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             try {
                 def txt = "Running ${stagesBinBuild.size()-1} 'slow build' dynamatrix stages"
                 manager.addShortText(txt)
-                manager.removeBadges(id: "Discovery-counter")
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
+                removeBadges(id: "Discovery-counter")
             } catch (Throwable t) {
-                echo "WARNING: Tried to addShortText(), but failed to; is the Groovy Postbuild plugin installed?"
+                echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                 if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
             }
             stage("Run the bigger dynamatrix (${stagesBinBuild.size()-1} stages)") {
