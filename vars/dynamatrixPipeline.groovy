@@ -401,7 +401,11 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // Note we are not using "manager" leading to Groovy
                         // PostBuild Plugin implementation, but the better
                         // featured jenkins-badge-plugin step
-                        addInfoBadge(text: sbSummary, id: "Discovery-counter")
+                        //addInfoBadge(text: sbSummary, id: "Discovery-counter")
+                        // While we add temporarily and remove one badge,
+                        // GPBP is okay (for some reason, Badge plugin leaves
+                        // ugly formatting in job's main page with list of builds):
+                        manager.addInfoBadge(sbSummary)
 
                         // Add a line to the build's info page too:
                         createSummary(text: sbSummary, icon: '/static/ad6a03f4/images/48x48/notepad.png')
@@ -445,9 +449,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             echo "Scheduling ${stagesBinBuild.size()-1} stages for the 'slow build' dynamatrix, running this can take a long while..."
             try {
                 def txt = "Running ${stagesBinBuild.size()-1} 'slow build' dynamatrix stages"
+                //removeBadges(id: "Discovery-counter")
+                manager.removeBadges()
                 manager.addShortText(txt)
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
-                removeBadges(id: "Discovery-counter")
             } catch (Throwable t) {
                 echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                 if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
