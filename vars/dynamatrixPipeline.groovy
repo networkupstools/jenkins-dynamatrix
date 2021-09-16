@@ -190,6 +190,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     // This is hopefully safer, called not from CPS constraints
     def stagesBinBuild = [:]
 
+    // Lists files changed in the Git checkout, just after stashCleanSrc()
+    def changedFiles = []
+
     node(infra.labelDefaultWorker()) {
         skipDefaultCheckout()
 
@@ -239,6 +242,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // do not need to block requiring a node here
                         stashCleanSrc(dynacfgPipeline.stashnameSrc, dynacfgPipeline?.bodyStashCmd)
                     }
+                    changedFiles = infra.listChangedFiles()
                 }, // stage - stash
 
                 "Discover quick build matrix": {
@@ -364,7 +368,6 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             // not make sense for certain changes and are a
                             // waste of roud-trip time and compute resources.
                             if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
-                                def changedFiles = infra.listChangedFiles()
                                 if (dynamatrixGlobalState.enableDebugTrace)
                                     echo "[DEBUG] Analysing the changedFiles=${changedFiles.toString()} list against the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' ..."
                                 if (changedFiles.size() > 0) {
