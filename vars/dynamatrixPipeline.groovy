@@ -365,6 +365,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             // waste of roud-trip time and compute resources.
                             if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
                                 def changedFiles = listChangedFiles()
+                                if (dynamatrixGlobalState.enableDebugTrace)
+                                    echo "[DEBUG] Analysing the changedFiles=${changedFiles.toString()} list against the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' ..."
                                 if (changedFiles.size() > 0) {
                                     def skip = true
 
@@ -385,6 +387,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                             echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this filter configuration"
                                         countFiltersSkipped++
                                         return // continue
+                                    } else {
+                                        if (dynamatrixGlobalState.enableDebugTrace)
+                                            echo "[DEBUG] Changeset did include some file name(s) which matched the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this filter configuration"
                                     }
                                 } else {
                                     if (dynamatrixGlobalState.enableDebugTrace)
