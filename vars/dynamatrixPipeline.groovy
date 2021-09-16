@@ -364,7 +364,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             // not make sense for certain changes and are a
                             // waste of roud-trip time and compute resources.
                             if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
-                                def changedFiles = listChangedFiles()
+                                def changedFiles = infra.listChangedFiles()
                                 if (dynamatrixGlobalState.enableDebugTrace)
                                     echo "[DEBUG] Analysing the changedFiles=${changedFiles.toString()} list against the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' ..."
                                 if (changedFiles.size() > 0) {
