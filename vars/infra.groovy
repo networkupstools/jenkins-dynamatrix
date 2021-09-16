@@ -54,18 +54,26 @@ def branchDefaultStable() {
  * @return the PR or directly branch changed files.
  */
 def listChangedFiles() {
+    def changedFiles = []
+
     // Is this a Git-driven build? And a PR at that?
     if (env?.CHANGE_TARGET && env?.GIT_COMMIT) {
         // Inspired by https://issues.jenkins.io/browse/JENKINS-54285?focusedCommentId=353839
-        return sh(
+        // ...and assumes running in the fetched unpacked workspace dir
+        changedFiles = sh(
             script: "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_COMMIT}",
             returnStdout: true
         ).split('\n')
+        if (changedFiles.size() > 0)
+            return changedFiles
     }
 
     // https://stackoverflow.com/a/59462020/4715872
     def changedFiles = []
     def changeLogSets = currentBuild.changeSets
+    // Not sure how well this works for PR changesets vs.
+    // change from last build in the branch only
+    // (and reportedly empty for new builds in a branch...)
     for (entries in changeLogSets) {
         for (entry in entries) {
             for (file in entry.affectedFiles) {
