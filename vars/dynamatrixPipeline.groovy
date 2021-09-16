@@ -236,14 +236,15 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     if (infra.labelCheckoutWorker() != infra.labelDefaultWorker()) {
                         node(infra.labelCheckoutWorker()) {
                             stashCleanSrc(dynacfgPipeline.stashnameSrc, dynacfgPipeline?.bodyStashCmd)
+                            changedFiles = infra.listChangedFiles()
                         }
                     } else {
                         // Already on worker suitable for checkouts,
                         // do not need to block requiring a node here
                         stashCleanSrc(dynacfgPipeline.stashnameSrc, dynacfgPipeline?.bodyStashCmd)
+                        changedFiles = infra.listChangedFiles()
                     }
-                    changedFiles = infra.listChangedFiles()
-                }, // stage - stash
+               }, // stage - stash
 
                 "Discover quick build matrix": {
                     // Relatively quick discovery (e.g. filtering axes
