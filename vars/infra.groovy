@@ -69,7 +69,6 @@ def listChangedFiles() {
     }
 
     // https://stackoverflow.com/a/59462020/4715872
-    def changedFiles = []
     def changeLogSets = currentBuild.changeSets
     // Not sure how well this works for PR changesets vs.
     // change from last build in the branch only
