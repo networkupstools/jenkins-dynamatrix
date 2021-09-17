@@ -493,7 +493,18 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             }
         } // stage-quick-summary
 
-        if (stagesBinBuild.size() > 1) {
+        if (stagesBinBuild.size() < 1) {
+            try {
+                def txt = "No 'slow build' dynamatrix stages discovered"
+                //removeBadges(id: "Discovery-counter")
+                manager.removeBadges()
+                manager.addShortText(txt)
+                //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
+            } catch (Throwable t) {
+                echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+            }
+        } else {
             echo "Scheduling ${stagesBinBuild.size()-1} stages for the 'slow build' dynamatrix, running this can take a long while..."
             try {
                 def txt = "Running ${stagesBinBuild.size()-1} 'slow build' dynamatrix stages"
