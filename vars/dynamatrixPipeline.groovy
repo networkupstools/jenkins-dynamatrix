@@ -397,7 +397,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     }
                                 } else {
                                     if (dynamatrixGlobalState.enableDebugTrace)
-                                        echo "WARNING: while handling appliesToChangedFilesRegex='${appliesToChangedFilesRegex.toString()}' " +
+                                        echo "WARNING: while handling appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' " +
                                             "the listChangedFiles() call returned an " +
                                             "empty list, thus either we had no changes " +
                                             "(would a re-run do that?) or had some error?.. " +
