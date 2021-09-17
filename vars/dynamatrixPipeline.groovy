@@ -504,6 +504,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                 if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
             }
+
+            // TODO: `unstable` this?
+            echo "No stages were prepared for the 'slow build' dynamatrix, so completing the job"
         } else {
             echo "Scheduling ${stagesBinBuild.size()-1} stages for the 'slow build' dynamatrix, running this can take a long while..."
             try {
@@ -528,9 +531,6 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             stage("Analyze the bigger dynamatrix") { // TOTHINK: post{always{...}} to the above? Is there one in scripted pipeline?
                 doSummarizeIssues()
             }
-        } else {
-            // TODO: `unstable` this?
-            echo "No stages were prepared for the 'slow build' dynamatrix, so completing the job"
         }
 
         if (Utils.isClosure(dynacfgPipeline?.notifyHandler)) {
