@@ -53,22 +53,46 @@ def branchDefaultStable() {
  *
  * @return the PR or directly branch changed files.
  */
-def listChangedFiles() {
-    def changedFiles = []
+Set listChangedFilesGitWorkspace() {
+    Set changedFiles = []
 
     // Is this a Git-driven build? And a PR at that?
-    if (env?.CHANGE_TARGET && env?.GIT_COMMIT) {
-        // Inspired by https://issues.jenkins.io/browse/JENKINS-54285?focusedCommentId=353839
-        // ...and assumes running in the fetched unpacked workspace dir
+    if (env?.CHANGE_TARGET) {
+        if (env?.GIT_COMMIT) {
+            // Inspired by https://issues.jenkins.io/browse/JENKINS-54285?focusedCommentId=353839
+            // ...and assumes running in the fetched unpacked workspace dir
+            changedFiles = sh(
+                script: "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_COMMIT}",
+                returnStdout: true
+            ).split('\n')
+            if (changedFiles.size() > 0)
+                return changedFiles
+        }
+
+        // GIT_COMMIT is not an ubiquitously available variable,
+        // so fall back to reporting the current workspace state
         changedFiles = sh(
-            script: "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_COMMIT}",
+            script: "git diff --name-only origin/${env.CHANGE_TARGET}...HEAD",
+            returnStdout: true
+        ).split('\n')
+        if (changedFiles.size() > 0)
+            return changedFiles
+
+        changedFiles = sh(
+            script: "git diff --name-only origin/${env.CHANGE_TARGET}",
             returnStdout: true
         ).split('\n')
         if (changedFiles.size() > 0)
             return changedFiles
     }
 
+    // empty if here
+    return changedFiles
+}
+
+Set listChangedFilesJenkinsData() {
     // https://stackoverflow.com/a/59462020/4715872
+    Set changedFiles = []
     def changeLogSets = currentBuild.changeSets
     // Not sure how well this works for PR changesets vs.
     // change from last build in the branch only
@@ -81,5 +105,11 @@ def listChangedFiles() {
             }
         }
     }
+    return changedFiles
+}
+
+Set listChangedFiles() {
+    Set changedFiles = listChangedFilesGitWorkspace()
+    changedFiles += listChangedFilesJenkinsData()
     return changedFiles
 }
