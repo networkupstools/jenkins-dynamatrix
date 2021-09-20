@@ -245,7 +245,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         changedFiles = infra.listChangedFiles()
                     }
 
-                    echo "This build involves the following changedFiles list: ${changedFiles.toString()}
+                    echo "This build involves the following changedFiles list: ${changedFiles.toString()}"
                 }, // stage - stash
 
                 "Discover quick build matrix": {
