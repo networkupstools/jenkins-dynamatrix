@@ -244,7 +244,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         stashCleanSrc(dynacfgPipeline.stashnameSrc, dynacfgPipeline?.bodyStashCmd)
                         changedFiles = infra.listChangedFiles()
                     }
-               }, // stage - stash
+
+                    echo "This build involves the following changedFiles list: ${changedFiles.toString()}
+                }, // stage - stash
 
                 "Discover quick build matrix": {
                     // Relatively quick discovery (e.g. filtering axes
@@ -314,14 +316,14 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         if (Utils.isClosureNotEmpty(sb?.getParStages)) {
                             countFiltersSeen ++
                             if (sb?.disabled) {
-                                if (dynamatrixGlobalState.enableDebugTrace)
+                                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                     echo "SKIP: This filter configuration is marked as disabled for this run"
                                 countFiltersSkipped++
                                 return // continue
                             }
                             if (Utils.isRegex(sb?.branchRegexSource) && Utils.isStringNotEmpty(env?.BRANCH_NAME)) {
                                 if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
-                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                         echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ${sb.branchRegexSource} for this filter configuration"
                                     countFiltersSkipped++
                                     return // continue
@@ -331,7 +333,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 if (Utils.isStringNotEmpty(env?.CHANGE_TARGET)
                                 && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
                                 ) {
-                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                         echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
                                     countFiltersSkipped++
                                     return // continue
@@ -347,7 +349,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 if (Utils.isStringNotEmpty(_CHANGE_TARGET)
                                 && (!(_CHANGE_TARGET ==~ sb.branchRegexTarget))
                                 ) {
-                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                         echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ${sb.branchRegexTarget} for this filter configuration"
                                     countFiltersSkipped++
                                     return // continue
@@ -359,8 +361,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     // If callers want some setup only for PR
                                     // builds, they can use the source branch
                                     // regex set to /^PR-\d+$/
-                                    if (dynamatrixGlobalState.enableDebugTrace)
-                                        echo "Target branch name is not set for this build (not a PR?), so ignoring the pattern ${sb.branchRegexTarget} set for this filter configuration"
+                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                                        echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ${sb.branchRegexTarget} set for this filter configuration"
+                                        // NOT a "skip", just a "FYI"!
                                 }
                             }
 
@@ -387,7 +390,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     }
 
                                     if (skip) {
-                                        if (dynamatrixGlobalState.enableDebugTrace)
+                                        if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                             echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this filter configuration"
                                         countFiltersSkipped++
                                         return // continue
@@ -396,7 +399,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                             echo "[DEBUG] Changeset did include some file name(s) which matched the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this filter configuration"
                                     }
                                 } else {
-                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                         echo "WARNING: while handling appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' " +
                                             "the listChangedFiles() call returned an " +
                                             "empty list, thus either we had no changes " +
@@ -423,7 +426,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 }
                             }
                         } else {
-                            if (dynamatrixGlobalState.enableDebugTrace)
+                            if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                 echo "SKIP: No (valid) filter definition in this entry"
                             countFiltersSkipped++
                         }
