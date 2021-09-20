@@ -190,8 +190,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     // This is hopefully safer, called not from CPS constraints
     def stagesBinBuild = [:]
 
-    // Lists files changed in the Git checkout, just after stashCleanSrc()
-    def changedFiles = []
+    // Lists unique files changed in the Git checkout, just after stashCleanSrc()
+    Set changedFiles = []
 
     node(infra.labelDefaultWorker()) {
         skipDefaultCheckout()
