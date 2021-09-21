@@ -111,5 +111,5 @@ Set listChangedFilesJenkinsData() {
 Set listChangedFiles() {
     Set changedFiles = listChangedFilesGitWorkspace()
     changedFiles += listChangedFilesJenkinsData()
-    return changedFiles
+    return changedFiles.flatten()
 }
