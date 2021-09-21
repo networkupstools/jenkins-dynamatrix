@@ -23,10 +23,27 @@ def call(dynacfgPipeline = [:]) {
         node(infra.labelDocumentationWorker()) {
             infra.withEnvOptional(dynacfgPipeline?.defaultTools) {
                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
-                if (dynacfgPipeline?.buildPhases?.prepconf)
-                    sh """ ${dynacfgPipeline.buildPhases.prepconf} """
-                if (dynacfgPipeline?.buildPhases?.configure)
-                    sh """ ${dynacfgPipeline.buildPhases.configure} """
+
+                if (dynacfgPipeline?.stylecheck_prepconf != null) {
+                    if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_prepconf) {
+                        sh """ ${dynacfgPipeline.stylecheck_prepconf} """
+                    } // else: pipeline author wants this skipped
+                } else {
+                    if (dynacfgPipeline?.buildPhases?.prepconf) {
+                        sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+                    }
+                }
+
+                if (dynacfgPipeline?.stylecheck_configure != null) {
+                    if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_configure) {
+                        sh """ ${dynacfgPipeline.stylecheck_configure} """
+                    } // else: pipeline author wants this skipped
+                } else {
+                    if (dynacfgPipeline?.buildPhases?.configure) {
+                        sh """ ${dynacfgPipeline.buildPhases.configure} """
+                    }
+                }
+
                 sh """ ${dynacfgPipeline.stylecheck} """
             }
         }
@@ -54,8 +71,29 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         dynacfgPipeline['stylecheck'] = null
     }
 
-    if (dynamatrixGlobalState.enableDebugTrace)
-        println "SPELLCHECK: " + Utils.castString(dynacfgPipeline['stylecheck'])
+    if (dynacfgPipeline.containsKey('stylecheck_prepconf')) {
+        if ("${dynacfgPipeline['stylecheck_prepconf']}".trim().equals("true")) {
+            // Use whatever buildPhases provide
+            dynacfgPipeline['stylecheck_prepconf'] = null
+        }
+    } else {
+        dynacfgPipeline['stylecheck_prepconf'] = null
+    }
+
+    if (dynacfgPipeline.containsKey('stylecheck_configure')) {
+        if ("${dynacfgPipeline['stylecheck_configure']}".trim().equals("true")) {
+            // Use whatever buildPhases provide
+            dynacfgPipeline['stylecheck_configure'] = null
+        }
+    } else {
+        dynacfgPipeline['stylecheck_configure'] = null
+    }
+
+    if (dynamatrixGlobalState.enableDebugTrace) {
+        println "STYLECHECK_PREPCONF : " + Utils.castString(dynacfgPipeline['stylecheck_prepconf'])
+        println "STYLECHECK_CONFIGURE: " + Utils.castString(dynacfgPipeline['stylecheck_configure'])
+        println "STYLECHECK          : " + Utils.castString(dynacfgPipeline['stylecheck'])
+    }
 
     return dynacfgPipeline
 }

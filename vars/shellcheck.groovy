@@ -83,10 +83,27 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                             sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
                             withEnvOptional(dynacfgPipeline.defaultTools) {
                                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
-                                if (dynacfgPipeline?.buildPhases?.prepconf)
-                                    sh """ ${dynacfgPipeline.buildPhases.prepconf} """
-                                if (dynacfgPipeline?.buildPhases?.configure)
-                                    sh """ ${dynacfgPipeline.buildPhases.configure} """
+
+                                if (dynacfgPipeline?.shellcheck_prepconf != null) {
+                                    if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_prepconf) {
+                                        sh """ ${dynacfgPipeline.shellcheck_prepconf} """
+                                    } // else: pipeline author wants this skipped
+                                } else {
+                                    if (dynacfgPipeline?.buildPhases?.prepconf) {
+                                        sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+                                    }
+                                }
+
+                                if (dynacfgPipeline?.shellcheck_configure != null) {
+                                    if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_configure) {
+                                        sh """ ${dynacfgPipeline.shellcheck_configure} """
+                                    } // else: pipeline author wants this skipped
+                                } else {
+                                    if (dynacfgPipeline?.buildPhases?.configure) {
+                                        sh """ ${dynacfgPipeline.buildPhases.configure} """
+                                    }
+                                }
+
                             }
                             return true
                         }
@@ -267,14 +284,34 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         dynacfgPipeline['shellcheck']['multi'] = null
         dynacfgPipeline['shellcheck']['multiLabel'] = null
     }
+
     if (!dynacfgPipeline.shellcheck.stageNameFunc) {
         dynacfgPipeline.shellcheck.stageNameFunc = DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
     }
 
-    if (dynamatrixGlobalState.enableDebugTrace)
-        println "SHELLCHECK: " + Utils.castString(dynacfgPipeline['shellcheck'])
+    if (dynacfgPipeline.containsKey('shellcheck_prepconf')) {
+        if ("${dynacfgPipeline['shellcheck_prepconf']}".trim().equals("true")) {
+            // Use whatever buildPhases provide
+            dynacfgPipeline['shellcheck_prepconf'] = null
+        }
+    } else {
+        dynacfgPipeline['shellcheck_prepconf'] = null
+    }
+
+    if (dynacfgPipeline.containsKey('shellcheck_configure')) {
+        if ("${dynacfgPipeline['shellcheck_configure']}".trim().equals("true")) {
+            // Use whatever buildPhases provide
+            dynacfgPipeline['shellcheck_configure'] = null
+        }
+    } else {
+        dynacfgPipeline['shellcheck_configure'] = null
+    }
+
+    if (dynamatrixGlobalState.enableDebugTrace) {
+        println "SHELLCHECK_PREPCONF : " + Utils.castString(dynacfgPipeline['shellcheck_prepconf'])
+        println "SHELLCHECK_CONFIGURE: " + Utils.castString(dynacfgPipeline['shellcheck_configure'])
+        println "SHELLCHECK          : " + Utils.castString(dynacfgPipeline['shellcheck'])
+    }
 
     return dynacfgPipeline
 }
-
-
