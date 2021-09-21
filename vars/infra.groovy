@@ -64,7 +64,7 @@ Set listChangedFilesGitWorkspace() {
             changedFiles = sh(
                 script: "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_COMMIT}",
                 returnStdout: true
-            ).split('\n')
+            ).split('\n').each { it.trim() }
             if (changedFiles.size() > 0)
                 return changedFiles
         }
@@ -74,14 +74,14 @@ Set listChangedFilesGitWorkspace() {
         changedFiles = sh(
             script: "git diff --name-only origin/${env.CHANGE_TARGET}...HEAD",
             returnStdout: true
-        ).split('\n')
+        ).split('\n').each { it.trim() }
         if (changedFiles.size() > 0)
             return changedFiles
 
         changedFiles = sh(
             script: "git diff --name-only origin/${env.CHANGE_TARGET}",
             returnStdout: true
-        ).split('\n')
+        ).split('\n').each { it.trim() }
         if (changedFiles.size() > 0)
             return changedFiles
     }
@@ -101,7 +101,7 @@ Set listChangedFilesJenkinsData() {
         for (entry in entries) {
             for (file in entry.affectedFiles) {
                 //echo "Found changed file: ${file.path}"
-                changedFiles += "${file.path}"
+                changedFiles += "${file.path}".trim()
             }
         }
     }
