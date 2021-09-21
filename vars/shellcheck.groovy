@@ -85,7 +85,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
 
                                 if (dynacfgPipeline?.shellcheck_prepconf != null) {
-                                    if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_prepconf) {
+                                    if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_prepconf)) {
                                         sh """ ${dynacfgPipeline.shellcheck_prepconf} """
                                     } // else: pipeline author wants this skipped
                                 } else {
@@ -95,7 +95,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                                 }
 
                                 if (dynacfgPipeline?.shellcheck_configure != null) {
-                                    if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_configure) {
+                                    if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_configure)) {
                                         sh """ ${dynacfgPipeline.shellcheck_configure} """
                                     } // else: pipeline author wants this skipped
                                 } else {

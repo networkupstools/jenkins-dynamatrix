@@ -25,7 +25,7 @@ def call(dynacfgPipeline = [:]) {
                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
 
                 if (dynacfgPipeline?.stylecheck_prepconf != null) {
-                    if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_prepconf) {
+                    if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_prepconf)) {
                         sh """ ${dynacfgPipeline.stylecheck_prepconf} """
                     } // else: pipeline author wants this skipped
                 } else {
@@ -35,7 +35,7 @@ def call(dynacfgPipeline = [:]) {
                 }
 
                 if (dynacfgPipeline?.stylecheck_configure != null) {
-                    if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_configure) {
+                    if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_configure)) {
                         sh """ ${dynacfgPipeline.stylecheck_configure} """
                     } // else: pipeline author wants this skipped
                 } else {

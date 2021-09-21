@@ -25,7 +25,7 @@ def call(dynacfgPipeline = [:]) {
                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
 
                 if (dynacfgPipeline?.spellcheck_prepconf != null) {
-                    if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_prepconf) {
+                    if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_prepconf)) {
                         sh """ ${dynacfgPipeline.spellcheck_prepconf} """
                     } // else: pipeline author wants this skipped
                 } else {
@@ -35,7 +35,7 @@ def call(dynacfgPipeline = [:]) {
                 }
 
                 if (dynacfgPipeline?.spellcheck_configure != null) {
-                    if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_configure) {
+                    if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_configure)) {
                         sh """ ${dynacfgPipeline.spellcheck_configure} """
                     } // else: pipeline author wants this skipped
                 } else {
