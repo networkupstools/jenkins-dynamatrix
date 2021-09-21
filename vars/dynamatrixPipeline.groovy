@@ -348,7 +348,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     try {
                                         // May be not defined
                                         _CHANGE_TARGET = env.CHANGE_TARGET
-                                    } catch (Throwable t) {}
+                                    } catch (Throwable tt) {}
                                 }
 
                                 if (Utils.isStringNotEmpty(_CHANGE_TARGET)
