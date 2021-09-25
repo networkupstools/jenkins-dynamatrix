@@ -234,7 +234,7 @@ def parallelStages = prepareDynamatrix(
     unstash 'preparedSource'
     sh """ ./autogen.sh """
     sh """ ${dynamatrix.commonEnv} CC=${dynamatrix.COMPILER.CC.VER} CXX=${dynamatrix.COMPILER.CXX.VER} ./configure ${dynamatrix.commonOpts} """
-    sh """ make -j4 """
+    sh """ make -j 4 """
     sh """ make check """
 }
 
