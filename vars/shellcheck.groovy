@@ -59,7 +59,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
         // instance (inside step), though hopefully same
         // cached NodeCaps array reused
         stagesShellcheck_arr = prepareDynamatrix([
-            dynamatrixAxesLabels: [~/^OS_.+/],
+            dynamatrixAxesLabels: dynacfgPipeline.shellcheck.dynamatrixAxesLabels,
             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
             stageNameFunc: dynacfgPipeline.shellcheck.stageNameFunc
             ],
@@ -252,6 +252,9 @@ def makeMap(stagesShellcheck_arr = []) {
 def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     if (dynacfgPipeline.containsKey('shellcheck')) {
         if (Utils.isMap(dynacfgPipeline['shellcheck'])) {
+            if (!dynacfgPipeline['shellcheck'].containsKey('dynamatrixAxesLabels') || "".equals(dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'])) {
+                dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'] = [~/^OS_.+/]
+            }
             if (!dynacfgPipeline['shellcheck'].containsKey('single') || "".equals(dynacfgPipeline['shellcheck']['single'])) {
                 dynacfgPipeline['shellcheck']['single'] = null
             }
@@ -265,12 +268,14 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
             if ("${dynacfgPipeline['shellcheck']}".trim().equals("true")) {
                 // Assign defaults
                 dynacfgPipeline['shellcheck'] = [
+                    'dynamatrixAxesLabels': [~/^OS_.+/],
                     'single': '( \${MAKE} shellcheck )',
                     'multi': '( SHELL_PROGS="$SHELL_PROGS" \${MAKE} shellcheck )',
                     'multiLabel': 'SHELL_PROGS'
                 ]
             } else if ("${dynacfgPipeline['shellcheck']}".trim().equals("false")) {
                 dynacfgPipeline['shellcheck'] = [:]
+                dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'] = []
                 dynacfgPipeline['shellcheck']['single'] = null
                 dynacfgPipeline['shellcheck']['multi'] = null
                 dynacfgPipeline['shellcheck']['multiLabel'] = null
@@ -280,6 +285,7 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         }
     } else {
         dynacfgPipeline['shellcheck'] = [:]
+        dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'] = []
         dynacfgPipeline['shellcheck']['single'] = null
         dynacfgPipeline['shellcheck']['multi'] = null
         dynacfgPipeline['shellcheck']['multiLabel'] = null
