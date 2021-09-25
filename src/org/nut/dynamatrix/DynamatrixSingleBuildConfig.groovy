@@ -394,6 +394,10 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             sn += labelMap.OS_FAMILY + "-"
         if (labelMap.containsKey("OS_DISTRO"))
             sn += labelMap.OS_DISTRO + "-"
+        if (labelMap.containsKey("MAKE"))
+            sn += labelMap.MAKE + "-"
+        if (labelMap.containsKey("SHELL_PROG"))
+            sn += labelMap.SHELL_PROG + "-"
         return "${sn}shellcheck"
     }
 
