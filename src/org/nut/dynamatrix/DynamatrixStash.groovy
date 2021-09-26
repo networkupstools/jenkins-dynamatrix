@@ -290,9 +290,11 @@ class DynamatrixStash {
         // TODO: Would a `git gc` reduce footprint to stash?
         if (script.isUnix()) {
             sh """
+echo "[DEBUG] Checked-out workspace size (Kb): `du -ks .`"
 if test -e .git/objects/info/alternates ; then
     git repack -a -d || exit
     rm -f .git/objects/info/alternates || exit
+    echo "[DEBUG] Checked-out workspace size after repack (Kb): `du -ks .`"
 fi """
         } // node isUnix(), can sh
 
