@@ -289,7 +289,7 @@ class DynamatrixStash {
         // https://stackoverflow.com/questions/2248228/how-to-detach-alternates-after-git-clone-reference
         // TODO: Would a `git gc` reduce footprint to stash?
         if (script.isUnix()) {
-            sh """
+            script.sh """
 echo "[DEBUG] Checked-out workspace size (Kb): `du -ks .`"
 if test -e .git/objects/info/alternates ; then
     git repack -a -d || exit
