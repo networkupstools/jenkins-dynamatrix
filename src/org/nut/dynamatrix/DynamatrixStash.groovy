@@ -263,16 +263,18 @@ class DynamatrixStash {
         // "scm" is a Map maintained by the pipeline, so we can tweak it
         def scm = script.scm
 
+        def res = null
+
         if (scmbody == null) {
             script.echo "checkoutCleanSrc: scm = ${Utils.castString(scm)}"
             if (Utils.isMap(scm)
                 && scm.containsKey('$class')
                 && scm['$class'] in ['GitSCM']
             ) {
-                return checkoutGit(script, scm)
+                res = checkoutGit(script, scm)
             } else {
-                return checkoutSCM(script, scm)
-                //return script.checkout (scm)
+                res = checkoutSCM(script, scm)
+                //res = script.checkout (scm)
             }
         } else {
             // Per experience, that body defined in the pipeline script
@@ -280,8 +282,21 @@ class DynamatrixStash {
             // It can help the caller to use DynamatrixStash.checkoutGit()
             // in their custom scmbody with the custom scmParams arg...
             script.echo "checkoutCleanSrc: calling scmbody = ${Utils.castString(scmbody)}"
-            return scmbody()
+            res = scmbody()
         }
+
+        // If we made a git checkout with a refrepo, untie it before stashing
+        // https://stackoverflow.com/questions/2248228/how-to-detach-alternates-after-git-clone-reference
+        // TODO: Would a `git gc` reduce footprint to stash?
+        if (script.isUnix()) {
+            sh """
+if test -e .git/objects/info/alternates ; then
+    git repack -a -d || exit
+    rm -f .git/objects/info/alternates || exit
+fi """
+        } // node isUnix(), can sh
+
+        return res
     } // checkoutCleanSrc()
 
     static void checkoutCleanSrcNamed(def script, String stashName, Closure scmbody = null) {
