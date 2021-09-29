@@ -9,13 +9,20 @@ void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String
         // Note: this solution below assumes Git SCM for the project
         def reference = sJOB_NAME.replace(sBRANCH_NAME, sCHANGE_TARGET)
         discoverGitReferenceBuild referenceJob: reference
-        publishIssues (
+
+        def piMap = [
             id: id,
             name: name,
             //referenceJobName: reference,
             //recordIssues-only//filters: [includePackage('io.jenkins.plugins.analysis.*')],
             issues: issueAnalysisArr
-            )
+            ]
+
+        if (id ==~ /aggregate/) {
+            piMap['aggregatingResults'] = true
+        }
+
+        publishIssues (piMap)
     }
 } // doSummarizeIssues(args)
 
@@ -36,5 +43,7 @@ void call(def issueAnalysisArr, String id, String name) {
 } // doSummarizeIssues(arr)
 
 void call() {
+    // Summary at end of pipeline
     doSummarizeIssues(dynamatrixGlobalState.issueAnalysis, 'analysis', 'All Issues')
+    doSummarizeIssues(dynamatrixGlobalState.issueAnalysis, 'aggregated-analysis', 'All Issues - Aggregated')
 } // doSummarizeIssues()
