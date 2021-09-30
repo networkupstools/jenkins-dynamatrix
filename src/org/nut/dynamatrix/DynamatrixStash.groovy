@@ -295,6 +295,8 @@ if test -e .git/objects/info/alternates ; then
     git repack -a -d || exit
     rm -f .git/objects/info/alternates || exit
     echo "[DEBUG] Checked-out workspace size after dissociate and repack (Kb): `du -ks .`"
+    git gc --aggressive --prune=now --quiet --keep-largest-pack || true
+    echo "[DEBUG] Checked-out workspace size after garbage-collector (Kb): `du -ks .`"
 fi """
         } // node isUnix(), can sh
 
