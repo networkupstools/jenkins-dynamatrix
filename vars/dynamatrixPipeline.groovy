@@ -419,7 +419,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                             // This magic envvar is mapped into stage name
                             // in the dynamatrix
-                            withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_') : "N/A" )]) {
+                            //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
+                            withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().trim() : "N/A" )]) {
                                 if (Utils.isClosure(sb?.bodyParStages)) {
                                     // body may be empty {}, if user wants so
                                     stagesBinBuild += sb.getParStages(dynamatrix, sb.bodyParStages)
