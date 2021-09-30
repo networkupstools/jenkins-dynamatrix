@@ -1073,6 +1073,13 @@ def parallelStages = prepareDynamatrix(
                 payload = { script.withEnv([matrixTag]) { payloadTmp() } }
             }
 
+            def sbName = ""
+            if (env?.CI_SLOW_BUILD_FILTERNAME) {
+                def payloadTmp = payload
+                payload = { script.withEnv(["CI_SLOW_BUILD_FILTERNAME=${env.CI_SLOW_BUILD_FILTERNAME}"]) { payloadTmp() } }
+                sbName = " as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}"
+            }
+
             // Note: non-declarative pipeline syntax inside the generated stages
             // in particular, no steps{}. Note that most of our builds require a
             // build agent, usually a specific one, to run some programs in that
@@ -1082,9 +1089,9 @@ def parallelStages = prepareDynamatrix(
 
                 if (Utils.isStringNotEmpty(dsbc.buildLabelExpression)) {
 
-                    parallelStages << ["WITHAGENT: " + stageName, {
-//                        script.stage("NODEWRAP: " + stageName) {
-                            if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'"
+                    parallelStages << ["WITHAGENT: " + stageName + sbName, {
+//                        script.stage("NODEWRAP: " + stageName + sbName) {
+                            if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
                             script.node (dsbc.buildLabelExpression) {
                                 payload()
                             } // node
@@ -1093,9 +1100,9 @@ def parallelStages = prepareDynamatrix(
 
                 } else {
 
-                    parallelStages << ["WITHAGENT-ANON: " + stageName, {
+                    parallelStages << ["WITHAGENT-ANON: " + stageName + sbName, {
 //                        script.stage("NODEWRAP-ANON: " + stageName) {
-                            if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'"
+                            if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'" + sbName
                             script.node {
                                 payload()
                             } // node
@@ -1107,8 +1114,8 @@ def parallelStages = prepareDynamatrix(
 
                 // no "${dsbc.buildLabelExpression}" - so runs on job's
                 // default node, if any (or fails if none is set and is needed)
-                parallelStages << ["NO-NODE: " + stageName, {
-                    if (dsbc.enableDebugTrace) script.echo "Not requesting any node for stage '${stageName}'"
+                parallelStages << ["NO-NODE: " + stageName + sbName, {
+                    if (dsbc.enableDebugTrace) script.echo "Not requesting any node for stage '${stageName}'" + sbName
                     payload()
                 }] // new parallelStages[] entry
 

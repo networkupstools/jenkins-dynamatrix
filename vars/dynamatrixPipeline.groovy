@@ -417,11 +417,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 }
                             }
 
-                            // NOTE/TODO: Seems this trick does not work well,
-                            // perhaps with because a node() gets optionally
-                            // defined in the executed stage body. Maybe we
-                            // should inject this debugging aid into the
-                            // dynamatrixAxesCommonEnv or similar...
+                            // This magic envvar is mapped into stage name
+                            // in the dynamatrix
                             withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_') : "N/A" )]) {
                                 if (Utils.isClosure(sb?.bodyParStages)) {
                                     // body may be empty {}, if user wants so
