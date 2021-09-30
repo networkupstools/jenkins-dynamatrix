@@ -446,6 +446,19 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         sbSummary = "Did not discover any ${sbSummarySuffix}"
                     } else {
                         sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
+
+                        try {
+                            // TODO: Something similar but with each stage's
+                            // own buildResult verdicts after the build...
+                            def txt = "${sbSummary}\nfor this run ${env?.BUILD_URL}:\n\n"
+                            stagesBinBuild.keySet().sort().each { txt += "${it}\n\n" }
+                            writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
+                            archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
+                        } catch (Throwable t) {
+                            echo "WARNING: Tried to save the list of slowBuild stages into a text artifact '.ci.slowBuildStages-list.txt', but failed to"
+                            if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                        }
+
                         // Note: adds one more point to stagesBinBuild.size() checked below:
                         stagesBinBuild.failFast = dynacfgPipeline.failFast
                     }
@@ -469,18 +482,6 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         createSummary(text: sbSummary, icon: '/images/48x48/notepad.png')
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
-                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
-                    }
-
-                    try {
-                        // TODO: Something similar but with each stage's
-                        // own buildResult verdicts after the build...
-                        def txt = "Generated slowBuild stages for this run ${env?.BUILD_URL} :\n"
-                        stagesBinBuild.keySet().sort().each { txt += "${it}\n" }
-                        writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
-                        archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
-                    } catch (Throwable t) {
-                        echo "WARNING: Tried to save the list of slowBuild stages into a text artifact '.ci.slowBuildStages-list.txt', but failed to"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                     }
                 }
