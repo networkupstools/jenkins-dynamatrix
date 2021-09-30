@@ -322,6 +322,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 return // continue
                             }
                             if (Utils.isRegex(sb?.branchRegexSource) && Utils.isStringNotEmpty(env?.BRANCH_NAME)) {
+                                // TOTHINK: For PR builds, the BRANCH_NAME
+                                // is `PR-[0-9]+` while there is also a
+                                // CHANGE_BRANCH with the original value.
                                 if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
                                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                         echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ${sb.branchRegexSource} for this slow build filter configuration"
