@@ -438,6 +438,13 @@ EOF
   cat << 'EOF'
 cmdOrig: ${cmd}
 ...for stageName: ${stageName}
+EOF
+    if [ -n "${env.CI_SLOW_BUILD_FILTERNAME}" ]; then
+  cat << 'EOF'
+...as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}
+EOF
+    fi
+  cat << 'EOF'
 ...logged into: ${logfile}
 EOF
   echo "NOTE: Saved big job artifacts for this single build scenario usually have same identifier in the middle of file name"
