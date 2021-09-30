@@ -331,6 +331,8 @@ set +x
     def resName = "Collect results"
     if (stageName != null && stageName != "")
         resName = "Results for ${stageName}"
+    if (env?.CI_SLOW_BUILD_FILTERNAME)
+        resName = resName.trim() + " :: as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}"
     stage("${resName}" + strMayFail) {
         // Capture this after all the stages: different tools
         // might generate the files at different times
