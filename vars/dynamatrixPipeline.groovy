@@ -470,6 +470,18 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                     }
+
+                    try {
+                        // TODO: Something similar but with each stage's
+                        // own buildResult verdicts after the build...
+                        def txt = "Generated slowBuild stages for this run ${env?.BUILD_URL} :\n"
+                        txt += stagesBinBuild.keySet().sort().toString()
+                        writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
+                        archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
+                    } catch (Throwable t) {
+                        echo "WARNING: Tried to save the list of slowBuild stages into a text artifact '.ci.slowBuildStages-list.txt', but failed to"
+                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                    }
                 }
             }
 
@@ -528,6 +540,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                 if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
             }
+
             stage("Run the bigger dynamatrix (${stagesBinBuild.size()-1} stages)") {
                 // This parallel, unlike "par1" above, tends to
                 // preclude further processing if it fails and
