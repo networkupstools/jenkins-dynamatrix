@@ -155,7 +155,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             msg = msg.trim() + " for ${stageName}"
 
         if (env?.CI_SLOW_BUILD_FILTERNAME)
-            msg = msg.trim() + " as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}"
+            msg = msg.trim() + " :: as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}"
 
         // Strive for unique name prefix across many similar builds executed
         def archPrefix = id

@@ -1077,7 +1077,7 @@ def parallelStages = prepareDynamatrix(
             if (script?.env?.CI_SLOW_BUILD_FILTERNAME) {
                 def payloadTmp = payload
                 payload = { script.withEnv(["CI_SLOW_BUILD_FILTERNAME=${script.env.CI_SLOW_BUILD_FILTERNAME}"]) { payloadTmp() } }
-                sbName = " as part of slowBuild filter: ${script.env.CI_SLOW_BUILD_FILTERNAME}"
+                sbName = " :: as part of slowBuild filter: ${script.env.CI_SLOW_BUILD_FILTERNAME}"
             }
 
             // Note: non-declarative pipeline syntax inside the generated stages
