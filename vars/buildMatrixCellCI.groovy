@@ -430,6 +430,7 @@ CILOGPID=\$!
 sleep 1; echo ''
 kill "\$CILOGPID" >/dev/null 2>&1
 ( # cat helps avoid errors due to expansion of cmd (et al) as shell-parsable code
+  set +x
   printf "FINISHED with exit-code \$RES "
   cat << EOF
 cmd: ${cmd}
