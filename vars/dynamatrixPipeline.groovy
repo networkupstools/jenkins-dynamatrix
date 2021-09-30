@@ -478,7 +478,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // TODO: Something similar but with each stage's
                         // own buildResult verdicts after the build...
                         def txt = "Generated slowBuild stages for this run ${env?.BUILD_URL} :\n"
-                        txt += stagesBinBuild.keySet().sort().toString()
+                        stagesBinBuild.keySet().sort().toString().each { txt += "${it}\n" }
                         writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
                         archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
                     } catch (Throwable t) {
