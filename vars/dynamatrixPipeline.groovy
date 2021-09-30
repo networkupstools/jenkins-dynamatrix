@@ -422,7 +422,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             // defined in the executed stage body. Maybe we
                             // should inject this debugging aid into the
                             // dynamatrixAxesCommonEnv or similar...
-                            withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().replaceAll("'", '').replaceAll('"', '').replaceAll(/\\s/, '_') : "N/A" )]) {
+                            withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_') : "N/A" )]) {
                                 if (Utils.isClosure(sb?.bodyParStages)) {
                                     // body may be empty {}, if user wants so
                                     stagesBinBuild += sb.getParStages(dynamatrix, sb.bodyParStages)
