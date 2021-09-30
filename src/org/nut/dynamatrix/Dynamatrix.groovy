@@ -1076,7 +1076,8 @@ def parallelStages = prepareDynamatrix(
             def sbName = ""
             if (script?.env?.CI_SLOW_BUILD_FILTERNAME) {
                 def payloadTmp = payload
-                payload = { script.withEnv(["CI_SLOW_BUILD_FILTERNAME=${script.env.CI_SLOW_BUILD_FILTERNAME}"]) { payloadTmp() } }
+                def weStr = "CI_SLOW_BUILD_FILTERNAME=${script.env.CI_SLOW_BUILD_FILTERNAME}"
+                payload = { script.withEnv([weStr]) { payloadTmp() } }
                 sbName = " :: as part of slowBuild filter: ${script.env.CI_SLOW_BUILD_FILTERNAME}"
             }
 
