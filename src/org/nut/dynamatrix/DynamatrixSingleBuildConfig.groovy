@@ -195,7 +195,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         labelSet1.each() {String label ->
             // Split composite labels like "COMPILER=CLANG CLANGVER=9", if any
             // and avoid removing from inside the loop over same Set
-            if (label =~ /\s+/) {
+            if (label =~ /\s+/ && !(label =~ /^[^=\s]+=["']/)) { // do not split intentional multi-token values like CFLAGS="-Wall -Werror...'
                 Set tmpSet = label.split(/\s/)
                 tmpSet.remove(null)
                 tmpSet.remove("")
