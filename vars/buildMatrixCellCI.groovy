@@ -221,30 +221,30 @@ set +x
         // and their namesakes will be removed before the build.
         // TODO: invent a way around `git status` violations for projects that care?
         if (dynacfgPipeline?.buildPhases?.prepconf) {
-            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.prepconf}", ".ci.${archPrefix}.prepconf.log", stageName)
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.prepconf}", ".ci.${archPrefix}.prepconf.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME)
             cmdPrepLabel += "prepconf "
         }
 
         if (dynacfgPipeline?.buildPhases?.configure) {
-            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.configure}", ".ci.${archPrefix}.prepconf.log", stageName)
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.configure}", ".ci.${archPrefix}.prepconf.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME)
             cmdPrepLabel += "configure "
         }
 
         if (dynacfgPipeline?.buildPhases?.buildQuiet) {
-            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.buildQuiet}", ".ci.${archPrefix}.build.log", stageName)
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.buildQuiet}", ".ci.${archPrefix}.build.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME)
             cmdBuildLabel += "buildQuiet "
         } else if (dynacfgPipeline?.buildPhases?.build) {
-            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.build}", ".ci.${archPrefix}.build.log", stageName)
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.build}", ".ci.${archPrefix}.build.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME)
             cmdBuildLabel += "build "
         }
 
         if (dynacfgPipeline?.buildPhases?.check) {
-            cmdTest1 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.check}", ".ci.${archPrefix}.check.log", stageName)
+            cmdTest1 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.check}", ".ci.${archPrefix}.check.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME)
             cmdTest1Label += "check "
         }
 
         if (dynacfgPipeline?.buildPhases?.distcheck) {
-            cmdTest2 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.distcheck}", ".ci.${archPrefix}.distcheck.log", stageName)
+            cmdTest2 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.distcheck}", ".ci.${archPrefix}.distcheck.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME)
             cmdTest2Label += "distcheck "
         }
 
@@ -421,7 +421,7 @@ if [ -s config.log ]; then gzip < config.log > '.ci.${archPrefix}.config.log.gz'
 
 } // buildMatrixCellCI()
 
-def cmdlineBuildLogged(def cmd, def logfile, def stageName) {
+def cmdlineBuildLogged(def cmd, def logfile, def stageName, def CI_SLOW_BUILD_FILTERNAME = null) {
     // A little sleep allows "tail" to show the last lines of that build log
     return """ RES=0; touch '${logfile}'
 tail -f '${logfile}' &
@@ -439,7 +439,7 @@ EOF
 cmdOrig: ${cmd}
 ...for stageName: ${stageName}
 EOF
-    if [ -n "${env.CI_SLOW_BUILD_FILTERNAME}" ]; then
+    if [ -n "${CI_SLOW_BUILD_FILTERNAME}" ] && [ "null" != "${CI_SLOW_BUILD_FILTERNAME}" ]; then
   cat << 'EOF'
 ...as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}
 EOF
@@ -449,11 +449,6 @@ EOF
 EOF
   echo "NOTE: Saved big job artifacts for this single build scenario usually have same identifier in the middle of file name"
   if [ -s config.log ] ; then echo "...e.g. a (renamed) copy of config.log for this build" ; fi
-  if [ -n "\${CI_SLOW_BUILD_FILTERNAME}" ] ; then
-    cat << EOF
-CI_SLOW_BUILD_FILTERNAME=\${CI_SLOW_BUILD_FILTERNAME}
-EOF
-  fi
 ) >&2
 [ \$RES = 0 ] || exit \$RES
 """
