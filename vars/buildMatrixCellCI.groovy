@@ -349,16 +349,22 @@ for F in .ci.*.log ; do
 done
 """
 
+        // Log scan analyses, once finely grained per tool/config,
+        // and another clumping all tools together to deduplicate
         def i = null
+        def ia = null
         switch (compilerTool) {
             case 'gcc':
                 i = scanForIssues tool: gcc(id: id, pattern: '.ci-sanitizedPaths.*.log')
+                ia = scanForIssues tool: gcc(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log')
                 break
             case 'gcc3':
                 i = scanForIssues tool: gcc3(id: id, pattern: '.ci-sanitizedPaths.*.log')
+                ia = scanForIssues tool: gcc3(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log')
                 break
             case 'clang':
                 i = scanForIssues tool: clang(id: id, pattern: '.ci-sanitizedPaths.*.log')
+                ia = scanForIssues tool: clang(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log')
                 break
         }
         if (i != null) {
@@ -370,6 +376,17 @@ done
             } else {
                 // Publish individual build scenario results now
                 doSummarizeIssues([i], id + "--analysis", id + "--analysis")
+            }
+        }
+        if (ia != null) {
+            dynamatrixGlobalState.issueAnalysisAggregated << ia
+            if (dynacfgPipeline?.delayedIssueAnalysis) {
+                // job should call doSummarizeIssues() in the end
+                // for aggregated results over all build codepaths
+                echo "Collected aggregated issues analysis was logged to make a big summary in the end"
+            } else {
+                // Publish individual build scenario results now
+                doSummarizeIssues([ia], "C/C++ compiler aggregated analysis", "C/C++ compiler aggregated analysis")
             }
         }
 

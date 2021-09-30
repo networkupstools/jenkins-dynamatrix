@@ -3,6 +3,8 @@ package org.nut.dynamatrix;
 class dynamatrixGlobalState {
     // buildMatrixCell* steps populate this with their build analysis results
     static ArrayList<Object> issueAnalysis = []
+    // same, but try to deduplicate same results recevied by different tools
+    static ArrayList<Object> issueAnalysisAggregated = []
 
     // Some steps in a pipeline, such as git checkouts sped up by a local
     // reference repository, should use a worker (or even a definitive one).

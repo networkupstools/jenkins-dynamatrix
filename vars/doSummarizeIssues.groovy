@@ -45,5 +45,5 @@ void call(def issueAnalysisArr, String id, String name) {
 void call() {
     // Summary at end of pipeline
     doSummarizeIssues(dynamatrixGlobalState.issueAnalysis, 'analysis', 'All Issues')
-    doSummarizeIssues(dynamatrixGlobalState.issueAnalysis, 'aggregated-analysis', 'All Issues - Aggregated')
+    doSummarizeIssues(dynamatrixGlobalState.issueAnalysisAggregated, 'aggregated-analysis', 'All Issues - Aggregated')
 } // doSummarizeIssues()
