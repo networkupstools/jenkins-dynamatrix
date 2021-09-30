@@ -337,7 +337,8 @@ set +x
         // Needs Warnings-NG plugin, Forensics API plugin, Git Forensics plugin...
         echo "Completed with result ${shRes} (" +
             (shRes == 0 ? "SUCCESS" : ( (dsbc?.isAllowedFailure) ? "ALLOWED " : "" ) + "FAILURE") +
-            ")" + (dsbc == null ? "" : " this build configuration: " + dsbc.toString())
+            ")" + (dsbc == null ? "" : " this build configuration: " + dsbc.toString()) +
+            (env?.CI_SLOW_BUILD_FILTERNAME ? " :: as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}" : "")
 
         // Strip workspace paths and relative-to-rootfs (../../../usr/include)
         // from inspected logs, by sed or by some tool args?..
