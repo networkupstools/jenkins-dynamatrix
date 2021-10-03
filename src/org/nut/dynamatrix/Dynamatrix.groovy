@@ -218,7 +218,10 @@ def parallelStages = prepareDynamatrix(
         def debugTrace = this.shouldDebugTrace()
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Clearing certain pre-existing data points from dynacfg object"
         this.dynacfg.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
-        this.buildLabelsAgents = []
+        this.buildLabelsAgents = [:]
+        this.effectiveAxes = []
+        this.buildLabelCombos = []
+        this.buildLabelCombosFlat = []
         return this
     }
 
