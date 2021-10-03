@@ -224,7 +224,7 @@ def parallelStages = prepareDynamatrix(
         this.buildLabelCombosFlat = []
 
         // GC this to be sure:
-        this.nodeCaps = null
+        //this.nodeCaps = null
         nodeCaps = null
 
         return this
@@ -282,10 +282,10 @@ def parallelStages = prepareDynamatrix(
             debugTrace,
             debugErrors)
 
-        this.nodeCaps = null // kick GC
+        //this.nodeCaps = null // kick GC
         nodeCaps = tmpNodeCaps
         //this.nodeCaps = tmpNodeCaps.clone()
-        this.nodeCaps = nodeCaps
+        //this.nodeCaps = nodeCaps
         if (debugTrace) {
             this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(nodeCaps)
             this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(nodeCaps.nodeData)
@@ -304,7 +304,8 @@ def parallelStages = prepareDynamatrix(
         // ['ARCH', 'GCCVER', 'OS'] as expanded from '${COMPILER}VER' part:
         this.effectiveAxes = []
         dynacfg.dynamatrixAxesLabels.each() {axis ->
-            TreeSet effAxis = this.nodeCaps.resolveAxisName(axis).sort()
+            //TreeSet effAxis = this.nodeCaps.resolveAxisName(axis).sort()
+            TreeSet effAxis = nodeCaps.resolveAxisName(axis).sort()
             if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
             this.effectiveAxes << effAxis
         }
@@ -344,14 +345,19 @@ def parallelStages = prepareDynamatrix(
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Final detected effectiveAxes: " + this.effectiveAxes
 
         //this.nodeCaps.enableDebugTrace = true
+        //nodeCaps.enableDebugTrace = true
         // Prepare all possible combos of requested axes (meaning we can
         // request a build agent label "A && B && C" and all of those
         // would work with our currently defined agents). The buildLabels
         // are expected to provide good uniqueness thanks to the SortedSet
         // of effectiveAxes and their values that we would look into.
         this.buildLabelCombos = []
-        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): looking for axis values in nodeCaps.nodeData.keySet(): " + Utils.castString(this.nodeCaps.nodeData.keySet())
-        this.nodeCaps.nodeData.keySet().each() {nodeName ->
+        if (debugTrace) {
+            //this.script.println "[DEBUG] prepareDynamatrix(): looking for axis values in this.nodeCaps.nodeData.keySet(): " + Utils.castString(this.nodeCaps.nodeData.keySet())
+            this.script.println "[DEBUG] prepareDynamatrix(): looking for axis values in nodeCaps.nodeData.keySet(): " + Utils.castString(nodeCaps.nodeData.keySet())
+        }
+        //this.
+        nodeCaps.nodeData.keySet().each() {nodeName ->
             // Looking at each node separately allows us to be sure that any
             // combo of axis-values (all of which it allegedly provides)
             // can be fulfilled
@@ -362,7 +368,8 @@ def parallelStages = prepareDynamatrix(
                 def axisCombos = []
                 axisSet.each() {axis ->
                     if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}'..."
-                    def tmpset = this.nodeCaps.resolveAxisValues(axis, nodeName, true)
+                    //def tmpset = this.nodeCaps.resolveAxisValues(axis, nodeName, true)
+                    def tmpset = nodeCaps.resolveAxisValues(axis, nodeName, true)
                     if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}': got tmpset: ${Utils.castString(tmpset)}"
                     // Got at least one usable key=value string?
                     if (tmpset != null && tmpset.size() > 0) {
