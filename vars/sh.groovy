@@ -28,9 +28,7 @@ def ciWrapSh(def script, Map shargs = [:]) {
 
         // Be sure homedirs for the worker are in sync, so current workspace
         // path (`pwd`) for the agent is same on the other side.
-        shpwd = script.sh(returnStdout: true, script: 'pwd').trim()
-        shargs.script = """cat <<'__CI_WRAP_SH_EOF__' | ${env.CI_WRAP_SH}
-cd "${shpwd}" || exit
+        shargs.script = """(echo "cd '`pwd`' || exit; " ; cat) <<'__CI_WRAP_SH_EOF__' | ${env.CI_WRAP_SH}
 ${shcmd}
 __CI_WRAP_SH_EOF__
 """
