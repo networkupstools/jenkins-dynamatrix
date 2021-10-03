@@ -31,18 +31,18 @@ class Dynamatrix implements Cloneable {
 
     // Store values populated by prepareDynamatrix() so further generateBuild()
     // and practical generateBuildConfigSet() calls can use these quickly.
-    NodeCaps nodeCaps
+    private NodeCaps nodeCaps
     // The following Sets contain different levels of processing of data about
     // build agent capabilities proclaimed in their agent labels (via nodeCaps)
-    Set effectiveAxes = []
-    Set buildLabelCombos = []
-    Set buildLabelCombosFlat = []
+    private Set effectiveAxes = []
+    private Set buildLabelCombos = []
+    private Set buildLabelCombosFlat = []
     // This is one useful final result, mapping strings for `agent{label 'expr'}`
     // clauses to arrays of label contents (including "composite" labels where
     // key=value's are persistently grouped, e.g. "COMPILER=GCC GCCVER=123",
     // and the original label set e.g. "nut-builder" used to initialize the
     // set of agents this dynamatrix is interested in)
-    Map<String, Set> buildLabelsAgents = [:]
+    private Map<String, Set> buildLabelsAgents = [:]
 
     public Dynamatrix(Object script) {
         this.script = script
