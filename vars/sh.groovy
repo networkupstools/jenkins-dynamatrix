@@ -24,7 +24,7 @@ ${shcmd}
 EOF
 """
     }
-    return this.sh(shargs)
+    return owner.sh(shargs)
 }
 
 def call(String shcmd) {
