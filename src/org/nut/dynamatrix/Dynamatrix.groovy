@@ -277,6 +277,8 @@ def parallelStages = prepareDynamatrix(
             dynamatrixGlobalState.enableDebugTrace,
             dynamatrixGlobalState.enableDebugErrors)
         this.nodeCaps.optionalPrintDebug()
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(nodeCaps)
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(nodeCaps.nodeData)
 
         // Original request could have regexes or groovy-style substitutions
         // to expand. The effectiveAxes is generally a definitive set of
@@ -330,6 +332,7 @@ def parallelStages = prepareDynamatrix(
         // are expected to provide good uniqueness thanks to the SortedSet
         // of effectiveAxes and their values that we would look into.
         this.buildLabelCombos = []
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): looking for axis values in nodeCaps.nodeData.keySet(): " + Utils.castString(nodeCaps.nodeData.keySet())
         this.nodeCaps.nodeData.keySet().each() {nodeName ->
             // Looking at each node separately allows us to be sure that any
             // combo of axis-values (all of which it allegedly provides)
