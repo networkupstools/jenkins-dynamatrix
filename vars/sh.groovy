@@ -15,7 +15,7 @@
  *
  * See NUT::docs/ci-farm-lxc-setup.txt for setup details.
  */
-def sh(Map shargs = [:]) {
+def call(Map shargs = [:]) {
     if (env?.CI_WRAP_SH) {
         echo "Executing shell step wrapped into: ${env.CI_WRAP_SH}"
         def shcmd = shargs.script
@@ -27,7 +27,7 @@ EOF
     return this.sh(shargs)
 }
 
-def sh(String shcmd) {
+def call(String shcmd) {
     Map shargs = [:]
     shargs.script = shcmd
     return sh(shargs)
