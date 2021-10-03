@@ -199,7 +199,7 @@ def parallelStages = prepareDynamatrix(
         return false
     }
 
-    static def clearNeedsPrepareDynamatrixClone(dynacfgOrig = [:]) {
+    static def clearMapNeedsPrepareDynamatrixClone(dynacfgOrig = [:]) {
         def dc = dynacfgOrig.clone()
         if (dc?.commonLabelExpr)
             dc.remove('commonLabelExpr')
@@ -210,6 +210,16 @@ def parallelStages = prepareDynamatrix(
         if (dc?.requiredNodelabels)
             dc.remove('requiredNodelabels')
         return dc
+    }
+
+    def clearNeedsPrepareDynamatrixClone(dynacfgOrig = [:]) {
+        // We are reusing a Dynamatrix object, maybe a clone
+        // Wipe dynacfg data points that may impact re-init below
+        def debugTrace = this.shouldDebugTrace()
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Clearing certain pre-existing data points from dynacfg object"
+        this.dynacfg.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
+        this.buildLabelsAgents = []
+        return this
     }
 
     def prepareDynamatrix(dynacfgOrig = [:]) {
@@ -228,12 +238,6 @@ def parallelStages = prepareDynamatrix(
         // them -- dynacfgOrig.mergeMode["dynacfgFieldNameString"]="merge"
 
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initial dynacfg: ${Utils.castString(dynacfg)}\nParameter dynacfgOrig: ${Utils.castString(dynacfgOrig)}"
-        if (needsPrepareDynamatrixClone(dynacfgOrig)) {
-            // We are reusing a Dynamatrix object, maybe a clone
-            // Wipe dynacfg data points that may impact re-init below
-            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Clearing certain pre-existing data points from dynacfg object"
-            dynacfg.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
-        }
         def sanityRes = dynacfg.initDefault(dynacfgOrig)
         if (sanityRes != true) {
             if (sanityRes instanceof String) {
@@ -1018,10 +1022,11 @@ def parallelStages = prepareDynamatrix(
             }
 
             def dmClone = this.clone()
+            dmClone.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
             dmClone.prepareDynamatrix(dynacfgOrig)
             // Don't forget to clear the config, to not loop on this
             return dmClone.generateBuild(
-                clearNeedsPrepareDynamatrixClone(dynacfgOrig),
+                clearMapNeedsPrepareDynamatrixClone(dynacfgOrig),
                 returnSet, bodyOrig)
         }
 
