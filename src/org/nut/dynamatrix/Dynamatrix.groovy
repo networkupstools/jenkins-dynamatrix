@@ -283,7 +283,7 @@ def parallelStages = prepareDynamatrix(
             debugErrors)
 
         this.nodeCaps = null // kick GC
-        this.nodeCaps = tmpNodeCaps.clone()
+        //this.nodeCaps = tmpNodeCaps.clone()
         nodeCaps = tmpNodeCaps
         if (debugTrace) {
             this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(nodeCaps)
