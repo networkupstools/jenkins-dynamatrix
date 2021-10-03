@@ -282,8 +282,8 @@ def parallelStages = prepareDynamatrix(
             debugTrace,
             debugErrors)
 
-        nodeCaps = tmpNodeCaps
         this.nodeCaps = null // kick GC
+        nodeCaps = tmpNodeCaps
         //this.nodeCaps = tmpNodeCaps.clone()
         this.nodeCaps = nodeCaps
         if (debugTrace) {
