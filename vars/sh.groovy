@@ -34,5 +34,6 @@ def ciWrapSh(def script, String shcmd) {
 }
 
 def call(def shargs) {
-    return ciWrapSh(this, shargs)
+    // refer to steps.sh for real implementation
+    return ciWrapSh(steps, shargs)
 }
