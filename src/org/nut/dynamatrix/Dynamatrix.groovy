@@ -304,8 +304,8 @@ def parallelStages = prepareDynamatrix(
         // ['ARCH', 'GCCVER', 'OS'] as expanded from '${COMPILER}VER' part:
         this.effectiveAxes = []
         dynacfg.dynamatrixAxesLabels.each() {axis ->
-            //TreeSet effAxis = this.nodeCaps.resolveAxisName(axis).sort()
-            TreeSet effAxis = nodeCaps.resolveAxisName(axis).sort()
+            TreeSet effAxis = this.nodeCaps.resolveAxisName(axis).sort()
+            //TreeSet effAxis = nodeCaps.resolveAxisName(axis).sort()
             if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
             this.effectiveAxes << effAxis
         }
