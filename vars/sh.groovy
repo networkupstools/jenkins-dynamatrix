@@ -7,6 +7,8 @@
  *   `ssh -o SendEnv='*' jenkins-debian11-ppc64el /bin/sh `
  * or
  *   `/bin/sudo /usr/sbin/chroot /srv/libvirt/mycontainer/rootfs /bin/sh `
+ * ...and maybe suffix /bin/sh -xe ` for same debug-tracing effect as
+ * seen by default on Jenkins.
  *
  * Note that in case of SSH, the server in container should `AcceptEnv *`
  * and permit non-interactive SSH login for the CI account (and have its
