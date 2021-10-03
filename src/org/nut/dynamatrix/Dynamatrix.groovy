@@ -274,8 +274,8 @@ def parallelStages = prepareDynamatrix(
         this.nodeCaps = new NodeCaps(
             this.script,
             commonLabelExpr,
-            dynamatrixGlobalState.enableDebugTrace,
-            dynamatrixGlobalState.enableDebugErrors)
+            debugTrace,
+            debugErrors)
         this.nodeCaps.optionalPrintDebug()
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(nodeCaps)
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(nodeCaps.nodeData)
