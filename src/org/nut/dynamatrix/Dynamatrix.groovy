@@ -276,10 +276,11 @@ def parallelStages = prepareDynamatrix(
             commonLabelExpr,
             debugTrace,
             debugErrors)
+
         if (debugTrace) {
+            this.nodeCaps.printDebug()
             this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(this.nodeCaps)
             this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(this.nodeCaps.nodeData)
-            this.nodeCaps.printDebug()
         }
 
         // Original request could have regexes or groovy-style substitutions
