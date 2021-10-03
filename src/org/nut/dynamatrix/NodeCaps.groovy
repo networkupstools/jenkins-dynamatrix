@@ -75,8 +75,10 @@ class NodeCaps {
             }
         }
 
+        if (this.enableDebugTrace) this.script.println("NodeCaps: collected node data: ${Utils.castString(nodeData)}")
         this.nodeData = nodeData
         this.isInitialized = true
+        if (this.enableDebugTrace) this.script.println("NodeCaps: saved this.node data: ${Utils.castString(this.nodeData)}")
     }
 
     @NonCPS
