@@ -222,6 +222,11 @@ def parallelStages = prepareDynamatrix(
         this.effectiveAxes = []
         this.buildLabelCombos = []
         this.buildLabelCombosFlat = []
+
+        // GC this to be sure:
+        this.nodeCaps = null
+        nodeCaps = null
+
         return this
     }
 
