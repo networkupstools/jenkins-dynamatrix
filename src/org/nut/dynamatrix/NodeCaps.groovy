@@ -10,7 +10,7 @@ import org.nut.dynamatrix.NodeData;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
-class NodeCaps {
+class NodeCaps implements Cloneable {
     /* This class encapsulates retrieval, storage and queries to information
      * about labels declared by Jenkins build agents which is of interest to
      * the dynamatrix effort, to know the agents' capabilities.
@@ -79,6 +79,15 @@ class NodeCaps {
         this.nodeData = tmpNodeData
         this.isInitialized = true
         if (this.enableDebugTrace) this.script.println("NodeCaps: saved this.node data: ${Utils.castString(this.nodeData)}")
+    }
+
+    public boolean canEqual(java.lang.Object other) {
+        return other instanceof NodeCaps
+    }
+
+    @Override
+    public NodeCaps clone() throws CloneNotSupportedException {
+        return (NodeCaps) super.clone();
     }
 
     @NonCPS
