@@ -277,8 +277,8 @@ def parallelStages = prepareDynamatrix(
             debugTrace,
             debugErrors)
         if (debugTrace) {
-            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(nodeCaps)
-            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(nodeCaps.nodeData)
+            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(this.nodeCaps)
+            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(this.nodeCaps.nodeData)
             this.nodeCaps.printDebug()
         }
 
@@ -334,7 +334,7 @@ def parallelStages = prepareDynamatrix(
         // are expected to provide good uniqueness thanks to the SortedSet
         // of effectiveAxes and their values that we would look into.
         this.buildLabelCombos = []
-        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): looking for axis values in nodeCaps.nodeData.keySet(): " + Utils.castString(nodeCaps.nodeData.keySet())
+        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): looking for axis values in nodeCaps.nodeData.keySet(): " + Utils.castString(this.nodeCaps.nodeData.keySet())
         this.nodeCaps.nodeData.keySet().each() {nodeName ->
             // Looking at each node separately allows us to be sure that any
             // combo of axis-values (all of which it allegedly provides)
