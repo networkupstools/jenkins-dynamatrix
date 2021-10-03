@@ -547,6 +547,21 @@ def parallelStages = prepareDynamatrix(
         return true
     }
 
+    def clearNeedsPrepareDynamatrixClone(dynacfgOrig = [:]) {
+        // If the incoming configuration would rewrite some fields that
+        // need re-initialization by Dynamatrix.prepareDynamatrix(),
+        // then let these config point be re-defined (in that reinit).
+        if (dc?.commonLabelExpr)
+            this.commonLabelExpr = null
+        if (dc?.dynamatrixAxesLabels)
+            this. dynamatrixAxesLabels = []
+        if (dc?.excludedNodelabels)
+            this.excludedNodelabels = []
+        if (dc?.requiredNodelabels)
+            this.requiredNodelabels = []
+        return this
+    }
+
     public def sanitycheckDynamatrixAxesLabels() {
         // Our callers expect a few specific data constructs here:
         // either a single string or pattern (that will be remade into

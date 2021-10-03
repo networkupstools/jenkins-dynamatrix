@@ -228,6 +228,11 @@ def parallelStages = prepareDynamatrix(
         // them -- dynacfgOrig.mergeMode["dynacfgFieldNameString"]="merge"
 
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initial dynacfg: ${Utils.castString(dynacfg)}\nParameter dynacfgOrig: ${Utils.castString(dynacfgOrig)}"
+        if (needsPrepareDynamatrixClone(dynacfgOrig)) {
+            // We are reusing a Dynamatrix object, maybe a clone
+            // Wipe dynacfg data points that may impact re-init below
+            dynacfg.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
+        }
         def sanityRes = dynacfg.initDefault(dynacfgOrig)
         if (sanityRes != true) {
             if (sanityRes instanceof String) {
