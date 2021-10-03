@@ -23,9 +23,9 @@ def ciWrapSh(def script, Map shargs = [:]) {
         echo "Executing shell step wrapped into: ${env.CI_WRAP_SH}"
         def shcmd = shargs.script
         if (dynamatrixGlobalState.enableDebugTrace) echo "[DEBUG] Wrapped shell code:\n${shcmd}"
-        shargs.script = """cat <<'EOF' | ${env.CI_WRAP_SH}
+        shargs.script = """cat <<'__CI_WRAP_SH_EOF__' | ${env.CI_WRAP_SH}
 ${shcmd}
-EOF
+__CI_WRAP_SH_EOF__
 """
     }
     return script.sh(shargs)
