@@ -283,10 +283,17 @@ def parallelStages = prepareDynamatrix(
             debugErrors)
 
         this.nodeCaps = tmpNodeCaps
+        nodeCaps = tmpNodeCaps
         if (debugTrace) {
+            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(nodeCaps)
+            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(nodeCaps.nodeData)
+            nodeCaps.printDebug()
+            this.script.println "[DEBUG] prepareDynamatrix(): collected this.nodeCaps: " + Utils.castString(this.nodeCaps)
+            this.script.println "[DEBUG] prepareDynamatrix(): collected this.nodeCaps.nodeData: " + Utils.castString(this.nodeCaps.nodeData)
             this.nodeCaps.printDebug()
-            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(this.nodeCaps)
-            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(this.nodeCaps.nodeData)
+            this.script.println "[DEBUG] prepareDynamatrix(): collected tmpNodeCaps: " + Utils.castString(tmpNodeCaps)
+            this.script.println "[DEBUG] prepareDynamatrix(): collected tmpNodeCaps.nodeData: " + Utils.castString(tmpNodeCaps.nodeData)
+            tmpNodeCaps.printDebug()
         }
 
         // Original request could have regexes or groovy-style substitutions
