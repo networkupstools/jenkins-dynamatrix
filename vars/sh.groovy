@@ -2,8 +2,9 @@
  * into the "real" build environment, pass the "sh" argument command
  * through that, to be evaluated on that side.
  *
- * The build agent entry on Jenkins should define a CI_WRAP_SH envvar like:
- *   `ssh -o SendEnv '*' jenkins-debian11-ppc64el /bin/sh `
+ * The build agent entry on Jenkins should define a CI_WRAP_SH envvar
+ * for a pipe to shell interpreter, like:
+ *   `ssh -o SendEnv='*' jenkins-debian11-ppc64el /bin/sh `
  * or
  *   `/bin/sudo /usr/sbin/chroot /srv/libvirt/mycontainer/rootfs /bin/sh `
  *
@@ -15,10 +16,13 @@
  *
  * See NUT::docs/ci-farm-lxc-setup.txt for setup details.
  */
+import org.nut.dynamatrix.dynamatrixGlobalState;
+
 def ciWrapSh(def script, Map shargs = [:]) {
     if (env?.CI_WRAP_SH) {
         echo "Executing shell step wrapped into: ${env.CI_WRAP_SH}"
         def shcmd = shargs.script
+        if (dynamatrixGlobalState.enableDebugTrace) echo "[DEBUG] Wrapped shell code:\n${shcmd}"
         shargs.script = """cat <<'EOF' | ${env.CI_WRAP_SH}
 ${shcmd}
 EOF
