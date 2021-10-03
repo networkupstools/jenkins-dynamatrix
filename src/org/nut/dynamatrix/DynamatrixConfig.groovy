@@ -547,7 +547,7 @@ def parallelStages = prepareDynamatrix(
         return true
     }
 
-    def clearNeedsPrepareDynamatrixClone(dynacfgOrig = [:]) {
+    def clearNeedsPrepareDynamatrixClone(dc = [:]) {
         // If the incoming configuration would rewrite some fields that
         // need re-initialization by Dynamatrix.prepareDynamatrix(),
         // then let these config point be re-defined (in that reinit).
