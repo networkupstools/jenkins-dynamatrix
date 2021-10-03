@@ -276,9 +276,11 @@ def parallelStages = prepareDynamatrix(
             commonLabelExpr,
             debugTrace,
             debugErrors)
-        this.nodeCaps.optionalPrintDebug()
-        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(nodeCaps)
-        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(nodeCaps.nodeData)
+        if (debugTrace) {
+            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(nodeCaps)
+            this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(nodeCaps.nodeData)
+            this.nodeCaps.printDebug()
+        }
 
         // Original request could have regexes or groovy-style substitutions
         // to expand. The effectiveAxes is generally a definitive set of
