@@ -23,13 +23,13 @@ class NodeCaps implements Cloneable {
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
     // What we looked for (null means all known nodes):
-    public final String labelExpr
+    public String labelExpr
 
     // Collected data:
     // TODO: Is a Map needed now that we have a copy of "node" in NodeData?
     // Maybe a Set is okay? On the other hand, being a Map key guarantees
     // uniqueness...
-    public final Map<String, NodeData> nodeData
+    public Map<String, NodeData> nodeData
 
     public NodeCaps(script, String nodeLabelExpr = null, boolean debugTrace = null, boolean debugErrors = null) {
         /*
