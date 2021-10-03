@@ -23,7 +23,11 @@ def ciWrapSh(def script, Map shargs = [:]) {
         echo "Executing shell step wrapped into: ${env.CI_WRAP_SH}"
         def shcmd = shargs.script
         if (dynamatrixGlobalState.enableDebugTrace) echo "[DEBUG] Wrapped shell code:\n${shcmd}"
+
+        // Be sure homedirs for the worker are in sync, so current workspace
+        // path (`pwd`) for the agent is same on the other side.
         shargs.script = """cat <<'__CI_WRAP_SH_EOF__' | ${env.CI_WRAP_SH}
+cd `pwd` || exit
 ${shcmd}
 __CI_WRAP_SH_EOF__
 """
