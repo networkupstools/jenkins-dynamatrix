@@ -31,11 +31,11 @@ class NodeCaps {
     // uniqueness...
     public final Map<String, NodeData> nodeData
 
-    public NodeCaps(script, String labelExpr = null, boolean debugTrace = null, boolean debugErrors = null) {
+    public NodeCaps(script, String nodeLabelExpr = null, boolean debugTrace = null, boolean debugErrors = null) {
         /*
          * Collect all info about useful build agents in one collection:
          * Returns a Map with names of currently known agent which matched the
-         * labelExpr (or all agents if labelExpr content is trivial),
+         * nodeLabelExpr (or all agents if nodeLabelExpr content is trivial),
          * mapped to the Map of nodes' selected metadata including capabilities
          * they declared with further labels mapped as KEY=VALUE entries.
          */
@@ -50,33 +50,33 @@ class NodeCaps {
 
         // Track the original expression, matched or not, in the returned value
         // TODO: Maybe track something else like timestamps?
-        this.labelExpr = labelExpr
-        def nodeData = [:]
+        this.labelExpr = nodeLabelExpr
+        def tmpNodeData = [:]
 
         // Have it sorted just in case:
         def builders = null
-        if (labelExpr == null || "".equals(labelExpr.trim())) {
+        if (this.labelExpr == null || "".equals(this.labelExpr.trim())) {
             def jenkins = Jenkins.getInstanceOrNull()
             if (jenkins != null) {
                 builders = jenkins.getNodes()
                 if (this.enableDebugTrace) this.script.println("NodeCaps: got all defined agents from Jenkins as builders: ${Utils.castString(builders)}")
             }
         } else {
-            Label le = Label.get(labelExpr)
+            Label le = Label.get(this.labelExpr)
             builders = le.getNodes()
-            if (this.enableDebugTrace) this.script.println("NodeCaps: got builders by label expression '${labelExpr}': ${Utils.castString(builders)}")
+            if (this.enableDebugTrace) this.script.println("NodeCaps: got builders by label expression '${this.labelExpr}': ${Utils.castString(builders)}")
         }
 
         if (builders != null) {
             builders.each() {hudson.model.Node node ->
                 if (node == null) return
                 if (this.enableDebugTrace) this.script.println("NodeCaps: looking for node data: ${Utils.castString(node)}")
-                nodeData[node.getNodeName()] = new NodeData(node)
+                tmpNodeData[node.getNodeName()] = new NodeData(node)
             }
         }
 
         if (this.enableDebugTrace) this.script.println("NodeCaps: collected node data: ${Utils.castString(nodeData)}")
-        this.nodeData = nodeData
+        this.nodeData = tmpNodeData
         this.isInitialized = true
         if (this.enableDebugTrace) this.script.println("NodeCaps: saved this.node data: ${Utils.castString(this.nodeData)}")
     }
