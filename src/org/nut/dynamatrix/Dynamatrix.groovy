@@ -276,12 +276,13 @@ def parallelStages = prepareDynamatrix(
         // the "&&" from constraints, if any... and trim() generally:
         commonLabelExpr = commonLabelExpr.trim().replaceFirst(/^ *\&\& */, '').trim()
 
-        this.nodeCaps = new NodeCaps(
+        def tmpNodeCaps = new NodeCaps(
             this.script,
             commonLabelExpr,
             debugTrace,
             debugErrors)
 
+        this.nodeCaps = tmpNodeCaps
         if (debugTrace) {
             this.nodeCaps.printDebug()
             this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(this.nodeCaps)
