@@ -231,6 +231,7 @@ def parallelStages = prepareDynamatrix(
         if (needsPrepareDynamatrixClone(dynacfgOrig)) {
             // We are reusing a Dynamatrix object, maybe a clone
             // Wipe dynacfg data points that may impact re-init below
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Clearing certain pre-existing data points from dynacfg object"
             dynacfg.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
         }
         def sanityRes = dynacfg.initDefault(dynacfgOrig)
@@ -1018,6 +1019,7 @@ def parallelStages = prepareDynamatrix(
 
             def dmClone = this.clone()
             dmClone.prepareDynamatrix(dynacfgOrig)
+            // Don't forget to clear the config, to not loop on this
             return dmClone.generateBuild(
                 clearNeedsPrepareDynamatrixClone(dynacfgOrig),
                 returnSet, bodyOrig)
