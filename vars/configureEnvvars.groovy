@@ -151,17 +151,36 @@ esac
 
 BITSARG=""
 LDBITSARG=""
+# Only set if guessed below from node capability label data:
+ARCH_TGT=""
 case "\${CONFIG_ENVVARS}" in
-    *m16*|*m32*|*m64*|*m128*) ;;
+    *m16*|*m32*|*m64*|*m128*|*march*) ;;
     *)
         if [ -n "\${ARCH_BITS}" ] && [ "\${ARCH_BITS}" -gt 0 ] ; then
                 BITSARG="-m\${ARCH_BITS}"
+                ARCH_TGT="`eval echo \\\$ARCH"\${ARCH_BITS}"`"
         else
             if [ -n "\${BITS}" ] && [ "\${BITS}" -gt 0 ] ; then
                 BITSARG="-m\${BITS}"
+                ARCH_TGT="`eval echo \\\$ARCH"\${BITS}"`"
             fi
         fi
         LDBITSARG="\${BITSARG}"
+
+        case "\${COMPILER}" in
+            GCC) # Current CLANG handles -m32/-m64 reasonably
+                case "\${ARCH_TGT}" in
+                    armv7l|armel|armhf)
+                        BITSARG="-mbe32"
+                        LDBITSARG="\${BITSARG}"
+                        ;;
+                    aarch64|arm64|armv8*)
+                        BITSARG="-march=armv8-a"
+                        LDBITSARG="\${BITSARG}"
+                        ;;
+                esac
+                ;;
+        esac
         ;;
 esac
 
@@ -189,7 +208,7 @@ if [ -n "\${LDBITSARG}" ]; then
     esac
 fi
 
-export CONFIG_ENVVARS STDARG STDXXARG BITSARG LDBITSARG CC CXX CFLAGS CXXFLAGS LDFLAGS
+export CONFIG_ENVVARS STDARG STDXXARG ARCH_TGT BITSARG LDBITSARG CC CXX CFLAGS CXXFLAGS LDFLAGS
 
 } """
     } // configureEnvvars
