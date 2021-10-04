@@ -150,6 +150,7 @@ case "\${CONFIG_ENVVARS}" in
 esac
 
 BITSARG=""
+LDBITSARG=""
 case "\${CONFIG_ENVVARS}" in
     *m16*|*m32*|*m64*|*m128*) ;;
     *)
@@ -160,6 +161,7 @@ case "\${CONFIG_ENVVARS}" in
                 BITSARG="-m\${BITS}"
             fi
         fi
+        LDBITSARG="\${BITSARG}"
         ;;
 esac
 
@@ -179,15 +181,15 @@ if [ -n "\${STDXXARG}" ] || [ -n "\${BITSARG}" ]; then
     esac
 fi
 
-if [ -n "\${BITSARG}" ]; then
+if [ -n "\${LDBITSARG}" ]; then
     case "\${CONFIG_ENVVARS}" in
         *" LDFLAGS="*|LDFLAGS=*)
-            CONFIG_ENVVARS="`echo "\${CONFIG_ENVVARS}" | sed "s,LDFLAGS=,LDFLAGS='\${BITSARG} ',"`" ;;
-        *) CONFIG_ENVVARS="\${CONFIG_ENVVARS} LDFLAGS='\${BITSARG}'" ;;
+            CONFIG_ENVVARS="`echo "\${CONFIG_ENVVARS}" | sed "s,LDFLAGS=,LDFLAGS='\${LDBITSARG} ',"`" ;;
+        *) CONFIG_ENVVARS="\${CONFIG_ENVVARS} LDFLAGS='\${LDBITSARG}'" ;;
     esac
 fi
 
-export CONFIG_ENVVARS STDARG STDXXARG BITSARG CC CXX CFLAGS CXXFLAGS LDFLAGS
+export CONFIG_ENVVARS STDARG STDXXARG BITSARG LDBITSARG CC CXX CFLAGS CXXFLAGS LDFLAGS
 
 } """
     } // configureEnvvars
