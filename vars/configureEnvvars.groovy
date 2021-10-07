@@ -158,11 +158,11 @@ case "\${CONFIG_ENVVARS}" in
     *)
         if [ -n "\${ARCH_BITS}" ] && [ "\${ARCH_BITS}" -gt 0 ] ; then
                 BITSARG="-m\${ARCH_BITS}"
-                ARCH_TGT="`eval echo \\\$ARCH"\${ARCH_BITS}"`"
+                ARCH_TGT="`eval echo "\\\\\$ARCH\${ARCH_BITS}"`"
         else
             if [ -n "\${BITS}" ] && [ "\${BITS}" -gt 0 ] ; then
                 BITSARG="-m\${BITS}"
-                ARCH_TGT="`eval echo \\\$ARCH"\${BITS}"`"
+                ARCH_TGT="`eval echo "\\\\\$ARCH\${BITS}"`"
             fi
         fi
         LDBITSARG="\${BITSARG}"
