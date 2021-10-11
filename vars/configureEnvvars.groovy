@@ -154,7 +154,7 @@ LDBITSARG=""
 # Only set if guessed below from node capability label data:
 ARCH_TGT=""
 case "\${CONFIG_ENVVARS}" in
-    *m16*|*m32*|*m64*|*m128*|*march*) ;;
+    *m16*|*m31*|*m32*|*mx32*|*m64*|*m128*|*march*) ;;
     *)
         if [ -n "\${ARCH_BITS}" ] && [ "\${ARCH_BITS}" -gt 0 ] ; then
                 BITSARG="-m\${ARCH_BITS}"
@@ -168,8 +168,14 @@ case "\${CONFIG_ENVVARS}" in
         LDBITSARG="\${BITSARG}"
 
         case "\${COMPILER}" in
-            GCC) # Current CLANG handles -m32/-m64 reasonably
+            GCC) # Current CLANG handles -m32/-m64 reasonably, but
+                 # GCC only has these switches for some platforms
+                 # Not covered below: TILE-GX, NVidia PTX...
                 case "\${ARCH_TGT}" in
+                    i?86|amd64|x86_64|x86*) ;;
+                    *sparc*) ;; # SPARC Options
+                    *ppc*|*powerpc*) ;; # RS/6000 and PowerPC Options
+                    *s390*) ;; # S/390 and zSeries Options - note there is -m31 (s390) but not -m32 in the doc; -m64 is for s390x
                     armv7l|armel|armhf)
                         BITSARG="-mbe32"
                         LDBITSARG="\${BITSARG}"
@@ -177,6 +183,10 @@ case "\${CONFIG_ENVVARS}" in
                     aarch64|arm64|armv8*)
                         BITSARG="-march=armv8-a"
                         LDBITSARG="\${BITSARG}"
+                        ;;
+                    *) echo "WARNING: configureEnvvars() could not determine correct platform bitness switches for GCC, leaving up to compiler defaults!" >&2
+                        BITSARG=""
+                        LDBITSARG=""
                         ;;
                 esac
                 ;;
