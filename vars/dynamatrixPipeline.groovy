@@ -543,17 +543,31 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
             }
 
+            def tmpRes = currentBuild.result
             stage("Run the bigger dynamatrix (${stagesBinBuild.size()-1} stages)") {
                 // This parallel, unlike "par1" above, tends to
                 // preclude further processing if it fails and
                 // so avoids detailing the failure analysis
                 warnError(message: "Not all of the 'slow build' succeeded; proceeding to analyze the results") {
                     parallel stagesBinBuild
+                    tmpRes = currentBuild.result
                 }
             }
             echo "Completed the 'slow build' dynamatrix"
             stage("Analyze the bigger dynamatrix") { // TOTHINK: post{always{...}} to the above? Is there one in scripted pipeline?
                 doSummarizeIssues()
+                // just in case warnError() above had dampened a
+                // parallel stage failure, make the verdict known
+                // in UI and final result, but let tear-down proceed:
+                currentBuild.result = tmpRes
+                switch (currentBuild.result) {
+                    case 'FAILURE':
+                        catchError(message: 'Marking a hard FAILURE') { error "slowBuild or something else failed" }
+                        break
+                    case 'UNSTABLE':
+                        warnError(message: 'Marking a soft expected fault') { error "slowBuild or something else did not succeed cleanly" }
+                        break
+                }
             }
         }
 
