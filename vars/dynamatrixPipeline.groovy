@@ -441,6 +441,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                     String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
                         "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
+                    if (sb?.name)
+                        sbSummarySuffix += " for ${sb.name}"
                     String sbSummary = null
                     if (stagesBinBuild.size() == 0) {
                         sbSummary = "Did not discover any ${sbSummarySuffix}"
