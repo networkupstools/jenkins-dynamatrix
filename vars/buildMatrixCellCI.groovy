@@ -359,6 +359,8 @@ done
         // and another clumping all tools together to deduplicate
         def i = null
         def ia = null
+        def cppcheck = null
+        def cppcheckAggregated = null
         switch (compilerTool) {
             case 'gcc':
                 i = scanForIssues tool: gcc(id: id, pattern: '.ci-sanitizedPaths.*.log')
@@ -373,6 +375,11 @@ done
                 ia = scanForIssues tool: clang(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log')
                 break
         }
+        if (0 == sh returnStatus:true, script: """ test -n "`find . -name 'cppcheck*.xml' 2>/dev/null`" """) {
+            cppcheck = scanForIssues tool: cppCheck(id: id, pattern: '**/cppcheck*.xml')
+            cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck analyser', pattern: '**/cppcheck*.xml')
+        }
+
         if (i != null) {
             dynamatrixGlobalState.issueAnalysis << i
             if (dynacfgPipeline?.delayedIssueAnalysis) {
@@ -396,9 +403,35 @@ done
             }
         }
 
+        if (cppcheck != null) {
+            dynamatrixGlobalState.issueAnalysis << cppcheck
+            if (dynacfgPipeline?.delayedIssueAnalysis) {
+                // job should call doSummarizeIssues() in the end
+                // for aggregated results over all build codepaths
+                echo "Collected issues analysis was logged to make a big summary in the end"
+            } else {
+                // Publish individual build scenario results now
+                doSummarizeIssues([cppcheck], id + "--analysis", id + "--analysis")
+            }
+        }
+        if (cppcheckAggregated != null) {
+            dynamatrixGlobalState.issueAnalysisAggregated << cppcheckAggregated
+            if (dynacfgPipeline?.delayedIssueAnalysis) {
+                // job should call doSummarizeIssues() in the end
+                // for aggregated results over all build codepaths
+                echo "Collected aggregated issues analysis was logged to make a big summary in the end"
+            } else {
+                // Publish individual build scenario results now
+                doSummarizeIssues([cppcheckAggregated], "CppCheck aggregated analysis", "CppCheck aggregated analysis")
+            }
+        }
+
+        // NOTE: No subdirs support for cppcheck*.xml here, unlike analysis above
         sh label: 'Compress collected logs', script: """
 if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
-if [ -s config.log ]; then gzip < config.log > '.ci.${archPrefix}.config.log.gz' || true ; fi
+for F in config.log cppcheck*.xml ; do
+    if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$F"'.gz' || true ; fi
+done
 """
         archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
 
