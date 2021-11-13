@@ -336,7 +336,7 @@ echo "[DEBUG before stash()] Files in `pwd`: `find . -type f | wc -l` and all FS
 git status || true
 """
         }
-        script.stash (name: stashName, useDefaultExcludes: false)
+        script.stash (name: stashName, includes: '**,.*,*', excludes: '', useDefaultExcludes: false)
     } // stashCleanSrc()
 
     static void unstashCleanSrc(def script, String stashName) {
