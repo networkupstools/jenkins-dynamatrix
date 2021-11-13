@@ -560,7 +560,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 // just in case warnError() above had dampened a
                 // parallel stage failure, make the verdict known
                 // in UI and final result, but let tear-down proceed:
-                currentBuild.result = tmpRes
+                try { // no idea why, but we can get a nullptr exception here :\
+                    if (tmpRes != null) currentBuild.result = tmpRes
+                } catch (Throwable t) {}
                 switch (currentBuild.result) {
                     case 'FAILURE':
                         catchError(message: 'Marking a hard FAILURE') { error "slowBuild or something else failed" }
