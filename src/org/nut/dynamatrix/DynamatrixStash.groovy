@@ -303,6 +303,7 @@ if test -e .git/objects/info/alternates ; then
     echo "[DEBUG] Checked-out workspace size after garbage-collector (Kb): `du -ks .`"
 fi
 git status || true
+echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objsects under: `find . | wc -l`" || true
 """
         } // node isUnix(), can sh
 
@@ -328,6 +329,13 @@ git status || true
 
         // Be sure to get also "hidden" files like .* in Unix customs => .git*
         // so avoid default exclude patterns
+        if (script.isUnix()) {
+            script.sh """
+sync || true
+echo "[DEBUG before stash()] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
+git status || true
+"""
+        }
         script.stash (name: stashName, useDefaultExcludes: false)
     } // stashCleanSrc()
 
@@ -367,8 +375,9 @@ git status || true
         if (script.isUnix()) {
             script.sh """
 sync || true
-git status || true
 echo "[DEBUG] Unstashed workspace size (Kb): `du -ks .`" || true
+git status || true
+echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objsects under: `find . | wc -l`" || true
 """
         }
     } // unstashCleanSrc()
