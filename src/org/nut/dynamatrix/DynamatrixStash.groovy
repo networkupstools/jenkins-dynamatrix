@@ -364,6 +364,13 @@ git status || true
         }
 
         script.unstash (stashName)
+        if (script.isUnix()) {
+            script.sh """
+sync || true
+git status || true
+echo "[DEBUG] Unstashed workspace size (Kb): `du -ks .`" || true
+"""
+        }
     } // unstashCleanSrc()
 
 } // class DynamatrixStash
