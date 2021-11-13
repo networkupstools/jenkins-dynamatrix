@@ -373,10 +373,15 @@ git status || true
 
         script.unstash (stashName)
         if (script.isUnix()) {
+            // Try a workaround with `git init` per https://issues.jenkins.io/browse/JENKINS-56098?focusedCommentId=380303
             script.sh """
 sync || true
 echo "[DEBUG] Unstashed workspace size (Kb): `du -ks .`" || true
-git status || true
+git status || if test -e .git ; then
+    echo "(Re-)init unstashed git workspace:"
+    git init
+    git status || true
+fi
 echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objsects under: `find . | wc -l`" || true
 """
         }
