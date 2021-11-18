@@ -128,6 +128,16 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         dynacfgPipeline.failFast = true
     }
 
+    if (!dynacfgPipeline.containsKey('failFastSafe')) {
+        // Used if failFast==true (has effect if a slowBuild stage fails):
+        // true means to use custom dynamatrix implementation which allows
+        // running stages to complete, and forbids not yet started ones to
+        // proceed when they get onto a node.
+        // false means to use the pipeline parallel() step implementation,
+        // which tries to abort all running code if one stage fails, ASAP.
+        dynacfgPipeline.failFastSafe = true
+    }
+
     if (!dynacfgPipeline.containsKey('delayedIssueAnalysis')) {
         dynacfgPipeline.delayedIssueAnalysis = true
     }
@@ -307,6 +317,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     // project it represents) can be more efficient than making
                     // a huge matrix of virtual or agent-driven labels and then
                     // filtering away lots of "excludeCombos" from that.
+
+                    if (dynacfgPipeline?.failFastSafe) {
+                        dynamatrix.failFast = (dynacfgPipeline?.failfast ? true : false)
+                        dynamatrix.mustAbort = false
+                    }
+
                     dynacfgPipeline.slowBuild.each { def sb ->
                         if (dynamatrixGlobalState.enableDebugTrace) {
                             echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
@@ -463,8 +479,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                         }
 
-                        // Note: adds one more point to stagesBinBuild.size() checked below:
-                        stagesBinBuild.failFast = dynacfgPipeline.failFast
+                        if (!(dynacfgPipeline?.failFastSafe)) {
+                            // Note: adds one more point to stagesBinBuild.size() checked below:
+                            stagesBinBuild.failFast = dynacfgPipeline.failFast
+                        }
                     }
                     echo sbSummary
 
@@ -503,7 +521,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         // afterwards if needed... but expected that stage above
         // cause the build abortion if applicable)
         stage("Summarize quick-test results") {
-            echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${Math.max(stagesBinBuild.size()-1, 0)} 'slow build' combos to run"
+            echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${Math.max(stagesBinBuild.size() - (dynacfgPipeline?.failFastSafe ? 0 : 1), 0)} 'slow build' combos to run"
             echo "[Quick tests and prepare the bigger dynamatrix summary] ${currentBuild.result}"
             if (!(currentBuild.result in [null, 'SUCCESS'])) {
                 if (Utils.isClosure(dynacfgPipeline?.notifyHandler)) {
@@ -521,7 +539,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             }
         } // stage-quick-summary
 
-        if (stagesBinBuild.size() < 1) {
+        if (stagesBinBuild.size() < (dynacfgPipeline?.failFastSafe ? 0 : 1)) {
             try {
                 def txt = "No 'slow build' dynamatrix stages discovered"
                 //removeBadges(id: "Discovery-counter")
@@ -536,9 +554,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             // TODO: `unstable` this?
             echo "No stages were prepared for the 'slow build' dynamatrix, so completing the job"
         } else {
-            echo "Scheduling ${stagesBinBuild.size()-1} stages for the 'slow build' dynamatrix, running this can take a long while..."
+            echo "Scheduling ${stagesBinBuild.size() - (dynacfgPipeline?.failFastSafe ? 0 : 1)} stages for the 'slow build' dynamatrix, running this can take a long while..."
             try {
-                def txt = "Running ${stagesBinBuild.size()-1} 'slow build' dynamatrix stages"
+                def txt = "Running ${stagesBinBuild.size() - (dynacfgPipeline?.failFastSafe ? 0 : 1)} 'slow build' dynamatrix stages"
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
                 manager.addShortText(txt)
@@ -549,7 +567,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             }
 
             def tmpRes = currentBuild.result
-            stage("Run the bigger dynamatrix (${stagesBinBuild.size()-1} stages)") {
+            stage("Run the bigger dynamatrix (${stagesBinBuild.size() - (dynacfgPipeline?.failFastSafe ? 0 : 1)} stages)") {
                 // This parallel, unlike "par1" above, tends to
                 // preclude further processing if it fails and
                 // so avoids detailing the failure analysis
@@ -561,18 +579,24 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             echo "Completed the 'slow build' dynamatrix"
             stage("Analyze the bigger dynamatrix") { // TOTHINK: post{always{...}} to the above? Is there one in scripted pipeline?
                 doSummarizeIssues()
+                def mustAbortMsg = null
+                if (dynamatrix.mustAbort) {
+                    mustAbortMsg = "'Must Abort' flag was raised by at least one slowBuild stage"
+                    echo mustAbortMsg
+                }
                 // just in case warnError() above had dampened a
                 // parallel stage failure, make the verdict known
                 // in UI and final result, but let tear-down proceed:
                 try { // no idea why, but we can get a nullptr exception here :\
                     if (tmpRes != null) currentBuild.result = tmpRes
                 } catch (Throwable t) {}
+
                 switch (currentBuild.result) {
                     case 'FAILURE':
-                        catchError(message: 'Marking a hard FAILURE') { error "slowBuild or something else failed" }
+                        catchError(message: 'Marking a hard FAILURE') { error "slowBuild or something else failed" + (mustAbortMsg ? ("; " + mustAbortMsg) : "") }
                         break
                     case 'UNSTABLE':
-                        warnError(message: 'Marking a soft expected fault') { error "slowBuild or something else did not succeed cleanly" }
+                        warnError(message: 'Marking a soft expected fault') { error "slowBuild or something else did not succeed cleanly" + (mustAbortMsg ? ("; " + mustAbortMsg) : "") }
                         break
                 }
             }
