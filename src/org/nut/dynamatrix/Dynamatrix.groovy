@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays.*;
 import java.util.regex.*;
 
+import hudson.model.Result;
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
+
 import org.nut.dynamatrix.DynamatrixConfig;
 import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
 import org.nut.dynamatrix.NodeCaps;
@@ -43,6 +46,16 @@ class Dynamatrix implements Cloneable {
     // and the original label set e.g. "nut-builder" used to initialize the
     // set of agents this dynamatrix is interested in)
     private Map<String, Set> buildLabelsAgents = [:]
+
+    // Similar to parallel() step's support for aborting builds if a stage
+    // fails, but this implementation allows to let already running stages
+    // complete. Technically depends on the limited amount of build nodes,
+    // so we get build diags from scenarios we have already invested a node
+    // into, but would not waste much firepower after we know we failed.
+    // This would still block to get a node{} first, and quickly release
+    // it just then as we have the mustAbort flag raised.
+    public boolean failFast = false
+    public boolean mustAbort = false
 
     public Dynamatrix(Object script) {
         this.script = script
@@ -1129,6 +1142,38 @@ def parallelStages = prepareDynamatrix(
                 def weStr = "CI_SLOW_BUILD_FILTERNAME=${script.env.CI_SLOW_BUILD_FILTERNAME}"
                 payload = { script.withEnv([weStr]) { payloadTmp() } }
                 sbName = " :: as part of slowBuild filter: ${script.env.CI_SLOW_BUILD_FILTERNAME}"
+            }
+
+            // TOCHECK: Is "this" dynamatrix instance visible in the generated stage?
+            if (this.failFast) {
+                // Note: such implementation effectively relies on the node{}
+                // queue, so some stages are in flight and would be allowed
+                // to complete, while others not yet started would abort as
+                // soon as a node is available to handle them.
+                // TODO: If it is possible to cancel them from the queue and
+                // not block on waiting, like parallel step "failfast:true"
+                // option does, that would be better (cheaper, faster).
+                def payloadTmp = payload
+
+                payload = {
+                    if (this.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
+                        script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
+                        script?.currentBuild?.result = 'ABORTED'
+                        throw new FlowInterruptedException(Result.ABORTED)
+                    }
+
+                    def payloadRes = null
+                    try {
+                        payloadRes = payloadTmp()
+                        if (!(script?.currentBuild?.result in [null, 'SUCCESS'])) {
+                            this.mustAbort = true
+                            // mangle payloadRes ?
+                        }
+                    } catch (Exception ex) {
+                        this.mustAbort = true
+                    }
+                    return payloadRes
+                }
             }
 
             // Note: non-declarative pipeline syntax inside the generated stages
