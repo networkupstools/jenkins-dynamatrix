@@ -1144,6 +1144,7 @@ def parallelStages = prepareDynamatrix(
 //                        script.stage("NODEWRAP: " + stageName + sbName) {
                             if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
                             script.node (dsbc.buildLabelExpression) {
+                                if (dsbc.enableDebugTrace) script.echo "Starting on node '${script.env?.NODE_NAME}' requested by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
                                 payload()
                             } // node
 //                        } // stage needed to house the "node"
@@ -1155,6 +1156,7 @@ def parallelStages = prepareDynamatrix(
 //                        script.stage("NODEWRAP-ANON: " + stageName) {
                             if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'" + sbName
                             script.node {
+                                if (dsbc.enableDebugTrace) script.echo "Starting on node '${script.env?.NODE_NAME}' requested as 'any' for stage '${stageName}'" + sbName
                                 payload()
                             } // node
 //                        } // stage needed to house the "node"
