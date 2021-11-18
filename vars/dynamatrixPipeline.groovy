@@ -313,6 +313,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         } else if (sb?.name) {
                             echo "Inspecting a slow build filter configuration: ${sb.name}"
                         }
+
                         if (Utils.isClosureNotEmpty(sb?.getParStages)) {
                             countFiltersSeen ++
                             if (sb?.disabled) {
@@ -321,6 +322,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 countFiltersSkipped++
                                 return // continue
                             }
+
                             if (Utils.isRegex(sb?.branchRegexSource) && Utils.isStringNotEmpty(env?.BRANCH_NAME)) {
                                 // TOTHINK: For PR builds, the BRANCH_NAME
                                 // is `PR-[0-9]+` while there is also a
@@ -332,6 +334,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     return // continue
                                 }
                             }
+
                             if (Utils.isRegex(sb?.branchRegexTarget)) {
                                 if (Utils.isStringNotEmpty(env?.CHANGE_TARGET)
                                 && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
@@ -373,7 +376,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ${sb.branchRegexTarget} set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                                         // NOT a "skip", just a "FYI"!
                                 }
-                            }
+                            } // if branchRegexTarget
 
                             // By default we run all otherwise not disabled
                             // scenarios... but really, some test cases do
@@ -415,7 +418,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                             "(would a re-run do that?) or had some error?.. " +
                                             "So build everything to be safe" + (sb?.name ? ": " + sb.name : ".")
                                 }
-                            }
+                            } // if appliesToChangedFilesRegex
 
                             echo "Did not rule out this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                             // This magic envvar is mapped into stage name
@@ -433,12 +436,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     }
                                 }
                             }
-                        } else {
+                        } else { // if not getParStages
                             if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                 echo "SKIP: No (valid) slow build filter definition in this entry" + (sb?.name ? ": " + sb.name : "")
                             countFiltersSkipped++
                         }
-                    }
+                    } // dynacfgPipeline.slowBuild.each { sb -> ... }
 
                     String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
                         "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
@@ -464,6 +467,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         stagesBinBuild.failFast = dynacfgPipeline.failFast
                     }
                     echo sbSummary
+
                     try {
                         // Note: we also report "Running..." more or less
                         // the same message below; but with CI farm contention
@@ -485,8 +489,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                     }
-                }
-            }
+                } // stage item: par1["Discover slow build matrix"]
+            } // if slowBuild...
 
             // Walk the plank
             parallel par1
