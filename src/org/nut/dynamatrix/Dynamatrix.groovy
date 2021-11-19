@@ -1166,10 +1166,12 @@ def parallelStages = prepareDynamatrix(
                     try {
                         payloadRes = payloadTmp()
                         if (!(script?.currentBuild?.result in [null, 'SUCCESS'])) {
+                            script.echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected after stage '${stageName}': current build result is now at best ${script?.currentBuild?.result}"
                             thisDynamatrix.mustAbort = true
                             // mangle payloadRes ?
                         }
                     } catch (Exception ex) {
+                        script.echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected after stage '${stageName}': got exception: ${ex.toString()}"
                         thisDynamatrix.mustAbort = true
                     }
                     return payloadRes
