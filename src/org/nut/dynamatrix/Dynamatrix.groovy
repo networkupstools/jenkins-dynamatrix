@@ -54,7 +54,7 @@ class Dynamatrix implements Cloneable {
     // into, but would not waste much firepower after we know we failed.
     // This would still block to get a node{} first, and quickly release
     // it just then as we have the mustAbort flag raised.
-    public boolean failFast = false
+    public Boolean failFast = null
     public boolean mustAbort = false
 
     public Dynamatrix(Object script) {
