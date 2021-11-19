@@ -1082,6 +1082,7 @@ def parallelStages = prepareDynamatrix(
         }
 
         def dsbcSet = generateBuildConfigSet(dynacfgOrig)
+        Dynamatrix thisDynamatrix = this
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
@@ -1144,8 +1145,7 @@ def parallelStages = prepareDynamatrix(
                 sbName = " :: as part of slowBuild filter: ${script.env.CI_SLOW_BUILD_FILTERNAME}"
             }
 
-            // TOCHECK: Is "this" dynamatrix instance visible in the generated stage?
-            if (this.failFast) {
+            if (thisDynamatrix.failFast) {
                 // Note: such implementation effectively relies on the node{}
                 // queue, so some stages are in flight and would be allowed
                 // to complete, while others not yet started would abort as
@@ -1156,7 +1156,7 @@ def parallelStages = prepareDynamatrix(
                 def payloadTmp = payload
 
                 payload = {
-                    if (this.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
+                    if (thisDynamatrix.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
                         script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
                         script?.currentBuild?.result = 'ABORTED'
                         throw new FlowInterruptedException(Result.ABORTED)
@@ -1166,11 +1166,11 @@ def parallelStages = prepareDynamatrix(
                     try {
                         payloadRes = payloadTmp()
                         if (!(script?.currentBuild?.result in [null, 'SUCCESS'])) {
-                            this.mustAbort = true
+                            thisDynamatrix.mustAbort = true
                             // mangle payloadRes ?
                         }
                     } catch (Exception ex) {
-                        this.mustAbort = true
+                        thisDynamatrix.mustAbort = true
                     }
                     return payloadRes
                 }
