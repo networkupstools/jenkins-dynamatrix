@@ -1,6 +1,7 @@
 package org.nut.dynamatrix;
 
 import org.nut.dynamatrix.Utils;
+import org.nut.dynamatrix.Dynamatrix;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 /* This class intends to represent one single build configuration
@@ -60,6 +61,10 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     public Boolean isExcluded
     public Boolean isAllowedFailure
+
+    // The build config can reference which dynamatrix group of build scenarios
+    // it would be tracked in, e.g. for failFastSafe support
+    public Dynamatrix thisDynamatrix = null
 
     public DynamatrixSingleBuildConfig (script) {
         this.script = script

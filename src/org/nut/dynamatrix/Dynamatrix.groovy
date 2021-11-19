@@ -1154,9 +1154,10 @@ def parallelStages = prepareDynamatrix(
                 // not block on waiting, like parallel step "failfast:true"
                 // option does, that would be better (cheaper, faster).
                 def payloadTmp = payload
+                dsbc.thisDynamatrix = thisDynamatrix
 
                 payload = {
-                    if (thisDynamatrix.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
+                    if (dsbc.thisDynamatrix?.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
                         script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
                         script?.currentBuild?.result = 'ABORTED'
                         throw new FlowInterruptedException(Result.ABORTED)
@@ -1167,12 +1168,12 @@ def parallelStages = prepareDynamatrix(
                         payloadRes = payloadTmp()
                         if (!(script?.currentBuild?.result in [null, 'SUCCESS'])) {
                             script.echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected after stage '${stageName}': current build result is now at best ${script?.currentBuild?.result}"
-                            thisDynamatrix.mustAbort = true
+                            dsbc.thisDynamatrix?.mustAbort = true
                             // mangle payloadRes ?
                         }
                     } catch (Exception ex) {
                         script.echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected after stage '${stageName}': got exception: ${ex.toString()}"
-                        thisDynamatrix.mustAbort = true
+                        dsbc.thisDynamatrix?.mustAbort = true
                     }
                     return payloadRes
                 }
