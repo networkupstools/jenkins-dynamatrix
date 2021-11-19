@@ -509,11 +509,15 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                     }
+
+                    echo "NOTE: If this is the last line you see in job console log for a long time, then we are waiting for some build agents for shellcheck/spellcheck; slowBuild stage discovery is completed"
                 } // stage item: par1["Discover slow build matrix"]
             } // if slowBuild...
 
             // Walk the plank
             parallel par1
+
+            echo "Completed the 'Quick tests and prepare the bigger dynamatrix' stage"
         } // stage-quick
 
         // Something in our dynamatrix wrappings precludes seeing
