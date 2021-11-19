@@ -1083,6 +1083,7 @@ def parallelStages = prepareDynamatrix(
 
         def dsbcSet = generateBuildConfigSet(dynacfgOrig)
         Dynamatrix thisDynamatrix = this
+        this.script.println "[DEBUG] generateBuild(): current thisDynamatrix.failFast setting when generating parallelStages: ${thisDynamatrix.failFast}"
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
@@ -1090,6 +1091,7 @@ def parallelStages = prepareDynamatrix(
         dsbcSet.each() {DynamatrixSingleBuildConfig dsbcTmp ->
             // copy a unique object ASAP, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()
+            dsbc.thisDynamatrix = thisDynamatrix
             String stageName = dsbc.stageName()
 
             if (dsbc.isExcluded) {
@@ -1145,7 +1147,7 @@ def parallelStages = prepareDynamatrix(
                 sbName = " :: as part of slowBuild filter: ${script.env.CI_SLOW_BUILD_FILTERNAME}"
             }
 
-            if (thisDynamatrix.failFast) {
+            if (true) { // scoping
                 // Note: such implementation effectively relies on the node{}
                 // queue, so some stages are in flight and would be allowed
                 // to complete, while others not yet started would abort as
@@ -1154,28 +1156,37 @@ def parallelStages = prepareDynamatrix(
                 // not block on waiting, like parallel step "failfast:true"
                 // option does, that would be better (cheaper, faster).
                 def payloadTmp = payload
-                dsbc.thisDynamatrix = thisDynamatrix
 
                 payload = {
-                    if (dsbc.thisDynamatrix?.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
-                        script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
-                        script?.currentBuild?.result = 'ABORTED'
-                        throw new FlowInterruptedException(Result.ABORTED)
-                    }
-
-                    def payloadRes = null
-                    try {
-                        payloadRes = payloadTmp()
-                        if (!(script?.currentBuild?.result in [null, 'SUCCESS'])) {
-                            script.echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected after stage '${stageName}': current build result is now at best ${script?.currentBuild?.result}"
-                            dsbc.thisDynamatrix?.mustAbort = true
-                            // mangle payloadRes ?
+                    // We allow the setting change to take effect at run-time,
+                    // e.g. to generate the parallels and to configure the
+                    // "parent" dynamatrix failFast field in any order.
+                    // So this is not a conditional redefinition of payload
+                    // (which for some reason did not work anyway), but an
+                    // "always redefined" conditional way to run the payload.
+                    if (dsbc.thisDynamatrix?.failFast) {
+                        if (dsbc.thisDynamatrix?.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
+                            script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
+                            script?.currentBuild?.result = 'ABORTED'
+                            throw new FlowInterruptedException(Result.ABORTED)
                         }
-                    } catch (Exception ex) {
-                        script.echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected after stage '${stageName}': got exception: ${ex.toString()}"
-                        dsbc.thisDynamatrix?.mustAbort = true
+
+                        def payloadRes = null
+                        try {
+                            payloadRes = payloadTmp()
+                            if (!(script?.currentBuild?.result in [null, 'SUCCESS'])) {
+                                script.echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected after stage '${stageName}': current build result is now at best ${script?.currentBuild?.result}"
+                                dsbc.thisDynamatrix?.mustAbort = true
+                                // mangle payloadRes ?
+                            }
+                        } catch (Exception ex) {
+                            script.echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected after stage '${stageName}': got exception: ${ex.toString()}"
+                            dsbc.thisDynamatrix?.mustAbort = true
+                        }
+                        return payloadRes
+                    } else {
+                        payloadTmp()
                     }
-                    return payloadRes
                 }
             }
 
