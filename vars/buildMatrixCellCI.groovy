@@ -448,8 +448,10 @@ done
         if (shRes != 0) {
             def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
             if (dsbc?.thisDynamatrix?.failFast) {
-                echo "Raising mustAbort flag to prevent build scenarios which did not yet start from startingg, fault detected in stage '${stageName}': executed shell steps failed"
+                echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected in stage '${stageName}': executed shell steps failed"
                 dsbc.thisDynamatrix.mustAbort = true
+            } else {
+                echo "Not raising mustAbort flag, because " + (dsbc.thisDynamatrix ? (dsbc.thisDynamatrix.failFast ? "dsbc.thisDynamatrix.failFast==true (so not sure why not raising the flag...)" : "dsbc.thisDynamatrix.failFast==false") : "dsbc.thisDynamatrix is not tracked in this run")
             }
             if (dsbc?.isAllowedFailure) {
                 unstable msgFail
