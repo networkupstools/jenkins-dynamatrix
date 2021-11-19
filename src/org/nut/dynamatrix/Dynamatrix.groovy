@@ -1153,7 +1153,7 @@ def parallelStages = prepareDynamatrix(
                 // to complete, while others not yet started would abort as
                 // soon as a node is available to handle them.
                 // TODO: If it is possible to cancel them from the queue and
-                // not block on waiting, like parallel step "failfast:true"
+                // not block on waiting, like parallel step "failFast:true"
                 // option does, that would be better (cheaper, faster).
                 def payloadTmp = payload
 

@@ -319,7 +319,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     // filtering away lots of "excludeCombos" from that.
 
                     if (dynacfgPipeline?.failFastSafe) {
-                        dynamatrix.failFast = (dynacfgPipeline?.failfast ? true : false)
+                        dynamatrix.failFast = (dynacfgPipeline?.failFast ? true : false)
                         dynamatrix.mustAbort = false
                     }
 
