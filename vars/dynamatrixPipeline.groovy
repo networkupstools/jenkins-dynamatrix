@@ -527,7 +527,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         // afterwards if needed... but expected that stage above
         // cause the build abortion if applicable)
         stage("Summarize quick-test results") {
-            echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} 'slow build' combos to run" + (dynacfgPipeline?.failFast ? "; failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix" : "parallel step") + " implementation" : "")
+            echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} 'slow build' combos to run" + (dynacfgPipeline?.failFast ? "; failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
             echo "[Quick tests and prepare the bigger dynamatrix summary] ${currentBuild.result}"
             if (!(currentBuild.result in [null, 'SUCCESS'])) {
                 if (Utils.isClosure(dynacfgPipeline?.notifyHandler)) {
@@ -562,7 +562,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         } else {
             echo "Scheduling ${stagesBinBuild.size() - 1} stages for the 'slow build' dynamatrix, running this can take a long while..."
             try {
-                def txt = "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix" : "parallel step") + " implementation" : "")
+                def txt = "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
                 manager.addShortText(txt)
