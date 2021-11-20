@@ -1218,12 +1218,12 @@ def parallelStages = prepareDynamatrix(
                     dsbc.thisDynamatrix?.countStagesStarted += 1
                     try {
                         def res = payloadTmp()
-                        dsbc.thisDynamatrix?.countStagesFinishedOk += 1
+                        dsbc.thisDynamatrix?.countStagesFinishedOK += 1
                         return res
                     } catch (FlowInterruptedException fex) {
                         switch (fex?.getResult()) {
                             case ['SUCCESS', null]:
-                                dsbc.thisDynamatrix?.countStagesFinishedOk += 1
+                                dsbc.thisDynamatrix?.countStagesFinishedOK += 1
                                 break;
                             case 'UNSTABLE':
                                 dsbc.thisDynamatrix?.countStagesFinishedFailureAllowed += 1
