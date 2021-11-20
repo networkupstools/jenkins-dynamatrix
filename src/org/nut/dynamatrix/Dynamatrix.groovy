@@ -57,6 +57,14 @@ class Dynamatrix implements Cloneable {
     public Boolean failFast = null
     public boolean mustAbort = false
 
+    public int countStagesStarted = 0
+    public int countStagesFinishedOK = 0                // Result == 'SUCCESS'
+    public int countStagesFinishedFailure = 0           // Result == 'FAILURE'
+    public int countStagesFinishedFailureAllowed = 0    // Result == 'UNSTABLE'
+    public int countStagesAborted = 0                   // Result == 'ABORTED'
+    public int countStagesAbortedSafe = 0               // We canceled the stage before start
+    public int countStagesAbortedNotBuilt = 0           // Result == 'NOT_BUILT'
+
     public Dynamatrix(Object script) {
         this.script = script
         this.dynacfg = new DynamatrixConfig(script)
@@ -71,6 +79,16 @@ class Dynamatrix implements Cloneable {
     @Override
     public Dynamatrix clone() throws CloneNotSupportedException {
         return (Dynamatrix) super.clone();
+    }
+
+    public String toStringStageCount() {
+        return "countStagesStarted:${countStagesStarted} " +
+            "countStagesFinishedOK:${countStagesFinishedOK} " +
+            "countStagesFinishedFailure:${countStagesFinishedFailure} " +
+            "countStagesFinishedFailureAllowed:${countStagesFinishedFailureAllowed} " +
+            "countStagesAborted:${countStagesAborted} " +
+            "countStagesAbortedSafe:${countStagesAbortedSafe} " +
+            "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt}"
     }
 
     public NodeCaps getNodeCaps(String labelExpr = null) {
@@ -1167,8 +1185,11 @@ def parallelStages = prepareDynamatrix(
                     if (dsbc.thisDynamatrix?.failFast) {
                         if (dsbc.thisDynamatrix?.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
                             script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
-                            script?.currentBuild?.result = 'ABORTED'
-                            throw new FlowInterruptedException(Result.ABORTED)
+                            dsbc.thisDynamatrix?.countStagesAbortedSafe += 1
+                            throw new FlowInterruptedException(Result.NOT_BUILT)
+
+                            //script?.currentBuild?.result = 'ABORTED'
+                            //throw new FlowInterruptedException(Result.ABORTED)
                         }
 
                         def payloadRes = null
@@ -1186,6 +1207,38 @@ def parallelStages = prepareDynamatrix(
                         return payloadRes
                     } else {
                         payloadTmp()
+                    }
+                }
+            }
+
+            if (true) { // scoping
+                def payloadTmp = payload
+
+                payload = {
+                    dsbc.thisDynamatrix?.countStagesStarted += 1
+                    try {
+                        def res = payloadTmp()
+                        dsbc.thisDynamatrix?.countStagesFinishedOk += 1
+                        return res
+                    } catch (FlowInterruptedException fex) {
+                        switch (fex?.getResult()) {
+                            case ['SUCCESS', null]:
+                                dsbc.thisDynamatrix?.countStagesFinishedOk += 1
+                                break;
+                            case 'UNSTABLE':
+                                dsbc.thisDynamatrix?.countStagesFinishedFailureAllowed += 1
+                                break;
+                            case 'FAILURE':
+                                dsbc.thisDynamatrix?.countStagesFinishedFailure += 1
+                                break;
+                            case 'ABORTED':
+                                dsbc.thisDynamatrix?.countStagesAborted += 1
+                                break;
+                            case 'NOT_BUILT':
+                                dsbc.thisDynamatrix?.countStagesAbortedNotBuilt += 1
+                                break;
+                        }
+                        throw fex
                     }
                 }
             }
