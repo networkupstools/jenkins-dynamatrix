@@ -610,6 +610,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         warnError(message: 'Marking a soft expected fault') { error "slowBuild or something else did not succeed cleanly" + (mustAbortMsg ? ("; " + mustAbortMsg) : "") }
                         break
                 }
+
+                echo "OVERALL: Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} " +
+                    "'slow build' combos to run; ended up with following counts: " +
+                    dynamatrix.toStringStageCount()
             }
         }
 
