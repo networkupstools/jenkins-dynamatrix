@@ -583,7 +583,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 }
             }
             echo "Completed the 'slow build' dynamatrix"
-            stage("Analyze the bigger dynamatrix") { // TOTHINK: post{always{...}} to the above? Is there one in scripted pipeline?
+
+            def analyzeStageName = "Analyze the bigger dynamatrix"
+            if (dynamatrix.mustAbort) {
+                analyzeStageName += " after fastFailSafe aborted it"
+            }
+            stage(analyzeStageName) { // TOTHINK: post{always{...}} to the above? Is there one in scripted pipeline?
                 doSummarizeIssues()
                 def mustAbortMsg = null
                 if (dynamatrix.mustAbort) {
