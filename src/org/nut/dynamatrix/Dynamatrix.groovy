@@ -57,13 +57,13 @@ class Dynamatrix implements Cloneable {
     public Boolean failFast = null
     public boolean mustAbort = false
 
-    public int countStagesStarted = 0
-    public int countStagesFinishedOK = 0                // Result == 'SUCCESS'
-    public int countStagesFinishedFailure = 0           // Result == 'FAILURE'
-    public int countStagesFinishedFailureAllowed = 0    // Result == 'UNSTABLE'
-    public int countStagesAborted = 0                   // Result == 'ABORTED'
-    public int countStagesAbortedSafe = 0               // We canceled the stage before start
-    public int countStagesAbortedNotBuilt = 0           // Result == 'NOT_BUILT'
+    public Integer countStagesStarted = 0
+    public Integer countStagesFinishedOK = 0                // Result == 'SUCCESS'
+    public Integer countStagesFinishedFailure = 0           // Result == 'FAILURE'
+    public Integer countStagesFinishedFailureAllowed = 0    // Result == 'UNSTABLE'
+    public Integer countStagesAborted = 0                   // Result == 'ABORTED'
+    public Integer countStagesAbortedSafe = 0               // We canceled the stage before start
+    public Integer countStagesAbortedNotBuilt = 0           // Result == 'NOT_BUILT'
 
     public Dynamatrix(Object script) {
         this.script = script
