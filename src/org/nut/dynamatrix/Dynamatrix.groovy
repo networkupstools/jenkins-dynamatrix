@@ -69,12 +69,16 @@ class Dynamatrix implements Cloneable {
     }
     private Integer intNullZero(Integer i) { if (i == null) { return 0 } else { return i } }
 
+    // We started the stage:
     public Integer countStagesStarted() { return intNullZero(countStages?.STARTED) }
+    // We canceled the stage before start of actual work
+    // (due to mustAbort, after getting a node):
+    public Integer countStagesAbortedSafe() { return intNullZero(countStages?.ABORTED_SAFE) }
+    // Standard Jenkins build results:
     public Integer countStagesFinishedOK() { return intNullZero(countStages?.SUCCESS) }
     public Integer countStagesFinishedFailure() { return intNullZero(countStages?.FAILURE) }
     public Integer countStagesFinishedFailureAllowed() { return intNullZero(countStages?.UNSTABLE) }
     public Integer countStagesAborted() { return intNullZero(countStages?.ABORTED) }
-    public Integer countStagesAbortedSafe() { return intNullZero(countStages?.ABORTED_SAFE) } // We canceled the stage before start
     public Integer countStagesAbortedNotBuilt() { return intNullZero(countStages?.NOT_BUILT) }
 
     public Dynamatrix(Object script) {
@@ -95,11 +99,11 @@ class Dynamatrix implements Cloneable {
 
     public String toStringStageCount() {
         return "countStagesStarted:${countStagesStarted()} " +
+            "countStagesAbortedSafe:${countStagesAbortedSafe()} " +
             "countStagesFinishedOK:${countStagesFinishedOK()} " +
             "countStagesFinishedFailure:${countStagesFinishedFailure()} " +
             "countStagesFinishedFailureAllowed:${countStagesFinishedFailureAllowed()} " +
             "countStagesAborted:${countStagesAborted()} " +
-            "countStagesAbortedSafe:${countStagesAbortedSafe()} " +
             "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt()}"
     }
 
