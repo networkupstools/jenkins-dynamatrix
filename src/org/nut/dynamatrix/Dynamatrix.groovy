@@ -57,13 +57,25 @@ class Dynamatrix implements Cloneable {
     public Boolean failFast = null
     public boolean mustAbort = false
 
-    public Integer countStagesStarted = 0
-    public Integer countStagesFinishedOK = 0                // Result == 'SUCCESS'
-    public Integer countStagesFinishedFailure = 0           // Result == 'FAILURE'
-    public Integer countStagesFinishedFailureAllowed = 0    // Result == 'UNSTABLE'
-    public Integer countStagesAborted = 0                   // Result == 'ABORTED'
-    public Integer countStagesAbortedSafe = 0               // We canceled the stage before start
-    public Integer countStagesAbortedNotBuilt = 0           // Result == 'NOT_BUILT'
+    // Count each type of verdict
+    private Map<String, Integer> countStages = [:]
+    synchronized public Integer countStagesIncrement(String k) {
+        if (countStages.containsKey(k)) {
+            countStages[k] += 1
+        } else {
+            countStages[k] = 1
+        }
+        return countStages[k]
+    }
+    private Integer intNullZero(Integer i) { if (i == null) { return 0 } else { return i } }
+
+    public Integer countStagesStarted() { return intNullZero(countStages?.STARTED) }
+    public Integer countStagesFinishedOK() { return intNullZero(countStages?.SUCCESS) }
+    public Integer countStagesFinishedFailure() { return intNullZero(countStages?.FAILURE) }
+    public Integer countStagesFinishedFailureAllowed() { return intNullZero(countStages?.UNSTABLE) }
+    public Integer countStagesAborted() { return intNullZero(countStages?.ABORTED) }
+    public Integer countStagesAbortedSafe() { return intNullZero(countStages?.ABORTED_SAFE) } // We canceled the stage before start
+    public Integer countStagesAbortedNotBuilt() { return intNullZero(countStages?.NOT_BUILT) }
 
     public Dynamatrix(Object script) {
         this.script = script
@@ -82,13 +94,13 @@ class Dynamatrix implements Cloneable {
     }
 
     public String toStringStageCount() {
-        return "countStagesStarted:${countStagesStarted} " +
-            "countStagesFinishedOK:${countStagesFinishedOK} " +
-            "countStagesFinishedFailure:${countStagesFinishedFailure} " +
-            "countStagesFinishedFailureAllowed:${countStagesFinishedFailureAllowed} " +
-            "countStagesAborted:${countStagesAborted} " +
-            "countStagesAbortedSafe:${countStagesAbortedSafe} " +
-            "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt}"
+        return "countStagesStarted:${countStagesStarted()} " +
+            "countStagesFinishedOK:${countStagesFinishedOK()} " +
+            "countStagesFinishedFailure:${countStagesFinishedFailure()} " +
+            "countStagesFinishedFailureAllowed:${countStagesFinishedFailureAllowed()} " +
+            "countStagesAborted:${countStagesAborted()} " +
+            "countStagesAbortedSafe:${countStagesAbortedSafe()} " +
+            "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt()}"
     }
 
     public NodeCaps getNodeCaps(String labelExpr = null) {
@@ -1185,7 +1197,7 @@ def parallelStages = prepareDynamatrix(
                     if (dsbc.thisDynamatrix?.failFast) {
                         if (dsbc.thisDynamatrix?.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
                             script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
-                            dsbc.thisDynamatrix?.countStagesAbortedSafe += 1
+                            dsbc.thisDynamatrix?.countStagesIncrement('ABORTED_SAFE')
                             throw new FlowInterruptedException(Result.NOT_BUILT)
 
                             //script?.currentBuild?.result = 'ABORTED'
@@ -1215,28 +1227,18 @@ def parallelStages = prepareDynamatrix(
                 def payloadTmp = payload
 
                 payload = {
-                    dsbc.thisDynamatrix?.countStagesStarted += 1
+                    dsbc.thisDynamatrix?.countStagesIncrement('STARTED')
                     try {
                         def res = payloadTmp()
-                        dsbc.thisDynamatrix?.countStagesFinishedOK += 1
+                        dsbc.thisDynamatrix?.countStagesIncrement('SUCCESS')
                         return res
                     } catch (FlowInterruptedException fex) {
-                        switch (fex?.getResult()) {
-                            case ['SUCCESS', null]:
-                                dsbc.thisDynamatrix?.countStagesFinishedOK += 1
-                                break;
-                            case 'UNSTABLE':
-                                dsbc.thisDynamatrix?.countStagesFinishedFailureAllowed += 1
-                                break;
-                            case 'FAILURE':
-                                dsbc.thisDynamatrix?.countStagesFinishedFailure += 1
-                                break;
-                            case 'ABORTED':
-                                dsbc.thisDynamatrix?.countStagesAborted += 1
-                                break;
-                            case 'NOT_BUILT':
-                                dsbc.thisDynamatrix?.countStagesAbortedNotBuilt += 1
-                                break;
+                        if (fex == null) {
+                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN')
+                        } else {
+                            String fexres = fex.getResult()
+                            if (fexres == null) fexres = 'SUCCESS'
+                            dsbc.thisDynamatrix?.countStagesIncrement(fexres)
                         }
                         throw fex
                     }
