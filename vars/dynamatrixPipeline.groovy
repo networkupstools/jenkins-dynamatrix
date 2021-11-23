@@ -615,6 +615,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     "'slow build' combos to run; ended up with following counts: " +
                     dynamatrix.toStringStageCount()
 
+                if (dynamatrixGlobalState.enableDebugTrace) echo dynamatrix.toStringStageCountDump()
+
                 if (!(currentBuild.result in [null, 'SUCCESS'])) {
                     try {
                         def txt = "Not all went well: " + dynamatrix.toStringStageCountNonZero()
