@@ -141,6 +141,10 @@ class Dynamatrix implements Cloneable {
         return s.trim()
     }
 
+    public String toStringStageCountDump() {
+        return countStages.toString()
+    }
+
     public NodeCaps getNodeCaps(String labelExpr = null) {
         if (labelExpr == null) {
             labelExpr = ""
