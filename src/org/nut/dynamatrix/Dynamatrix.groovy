@@ -110,6 +110,37 @@ class Dynamatrix implements Cloneable {
             "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt()}"
     }
 
+    public String toStringStageCountNonZero() {
+        String s = ""
+        Integer i
+
+        if ( (i = countStagesStarted()) > 0)
+            s += "countStagesStarted:${i} "
+
+        if ( (i = countStagesCompleted()) > 0)
+            s += "countStagesCompleted:${i} "
+
+        if ( (i = countStagesAbortedSafe()) > 0)
+            s += "countStagesAbortedSafe:${i} "
+
+        if ( (i = countStagesFinishedOK()) > 0)
+            s += "countStagesFinishedOK:${i} "
+
+        if ( (i = countStagesFinishedFailure()) > 0)
+            s += "countStagesFinishedFailure:${i} "
+
+        if ( (i = countStagesFinishedFailureAllowed()) > 0)
+            s += "countStagesFinishedFailureAllowed:${i} "
+
+        if ( (i = countStagesAborted()) > 0)
+            s += "countStagesAborted:${i} "
+
+        if ( (i = countStagesAbortedNotBuilt()) > 0)
+            s += "countStagesAbortedNotBuilt:${i} "
+
+        return s.trim()
+    }
+
     public NodeCaps getNodeCaps(String labelExpr = null) {
         if (labelExpr == null) {
             labelExpr = ""
