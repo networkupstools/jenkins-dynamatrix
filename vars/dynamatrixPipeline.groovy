@@ -614,6 +614,17 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 echo "OVERALL: Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} " +
                     "'slow build' combos to run; ended up with following counts: " +
                     dynamatrix.toStringStageCount()
+
+                if (!(currentBuild.result in [null, 'SUCCESS'])) {
+                    try {
+                        def txt = "Not all went well: " + dynamatrix.toStringStageCountNonZero()
+                        manager.addShortText(txt)
+                        createSummary(text: txt, icon: '/images/48x48/warning.png')
+                    } catch (Throwable t) {
+                        echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                    }
+                }
             }
         }
 
