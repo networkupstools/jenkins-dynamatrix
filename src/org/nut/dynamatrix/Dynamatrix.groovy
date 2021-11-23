@@ -71,6 +71,8 @@ class Dynamatrix implements Cloneable {
 
     // We started the stage:
     public Integer countStagesStarted() { return intNullZero(countStages?.STARTED) }
+    // We know we finished the stage, successfully or with "fex" exception caught:
+    public Integer countStagesCompleted() { return intNullZero(countStages?.COMPLETED) }
     // We canceled the stage before start of actual work
     // (due to mustAbort, after getting a node):
     public Integer countStagesAbortedSafe() { return intNullZero(countStages?.ABORTED_SAFE) }
@@ -99,6 +101,7 @@ class Dynamatrix implements Cloneable {
 
     public String toStringStageCount() {
         return "countStagesStarted:${countStagesStarted()} " +
+            "countStagesCompleted:${countStagesCompleted()} " +
             "countStagesAbortedSafe:${countStagesAbortedSafe()} " +
             "countStagesFinishedOK:${countStagesFinishedOK()} " +
             "countStagesFinishedFailure:${countStagesFinishedFailure()} " +
@@ -1235,8 +1238,10 @@ def parallelStages = prepareDynamatrix(
                     try {
                         def res = payloadTmp()
                         dsbc.thisDynamatrix?.countStagesIncrement('SUCCESS')
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
                         return res
                     } catch (FlowInterruptedException fex) {
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
                         if (fex == null) {
                             dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN')
                         } else {
