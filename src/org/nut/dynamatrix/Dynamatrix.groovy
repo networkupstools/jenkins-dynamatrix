@@ -1285,6 +1285,9 @@ def parallelStages = prepareDynamatrix(
                             dsbc.thisDynamatrix?.countStagesIncrement(fexres)
                         }
                         throw fex
+                    } catch (Throwable t) {
+                        dsbc.thisDynamatrix?.countStagesIncrement(Utils.castString(t))
+                        throw t
                     }
                 }
             }
