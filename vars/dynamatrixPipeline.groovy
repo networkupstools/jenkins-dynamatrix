@@ -619,7 +619,14 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                 if (!(currentBuild.result in [null, 'SUCCESS'])) {
                     try {
-                        def txt = "Not all went well: " + dynamatrix.toStringStageCountNonZero()
+                        def txt = dynamatrix.toStringStageCountNonZero()
+                        if (!(Utils.isStringNotEmpty(txt))) {
+                            txt = dynamatrix.toStringStageCountDump()
+                        }
+                        if (!(Utils.isStringNotEmpty(txt))) {
+                            txt = dynamatrix.toStringStageCount()
+                        }
+                        txt = "Not all went well: " + txt
                         manager.addShortText(txt)
                         createSummary(text: txt, icon: '/images/48x48/warning.png')
                     } catch (Throwable t) {
