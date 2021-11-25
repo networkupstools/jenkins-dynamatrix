@@ -1219,6 +1219,7 @@ def parallelStages = prepareDynamatrix(
                 sbName = " :: as part of slowBuild filter: ${script.env.CI_SLOW_BUILD_FILTERNAME}"
             }
 
+            // Support optional "failFastSafe" mechanism to raise the "mustAbort" flag
             if (true) { // scoping
                 // Note: such implementation effectively relies on the node{}
                 // queue, so some stages are in flight and would be allowed
@@ -1265,6 +1266,7 @@ def parallelStages = prepareDynamatrix(
                 }
             }
 
+            // Support accounting of slowBuild scenario outcomes
             if (true) { // scoping
                 def payloadTmp = payload
 
