@@ -1287,6 +1287,21 @@ def parallelStages = prepareDynamatrix(
                             dsbc.thisDynamatrix?.countStagesIncrement(fexres)
                         }
                         throw fex
+                    } catch (hudson.AbortException hexA) {
+                        // This is thrown by steps like "error" and "unstable" (both)
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
+                        if (hexA == null) {
+                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN')
+                        } else {
+                            String hexAres = "hudson.AbortException: " +
+                                "Message: " + hexA.getMessage() +
+                                "; Cause: " + hexA.getCause() +
+                                "; toString: " + hexA.toString();
+                            if (hexAres == null) hexAres = 'SUCCESS'
+                            dsbc.thisDynamatrix?.countStagesIncrement(hexAres) // for debug
+                            dsbc.thisDynamatrix?.countStagesIncrement('FAILURE') // could be unstable, learn how to differentiate?
+                        }
+                        throw hexA
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement(Utils.castString(t))
                         throw t
