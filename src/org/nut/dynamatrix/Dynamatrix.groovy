@@ -1308,7 +1308,7 @@ def parallelStages = prepareDynamatrix(
                                     StringWriter errors = new StringWriter();
                                     hexA.printStackTrace(new PrintWriter(errors));
                                     script.echo (
-                                        "A DSBC stage running on node " +
+                                        "[DEBUG] A DSBC stage running on node " +
                                         "'${script.env?.NODE_NAME}' requested " +
                                         "for stage '${stageName}'" + sbName +
                                         " completed with an exception:\n" +
