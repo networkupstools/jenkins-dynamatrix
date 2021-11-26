@@ -1,5 +1,7 @@
 package org.nut.dynamatrix;
 
+import hudson.model.Result;
+
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.Dynamatrix;
 import org.nut.dynamatrix.dynamatrixGlobalState;
@@ -65,6 +67,10 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     // The build config can reference which dynamatrix group of build scenarios
     // it would be tracked in, e.g. for failFastSafe support
     public Dynamatrix thisDynamatrix = null
+
+    // Help Dynamatrix accounting track intentional error()/unstable()/...
+    // exits from each build scenario
+    public Result dsbcResult = null
 
     public DynamatrixSingleBuildConfig (script) {
         this.script = script

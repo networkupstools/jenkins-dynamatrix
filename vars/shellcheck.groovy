@@ -149,6 +149,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                                                 if (didFail) {
                                                     // Track the big-stage fault to explode in the end:
                                                     bigStageResult = 'FAILURE'
+                                                    dsbc.dsbcResult = 'FAILURE'
                                                     // Track the small-stage fault in a way that we can continue with other sub-stages:
                                                     //echo msgFail
                                                     currentBuild.result = 'FAILURE'

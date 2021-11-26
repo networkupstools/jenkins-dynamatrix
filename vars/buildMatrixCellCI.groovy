@@ -272,6 +272,7 @@ set +x
                 def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
                 if (res != 0) {
                     shRes = res
+                    dsbc.dsbcResult = 'UNSTABLE'
                     unstable "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
                 }
             }
@@ -282,6 +283,7 @@ set +x
                 def res = sh (script: cmdCommon + cmdBuild, returnStatus: true, label: (cmdCommonLabel + cmdBuildLabel.trim()))
                 if (res != 0) {
                     shRes = res
+                    dsbc.dsbcResult = 'UNSTABLE'
                     unstable "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
                 }
             }
@@ -311,6 +313,7 @@ set +x
                 def res = sh (script: cmdCommon + cmdTest1, returnStatus: true, label: (cmdCommonLabel + cmdTest1Label.trim()))
                 if (res != 0) {
                     shRes = res
+                    dsbc.dsbcResult = 'UNSTABLE'
                     unstable "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
                 }
             }
@@ -321,6 +324,7 @@ set +x
                 def res = sh (script: cmdCommon + cmdTest2, returnStatus: true, label: (cmdCommonLabel + cmdTest2Label.trim()))
                 if (res != 0) {
                     shRes = res
+                    dsbc.dsbcResult = 'UNSTABLE'
                     unstable "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
                 }
             }
@@ -445,7 +449,9 @@ done
             }
         }
 
-        if (shRes != 0) {
+        if (shRes == 0) {
+            dsbc.dsbcResult = 'SUCCESS'
+        } else {
             def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
             if (dsbc?.thisDynamatrix?.failFast) {
                 echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected in stage '${stageName}': executed shell steps failed"
@@ -453,9 +459,12 @@ done
             } else {
                 echo "Not raising mustAbort flag, because " + (dsbc.thisDynamatrix ? (dsbc.thisDynamatrix.failFast ? "dsbc.thisDynamatrix.failFast==true (so not sure why not raising the flag...)" : "dsbc.thisDynamatrix.failFast==false") : "dsbc.thisDynamatrix is not tracked in this run")
             }
+
             if (dsbc?.isAllowedFailure) {
+                dsbc.dsbcResult = 'UNSTABLE'
                 unstable msgFail
             } else {
+                dsbc.dsbcResult = 'FAILURE'
                 error msgFail
             }
         }

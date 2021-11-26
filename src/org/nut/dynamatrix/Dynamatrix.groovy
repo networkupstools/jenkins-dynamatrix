@@ -1290,16 +1290,32 @@ def parallelStages = prepareDynamatrix(
                     } catch (hudson.AbortException hexA) {
                         // This is thrown by steps like "error" and "unstable" (both)
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
-                        if (hexA == null) {
-                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN')
+                        if (dsbc.dsbcResult != null) {
+                            dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult)
                         } else {
-                            String hexAres = "hudson.AbortException: " +
-                                "Message: " + hexA.getMessage() +
-                                "; Cause: " + hexA.getCause() +
-                                "; toString: " + hexA.toString();
-                            if (hexAres == null) hexAres = 'SUCCESS'
-                            dsbc.thisDynamatrix?.countStagesIncrement(hexAres) // for debug
-                            dsbc.thisDynamatrix?.countStagesIncrement('FAILURE') // could be unstable, learn how to differentiate?
+                            if (hexA == null) {
+                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN')
+                            } else {
+                                String hexAres = "hudson.AbortException: " +
+                                    "Message: " + hexA.getMessage() +
+                                    "; Cause: " + hexA.getCause() +
+                                    "; toString: " + hexA.toString();
+                                if (hexAres == null) hexAres = 'SUCCESS'
+                                dsbc.thisDynamatrix?.countStagesIncrement(hexAres) // for debug
+                                dsbc.thisDynamatrix?.countStagesIncrement('FAILURE') // could be unstable, learn how to differentiate?
+                                if (dsbc.enableDebugTrace) {
+                                    StringWriter errors = new StringWriter();
+                                    hexA.printStackTrace(new PrintWriter(errors));
+                                    script.echo (
+                                        "A DSBC stage running on node " +
+                                        "'${script.env?.NODE_NAME}' requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " completed with an exception:\n" +
+                                        hexAres +
+                                        "\nDetailed trace: " + errors.toString()
+                                        )
+                                }
+                            }
                         }
                         throw hexA
                     } catch (Throwable t) {
