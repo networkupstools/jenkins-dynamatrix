@@ -599,10 +599,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 // parallel stage failure, make the verdict known
                 // in UI and final result, but let tear-down proceed:
                 try { // no idea why, but we can get a nullptr exception here :\
-                    if (tmpRes != null) currentBuild.result = tmpRes
+                    if (tmpRes != null)
+                        currentBuild.result = currentBuild.result.combine(tmpRes)
                 } catch (Throwable t) {}
                 try { // we try to track results based on each stage outcome
-                    if (dynamatrix.worstResult != null) currentBuild.result = dynamatrix.worstResult
+                    if (dynamatrix.worstResult != null)
+                        currentBuild.result = currentBuild.result.combine(dynamatrix.worstResult)
                 } catch (Throwable t) {}
 
                 switch (currentBuild.result) {
