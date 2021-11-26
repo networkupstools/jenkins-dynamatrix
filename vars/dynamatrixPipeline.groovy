@@ -603,8 +603,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         currentBuild.result = currentBuild.result.combine(tmpRes)
                 } catch (Throwable t) {}
                 try { // we try to track results based on each stage outcome
-                    if (dynamatrix.worstResult != null)
-                        currentBuild.result = currentBuild.result.combine(dynamatrix.worstResult)
+                    def wr = dynamatrix.getWorstResult()
+                    if (wr != null)
+                        currentBuild.result = currentBuild.result.combine(wr)
                 } catch (Throwable t) {}
 
                 switch (currentBuild.result) {
