@@ -303,7 +303,7 @@ if test -e .git/objects/info/alternates ; then
     echo "[DEBUG] Checked-out workspace size after garbage-collector (Kb): `du -ks .`"
 fi
 git status || true
-echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objsects under: `find . | wc -l`" || true
+echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
 """
         } // node isUnix(), can sh
 
@@ -382,7 +382,7 @@ git status || if test -e .git ; then
     git init
     git status || true
 fi
-echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objsects under: `find . | wc -l`" || true
+echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
 """
         }
     } // unstashCleanSrc()
