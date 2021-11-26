@@ -601,6 +601,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 try { // no idea why, but we can get a nullptr exception here :\
                     if (tmpRes != null) currentBuild.result = tmpRes
                 } catch (Throwable t) {}
+                try { // we try to track results based on each stage outcome
+                    if (dynamatrix.worstResult != null) currentBuild.result = dynamatrix.worstResult
+                } catch (Throwable t) {}
 
                 switch (currentBuild.result) {
                     case 'FAILURE':
@@ -615,7 +618,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     "'slow build' combos to run; ended up with following counts: " +
                     dynamatrix.toStringStageCount()
 
-                if (dynamatrixGlobalState.enableDebugTrace) echo dynamatrix.toStringStageCountDump()
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo dynamatrix.toStringStageCountDump()
 
                 if (!(currentBuild.result in [null, 'SUCCESS'])) {
                     try {

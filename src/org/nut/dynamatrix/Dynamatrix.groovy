@@ -56,6 +56,7 @@ class Dynamatrix implements Cloneable {
     // it just then as we have the mustAbort flag raised.
     public Boolean failFast = null
     public boolean mustAbort = false
+    public Result worstResult = null
 
     // Count each type of verdict
     private Map<String, Integer> countStages = [:]
@@ -75,13 +76,13 @@ class Dynamatrix implements Cloneable {
     public Integer countStagesCompleted() { return intNullZero(countStages?.COMPLETED) }
     // We canceled the stage before start of actual work
     // (due to mustAbort, after getting a node):
-    public Integer countStagesAbortedSafe() { return intNullZero(countStages?.ABORTED_SAFE) }
+    public Integer countStagesAbortedSafe() { worstResult = 'ABORTED'; return intNullZero(countStages?.ABORTED_SAFE) }
     // Standard Jenkins build results:
-    public Integer countStagesFinishedOK() { return intNullZero(countStages?.SUCCESS) }
-    public Integer countStagesFinishedFailure() { return intNullZero(countStages?.FAILURE) }
-    public Integer countStagesFinishedFailureAllowed() { return intNullZero(countStages?.UNSTABLE) }
-    public Integer countStagesAborted() { return intNullZero(countStages?.ABORTED) }
-    public Integer countStagesAbortedNotBuilt() { return intNullZero(countStages?.NOT_BUILT) }
+    public Integer countStagesFinishedOK() { worstResult = 'SUCCESS'; return intNullZero(countStages?.SUCCESS) }
+    public Integer countStagesFinishedFailure() { worstResult = 'FAILURE'; return intNullZero(countStages?.FAILURE) }
+    public Integer countStagesFinishedFailureAllowed() { worstResult = 'UNSTABLE'; return intNullZero(countStages?.UNSTABLE) }
+    public Integer countStagesAborted() { worstResult = 'ABORTED'; return intNullZero(countStages?.ABORTED) }
+    public Integer countStagesAbortedNotBuilt() { worstResult = 'NOT_BUILT'; return intNullZero(countStages?.NOT_BUILT) }
 
     public Dynamatrix(Object script) {
         this.script = script
