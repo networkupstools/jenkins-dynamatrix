@@ -47,6 +47,8 @@ class Dynamatrix implements Cloneable {
     // set of agents this dynamatrix is interested in)
     private Map<String, Set> buildLabelsAgents = [:]
 
+///////////////////////////////// RESULTS ACCOUNTING ///////////////////
+
     // Similar to parallel() step's support for aborting builds if a stage
     // fails, but this implementation allows to let already running stages
     // complete. Technically depends on the limited amount of build nodes,
@@ -56,11 +58,36 @@ class Dynamatrix implements Cloneable {
     // it just then as we have the mustAbort flag raised.
     public Boolean failFast = null
     public boolean mustAbort = false
+    // See also https://javadoc.jenkins.io/hudson/model/class-use/Result.html
+    // https://javadoc.jenkins-ci.org/hudson/model/Result.html
     public Result worstResult = null
 
     // Count each type of verdict
     private Map<String, Integer> countStages = [:]
     synchronized public Integer countStagesIncrement(String k) {
+        Result r = null
+        try {
+            switch (k) {
+                case ['STARTED', 'COMPLETED']: break;
+                case 'ABORTED_SAFE':
+                    r = Result.fromString('ABORTED')
+                    break
+                default:
+                    r = Result.fromString(k)
+                    break
+            }
+        } catch (Throwable t) {
+            r = null
+        }
+
+        if (r != null) {
+            if (worstResult == null) {
+                worstResult = r
+            } else {
+                worstResult = worstResult.combine(r)
+            }
+        }
+
         if (countStages.containsKey(k)) {
             countStages[k] += 1
         } else {
@@ -70,19 +97,22 @@ class Dynamatrix implements Cloneable {
     }
     private Integer intNullZero(Integer i) { if (i == null) { return 0 } else { return i } }
 
+    // Reporting the accounted values:
     // We started the stage:
     public Integer countStagesStarted() { return intNullZero(countStages?.STARTED) }
     // We know we finished the stage, successfully or with "fex" exception caught:
     public Integer countStagesCompleted() { return intNullZero(countStages?.COMPLETED) }
     // We canceled the stage before start of actual work
     // (due to mustAbort, after getting a node):
-    public Integer countStagesAbortedSafe() { worstResult = 'ABORTED'; return intNullZero(countStages?.ABORTED_SAFE) }
+    public Integer countStagesAbortedSafe() { return intNullZero(countStages?.ABORTED_SAFE) }
     // Standard Jenkins build results:
-    public Integer countStagesFinishedOK() { worstResult = 'SUCCESS'; return intNullZero(countStages?.SUCCESS) }
-    public Integer countStagesFinishedFailure() { worstResult = 'FAILURE'; return intNullZero(countStages?.FAILURE) }
-    public Integer countStagesFinishedFailureAllowed() { worstResult = 'UNSTABLE'; return intNullZero(countStages?.UNSTABLE) }
-    public Integer countStagesAborted() { worstResult = 'ABORTED'; return intNullZero(countStages?.ABORTED) }
-    public Integer countStagesAbortedNotBuilt() { worstResult = 'NOT_BUILT'; return intNullZero(countStages?.NOT_BUILT) }
+    public Integer countStagesFinishedOK() { return intNullZero(countStages?.SUCCESS) }
+    public Integer countStagesFinishedFailure() { return intNullZero(countStages?.FAILURE) }
+    public Integer countStagesFinishedFailureAllowed() { return intNullZero(countStages?.UNSTABLE) }
+    public Integer countStagesAborted() { return intNullZero(countStages?.ABORTED) }
+    public Integer countStagesAbortedNotBuilt() { return intNullZero(countStages?.NOT_BUILT) }
+
+////////////////////////// END OF RESULTS ACCOUNTING ///////////////////
 
     public Dynamatrix(Object script) {
         this.script = script
