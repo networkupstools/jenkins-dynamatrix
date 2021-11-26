@@ -64,7 +64,7 @@ class Dynamatrix implements Cloneable {
 
     // Count each type of verdict
     private Map<String, Integer> countStages = [:]
-    synchronized public Integer countStagesIncrement(String k) {
+    synchronized public Result setWorstResult(String k) {
         Result r = null
         try {
             switch (k) {
@@ -88,6 +88,11 @@ class Dynamatrix implements Cloneable {
             }
         }
 
+        return worstResult
+    }
+
+    synchronized public Integer countStagesIncrement(String k) {
+        setWorstResult(k)
         if (countStages.containsKey(k)) {
             countStages[k] += 1
         } else {

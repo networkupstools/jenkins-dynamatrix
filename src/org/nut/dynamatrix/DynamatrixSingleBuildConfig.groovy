@@ -69,9 +69,8 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     public Dynamatrix thisDynamatrix = null
 
     // Help Dynamatrix accounting track intentional error()/unstable()/...
-    // exits from each build scenario
+    // exits from each build scenario. See also setWorstResult() below.
     public Result dsbcResult = null
-
     public DynamatrixSingleBuildConfig (script) {
         this.script = script
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
@@ -124,6 +123,16 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     @NonCPS
     public boolean shouldDebugErrors() {
         return ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
+    }
+
+    synchronized public Result setWorstResult(String k) {
+        Result r = Result.fromString(k)
+        if (dsbcResult == null) {
+            dsbcResult = r
+        } else {
+            dsbcResult = dsbcResult.combine(r)
+        }
+        return dsbcResult
     }
 
     @NonCPS
