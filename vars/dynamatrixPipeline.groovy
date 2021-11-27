@@ -610,10 +610,16 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                 switch (currentBuild.result) {
                     case 'FAILURE':
-                        catchError(message: 'Marking a hard FAILURE') { error "slowBuild or something else failed" + (mustAbortMsg ? ("; " + mustAbortMsg) : "") }
+                        catchError(message: 'Marking a hard FAILURE') {
+                            error "slowBuild or something else failed" +
+                                (mustAbortMsg ? ("; " + mustAbortMsg) : "")
+                        }
                         break
-                    case 'UNSTABLE':
-                        warnError(message: 'Marking a soft expected fault') { error "slowBuild or something else did not succeed cleanly" + (mustAbortMsg ? ("; " + mustAbortMsg) : "") }
+                    case ['UNSTABLE', 'ABORTED', 'NOT_BUILT']:
+                        warnError(message: 'Marking a soft expected fault') {
+                            error "slowBuild or something else did not succeed cleanly" +
+                                (mustAbortMsg ? ("; " + mustAbortMsg) : "")
+                        }
                         break
                 }
 
