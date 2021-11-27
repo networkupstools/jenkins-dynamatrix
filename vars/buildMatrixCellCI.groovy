@@ -496,13 +496,13 @@ EOF
 EOF
     fi
   cat << 'EOF'
-...logged into: ${logfile} => ${env.BUILD_URL}/${logfile}.gz
+...logged into: ${logfile} => ${env.BUILD_URL}/artifact/${logfile}.gz
 EOF
   echo "NOTE: Saved big job artifacts for this single build scenario usually have same identifier in the middle of file name"
-  if [ -s config.log ] ; then
+  if [ -s config.log ] || [ -s ".ci.${archPrefix}.config.log.gz" ]; then
     echo "...e.g. a (renamed, compressed) copy of config.log for this build"
     if [ -n "${archPrefix}" ] && [ "${archPrefix}" != null ] ; then
-        echo "...like ${env.BUILD_URL}/.ci.${archPrefix}.config.log.gz"
+        echo "...like ${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz"
     fi
   fi
 ) >&2
