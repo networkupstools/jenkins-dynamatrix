@@ -1337,7 +1337,6 @@ def parallelStages = prepareDynamatrix(
                                     "Message: " + hexA.getMessage() +
                                     "; Cause: " + hexA.getCause() +
                                     "; toString: " + hexA.toString();
-                                if (hexAres == null) hexAres = 'SUCCESS'
                                 dsbc.thisDynamatrix?.countStagesIncrement(hexAres) // for debug
                                 dsbc.thisDynamatrix?.countStagesIncrement('FAILURE') // could be unstable, learn how to differentiate?
                                 if (dsbc.enableDebugTrace) {
