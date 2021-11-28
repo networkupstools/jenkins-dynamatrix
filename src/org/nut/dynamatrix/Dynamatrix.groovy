@@ -96,13 +96,13 @@ class Dynamatrix implements Cloneable {
 
     @NonCPS
     synchronized public Integer countStagesIncrement(String k) {
-        setWorstResult(k)
-        if (countStages.containsKey(k)) {
-            countStages[k] += 1
+        this.setWorstResult(k)
+        if (this.countStages.containsKey(k)) {
+            this.countStages[k] += 1
         } else {
-            countStages[k] = 1
+            this.countStages[k] = 1
         }
-        return countStages[k]
+        return this.countStages[k]
     }
     private Integer intNullZero(Integer i) { if (i == null) { return 0 } else { return i } }
 
