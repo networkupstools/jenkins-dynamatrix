@@ -94,6 +94,7 @@ class Dynamatrix implements Cloneable {
         return this.dmWorstResult
     }
 
+    @NonCPS
     synchronized public Integer countStagesIncrement(String k) {
         setWorstResult(k)
         if (countStages.containsKey(k)) {
