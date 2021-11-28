@@ -1354,6 +1354,42 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         throw hexA
+                    } catch (hudson.remoting.RequestAbortedException rae) {
+                        // https://javadoc.jenkins.io/component/remoting/hudson/remoting/RequestAbortedException.html
+                        // > Signals that the communication is aborted and thus
+                        // > the pending Request will never recover its Response.
+                        // hudson.remoting.RequestAbortedException: java.io.IOException:
+                        // Unexpected termination of the channel
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
+                        if (rae == null) {
+                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN')
+                        } else {
+                            // Involve localization?..
+                            if (rae.toString() ==~ /Unexpected termination of the channel/
+                            ) {
+                                dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED')
+                            } else {
+                                String raeRes = "hudson.remoting.RequestAbortedException: " +
+                                    "Message: " + hexA.getMessage() +
+                                    "; Cause: " + hexA.getCause() +
+                                    "; toString: " + hexA.toString();
+                                dsbc.thisDynamatrix?.countStagesIncrement(raeRes) // for debug
+                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN') // FAILURE technically, but one we could not classify exactly
+                                if (dsbc.enableDebugTrace) {
+                                    StringWriter errors = new StringWriter();
+                                    hexA.printStackTrace(new PrintWriter(errors));
+                                    script.echo (
+                                        "[DEBUG] A DSBC stage running on node " +
+                                        "'${script.env?.NODE_NAME}' requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " completed with an exception:\n" +
+                                        raeRes +
+                                        "\nDetailed trace: " + errors.toString()
+                                        )
+                                }
+                            }
+                        }
+                        throw rae
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement(Utils.castString(t))
                         throw t
