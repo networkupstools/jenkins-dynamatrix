@@ -65,6 +65,8 @@ class Dynamatrix implements Cloneable {
     // Count each type of verdict
     private Map<String, Integer> countStages = [:]
     public Result getWorstResult() { return dmWorstResult }
+
+    @NonCPS
     synchronized public Result setWorstResult(String k) {
         def r = null
         try {
