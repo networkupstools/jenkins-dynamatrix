@@ -66,7 +66,7 @@ class Dynamatrix implements Cloneable {
     private Map<String, Integer> countStages = [:]
     public Result getWorstResult() { return dmWorstResult }
     synchronized public Result setWorstResult(String k) {
-        Result r = null
+        def r = null
         try {
             switch (k) {
                 case ['STARTED', 'COMPLETED']: break;
