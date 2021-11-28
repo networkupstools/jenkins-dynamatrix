@@ -127,12 +127,27 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     synchronized public Result setWorstResult(String k) {
         def r = null
+        // NOTE: This might throw if not a valid string from enum,
+        // we propagate that exception
         r = Result.fromString(k)
+
+        if (this.shouldDebugTrace()) {
+            script.println (
+                "[TRACE] Old worst result for this DSBC was: ${this.dsbcResult}" +
+                "; new assignment is string '${k}' => Result '${r}'")
+        }
+
         if (this.dsbcResult == null) {
             this.dsbcResult = r
         } else {
             this.dsbcResult = this.dsbcResult.combine(r)
         }
+
+        if (this.shouldDebugTrace()) {
+            script.println (
+                "[TRACE] New worst result for this DSBC is: ${this.dsbcResult}")
+        }
+
         return this.dsbcResult
     }
 
