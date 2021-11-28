@@ -125,6 +125,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
     }
 
+    @NonCPS
     synchronized public Result setWorstResult(String k) {
         def r = null
         // NOTE: This might throw if not a valid string from enum,
