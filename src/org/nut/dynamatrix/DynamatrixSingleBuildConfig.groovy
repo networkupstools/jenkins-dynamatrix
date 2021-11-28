@@ -127,12 +127,13 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     synchronized public Result setWorstResult(String k) {
         Result r = Result.fromString(k)
-        if (dsbcResult == null) {
-            dsbcResult = r
+        def R = r.clone()
+        if (this.dsbcResult == null) {
+            this.dsbcResult = R
         } else {
-            dsbcResult = dsbcResult.combine(r)
+            this.dsbcResult = this.dsbcResult.combine(R)
         }
-        return dsbcResult
+        return this.dsbcResult
     }
 
     @NonCPS
