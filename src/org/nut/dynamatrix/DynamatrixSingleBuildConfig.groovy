@@ -129,9 +129,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         Result r = Result.fromString(k)
         def R = r.clone()
         if (this.dsbcResult == null) {
-            this.dsbcResult = R
+            this.dsbcResult = r
         } else {
-            this.dsbcResult = this.dsbcResult.combine(R)
+            this.dsbcResult = this.dsbcResult.combine(r)
         }
         return this.dsbcResult
     }

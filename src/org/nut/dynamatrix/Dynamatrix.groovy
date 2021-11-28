@@ -82,11 +82,10 @@ class Dynamatrix implements Cloneable {
         }
 
         if (r != null) {
-            def R = r.clone()
             if (this.dmWorstResult == null) {
-                this.dmWorstResult = R
+                this.dmWorstResult = r
             } else {
-                this.dmWorstResult = this.dmWorstResult.combine(R)
+                this.dmWorstResult = this.dmWorstResult.combine(r)
             }
         }
 
