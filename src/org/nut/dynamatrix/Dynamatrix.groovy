@@ -228,6 +228,14 @@ class Dynamatrix implements Cloneable {
         return s.trim()
     }
 
+    public String toStringStageCountDumpNonZero() {
+        def m = [:]
+        countStages.each {k, v ->
+            if (v > 0) m[k] = v
+        }
+        return m.toString()
+    }
+
     public String toStringStageCountDump() {
         return countStages.toString()
     }

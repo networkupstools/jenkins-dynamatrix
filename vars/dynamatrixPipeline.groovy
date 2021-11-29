@@ -634,6 +634,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     try {
                         def txt = dynamatrix.toStringStageCountNonZero()
                         if (!(Utils.isStringNotEmpty(txt))) {
+                            txt = dynamatrix.toStringStageCountDumpNonZero()
+                        }
+                        if (!(Utils.isStringNotEmpty(txt))) {
                             txt = dynamatrix.toStringStageCountDump()
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
