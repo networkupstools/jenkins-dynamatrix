@@ -1343,7 +1343,13 @@ def parallelStages = prepareDynamatrix(
                         if (dsbc.dsbcResult != null) {
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult)
                         } else {
-                            dsbc.thisDynamatrix?.countStagesIncrement('SUCCESS')
+                            if (dsbc.thisDynamatrix?.trackStageResults.containsKey(stageName)
+                            &&  dsbc.thisDynamatrix?.trackStageResults[stageName] != null
+                            ) {
+                                dsbc.thisDynamatrix?.countStagesIncrement(dsbc.thisDynamatrix?.trackStageResults[stageName])
+                            } else {
+                                dsbc.thisDynamatrix?.countStagesIncrement('SUCCESS')
+                            }
                         }
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
                         return res
