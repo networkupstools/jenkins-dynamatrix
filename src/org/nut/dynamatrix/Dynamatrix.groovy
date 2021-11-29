@@ -64,7 +64,18 @@ class Dynamatrix implements Cloneable {
     public Result getWorstResult() { return dmWorstResult }
 
     // Count each type of verdict
-    private Map<String, Integer> countStages = [:]
+    // Predefine the Map so its print-out happens in same order as in
+    // the toString*() methods below:
+    private Map<String, Integer> countStages = [
+        'STARTED': 0,
+        'COMPLETED': 0,
+        'ABORTED_SAFE': 0,
+        'SUCCESS': 0,
+        'FAILURE': 0,
+        'UNSTABLE': 0,
+        'ABORTED': 0,
+        'NUT_BUILT': 0
+        ]
     // For each stageName, track its Result object (if set by stage payload)
     private Map<String, Result> trackStageResults = [:]
 
