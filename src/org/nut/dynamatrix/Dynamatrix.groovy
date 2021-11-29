@@ -61,13 +61,14 @@ class Dynamatrix implements Cloneable {
     // See also https://javadoc.jenkins.io/hudson/model/class-use/Result.html
     // https://javadoc.jenkins-ci.org/hudson/model/Result.html
     private Result dmWorstResult = null
+    public Result getWorstResult() { return dmWorstResult }
 
     // Count each type of verdict
     private Map<String, Integer> countStages = [:]
     public Result getWorstResult() { return dmWorstResult }
 
     @NonCPS
-    synchronized public Result setWorstResult(String k) {
+    public static Result resultFromString(String k) {
         def r = null
         try {
             switch (k) {
@@ -82,7 +83,12 @@ class Dynamatrix implements Cloneable {
         } catch (Throwable t) {
             r = null
         }
+        return r
+    }
 
+    @NonCPS
+    synchronized public Result setWorstResult(String k) {
+        def r = Dynamatrix.resultFromString(k)
         if (r != null) {
             if (this.dmWorstResult == null) {
                 this.dmWorstResult = r
