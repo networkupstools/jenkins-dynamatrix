@@ -1377,14 +1377,14 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED')
                             } else {
                                 String raeRes = "hudson.remoting.RequestAbortedException: " +
-                                    "Message: " + hexA.getMessage() +
-                                    "; Cause: " + hexA.getCause() +
-                                    "; toString: " + hexA.toString();
+                                    "Message: " + rae.getMessage() +
+                                    "; Cause: " + rae.getCause() +
+                                    "; toString: " + rae.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement(raeRes) // for debug
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN') // FAILURE technically, but one we could not classify exactly
                                 if (dsbc.enableDebugTrace) {
                                     StringWriter errors = new StringWriter();
-                                    hexA.printStackTrace(new PrintWriter(errors));
+                                    rae.printStackTrace(new PrintWriter(errors));
                                     script.echo (
                                         "[DEBUG] A DSBC stage running on node " +
                                         "'${script.env?.NODE_NAME}' requested " +
