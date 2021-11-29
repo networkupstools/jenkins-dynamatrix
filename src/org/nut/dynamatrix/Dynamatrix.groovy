@@ -104,20 +104,23 @@ class Dynamatrix implements Cloneable {
     @NonCPS
     synchronized public Result setWorstResult(String sn, String k) {
         // Similar to above, but also populate trackStageResults for stage name
-        this.setWorstResult(k)
+        def res = this.setWorstResult(k)
 
-        def r = Dynamatrix.resultFromString(k)
-        if (r != null) {
-            if (!this.trackStageResults.containsKey(sn)
-            ||   this.trackStageResults[sn] == null
-            ) {
-                this.trackStageResults[sn] = r
-            } else {
-                this.trackStageResults[sn] = this.trackStageResults[sn].combine(r)
+        if (sn != null) {
+            def r = Dynamatrix.resultFromString(k)
+            if (r != null) {
+                if (!this.trackStageResults.containsKey(sn)
+                ||   this.trackStageResults[sn] == null
+                ) {
+                    this.trackStageResults[sn] = r
+                } else {
+                    this.trackStageResults[sn] = this.trackStageResults[sn].combine(r)
+                }
             }
+            res = this.trackStageResults[sn]
         }
 
-        return this.trackStageResults[sn]
+        return res
     }
 
     @NonCPS
