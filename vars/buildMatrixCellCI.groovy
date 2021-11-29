@@ -273,6 +273,7 @@ set +x
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
+                    if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     unstable "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
                 }
             }
@@ -284,6 +285,7 @@ set +x
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
+                    if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     unstable "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
                 }
             }
@@ -314,6 +316,7 @@ set +x
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
+                    if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     unstable "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
                 }
             }
@@ -325,6 +328,7 @@ set +x
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
+                    if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     unstable "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
                 }
             }
@@ -451,6 +455,7 @@ done
 
         if (shRes == 0) {
             dsbc?.setWorstResult('SUCCESS')
+            if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'SUCCESS') }
         } else {
             def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
             if (dsbc?.thisDynamatrix?.failFast) {
@@ -462,9 +467,11 @@ done
 
             if (dsbc?.isAllowedFailure) {
                 dsbc?.setWorstResult('UNSTABLE')
+                if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                 unstable msgFail
             } else {
                 dsbc?.setWorstResult('FAILURE')
+                if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'FAILURE') }
                 error msgFail
             }
         }
