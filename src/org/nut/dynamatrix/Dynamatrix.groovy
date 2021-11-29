@@ -65,7 +65,8 @@ class Dynamatrix implements Cloneable {
 
     // Count each type of verdict
     private Map<String, Integer> countStages = [:]
-    public Result getWorstResult() { return dmWorstResult }
+    // For each stageName, track its Result object (if set by stage payload)
+    private Map<String, Result> trackStageResults = [:]
 
     @NonCPS
     public static Result resultFromString(String k) {
@@ -98,6 +99,25 @@ class Dynamatrix implements Cloneable {
         }
 
         return this.dmWorstResult
+    }
+
+    @NonCPS
+    synchronized public Result setWorstResult(String sn, String k) {
+        // Similar to above, but also populate trackStageResults for stage name
+        this.setWorstResult(k)
+
+        def r = Dynamatrix.resultFromString(k)
+        if (r != null) {
+            if (!this.trackStageResults.containsKey(sn)
+            ||   this.trackStageResults[sn] == null
+            ) {
+                this.trackStageResults[sn] = r
+            } else {
+                this.trackStageResults[sn] = this.trackStageResults[sn].combine(r)
+            }
+        }
+
+        return this.trackStageResults[sn]
     }
 
     @NonCPS
