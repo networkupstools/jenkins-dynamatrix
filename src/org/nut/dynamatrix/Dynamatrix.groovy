@@ -123,7 +123,6 @@ class Dynamatrix implements Cloneable {
         return res
     }
 
-    // TOTHINK: What about "null" if passed here?..
     @NonCPS
     synchronized public Integer countStagesIncrement(Result r) {
         return this.countStagesIncrement(r?.toString())
@@ -131,6 +130,8 @@ class Dynamatrix implements Cloneable {
 
     @NonCPS
     synchronized public Integer countStagesIncrement(String k) {
+        if (k == null)
+            k = 'UNKNOWN'
         this.setWorstResult(k)
         if (this.countStages.containsKey(k)) {
             this.countStages[k] += 1
