@@ -289,7 +289,7 @@ class DynamatrixStash {
         // https://stackoverflow.com/questions/2248228/how-to-detach-alternates-after-git-clone-reference
         // TODO: Would a `git gc` reduce footprint to stash?
         if (script.isUnix()) {
-            script.sh """
+            script.sh label:"Untie the git checkout from reference repo (if any)", script:"""
 sync || true
 git status || true
 echo "[DEBUG] Checked-out workspace size (Kb): `du -ks .`"
@@ -330,7 +330,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         // Be sure to get also "hidden" files like .* in Unix customs => .git*
         // so avoid default exclude patterns
         if (script.isUnix()) {
-            script.sh """
+            script.sh label:"Debug git checkout contents before stash()", script:"""
 sync || true
 echo "[DEBUG before stash()] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
 git status || true
@@ -374,7 +374,7 @@ git status || true
         script.unstash (stashName)
         if (script.isUnix()) {
             // Try a workaround with `git init` per https://issues.jenkins.io/browse/JENKINS-56098?focusedCommentId=380303
-            script.sh """
+            script.sh label:"Debug git checkout contents after unstash()", script:"""
 sync || true
 echo "[DEBUG] Unstashed workspace size (Kb): `du -ks .`" || true
 git status || if test -e .git ; then
