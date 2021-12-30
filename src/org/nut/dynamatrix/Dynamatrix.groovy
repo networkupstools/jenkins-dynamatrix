@@ -1130,7 +1130,7 @@ def parallelStages = prepareDynamatrix(
 
         // echo's below are not debug-decorated, in these cases they are the payload
 //CLS//
-        return {
+        return { ->
             script.withEnv(dsbc.getKVSet().sort()) { // by side effect, sorting turns the Set into an array
 //SCR//                script.script {
 
@@ -1201,7 +1201,7 @@ def parallelStages = prepareDynamatrix(
          */
 
 //CLS//
-        return {
+        return { ->
 //            script.stage(stageName) {
                 if (dsbc.enableDebugTrace) script.echo "Running stage: ${stageName}" + "\n  for ${Utils.castString(dsbc)}"
                 if (dsbc.isAllowedFailure) {
