@@ -1208,7 +1208,7 @@ def parallelStages = prepareDynamatrix(
 //CLS//
         return { ->
 //            script.stage(stageName) {
-                if (dsbc.enableDebugTrace) script.echo "Running stage: ${stageName}" + "\n  for ${Utils.castString(dsbc)}"
+                if (dsbc.enableDebugTrace) script.echo "Running stage: ${stageName}" + "\n  for ${Utils.castString(dsbc)}" + (body == null ? "\n  with a NULL body" : "")
                 if (dsbc.isAllowedFailure) {
                     script.catchError(
                         message: "Failed stage which is allowed to fail: ${stageName}" + "\n  for ${Utils.castString(dsbc)}",
