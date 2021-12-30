@@ -1228,7 +1228,10 @@ def parallelStages = prepareDynamatrix(
     // ...
     // FAILED 'Build' for (ARCH_BITS=64&&ARCH64=amd64&&COMPILER=CLANG&&CLANGVER=10&&OS_DISTRO=freebsd12&&OS_FAMILY=bsd) && (nut-builder) && BITS=64&&CSTDVARIANT=c&&CSTDVERSION_c=99&&CSTDVERSION_cxx=98  &&  LANG=C && LC_ALL=C && TZ=UTC (isAllowedFailure)
     // ... so which platform was it really? which test case? expected fault or not?
-    def generateParstageWithoutAgent(def script, def dsbc, def stageName, def sbName, Closure payload) {
+
+    // NOTE: Seems that to ensure object locality, arguments SHOULD NOT be
+    // declared with "def" or a specific type"
+    def generateParstageWithoutAgent(script, dsbc, stageName, sbName, payload) {
         return { ->
             if (dsbc.enableDebugTrace) script.echo "Not requesting any node for stage '${stageName}'" + sbName
             payload()
@@ -1236,7 +1239,7 @@ def parallelStages = prepareDynamatrix(
     }
 
 
-    def generateParstageWithAgentBLE(def script, def dsbc, def stageName, def sbName, Closure payload) {
+    def generateParstageWithAgentBLE(script, dsbc, stageName, sbName, payload) {
         return { ->
             if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
             script.node (dsbc.buildLabelExpression) {
@@ -1246,7 +1249,7 @@ def parallelStages = prepareDynamatrix(
         }
     }
 
-    def generateParstageWithAgentAnon(def script, def dsbc, def stageName, def sbName, Closure payload) {
+    def generateParstageWithAgentAnon(script, dsbc, stageName, sbName, payload) {
         return { ->
             if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'" + sbName
             script.node {
