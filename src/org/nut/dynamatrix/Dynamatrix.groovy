@@ -1129,7 +1129,8 @@ def parallelStages = prepareDynamatrix(
         def debugTrace = this.shouldDebugTrace()
 
         // echo's below are not debug-decorated, in these cases they are the payload
-//CLS//        return {
+//CLS//
+        return {
             script.withEnv(dsbc.getKVSet().sort()) { // by side effect, sorting turns the Set into an array
 //SCR//                script.script {
 
@@ -1185,7 +1186,8 @@ def parallelStages = prepareDynamatrix(
 
 //SCR//                } // script
             } // withEnv
-//CLS//        } // return a Closure
+//CLS//
+        } // return a Closure
 
     }
 
@@ -1198,7 +1200,8 @@ def parallelStages = prepareDynamatrix(
          * the string around.
          */
 
-//CLS//        return {
+//CLS//
+        return {
 //            script.stage(stageName) {
                 if (dsbc.enableDebugTrace) script.echo "Running stage: ${stageName}" + "\n  for ${Utils.castString(dsbc)}"
                 if (dsbc.isAllowedFailure) {
@@ -1207,14 +1210,15 @@ def parallelStages = prepareDynamatrix(
                         buildResult: 'SUCCESS', stageResult: 'FAILURE'
                     ) {
                         script.withEnv(['CI_ALLOWED_FAILURE=true']) {
-                            generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
+                            return generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
                         }
                     } // catchError
                 } else {
-                    generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
+                    return generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
                 } // if allowedFailure
 //            } // stage
-//CLS//        } // return a Closure
+//CLS//
+        } // return a Closure
 
     }
 
@@ -1341,9 +1345,9 @@ def parallelStages = prepareDynamatrix(
             }
 
             // Named closure to call below
-            def payload = {
+            def payload = //NONCLS//{
                 generatedBuildWrapperLayer1(stageName, dsbc, body)//CLS//.call()
-            }
+            //NONCLS//}
 
             // Pattern for code change on the fly:
             if (matrixTag != null) {
