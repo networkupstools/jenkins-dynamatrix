@@ -1128,6 +1128,10 @@ def parallelStages = prepareDynamatrix(
          */
         def debugTrace = this.shouldDebugTrace()
 
+        // For delegation to closure and beyond
+        script = this.script
+        body.delegate.script = this.script
+
         // echo's below are not debug-decorated, in these cases they are the payload
 //CLS//
         return { ->
@@ -1171,7 +1175,8 @@ def parallelStages = prepareDynamatrix(
                         //     setDelegate(delegate)
                         //     echo "${stageName} ==> ${dsbc.clioptSet.toString()}"
                         // }
-                        body(body.delegate)
+                        //NONCLS?// body(body.delegate)
+                        body.call(body.delegate)
 /*
                         // Alas, this does not work to simplify the pipeline
                         // side of code:
@@ -1326,6 +1331,10 @@ def parallelStages = prepareDynamatrix(
                 def bodyData = [ dsbc: dsbc.clone(), stageName: sn ]
                 body = bodyOrig.clone().rehydrate(bodyData, this.script, body)
                 body.resolveStrategy = Closure.DELEGATE_FIRST
+                if (!Utils.isMapNotEmpty(body.delegate))
+                    body.delegate = [:]
+                body.delegate.dsbc = dsbc
+                body.delegate.stageName = stageName
             }
 
             String matrixTag = null
