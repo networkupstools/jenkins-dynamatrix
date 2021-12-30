@@ -345,7 +345,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 // CHANGE_BRANCH with the original value.
                                 if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
                                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ${sb.branchRegexSource} for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                        echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ~/${sb.branchRegexSource}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                                     countFiltersSkipped++
                                     return // continue
                                 }
@@ -356,7 +356,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
                                 ) {
                                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ${sb.branchRegexTarget} for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                        echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                                     countFiltersSkipped++
                                     return // continue
                                 } // else: CHANGE_TARGET is empty (probably not
@@ -377,7 +377,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 && (!(_CHANGE_TARGET ==~ sb.branchRegexTarget))
                                 ) {
                                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ${sb.branchRegexTarget} for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                        echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                                     countFiltersSkipped++
                                     return // continue
                                 }
@@ -389,7 +389,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     // builds, they can use the source branch
                                     // regex set to /^PR-\d+$/
                                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ${sb.branchRegexTarget} set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                        echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ~/${sb.branchRegexTarget}/ set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                                         // NOT a "skip", just a "FYI"!
                                 }
                             } // if branchRegexTarget
