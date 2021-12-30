@@ -1121,7 +1121,8 @@ def parallelStages = prepareDynamatrix(
         return dsbcSet
     } // generateBuildConfigSet()
 
-    private Closure generatedBuildWrapperLayer2 (String stageName, DynamatrixSingleBuildConfig dsbc, Closure body = null) {
+    //private Closure generatedBuildWrapperLayer2 (String stageName, DynamatrixSingleBuildConfig dsbc, Closure body = null) {
+    private Closure generatedBuildWrapperLayer2 (stageName, dsbc, body = null) {
         /* Helper for generatedBuild() below to not repeat the
          * same code structure in different handled situations
          */
@@ -1188,7 +1189,8 @@ def parallelStages = prepareDynamatrix(
 
     }
 
-    private Closure generatedBuildWrapperLayer1 (String stageName, DynamatrixSingleBuildConfig dsbc, Closure body = null) {
+    //private Closure generatedBuildWrapperLayer1 (String stageName, DynamatrixSingleBuildConfig dsbc, Closure body = null) {
+    private Closure generatedBuildWrapperLayer1 (stageName, dsbc, body = null) {
         /* Helper for generatedBuild() below to not repeat the
          * same code structure in different handled situations.
          * The stageName may be hard to (re-)calculate and/or
