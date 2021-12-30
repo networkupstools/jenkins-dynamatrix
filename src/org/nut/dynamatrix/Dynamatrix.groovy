@@ -1215,11 +1215,11 @@ def parallelStages = prepareDynamatrix(
                         buildResult: 'SUCCESS', stageResult: 'FAILURE'
                     ) {
                         script.withEnv(['CI_ALLOWED_FAILURE=true']) {
-                            return generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
+                            generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
                         }
                     } // catchError
                 } else {
-                    return generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
+                    generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
                 } // if allowedFailure
 //            } // stage
 //CLS//
