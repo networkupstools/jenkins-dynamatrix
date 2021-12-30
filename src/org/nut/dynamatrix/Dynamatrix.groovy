@@ -1216,6 +1216,46 @@ def parallelStages = prepareDynamatrix(
 
     }
 
+    // Follow notes from https://gist.github.com/jimklimov/28e480a635c8de2d0cdf2250a4277c4f
+    // to help avoid overlap between objects of parallel stages,
+    // causing VERY MISLEADING stuff like:
+    // Building with GCC-10 STD=c89 STD=c++98 on x86_64 64 linux-debian11
+    // platform for (ARCH_BITS=64&&ARCH64=amd64&&COMPILER=CLANG&&CLANGVER=10&&OS_DISTRO=freebsd12&&OS_FAMILY=bsd)
+    // && (nut-builder) && BITS=64&&CSTDVARIANT=c&&CSTDVERSION_c=99&&CSTDVERSION_cxx=98
+    // && LANG=C && LC_ALL=C && TZ=UTC (isAllowedFailure) :: as part of slowBuild filter:
+    // Default autotools driven build with default warning levels (gnu99/gnu++11)
+    // gcc-10 -DHAVE_CONFIG_H -I. -I../include -I../include -std=c89 -m64 -Wall -Wextra -Wsign-compare -Wno-error -MT str.lo -MD -MP -MF .deps/str.Tpo -c str.c  -fPIC -DPIC -o .libs/str.o
+    // ...
+    // FAILED 'Build' for (ARCH_BITS=64&&ARCH64=amd64&&COMPILER=CLANG&&CLANGVER=10&&OS_DISTRO=freebsd12&&OS_FAMILY=bsd) && (nut-builder) && BITS=64&&CSTDVARIANT=c&&CSTDVERSION_c=99&&CSTDVERSION_cxx=98  &&  LANG=C && LC_ALL=C && TZ=UTC (isAllowedFailure)
+    // ... so which platform was it really? which test case? expected fault or not?
+    def generateParstageWithoutAgent(def script, def dsbc, def stageName, def sbName, Closure payload) {
+        return { ->
+            if (dsbc.enableDebugTrace) script.echo "Not requesting any node for stage '${stageName}'" + sbName
+            payload()
+        }
+    }
+
+
+    def generateParstageWithAgentBLE(def script, def dsbc, def stageName, def sbName, Closure payload) {
+        return { ->
+            if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
+            script.node (dsbc.buildLabelExpression) {
+                if (dsbc.enableDebugTrace) script.echo "Starting on node '${script.env?.NODE_NAME}' requested by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
+                payload()
+            } // node
+        }
+    }
+
+    def generateParstageWithAgentAnon(def script, def dsbc, def stageName, def sbName, Closure payload) {
+        return { ->
+            if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'" + sbName
+            script.node {
+                if (dsbc.enableDebugTrace) script.echo "Starting on node '${script.env?.NODE_NAME}' requested as 'any' for stage '${stageName}'" + sbName
+                payload()
+            } // node
+        }
+    }
+
     def generateBuild(Map dynacfgOrig = [:], Closure bodyOrig = null) {
         return generateBuild(dynacfgOrig, false, bodyOrig)
     }
@@ -1470,43 +1510,27 @@ def parallelStages = prepareDynamatrix(
             // build agent, usually a specific one, to run some programs in that
             // OS. For generality there is a case for no-node mode, but that may
             // only call pipeline steps (schedule a build, maybe analyze, etc.)
+            def parstageName = null
+            def parstageCode = null
             if (dsbc.requiresBuildNode) {
-
                 if (Utils.isStringNotEmpty(dsbc.buildLabelExpression)) {
-
-                    parallelStages << ["WITHAGENT: " + stageName + sbName, {
-//                        script.stage("NODEWRAP: " + stageName + sbName) {
-                            if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
-                            script.node (dsbc.buildLabelExpression) {
-                                if (dsbc.enableDebugTrace) script.echo "Starting on node '${script.env?.NODE_NAME}' requested by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
-                                payload()
-                            } // node
-//                        } // stage needed to house the "node"
-                    }] // new parallelStages[] entry
-
+                    parstageName = "WITHAGENT: " + stageName + sbName
+                    //parstageName = "NODEWRAP: " + stageName + sbName
+                    parstageCode = generateParstageWithAgentBLE(script, dsbc, stageName, sbName, payload)
                 } else {
-
-                    parallelStages << ["WITHAGENT-ANON: " + stageName + sbName, {
-//                        script.stage("NODEWRAP-ANON: " + stageName) {
-                            if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'" + sbName
-                            script.node {
-                                if (dsbc.enableDebugTrace) script.echo "Starting on node '${script.env?.NODE_NAME}' requested as 'any' for stage '${stageName}'" + sbName
-                                payload()
-                            } // node
-//                        } // stage needed to house the "node"
-                    }] // new parallelStages[] entry
-
+                    parstageName = "WITHAGENT-ANON: " + stageName + sbName
+                    //parstageName = "NODEWRAP-ANON: " + stageName + sbName
+                    parstageCode = generateParstageWithAgentAnon(script, dsbc, stageName, sbName, payload)
                 }
             } else {
-
                 // no "${dsbc.buildLabelExpression}" - so runs on job's
                 // default node, if any (or fails if none is set and is needed)
-                parallelStages << ["NO-NODE: " + stageName + sbName, {
-                    if (dsbc.enableDebugTrace) script.echo "Not requesting any node for stage '${stageName}'" + sbName
-                    payload()
-                }] // new parallelStages[] entry
-
+                parstageName = "NO-NODE: " + stageName + sbName
+                parstageCode = generateParstageWithoutAgent(script, dsbc, stageName, sbName, payload)
             } // if got agent-label
+
+            // record the new parallelStages[] entry
+            parallelStages << [parstageName, parstageCode]
 
         }
 
