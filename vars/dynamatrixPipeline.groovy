@@ -645,6 +645,22 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         txt = "Not all went well: " + txt
                         manager.addShortText(txt)
                         createSummary(text: txt, icon: '/images/48x48/warning.png')
+
+                        // returns Map<Result, Set<String>>
+                        def mapres = dynamatrix.reportStageResults()
+                        if (mapres.containsKey(Result.SUCCESS))
+                            mapres.remove(Result.SUCCESS)
+
+                        if (mapres.size() > 0) {
+                            mapres.each { r, sns ->
+                                txt = "=== Result: ${r.toString()} (${sns.size()})\n"
+                                sns.each { sn ->
+                                    txt += "===== ${sn}\n"
+                                }
+                                txt += "\n"
+                                createSummary(text: txt, icon: '/images/48x48/warning.png')
+                            }
+                        }
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
