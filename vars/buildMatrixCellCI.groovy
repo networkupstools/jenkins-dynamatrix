@@ -369,23 +369,30 @@ done
         def ia = null
         def cppcheck = null
         def cppcheckAggregated = null
+        // "filters" below help ignore problems in system headers
+        // (with e.g. C90 build mode).
+        // TOTHINK: should we try to get distcheck dirs (like nut-2.4.7.1/*)
+        // to avoid duplicates? Or on the contrary, would we want to see
+        // some bugs in generated dist'ed code even if original does not
+        // have them?
+        def filterSysHeaders = ".*[/\\\\]usr[/\\\\].*\\.(h|hpp)\$"
         switch (compilerTool) {
             case 'gcc':
-                i = scanForIssues tool: gcc(id: id, pattern: '.ci-sanitizedPaths.*.log')
-                ia = scanForIssues tool: gcc(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log')
+                i = scanForIssues tool: gcc(id: id, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                ia = scanForIssues tool: gcc(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
                 break
             case 'gcc3':
-                i = scanForIssues tool: gcc3(id: id, pattern: '.ci-sanitizedPaths.*.log')
-                ia = scanForIssues tool: gcc3(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log')
+                i = scanForIssues tool: gcc3(id: id, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                ia = scanForIssues tool: gcc3(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
                 break
             case 'clang':
-                i = scanForIssues tool: clang(id: id, pattern: '.ci-sanitizedPaths.*.log')
-                ia = scanForIssues tool: clang(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log')
+                i = scanForIssues tool: clang(id: id, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                ia = scanForIssues tool: clang(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
                 break
         }
         if (0 == sh (returnStatus:true, script: """ test -n "`find . -name 'cppcheck*.xml' 2>/dev/null`" """)) {
-            cppcheck = scanForIssues tool: cppCheck(id: id, pattern: '**/cppcheck*.xml')
-            cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck analyser', pattern: '**/cppcheck*.xml')
+            cppcheck = scanForIssues tool: cppCheck(id: id, pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
+            cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck analyser', pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
         }
 
         if (i != null) {
