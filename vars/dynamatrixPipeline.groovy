@@ -653,11 +653,11 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                         if (mapres.size() > 0) {
                             mapres.each { r, sns ->
-                                txt = "=== Result: ${r.toString()} (${sns.size()})\n"
+                                txt = "<nl>Result: ${r.toString()} (${sns.size()}):\n"
                                 sns.each { sn ->
-                                    txt += "===== ${sn}\n"
+                                    txt += "<li>${sn}<li/>\n"
                                 }
-                                txt += "\n"
+                                txt += "</nl>\n"
                                 createSummary(text: txt, icon: '/images/48x48/warning.png')
                             }
                         }
