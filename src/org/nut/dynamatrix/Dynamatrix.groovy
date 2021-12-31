@@ -135,6 +135,18 @@ class Dynamatrix implements Cloneable {
     }
 
     @NonCPS
+    synchronized public Map<Result, Set<String>> reportStageResults() {
+        def mapres = [:]
+        this.trackStageResults.each { sn, r ->
+            if (!mapres.containsKey(r)) {
+                mapres[r] = []
+            }
+            mapres[r] << sn
+        }
+        return mapres
+    }
+
+    @NonCPS
     synchronized public Integer countStagesIncrement(Result r) {
         return this.countStagesIncrement(r?.toString())
     }
