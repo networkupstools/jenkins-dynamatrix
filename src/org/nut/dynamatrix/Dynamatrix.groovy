@@ -140,10 +140,10 @@ class Dynamatrix implements Cloneable {
     }
 
     @NonCPS
-    synchronized public Integer countStagesIncrement(String k) {
+    synchronized public Integer countStagesIncrement(String k, String sn = null) {
         if (k == null)
             k = 'UNKNOWN'
-        this.setWorstResult(k)
+        this.setWorstResult(sn, k)
         if (this.countStages.containsKey(k)) {
             this.countStages[k] += 1
         } else {
@@ -1399,7 +1399,7 @@ def parallelStages = prepareDynamatrix(
                     if (dsbc.thisDynamatrix?.failFast) {
                         if (dsbc.thisDynamatrix?.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
                             script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
-                            dsbc.thisDynamatrix?.countStagesIncrement('ABORTED_SAFE')
+                            dsbc.thisDynamatrix?.countStagesIncrement('ABORTED_SAFE', stageName + sbName)
                             throw new FlowInterruptedException(Result.NOT_BUILT)
 
                             //script?.currentBuild?.result = 'ABORTED'
@@ -1430,47 +1430,47 @@ def parallelStages = prepareDynamatrix(
                 def payloadTmp = payload
 
                 payload = {
-                    dsbc.thisDynamatrix?.countStagesIncrement('STARTED')
+                    dsbc.thisDynamatrix?.countStagesIncrement('STARTED', stageName + sbName)
                     try {
                         def res = payloadTmp()
                         if (dsbc.dsbcResult != null) {
-                            dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult)
+                            dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
                         } else {
                             if (dsbc.thisDynamatrix?.trackStageResults.containsKey(stageName)
                             &&  dsbc.thisDynamatrix?.trackStageResults[stageName] != null
                             ) {
-                                dsbc.thisDynamatrix?.countStagesIncrement(dsbc.thisDynamatrix?.trackStageResults[stageName])
+                                dsbc.thisDynamatrix?.countStagesIncrement(dsbc.thisDynamatrix?.trackStageResults[stageName], stageName + sbName)
                             } else {
-                                dsbc.thisDynamatrix?.countStagesIncrement('SUCCESS')
+                                dsbc.thisDynamatrix?.countStagesIncrement('SUCCESS', stageName + sbName)
                             }
                         }
-                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         return res
                     } catch (FlowInterruptedException fex) {
-                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (fex == null) {
-                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN')
+                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
                         } else {
                             String fexres = fex.getResult()
                             if (fexres == null) fexres = 'SUCCESS'
-                            dsbc.thisDynamatrix?.countStagesIncrement(fexres)
+                            dsbc.thisDynamatrix?.countStagesIncrement(fexres, stageName + sbName)
                         }
                         throw fex
                     } catch (hudson.AbortException hexA) {
                         // This is thrown by steps like "error" and "unstable" (both)
-                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (dsbc.dsbcResult != null) {
-                            dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult)
+                            dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
                         } else {
                             if (hexA == null) {
-                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN')
+                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
                             } else {
                                 String hexAres = "hudson.AbortException: " +
                                     "Message: " + hexA.getMessage() +
                                     "; Cause: " + hexA.getCause() +
                                     "; toString: " + hexA.toString();
-                                dsbc.thisDynamatrix?.countStagesIncrement(hexAres) // for debug
-                                dsbc.thisDynamatrix?.countStagesIncrement('FAILURE') // could be unstable, learn how to differentiate?
+                                dsbc.thisDynamatrix?.countStagesIncrement(hexAres, stageName + sbName) // for debug
+                                dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName) // could be unstable, learn how to differentiate?
                                 if (dsbc.enableDebugTrace) {
                                     StringWriter errors = new StringWriter();
                                     hexA.printStackTrace(new PrintWriter(errors));
@@ -1492,21 +1492,21 @@ def parallelStages = prepareDynamatrix(
                         // > the pending Request will never recover its Response.
                         // hudson.remoting.RequestAbortedException: java.io.IOException:
                         // Unexpected termination of the channel
-                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED')
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (rae == null) {
-                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN')
+                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
                         } else {
                             // Involve localization?..
                             if (rae.toString() ==~ /Unexpected termination of the channel/
                             ) {
-                                dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED')
+                                dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                             } else {
                                 String raeRes = "hudson.remoting.RequestAbortedException: " +
                                     "Message: " + rae.getMessage() +
                                     "; Cause: " + rae.getCause() +
                                     "; toString: " + rae.toString();
-                                dsbc.thisDynamatrix?.countStagesIncrement(raeRes) // for debug
-                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN') // FAILURE technically, but one we could not classify exactly
+                                dsbc.thisDynamatrix?.countStagesIncrement(raeRes, stageName + sbName) // for debug
+                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 if (dsbc.enableDebugTrace) {
                                     StringWriter errors = new StringWriter();
                                     rae.printStackTrace(new PrintWriter(errors));
@@ -1523,7 +1523,7 @@ def parallelStages = prepareDynamatrix(
                         }
                         throw rae
                     } catch (Throwable t) {
-                        dsbc.thisDynamatrix?.countStagesIncrement(Utils.castString(t))
+                        dsbc.thisDynamatrix?.countStagesIncrement(Utils.castString(t), stageName + sbName)
                         throw t
                     }
                 }
