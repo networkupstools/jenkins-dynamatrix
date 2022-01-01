@@ -78,6 +78,8 @@ class Dynamatrix implements Cloneable {
         ]
     // For each stageName, track its Result object (if set by stage payload)
     private Map<String, Result> trackStageResults = [:]
+    // Plaintext or shortened-hash names of log files and other data saved for stage
+    private Map<String, String> trackStageLogkeys = [:]
 
     @NonCPS
     public static Result resultFromString(String k) {
@@ -132,6 +134,25 @@ class Dynamatrix implements Cloneable {
         }
 
         return res
+    }
+
+    @NonCPS
+    synchronized public void setLogKey(String sn, String lk) {
+        trackStageLogkeys[sn] = lk
+    }
+
+    @NonCPS
+    synchronized public String getLogKey(String s) {
+        // Return either direct hit, or startsWith (where the tail
+        // would be description of the slowBuild scenario group)
+        def k = trackStageLogkeys?.s
+        if (k) return k
+        k = trackStageLogkeys.any { sn, lk ->
+            if (sn?.startsWith(s))
+                return lk
+            return false // continue the search
+        }
+        return k // may be null if no hit
     }
 
     @NonCPS
