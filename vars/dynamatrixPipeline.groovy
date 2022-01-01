@@ -655,7 +655,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             mapres.each { r, sns ->
                                 txt = "<nl>Result: ${r.toString()} (${sns.size()}):\n"
                                 sns.each { sn ->
-                                    txt += "<li>${sn}<li/>\n"
+                                    txt += "<li>${sn}</li>\n"
                                 }
                                 txt += "</nl>\n"
                                 createSummary(text: txt, icon: '/images/48x48/warning.png')
