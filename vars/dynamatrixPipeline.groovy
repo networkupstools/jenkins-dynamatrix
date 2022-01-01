@@ -655,7 +655,16 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             mapres.each { r, sns ->
                                 txt = "<nl>Result: ${r.toString()} (${sns.size()}):\n"
                                 sns.each { sn ->
-                                    txt += "<li>${sn}</li>\n"
+                                    def archPrefix = dynamatrix.getLogKey(sn)
+                                    txt += "<li>${sn}"
+                                    if (archPrefix) {
+                                        // File naming as defined in vars/buildMatrixCellCI.groovy
+                                        txt += "\n<ul>See build artifacts keyed with: '${archPrefix}' e.g.:\n"
+                                        txt += "<li>${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz</li>\n"
+                                        txt += "<li>${env.BUILD_URL}/artifact/.ci.${archPrefix}.build.log.gz</li>\n"
+                                        txt += "</ul>"
+                                    }
+                                    txt += "</li>\n"
                                 }
                                 txt += "</nl>\n"
                                 createSummary(text: txt, icon: '/images/48x48/warning.png')
