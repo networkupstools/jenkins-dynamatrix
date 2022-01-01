@@ -217,6 +217,11 @@ set +x
 """
         }
 
+        // Remember where to get the logs
+        if (dsbc?.thisDynamatrix) {
+            dsbc.thisDynamatrix.setLogKey(stageName, archPrefix)
+        }
+
         // Note: log files below are used for warnings-ng processing
         // and their namesakes will be removed before the build.
         // TODO: invent a way around `git status` violations for projects that care?
