@@ -147,8 +147,8 @@ class Dynamatrix implements Cloneable {
     }
 
     @NonCPS
-    synchronized public Integer countStagesIncrement(Result r) {
-        return this.countStagesIncrement(r?.toString())
+    synchronized public Integer countStagesIncrement(Result r, String sn = null) {
+        return this.countStagesIncrement(r?.toString(), sn)
     }
 
     @NonCPS
