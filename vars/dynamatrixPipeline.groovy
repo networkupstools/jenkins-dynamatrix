@@ -465,10 +465,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
                         "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
                     String sbSummary = null
-                    String sbSummaryCount = null
+                    String sbSummaryCount = "" // non-null string in any case
                     if (stagesBinBuild.size() == 0) {
                         sbSummary = "Did not discover any ${sbSummarySuffix}"
-                        sbSummaryCount = ""
                     } else {
                         sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
                         dynacfgPipeline.slowBuild.each { def sb ->
@@ -518,7 +517,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // path here is somewhat relative to /static/hexhash/
                         // that Jenkins adds):
                         if (sbSummaryCount != "") {
-                            sbSummaryCount = sbSummaryCount.replaceAll('\n\t* ', '</li><li>').replaceFirst('</li>', '<ul>Detailed hit counts:') + '</li></ul>'
+                            // Note: replace goes by regex so '\*'
+                            sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<ul>Detailed hit counts:') + '</li></ul>'
                         }
                         createSummary(text: sbSummary + sbSummaryCount, icon: '/images/48x48/notepad.png')
                     } catch (Throwable t) {
