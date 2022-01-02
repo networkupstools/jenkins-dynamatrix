@@ -518,7 +518,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         // that Jenkins adds):
                         if (sbSummaryCount != "") {
                             // Note: replace goes by regex so '\*'
-                            sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<ul>Detailed hit counts:') + '</li></ul>'
+                            sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<p>Detailed hit counts:<ul>') + '</li></ul></p>'
                         }
                         createSummary(text: sbSummary + sbSummaryCount, icon: '/images/48x48/notepad.png')
                     } catch (Throwable t) {
@@ -675,14 +675,14 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     txt += "<li>${sn}"
                                     if (archPrefix) {
                                         // File naming as defined in vars/buildMatrixCellCI.groovy
-                                        txt += "\n<ul>See build artifacts keyed with: '${archPrefix}' e.g.:\n"
+                                        txt += "\n<p>See build artifacts keyed with: '${archPrefix}' e.g.:<ul>\n"
                                         for (url in [
                                             "${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz",
                                             "${env.BUILD_URL}/artifact/.ci.${archPrefix}.build.log.gz"
                                         ]) {
                                             txt += "<li><a href='${url}'>${url}</a></li>\n"
                                         }
-                                        txt += "</ul>"
+                                        txt += "</ul></p>"
                                     }
                                     txt += "</li>\n"
                                 }
