@@ -676,8 +676,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     if (archPrefix) {
                                         // File naming as defined in vars/buildMatrixCellCI.groovy
                                         txt += "\n<ul>See build artifacts keyed with: '${archPrefix}' e.g.:\n"
-                                        txt += "<li>${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz</li>\n"
-                                        txt += "<li>${env.BUILD_URL}/artifact/.ci.${archPrefix}.build.log.gz</li>\n"
+                                        for (url in [
+                                            "${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz",
+                                            "${env.BUILD_URL}/artifact/.ci.${archPrefix}.build.log.gz"
+                                        ]) {
+                                            txt += "<li><a href='${url}'>${url}</a></li>\n"
+                                        }
                                         txt += "</ul>"
                                     }
                                     txt += "</li>\n"
