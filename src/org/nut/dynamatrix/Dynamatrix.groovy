@@ -125,8 +125,35 @@ class Dynamatrix implements Cloneable {
                 if (!this.trackStageResults.containsKey(sn)
                 ||   this.trackStageResults[sn] == null
                 ) {
-                    this.trackStageResults[sn] = r
+                    // Code might have already saved a result by another key
+                    // ("stageName" vs "stageName :: sbName") which is either
+                    // a sub-set or super-set of the "sn". We want to keep
+                    // the longer version to help troubleshooting.
+                    def trackedSN = null
+                    this.trackStageResults.each { tsk ->
+                        if (tsk.startsWith(sn) || sn.startsWith(tsk)) {
+                            trackedSN = tsk
+                            return true
+                        }
+                        return false
+                    }
+
+                    if (trackedSN == null) {
+                        // Really a new entry
+                        this.trackStageResults[sn] = r
+                    } else {
+                        // Key exists in table by another name we accept...
+                        if (trackedSN.startsWith(sn)) {
+                            // Table contains the longer key we want to keep - update it
+                            this.trackStageResults[trackedSN] = this.trackStageResults[trackedSN].combine(r)
+                        } else { // sn.startsWith(trackedSN)
+                            // Table contains the shorter key - use it and forget it
+                            this.trackStageResults[sn] = this.trackStageResults[trackedSN].combine(r)
+                            this.trackStageResults.remove(trackedSN)
+                        }
+                    }
                 } else {
+                    // Key exists in table
                     this.trackStageResults[sn] = this.trackStageResults[sn].combine(r)
                 }
             }
