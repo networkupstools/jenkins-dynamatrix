@@ -145,11 +145,16 @@ class Dynamatrix implements Cloneable {
     synchronized public String getLogKey(String s) {
         // Return either direct hit, or startsWith (where the tail
         // would be description of the slowBuild scenario group)
-        def k = trackStageLogkeys?.s
-        if (k) return k
-        k = trackStageLogkeys.any { sn, lk ->
-            if (sn?.startsWith(s))
-                return lk
+        if (trackStageLogkeys.containsKey(s)) {
+            return trackStageLogkeys[s]
+        }
+
+        def k = null
+        trackStageLogkeys.each { sn, lk ->
+            if (sn?.startsWith(s)) {
+                k = lk
+                return true
+            }
             return false // continue the search
         }
         return k // may be null if no hit
