@@ -486,6 +486,16 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             txt += sbSummaryCount
                             writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
                             archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
+
+                            try {
+                                createSummary(text: "Saved the list of slowBuild stages into a text artifact " +
+                                    "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>",
+                                    icon: '/images/48x48/notepad.png')
+                            } catch (Throwable ts) {
+                                echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
+                                if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                            }
+
                         } catch (Throwable t) {
                             echo "WARNING: Tried to save the list of slowBuild stages into a text artifact '.ci.slowBuildStages-list.txt', but failed to"
                             if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
