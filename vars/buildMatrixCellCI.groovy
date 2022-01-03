@@ -395,7 +395,7 @@ done
                 ia = scanForIssues tool: clang(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
                 break
         }
-        if (0 == sh (returnStatus:true, script: """ test -n "`find . -name 'cppcheck*.xml' 2>/dev/null`" """)) {
+        if (0 == sh (returnStatus:true, script: """ test -n "`find . -name 'cppcheck*.xml' 2>/dev/null`" && echo "Found cppcheck XML reports" """)) {
             cppcheck = scanForIssues tool: cppCheck(id: id, pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
             cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck analyser', pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
         }
