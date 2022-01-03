@@ -265,10 +265,11 @@ class Dynamatrix implements Cloneable {
                 txt = this.toStringStageCount()
             }
             txt = "Build in progress: " + txt
-            this.script.addInfoBadge(text: txt, id: "Build-progress@" + this.objectID)
+            // Note: not "addInfoBadge()" which is rolled-up and small (no text except when hovered)
+            this.script.addBadge(icon: 'info.gif', text: txt, id: "Build-progress@" + this.objectID)
             return true
         } catch (Throwable t) {
-            this.script.echo "WARNING: Tried to removeBadges() and addInfoBadge() for Build-progress, but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            this.script.echo "WARNING: Tried to addBadge() for 'Build-progress@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
             if (this.shouldDebugTrace()) {
                 this.script.echo (t.toString())
             }
