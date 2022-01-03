@@ -656,7 +656,29 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 if (dynamatrixGlobalState.enableDebugTrace)
                     echo dynamatrix.toStringStageCountDump()
 
-                if (!(currentBuild.result in [null, 'SUCCESS'])) {
+                if (currentBuild.result in [null, 'SUCCESS']) {
+                    // Report success as a badge too, so interrupted incomplete
+                    // builds (Jenkins/server restart etc.) are more visible
+                    try {
+                        def txt = dynamatrix.toStringStageCountNonZero()
+                        if (!(Utils.isStringNotEmpty(txt))) {
+                            txt = dynamatrix.toStringStageCountDumpNonZero()
+                        }
+                        if (!(Utils.isStringNotEmpty(txt))) {
+                            txt = dynamatrix.toStringStageCountDump()
+                        }
+                        if (!(Utils.isStringNotEmpty(txt))) {
+                            txt = dynamatrix.toStringStageCount()
+                        }
+
+                        def txtOK = "Build completed successfully"
+                        manager.addShortText(txtOK)
+                        createSummary(text: txtOK + ": " + txt, icon: '/images/48x48/notepad.png')
+                    } catch (Throwable t) {
+                        echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                    }
+                } else {
                     try {
                         def txt = dynamatrix.toStringStageCountNonZero()
                         if (!(Utils.isStringNotEmpty(txt))) {
