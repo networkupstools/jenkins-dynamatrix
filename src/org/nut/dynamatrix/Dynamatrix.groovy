@@ -245,7 +245,12 @@ class Dynamatrix implements Cloneable {
         try {
             try {
                 this.script.removeBadges(id: "Build-progress@" + this.objectID)
-            } catch (Throwable tOK) {} // ok if missing
+            } catch (Throwable tOK) { // ok if missing
+                this.script.echo "WARNING: Tried to removeBadges() for 'Build-progress@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                if (this.shouldDebugTrace()) {
+                    this.script.echo (t.toString())
+                }
+            }
             if (removeOnly) return true
 
             // Stage finished, update the rolling progress via GPBP steps (with id)
