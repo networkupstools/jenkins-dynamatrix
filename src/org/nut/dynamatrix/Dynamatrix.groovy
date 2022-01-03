@@ -130,7 +130,7 @@ class Dynamatrix implements Cloneable {
                     // a sub-set or super-set of the "sn". We want to keep
                     // the longer version to help troubleshooting.
                     def trackedSN = null
-                    this.trackStageResults.each { tsk ->
+                    this.trackStageResults.each { tsk, tsr ->
                         if (tsk.startsWith(sn) || sn.startsWith(tsk)) {
                             trackedSN = tsk
                             return true
