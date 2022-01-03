@@ -178,7 +178,9 @@ class Dynamatrix implements Cloneable {
 
         def k = null
         trackStageLogkeys.each { sn, lk ->
-            if (sn?.startsWith(s)) {
+            if (Utils.isStringNotEmpty(sn)
+            &&  (sn.startsWith(s) || s.startsWith(sn))
+            ) {
                 k = lk
                 return true
             }
