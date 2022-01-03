@@ -492,7 +492,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>",
                                     icon: '/images/48x48/notepad.png')
                             } catch (Throwable ts) {
-                                echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
+                                echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                                 if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                             }
 
