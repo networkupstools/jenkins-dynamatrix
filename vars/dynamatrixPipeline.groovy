@@ -656,6 +656,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 if (dynamatrixGlobalState.enableDebugTrace)
                     echo dynamatrix.toStringStageCountDump()
 
+                // Build finished, remove the rolling progress via GPBP steps (with id)
+                dynamatrix.updateProgressBadge(true)
+
                 if (currentBuild.result in [null, 'SUCCESS']) {
                     // Report success as a badge too, so interrupted incomplete
                     // builds (Jenkins/server restart etc.) are more visible

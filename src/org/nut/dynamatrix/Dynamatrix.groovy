@@ -27,6 +27,7 @@ class Dynamatrix implements Cloneable {
     // Have some defaults, if only to have all expected fields defined
     private DynamatrixConfig dynacfg
     private def script
+    private final String objectID = Integer.toHexString(hashCode())
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
     public boolean enableDebugMilestones = dynamatrixGlobalState.enableDebugMilestones
@@ -234,6 +235,41 @@ class Dynamatrix implements Cloneable {
     public Integer countStagesFinishedFailureAllowed() { return intNullZero(countStages?.UNSTABLE) }
     public Integer countStagesAborted() { return intNullZero(countStages?.ABORTED) }
     public Integer countStagesAbortedNotBuilt() { return intNullZero(countStages?.NOT_BUILT) }
+
+    // Must be CPS - calls pipeline script steps
+    synchronized
+    def updateProgressBadge(Boolean removeOnly = false) {
+        if (!this.script)
+            return null
+
+        try {
+            try {
+                this.script.removeBadges(id: "Build-progress@" + this.objectID)
+            } catch (Throwable tOK) {} // ok if missing
+            if (removeOnly) return true
+
+            // Stage finished, update the rolling progress via GPBP steps (with id)
+            def txt = this.toStringStageCountNonZero()
+            if (!(Utils.isStringNotEmpty(txt))) {
+                txt = this.toStringStageCountDumpNonZero()
+            }
+            if (!(Utils.isStringNotEmpty(txt))) {
+                txt = this.toStringStageCountDump()
+            }
+            if (!(Utils.isStringNotEmpty(txt))) {
+                txt = this.toStringStageCount()
+            }
+            txt = "Build in progress: " + txt
+            this.script.addInfoBadge(text: txt, id: "Build-progress@" + this.objectID)
+            return true
+        } catch (Throwable t) {
+            this.script.echo "WARNING: Tried to removeBadges() and addInfoBadge() for Build-progress, but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            if (this.shouldDebugTrace()) {
+                this.script.echo (t.toString())
+            }
+            return false
+        }
+    }
 
 ////////////////////////// END OF RESULTS ACCOUNTING ///////////////////
 
@@ -1498,6 +1534,7 @@ def parallelStages = prepareDynamatrix(
 
                 payload = {
                     dsbc.thisDynamatrix?.countStagesIncrement('STARTED', stageName + sbName)
+                    dsbc.thisDynamatrix?.updateProgressBadge()
                     try {
                         def res = payloadTmp()
                         if (dsbc.dsbcResult != null) {
@@ -1512,6 +1549,7 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
+                        dsbc.thisDynamatrix?.updateProgressBadge()
                         return res
                     } catch (FlowInterruptedException fex) {
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
@@ -1522,6 +1560,7 @@ def parallelStages = prepareDynamatrix(
                             if (fexres == null) fexres = 'SUCCESS'
                             dsbc.thisDynamatrix?.countStagesIncrement(fexres, stageName + sbName)
                         }
+                        dsbc.thisDynamatrix?.updateProgressBadge()
                         throw fex
                     } catch (hudson.AbortException hexA) {
                         // This is thrown by steps like "error" and "unstable" (both)
@@ -1552,6 +1591,7 @@ def parallelStages = prepareDynamatrix(
                                 }
                             }
                         }
+                        dsbc.thisDynamatrix?.updateProgressBadge()
                         throw hexA
                     } catch (hudson.remoting.RequestAbortedException rae) {
                         // https://javadoc.jenkins.io/component/remoting/hudson/remoting/RequestAbortedException.html
@@ -1588,9 +1628,11 @@ def parallelStages = prepareDynamatrix(
                                 }
                             }
                         }
+                        dsbc.thisDynamatrix?.updateProgressBadge()
                         throw rae
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement(Utils.castString(t), stageName + sbName)
+                        dsbc.thisDynamatrix?.updateProgressBadge()
                         throw t
                     }
                 }
