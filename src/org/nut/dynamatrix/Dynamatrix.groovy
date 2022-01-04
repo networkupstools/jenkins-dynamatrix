@@ -243,38 +243,64 @@ class Dynamatrix implements Cloneable {
             return null
 
         try {
-            try {
-                this.script.removeBadges(id: "Build-progress@" + this.objectID)
-            } catch (Throwable tOK) { // ok if missing
-                this.script.echo "WARNING: Tried to removeBadges() for 'Build-progress@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-                if (this.shouldDebugTrace()) {
-                    this.script.echo (t.toString())
-                }
-            }
-            if (removeOnly) return true
-
-            // Stage finished, update the rolling progress via GPBP steps (with id)
-            def txt = this.toStringStageCountNonZero()
-            if (!(Utils.isStringNotEmpty(txt))) {
-                txt = this.toStringStageCountDumpNonZero()
-            }
-            if (!(Utils.isStringNotEmpty(txt))) {
-                txt = this.toStringStageCountDump()
-            }
-            if (!(Utils.isStringNotEmpty(txt))) {
-                txt = this.toStringStageCount()
-            }
-            txt = "Build in progress: " + txt
-            // Note: not "addInfoBadge()" which is rolled-up and small (no text except when hovered)
-            this.script.addBadge(icon: 'info.gif', text: txt, id: "Build-progress@" + this.objectID)
-            return true
-        } catch (Throwable t) {
-            this.script.echo "WARNING: Tried to addBadge() for 'Build-progress@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            this.script.removeBadges(id: "Build-progress-badge@" + this.objectID)
+        } catch (Throwable tOK) { // ok if missing
+            this.script.echo "WARNING: Tried to removeBadges() for 'Build-progress-badge@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
             if (this.shouldDebugTrace()) {
                 this.script.echo (t.toString())
             }
-            return false
         }
+
+        try {
+            this.script.removeBadges(id: "Build-progress-summary@" + this.objectID)
+        } catch (Throwable tOK) { // ok if missing
+            this.script.echo "WARNING: Tried to removeBadges() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            if (this.shouldDebugTrace()) {
+                this.script.echo (t.toString())
+            }
+        }
+        if (removeOnly) return true
+
+        // Stage finished, update the rolling progress via GPBP steps (with id)
+        def txt = this.toStringStageCountNonZero()
+        if (!(Utils.isStringNotEmpty(txt))) {
+            txt = this.toStringStageCountDumpNonZero()
+        }
+        if (!(Utils.isStringNotEmpty(txt))) {
+            txt = this.toStringStageCountDump()
+        }
+        if (!(Utils.isStringNotEmpty(txt))) {
+            txt = this.toStringStageCount()
+        }
+        txt = "Build in progress: " + txt
+
+        def res = null
+        try {
+            // Note: not "addInfoBadge()" which is rolled-up and small (no text except when hovered)
+            // Update: although this seems to have same effect, not that of addShortText (that has no "id")
+            this.script.addBadge(icon: 'info.gif', text: txt, id: "Build-progress-badge@" + this.objectID)
+            res = true
+        } catch (Throwable t) {
+            this.script.echo "WARNING: Tried to addBadge() for 'Build-progress-badge@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            if (this.shouldDebugTrace()) {
+                this.script.echo (t.toString())
+            }
+            res = false
+        }
+
+        try {
+            // Roll a text entry in the build overview page
+            this.script.createSummary(icon: 'info.gif', text: txt, id: "Build-progress-summary@" + this.objectID)
+            if (res == null) res = true
+        } catch (Throwable t) {
+            this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-badge@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            if (this.shouldDebugTrace()) {
+                this.script.echo (t.toString())
+            }
+            res = false
+        }
+
+        return res
     }
 
 ////////////////////////// END OF RESULTS ACCOUNTING ///////////////////
