@@ -1613,9 +1613,9 @@ def parallelStages = prepareDynamatrix(
                                     "Message: " + hexA.getMessage() +
                                     "; Cause: " + hexA.getCause() +
                                     "; toString: " + hexA.toString();
-                                dsbc.thisDynamatrix?.countStagesIncrement(hexAres, stageName + sbName) // for debug
                                 dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName) // could be unstable, learn how to differentiate?
                                 if (dsbc.enableDebugTrace) {
+                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-FAILURE: ' + hexAres, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     hexA.printStackTrace(new PrintWriter(errors));
                                     script.echo (
@@ -1650,9 +1650,9 @@ def parallelStages = prepareDynamatrix(
                                     "Message: " + rae.getMessage() +
                                     "; Cause: " + rae.getCause() +
                                     "; toString: " + rae.toString();
-                                dsbc.thisDynamatrix?.countStagesIncrement(raeRes, stageName + sbName) // for debug
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 if (dsbc.enableDebugTrace) {
+                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + raeRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     rae.printStackTrace(new PrintWriter(errors));
                                     script.echo (
