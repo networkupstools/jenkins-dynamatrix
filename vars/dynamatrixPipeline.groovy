@@ -345,7 +345,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 // CHANGE_BRANCH with the original value.
                                 if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
                                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ${sb.branchRegexSource} for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                        echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ~/${sb.branchRegexSource}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                                     countFiltersSkipped++
                                     return // continue
                                 }
@@ -356,7 +356,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
                                 ) {
                                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ${sb.branchRegexTarget} for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                        echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                                     countFiltersSkipped++
                                     return // continue
                                 } // else: CHANGE_TARGET is empty (probably not
@@ -377,7 +377,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 && (!(_CHANGE_TARGET ==~ sb.branchRegexTarget))
                                 ) {
                                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ${sb.branchRegexTarget} for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                        echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                                     countFiltersSkipped++
                                     return // continue
                                 }
@@ -389,7 +389,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     // builds, they can use the source branch
                                     // regex set to /^PR-\d+$/
                                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ${sb.branchRegexTarget} set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                        echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ~/${sb.branchRegexTarget}/ set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                                         // NOT a "skip", just a "FYI"!
                                 }
                             } // if branchRegexTarget
@@ -441,18 +441,21 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             // in the dynamatrix
                             //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
                             withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().trim() : "N/A" )]) {
+                                sb.mapParStages = [:]
                                 if (Utils.isClosure(sb?.bodyParStages)) {
                                     // body may be empty {}, if user wants so
-                                    stagesBinBuild += sb.getParStages(dynamatrix, sb.bodyParStages)
+                                    sb.mapParStages = sb.getParStages(dynamatrix, sb.bodyParStages)
                                 } else {
                                     if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                                        stagesBinBuild += sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                                        sb.mapParStages = sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
                                     } else {
-                                        stagesBinBuild += sb.getParStages(dynamatrix, null)
+                                        sb.mapParStages = sb.getParStages(dynamatrix, null)
                                     }
                                 }
+                                stagesBinBuild += sb.mapParStages
                             }
                         } else { // if not getParStages
+                            sb.mapParStages = null
                             if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                 echo "SKIP: No (valid) slow build filter definition in this entry" + (sb?.name ? ": " + sb.name : "")
                             countFiltersSkipped++
@@ -462,18 +465,37 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
                         "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
                     String sbSummary = null
+                    String sbSummaryCount = "" // non-null string in any case
                     if (stagesBinBuild.size() == 0) {
                         sbSummary = "Did not discover any ${sbSummarySuffix}"
                     } else {
                         sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
+                        dynacfgPipeline.slowBuild.each { def sb ->
+                            if (sb?.mapParStages) {
+                                // Note: Char sequence at start of string is parsed for badge markup below
+                                sbSummaryCount += "\n\t* ${sb.mapParStages.size()} hits for: " +
+                                    (Utils.isStringNotEmpty(sb?.name) ? sb.name : Utils.castString(sb))
+                            }
+                        }
 
                         try {
                             // TODO: Something similar but with each stage's
                             // own buildResult verdicts after the build...
                             def txt = "${sbSummary}\nfor this run ${env?.BUILD_URL}:\n\n"
                             stagesBinBuild.keySet().sort().each { txt += "${it}\n\n" }
+                            txt += sbSummaryCount
                             writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
                             archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
+
+                            try {
+                                createSummary(text: "Saved the list of slowBuild stages into a text artifact " +
+                                    "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>",
+                                    icon: '/images/48x48/notepad.png')
+                            } catch (Throwable ts) {
+                                echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
+                                if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                            }
+
                         } catch (Throwable t) {
                             echo "WARNING: Tried to save the list of slowBuild stages into a text artifact '.ci.slowBuildStages-list.txt', but failed to"
                             if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -486,7 +508,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             stagesBinBuild.failFast = dynacfgPipeline.failFast
                         }
                     }
-                    echo sbSummary
+                    echo sbSummary + sbSummaryCount
 
                     try {
                         // Note: we also report "Running..." more or less
@@ -502,9 +524,13 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         manager.addInfoBadge(sbSummary)
 
                         // Add a line to the build's info page too (note the
-                        // path here is somewhat relative to /statix/hexhash/
+                        // path here is somewhat relative to /static/hexhash/
                         // that Jenkins adds):
-                        createSummary(text: sbSummary, icon: '/images/48x48/notepad.png')
+                        if (sbSummaryCount != "") {
+                            // Note: replace goes by regex so '\*'
+                            sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<p>Detailed hit counts:<ul>') + '</li></ul></p>'
+                        }
+                        createSummary(text: sbSummary + sbSummaryCount, icon: '/images/48x48/notepad.png')
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -630,7 +656,32 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 if (dynamatrixGlobalState.enableDebugTrace)
                     echo dynamatrix.toStringStageCountDump()
 
-                if (!(currentBuild.result in [null, 'SUCCESS'])) {
+                // Build finished, remove the rolling progress via GPBP steps (with id)
+                dynamatrix.updateProgressBadge(true)
+
+                if (currentBuild.result in [null, 'SUCCESS']) {
+                    // Report success as a badge too, so interrupted incomplete
+                    // builds (Jenkins/server restart etc.) are more visible
+                    try {
+                        def txt = dynamatrix.toStringStageCountNonZero()
+                        if (!(Utils.isStringNotEmpty(txt))) {
+                            txt = dynamatrix.toStringStageCountDumpNonZero()
+                        }
+                        if (!(Utils.isStringNotEmpty(txt))) {
+                            txt = dynamatrix.toStringStageCountDump()
+                        }
+                        if (!(Utils.isStringNotEmpty(txt))) {
+                            txt = dynamatrix.toStringStageCount()
+                        }
+
+                        def txtOK = "Build completed successfully"
+                        manager.addShortText(txtOK)
+                        createSummary(text: txtOK + ": " + txt, icon: '/images/48x48/notepad.png')
+                    } catch (Throwable t) {
+                        echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                    }
+                } else {
                     try {
                         def txt = dynamatrix.toStringStageCountNonZero()
                         if (!(Utils.isStringNotEmpty(txt))) {
@@ -645,6 +696,35 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         txt = "Not all went well: " + txt
                         manager.addShortText(txt)
                         createSummary(text: txt, icon: '/images/48x48/warning.png')
+
+                        // returns Map<Result, Set<String>>
+                        def mapres = dynamatrix.reportStageResults()
+                        if (mapres.containsKey(Result.SUCCESS))
+                            mapres.remove(Result.SUCCESS)
+
+                        if (mapres.size() > 0) {
+                            mapres.each { r, sns ->
+                                txt = "<nl>Result: ${r.toString()} (${sns.size()}):\n"
+                                sns.each { sn ->
+                                    def archPrefix = dynamatrix.getLogKey(sn)
+                                    txt += "<li>${sn}"
+                                    if (archPrefix) {
+                                        // File naming as defined in vars/buildMatrixCellCI.groovy
+                                        txt += "\n<p>See build artifacts keyed with: '${archPrefix}' e.g.:<ul>\n"
+                                        for (url in [
+                                            "${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz",
+                                            "${env.BUILD_URL}/artifact/.ci.${archPrefix}.build.log.gz"
+                                        ]) {
+                                            txt += "<li><a href='${url}'>${url}</a></li>\n"
+                                        }
+                                        txt += "</ul></p>"
+                                    }
+                                    txt += "</li>\n"
+                                }
+                                txt += "</nl>\n"
+                                createSummary(text: txt, icon: '/images/48x48/warning.png')
+                            }
+                        }
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()

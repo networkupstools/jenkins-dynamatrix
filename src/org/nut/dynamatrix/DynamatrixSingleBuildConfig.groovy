@@ -576,11 +576,17 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         }
 
         boolean res = combos.any {combo ->
-            if (this.matchesConstraintsCombo(combo)) {
-                if (debugTrace)
-                    this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} " +
-                        "matched ${Utils.castString(combo)}")
-                return true // break with a hit
+            // No combo - no hit, extracted from matchesConstraintsCombo() to log more error details2
+            if (Utils.isListNotEmpty(combo)) {
+                if (this.matchesConstraintsCombo(combo)) {
+                    if (debugTrace)
+                        this.script.println ("[DEBUG] matchesConstraints(): ${Utils.castString(this)} " +
+                            "matched ${Utils.castString(combo)}")
+                    return true // break with a hit
+                }
+            } else {
+                if (debugErrors) this.script.println ("[ERROR] matchesConstraints(): got invalid input item: ${Utils.castString(combo)} while looking at a Set of combos: ${Utils.castString(combos)}")
+                return false // continue looping
             }
             return false // continue looping
         }
