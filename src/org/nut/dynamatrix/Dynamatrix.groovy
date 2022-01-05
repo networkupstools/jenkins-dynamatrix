@@ -278,7 +278,8 @@ class Dynamatrix implements Cloneable {
         try {
             // Note: not "addInfoBadge()" which is rolled-up and small (no text except when hovered)
             // Update: although this seems to have same effect, not that of addShortText (that has no "id")
-            this.script.addBadge(icon: 'info.gif', text: txt, id: "Build-progress-badge@" + this.objectID)
+            // Update2: checking with a "null" icon if that would work as addShortText in effect (seems so by build.xml markup)
+            this.script.addBadge(icon: null, text: txt, id: "Build-progress-badge@" + this.objectID)
             res = true
         } catch (Throwable t) {
             this.script.echo "WARNING: Tried to addBadge() for 'Build-progress-badge@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
