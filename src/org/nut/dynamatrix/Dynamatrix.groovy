@@ -251,6 +251,8 @@ class Dynamatrix implements Cloneable {
             }
         }
 
+/*
+        // Seems we can not "remove" a summary entry, despite what the docs say
         try {
             this.script.removeBadges(id: "Build-progress-summary@" + this.objectID)
         } catch (Throwable tOK) { // ok if missing
@@ -259,6 +261,7 @@ class Dynamatrix implements Cloneable {
                 this.script.echo (t.toString())
             }
         }
+*/
         if (removeOnly) return true
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
@@ -289,17 +292,19 @@ class Dynamatrix implements Cloneable {
             res = false
         }
 
+/*
         try {
             // Roll a text entry in the build overview page
             this.script.createSummary(icon: 'info.gif', text: txt, id: "Build-progress-summary@" + this.objectID)
             if (res == null) res = true
         } catch (Throwable t) {
-            this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-badge@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
             if (this.shouldDebugTrace()) {
                 this.script.echo (t.toString())
             }
             res = false
         }
+*/
 
         return res
     }
