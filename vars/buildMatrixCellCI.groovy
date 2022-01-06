@@ -497,7 +497,7 @@ done
 
                 if (Utils.isStringNotEmpty(msg))
                     sumtxt += msg + ": "
-                sumtxt += lastErr
+                sumtxt += lastErr.replaceFirst(/ for .*$/, '')
                 sumtxt += "<ul>"
                 try {
                     for (F in ["origEnvvars", "configureEnvvars", "config"]) {
