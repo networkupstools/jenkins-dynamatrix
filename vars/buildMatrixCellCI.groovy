@@ -142,8 +142,10 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
                     msg += "${env.OS_FAMILY}-${env.OS_DISTRO} "
                 } else {
                     // Only one of those strings is present
-                    id += "_${env.OS_FAMILY}${env.OS_DISTRO}"
-                    msg += "${env.OS_FAMILY}${env.OS_DISTRO} "
+                    def x = env?.OS_FAMILY
+                    if (x == null) x = env?.OS_DISTRO
+                    id += "_${x}"
+                    msg += "${x} "
                 }
             }
 
@@ -482,28 +484,7 @@ done
 """
         archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
 
-        if (!(dsbc?.keepWs)) {
-            // Avoid wasting space on workers; the dynamatrix is not too
-            // well suited for inspecting the builds post-mortem reliably
-            try {
-                cleanWs()
-            } catch (Throwable t) {
-                deleteDir()
-            }
-        }
-
-        if (shRes == 0) {
-            dsbc?.setWorstResult('SUCCESS')
-            if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'SUCCESS') }
-        } else {
-            def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
-            if (dsbc?.thisDynamatrix?.failFast) {
-                echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected in stage '${stageName}': executed shell steps failed"
-                dsbc.thisDynamatrix.mustAbort = true
-            } else {
-                echo "Not raising mustAbort flag, because " + (dsbc?.thisDynamatrix ? (dsbc?.thisDynamatrix.failFast ? "dsbc?.thisDynamatrix.failFast==true (so not sure why not raising the flag...)" : "dsbc?.thisDynamatrix.failFast==false") : "dsbc?.thisDynamatrix is not tracked in this run")
-            }
-
+        if (shRes != 0) {
             // Add a summary page entry as we go through the build,
             // so developers can quickly find the faults
             try {
@@ -529,6 +510,29 @@ done
 
                 createSummary(text: sumtxt, icon: '/images/48x48/warning.png')
             } catch (Throwable t) {} // no-op, possibly missing badge plugin
+        }
+
+        if (!(dsbc?.keepWs)) {
+            // Avoid wasting space on workers; the dynamatrix is not too
+            // well suited for inspecting the builds post-mortem reliably
+            try {
+                cleanWs()
+            } catch (Throwable t) {
+                deleteDir()
+            }
+        }
+
+        if (shRes == 0) {
+            dsbc?.setWorstResult('SUCCESS')
+            if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'SUCCESS') }
+        } else {
+            def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
+            if (dsbc?.thisDynamatrix?.failFast) {
+                echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected in stage '${stageName}': executed shell steps failed"
+                dsbc.thisDynamatrix.mustAbort = true
+            } else {
+                echo "Not raising mustAbort flag, because " + (dsbc?.thisDynamatrix ? (dsbc?.thisDynamatrix.failFast ? "dsbc?.thisDynamatrix.failFast==true (so not sure why not raising the flag...)" : "dsbc?.thisDynamatrix.failFast==false") : "dsbc?.thisDynamatrix is not tracked in this run")
+            }
 
             if (dsbc?.isAllowedFailure) {
                 dsbc?.setWorstResult('UNSTABLE')
