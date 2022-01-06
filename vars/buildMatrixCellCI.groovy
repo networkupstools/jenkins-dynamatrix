@@ -287,7 +287,11 @@ set +x
             //if (dynamatrixGlobalState.enableDebugTrace)
             //if (dynacfgPipeline?.configureEnvvars)
                 sh label: 'Report compilers', script: cmdCommon + """ ( eval \$CONFIG_ENVVARS; echo "CC: \$CC => `command -v "\$CC"`"; echo "CXX: \$CXX => `command -v "\$CXX"`" ; hostname; ) | tee ".ci.${archPrefix}.configureEnvvars.log" ; """
-            sh label: 'Save a report of envvars', script: cmdCommon + """ ( set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.origEnvvars.log" ; """
+            sh label: 'Save a report of envvars', script: cmdCommon + """ ( cat << 'EOF_MSG'
+Actual envvars for build scenario described as:
+    ${msg}
+EOF_MSG
+set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.origEnvvars.log" ; """
             if (cmdPrep != "") {
                 lastLog = cmdPrepLog
                 def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
