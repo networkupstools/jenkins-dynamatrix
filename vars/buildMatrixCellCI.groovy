@@ -514,6 +514,8 @@ done
                     sumtxt = "[FAILURE] "
                 }
 
+                if (Utils.isStringNotEmpty(msg))
+                    sumtxt += msg + ": "
                 sumtxt += lastErr
                 sumtxt += "<ul>"
                 try {
