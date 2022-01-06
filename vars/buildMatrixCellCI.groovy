@@ -289,11 +289,18 @@ set +x
             //if (dynamatrixGlobalState.enableDebugTrace)
             //if (dynacfgPipeline?.configureEnvvars)
                 sh label: 'Report compilers', script: cmdCommon + """ ( eval \$CONFIG_ENVVARS; echo "CC: \$CC => `command -v "\$CC"`"; echo "CXX: \$CXX => `command -v "\$CXX"`" ; hostname; ) | tee ".ci.${archPrefix}.configureEnvvars.log" ; """
-            sh label: 'Save a report of envvars', script: cmdCommon + """ ( cat << 'EOF_MSG'
-Actual envvars for build scenario described as:
+            sh label: 'Save a report of envvars', script: """ ( cat << 'EOF_MSG'
+Actual original envvars for build scenario described as:
     ${msg}
 EOF_MSG
 set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.origEnvvars.log" ; """
+
+            sh label: 'Save a report of envvars', script: cmdCommon + """ ( cat << 'EOF_MSG'
+Actual parsed envvars for build scenario described as:
+    ${msg}
+EOF_MSG
+set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; """
+
             if (cmdPrep != "") {
                 lastLog = cmdPrepLog
                 def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
@@ -500,7 +507,7 @@ done
                 sumtxt += lastErr.replaceFirst(/ for .*$/, '')
                 sumtxt += "<ul>"
                 try {
-                    for (F in ["origEnvvars", "configureEnvvars", "config"]) {
+                    for (F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config"]) {
                         if (fileExists(".ci.${archPrefix}.${F}.log.gz")) {
                             sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
                         }
