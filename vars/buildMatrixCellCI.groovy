@@ -125,10 +125,10 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
 
             if (env?.ARCH_BITS) {
                 id += "_${env.ARCH_BITS}"
-                msg += "${env.ARCH_BITS} "
+                msg += "${env.ARCH_BITS}-bit "
             } else if (env?.BITS) {
                 id += "_${env.BITS}"
-                msg += "${env.BITS} "
+                msg += "${env.BITS}-bit "
             } else {
                 if (env?.BITSARG) {
                     id += "_${env.BITSARG}"
