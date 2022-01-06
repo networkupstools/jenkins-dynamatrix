@@ -323,6 +323,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         dynamatrix.mustAbort = false
                     }
 
+                    dynamatrix.saveDynacfg()
                     dynacfgPipeline.slowBuild.each { def sb ->
                         if (dynamatrixGlobalState.enableDebugTrace) {
                             echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
@@ -442,17 +443,18 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
                             withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().trim() : "N/A" )]) {
                                 sb.mapParStages = [:]
-                                // Use unique clones of "dynamatrix" below,
-                                // to avoid polluting their dynacfg based
-                                // on order of slowBuild scenario parsing:
+                                // Use unique clones of "dynamatrix.dynacfg" below,
+                                // to avoid polluting their applied dynacfg based
+                                // just on order of slowBuild scenario parsing:
+                                dynamatrix.restoreDynacfg()
                                 if (Utils.isClosure(sb?.bodyParStages)) {
                                     // body may be empty {}, if user wants so
-                                    sb.mapParStages = sb.getParStages(dynamatrix.clone(), sb.bodyParStages)
+                                    sb.mapParStages = sb.getParStages(dynamatrix, sb.bodyParStages)
                                 } else {
                                     if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                                        sb.mapParStages = sb.getParStages(dynamatrix.clone(), dynacfgPipeline.slowBuildDefaultBody)
+                                        sb.mapParStages = sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
                                     } else {
-                                        sb.mapParStages = sb.getParStages(dynamatrix.clone(), null)
+                                        sb.mapParStages = sb.getParStages(dynamatrix, null)
                                     }
                                 }
                                 stagesBinBuild += sb.mapParStages

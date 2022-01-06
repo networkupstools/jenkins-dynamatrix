@@ -26,6 +26,7 @@ class Dynamatrix implements Cloneable {
 
     // Have some defaults, if only to have all expected fields defined
     private DynamatrixConfig dynacfg
+    private DynamatrixConfig dynacfgSaved = null
     private def script
     private final String objectID = Integer.toHexString(hashCode())
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
@@ -325,6 +326,21 @@ class Dynamatrix implements Cloneable {
     @Override
     public Dynamatrix clone() throws CloneNotSupportedException {
         return (Dynamatrix) super.clone();
+    }
+
+    public boolean saveDynacfg() {
+        this.dynacfgSaved = null // GC
+        this.dynacfgSaved = this.dynacfg.clone()
+        return true
+    }
+
+    public boolean restoreDynacfg() {
+        if (this.dynacfgSaved != null) {
+            this.dynacfg = null // GC
+            this.dynacfg = this.dynacfgSaved.clone()
+            return true
+        }
+        return false
     }
 
     public String toStringStageCount() {
