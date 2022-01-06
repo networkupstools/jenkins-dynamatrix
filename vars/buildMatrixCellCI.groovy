@@ -180,6 +180,11 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         def cmdTest1Label = ""
         def cmdTest2Label = ""
 
+        def cmdPrepLog = ""
+        def cmdBuildLog = ""
+        def cmdTest1Log = ""
+        def cmdTest2Log = ""
+
         def cmdCommon = """ """
         def cmdPrep = ""
         def cmdBuild = ""
@@ -226,30 +231,36 @@ set +x
         // and their namesakes will be removed before the build.
         // TODO: invent a way around `git status` violations for projects that care?
         if (dynacfgPipeline?.buildPhases?.prepconf) {
-            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.prepconf}", ".ci.${archPrefix}.prepconf.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
+            cmdPrepLog = ".ci.${archPrefix}.prepconf.log"
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.prepconf}", cmdPrepLog, stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
             cmdPrepLabel += "prepconf "
         }
 
         if (dynacfgPipeline?.buildPhases?.configure) {
-            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.configure}", ".ci.${archPrefix}.prepconf.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
+            cmdPrepLog = ".ci.${archPrefix}.prepconf.log"
+            cmdPrep += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.configure}", cmdPrepLog, stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
             cmdPrepLabel += "configure "
         }
 
         if (dynacfgPipeline?.buildPhases?.buildQuiet) {
-            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.buildQuiet}", ".ci.${archPrefix}.build.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
+            cmdBuildLog = ".ci.${archPrefix}.build.log"
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.buildQuiet}", cmdBuildLog, stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
             cmdBuildLabel += "buildQuiet "
         } else if (dynacfgPipeline?.buildPhases?.build) {
-            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.build}", ".ci.${archPrefix}.build.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
+            cmdBuildLog = ".ci.${archPrefix}.build.log"
+            cmdBuild += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.build}", cmdBuildLog, stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
             cmdBuildLabel += "build "
         }
 
         if (dynacfgPipeline?.buildPhases?.check) {
-            cmdTest1 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.check}", ".ci.${archPrefix}.check.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
+            cmdTest1Log = ".ci.${archPrefix}.check.log"
+            cmdTest1 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.check}", cmdTest1Log, stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
             cmdTest1Label += "check "
         }
 
         if (dynacfgPipeline?.buildPhases?.distcheck) {
-            cmdTest2 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.distcheck}", ".ci.${archPrefix}.distcheck.log", stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
+            cmdTest2Log = ".ci.${archPrefix}.distcheck.log"
+            cmdTest2 += cmdlineBuildLogged("${dynacfgPipeline.buildPhases.distcheck}", cmdTest2Log, stageName, env?.CI_SLOW_BUILD_FILTERNAME, archPrefix)
             cmdTest2Label += "distcheck "
         }
 
@@ -267,6 +278,9 @@ set +x
         def shRes = 0
         def strMayFail = ""
         if (dsbc?.isAllowedFailure) strMayFail += " (may fail)"
+        def lastLog = ""
+        def lastErr = ""
+
         stage('Prep' + strMayFail) {
             echo msg
             sh " rm -f .ci*.log* "
@@ -274,24 +288,28 @@ set +x
             //if (dynacfgPipeline?.configureEnvvars)
                 sh label: 'Report compilers', script: cmdCommon + """ ( eval \$CONFIG_ENVVARS; echo "CC: \$CC => `command -v "\$CC"`"; echo "CXX: \$CXX => `command -v "\$CXX"`" ; hostname; ) ; """
             if (cmdPrep != "") {
+                lastLog = cmdPrepLog
                 def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
-                    unstable "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
+                    lastErr = "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
+                    unstable lastErr
                 }
             }
         }
 
         if (cmdBuild != "" && shRes == 0) {
             stage('Build' + strMayFail) {
+                lastLog = cmdBuildLog
                 def res = sh (script: cmdCommon + cmdBuild, returnStatus: true, label: (cmdCommonLabel + cmdBuildLabel.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
-                    unstable "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
+                    lastErr = "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
+                    unstable lastErr
                 }
             }
         }
@@ -317,24 +335,28 @@ set +x
 
         if (cmdTest1 != "" && shRes == 0) {
             stage(nameTest1 + strMayFail) {
+                lastLog = cmdTest1Log
                 def res = sh (script: cmdCommon + cmdTest1, returnStatus: true, label: (cmdCommonLabel + cmdTest1Label.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
-                    unstable "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
+                    lastErr = "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
+                    unstable lastErr
                 }
             }
         }
 
         if (cmdTest2 != "" && shRes == 0) {
             stage(nameTest2 + strMayFail) {
+                lastLog = cmdTest2Log
                 def res = sh (script: cmdCommon + cmdTest2, returnStatus: true, label: (cmdCommonLabel + cmdTest2Label.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
-                    unstable "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
+                    lastErr = "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
+                    unstable lastErr
                 }
             }
         }
@@ -476,6 +498,30 @@ done
             } else {
                 echo "Not raising mustAbort flag, because " + (dsbc?.thisDynamatrix ? (dsbc?.thisDynamatrix.failFast ? "dsbc?.thisDynamatrix.failFast==true (so not sure why not raising the flag...)" : "dsbc?.thisDynamatrix.failFast==false") : "dsbc?.thisDynamatrix is not tracked in this run")
             }
+
+            // Add a summary page entry as we go through the build,
+            // so developers can quickly find the faults
+            try {
+                def sumtxt = null
+                if (dsbc?.isAllowedFailure) {
+                    sumtxt = "[UNSTABLE] "
+                } else {
+                    sumtxt = "[FAILURE] "
+                }
+
+                sumtxt += lastErr
+                sumtxt += "<ul>"
+                try {
+                    for (F in ["origEnvvars", "configureEnvvars", "config"]) {
+                        if (fileExists(".ci.${archPrefix}.${F}.log.gz")) {
+                            sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
+                        }
+                    }
+                } catch (Throwable tF) {} // no-op, possibly some iteration/fileExists problem
+                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
+
+                createSummary(text: sumtxt, icon: '/images/48x48/warning.png')
+            } catch (Throwable t) {} // no-op, possibly missing badge plugin
 
             if (dsbc?.isAllowedFailure) {
                 dsbc?.setWorstResult('UNSTABLE')
