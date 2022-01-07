@@ -292,12 +292,14 @@ set +x
             sh label: 'Save a report of envvars', script: """ ( cat << 'EOF_MSG'
 Actual original envvars for build scenario described as:
     ${msg}
+
 EOF_MSG
 set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.origEnvvars.log" ; """
 
             sh label: 'Save a report of envvars', script: cmdCommon + """ ( cat << 'EOF_MSG'
-Actual parsed envvars for build scenario described as:
+Applied parsed envvars (compiler/tools-related adjustments, e.g. CONFIG_ENVVARS, STD(XX)ARG and (LD)BITSARG) for build scenario described as:
     ${msg}
+
 EOF_MSG
 set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; """
 
