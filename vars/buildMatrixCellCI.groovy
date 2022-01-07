@@ -496,10 +496,13 @@ done
             // so developers can quickly find the faults
             try {
                 def sumtxt = null
+                def sumimg = null
                 if (dsbc?.isAllowedFailure) {
-                    sumtxt = "[UNSTABLE] "
+                    sumtxt = "[UNSTABLE (non-success is expected)] "
+                    sumimg = 'warning'
                 } else {
-                    sumtxt = "[FAILURE] "
+                    sumtxt = "[FAILURE (not anticipated)] "
+                    sumimg = 'error'
                 }
 
                 if (Utils.isStringNotEmpty(msg))
@@ -515,7 +518,7 @@ done
                 } catch (Throwable tF) {} // no-op, possibly some iteration/fileExists problem
                 sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
 
-                createSummary(text: sumtxt, icon: '/images/48x48/warning.png')
+                createSummary(text: sumtxt, icon: '/images/48x48/' + sumimg + '.png')
             } catch (Throwable t) {} // no-op, possibly missing badge plugin
         }
 
