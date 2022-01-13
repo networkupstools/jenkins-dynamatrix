@@ -1684,6 +1684,39 @@ def parallelStages = prepareDynamatrix(
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         throw rae
+                    } catch (java.lang.InterruptedException rae) {
+                        // Tends to happen if e.g. Jenkins restarted during build
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
+                        if (jlie == null) {
+                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                        } else {
+                            // Involve localization?..
+                            if (jlie.toString() ==~ /Unexpected termination of the channel/
+                            ) {
+                                dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                            } else {
+                                String jlieRes = "java.lang.InterruptedException: " +
+                                    "Message: " + jlie.getMessage() +
+                                    "; Cause: " + jlie.getCause() +
+                                    "; toString: " + jlie.toString();
+                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
+                                if (dsbc.enableDebugTrace) {
+                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
+                                    StringWriter errors = new StringWriter();
+                                    jlie.printStackTrace(new PrintWriter(errors));
+                                    script.echo (
+                                        "[DEBUG] A DSBC stage running on node " +
+                                        "'${script.env?.NODE_NAME}' requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " completed with an exception:\n" +
+                                        jlieRes +
+                                        "\nDetailed trace: " + errors.toString()
+                                        )
+                                }
+                            }
+                        }
+                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        throw jlie
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement(Utils.castString(t), stageName + sbName)
                         dsbc.thisDynamatrix?.updateProgressBadge()
