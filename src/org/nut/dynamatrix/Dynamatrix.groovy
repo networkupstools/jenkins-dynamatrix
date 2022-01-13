@@ -393,6 +393,10 @@ class Dynamatrix implements Cloneable {
         return m.toString()
     }
 
+    public Map getCountStages() {
+        return countStages.clone()
+    }
+
     public String toStringStageCountDump() {
         return countStages.toString()
     }
