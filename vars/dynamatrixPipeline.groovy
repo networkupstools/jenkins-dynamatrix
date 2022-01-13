@@ -639,19 +639,101 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         currentBuild.result = currentBuild.result.combine(wr)
                 } catch (Throwable t) {}
 
+                // Beside the standard currentBuild.result we may have tracked
+                // a more extensive source of info in the stage count (such as
+                // exception states, started/finished less than expected total,
+                // etc.) that may indicate e.g. a crashed and restarted Jenkins
+                // instance that did not continue the build (because ours are
+                // not "persistent" due to NonCPS limitations). In such cases,
+                // the latest known Jenkins Result is "SUCCESS" but really we
+                // do not know if the code is good across the whole matrix.
+                def reportedNonSuccess = false
                 switch (currentBuild.result) {
+                    // Handle explicitly known faulty verdicts:
                     case 'FAILURE':
+                        reportedNonSuccess = true
                         catchError(message: 'Marking a hard FAILURE') {
                             error "slowBuild or something else failed" +
                                 (mustAbortMsg ? ("; " + mustAbortMsg) : "")
                         }
                         break
                     case ['UNSTABLE', 'ABORTED', 'NOT_BUILT']:
+                        reportedNonSuccess = true
                         warnError(message: 'Marking a soft expected fault') {
                             error "slowBuild or something else did not succeed cleanly" +
                                 (mustAbortMsg ? ("; " + mustAbortMsg) : "")
                         }
                         break
+                }
+
+                if (!reportedNonSuccess) {
+                    def mapCountStages = dynamatrix.getCountStages()
+
+                    // returns Map<Result, Set<String>>
+                    def mapres = dynamatrix.reportStageResults()
+                    if (mapres == null || mapCountStages == null) {
+                        reportedNonSuccess = true
+                        catchError(message: 'Marking a hard FAILURE') {
+                            currentBuild.result = FAILURE
+                            error "Could not investigate dynamatrix stage results"
+                        }
+                    } else {
+                        if (mapCountStages.getAt('STARTED') != mapCountStages.getAt('COMPLETED')
+                        ||  mapCountStages.getAt('STARTED') < (stagesBinBuild.size() - 1)
+                        ) {
+                            reportedNonSuccess = true
+                            warnError(message: 'Marking a soft abort') {
+                                currentBuild.result = ABORTED
+                                def txt = "Only started ${mapCountStages.STARTED} and completed ${mapCountStages.COMPLETED} dynamatrix 'slowBuild' stages, while we should have had ${stagesBinBuild.size() - 1} builds"
+                                try {
+                                    createSummary(text: "Build seems not finished: " + txt, icon: '/images/48x48/error.png')
+                                } catch (Throwable t) {} // no-op
+                                error txt
+                            }
+                        }
+
+                        if (mapres.size() < 1) {
+                            reportedNonSuccess = true
+                            catchError(message: 'Marking a hard FAILURE') {
+                                currentBuild.result = FAILURE
+                                error "Did not find any recorded dynamatrix stage results while we should have had some builds"
+                            }
+                        } else if (mapres.size() < (stagesBinBuild.size() - 1)) {
+                            reportedNonSuccess = true
+                            warnError(message: 'Marking a soft abort') {
+                                currentBuild.result = ABORTED
+                                error "Only found ${mapres.size()} recorded dynamatrix stage results while we should have had ${stagesBinBuild.size() - 1} builds"
+                            }
+                        } else {
+                            // We seem to know enough verdicts; but are they
+                            // definitive?
+
+                            // Remove Jenkins-defined results; and also the
+                            // data Dynamatix.groovy classifies; do any remain?
+                            def mapresOther = mapCountStages.clone()
+                            for (def r in [
+                                'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
+                                'STARTED', 'COMPLETED', 'ABORTED_SAFE'
+                            ]) {
+                                if (mapresOther.containsKey(r)) {
+                                    mapresOther.remove(r)
+                                }
+                            }
+
+                            if (mapresOther.size() > 0) {
+                                // Some categories (key names) remain:
+                                reportedNonSuccess = true
+                                warnError(message: 'Marking a soft abort') {
+                                    currentBuild.result = ABORTED
+                                    def count = 0
+                                    mapresOther.each { k, v ->
+                                        count += v
+                                    }
+                                    error "Got ${count} unclassified recorded dynamatrix stage results (exceptions, etc?)"
+                                }
+                            }
+                        }
+                    }
                 }
 
                 echo "OVERALL: Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} " +
@@ -664,7 +746,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 // Build finished, remove the rolling progress via GPBP steps (with id)
                 dynamatrix.updateProgressBadge(true)
 
-                if (currentBuild.result in [null, 'SUCCESS']) {
+                if (!reportedNonSuccess && currentBuild.result in [null, 'SUCCESS']) {
                     // Report success as a badge too, so interrupted incomplete
                     // builds (Jenkins/server restart etc.) are more visible
                     try {
