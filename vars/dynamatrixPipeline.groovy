@@ -796,7 +796,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         mapresOther.each { k, v ->
                                             countOther += v
                                         }
-                                        error "Got ${countOther} unclassified recorded dynamatrix stage results (exceptions, etc?)"
+                                        // There may be predefined placeholders with zero hit counts
+                                        if (countOther > 0)
+                                            error "Got ${countOther} unclassified recorded dynamatrix stage results (exceptions, etc?)"
                                     }
                                 }
                             }
