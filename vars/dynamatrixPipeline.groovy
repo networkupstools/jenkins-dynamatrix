@@ -667,6 +667,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 }
 
                 if (!reportedNonSuccess) {
+                    // returns Map<ResultDescription, Integer> where the
+                    // ResultDescription may be a String representation
+                    // of the Result class, or one of our tags, or an
+                    // exception text vs. count of hits to that value.
                     def mapCountStages = dynamatrix.getCountStages()
 
                     // returns Map<Result, Set<String>>
@@ -689,6 +693,35 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     createSummary(text: "Build seems not finished: " + txt, icon: '/images/48x48/error.png')
                                 } catch (Throwable t) {} // no-op
                                 error txt
+                            }
+                        } else {
+                            // Totals are as expected, but contents?..
+                            // Do we have any faults recorded?
+                            if (mapCountStages.getAt('SUCCESS') != mapCountStages.getAt('COMPLETED')) {
+                                reportedNonSuccess = true
+                                if (mapCountStages.getAt('FAILURE')) {
+                                    catchError(message: 'Marking a hard FAILURE') {
+                                        currentBuild.result = 'FAILURE'
+                                        error "Some slowBuild stage(s) failed"
+                                    }
+                                } else if (mapCountStages.getAt('ABORTED') || mapCountStages.getAt('ABORTED_SAFE')) {
+                                    warnError(message: 'Marking a soft abort') {
+                                        currentBuild.result = 'ABORTED'
+                                        error "Some slowBuild stage(s) were aborted"
+                                    }
+                                } else if (mapCountStages.getAt('UNSTABLE')
+                                       || (mapCountStages.getAt('NOT_BUILT') && mapCountStages.getAt('NOT_BUILT') != mapCountStages.getAt('COMPLETED'))
+                                ) {
+                                    warnError(message: 'Marking a soft fault') {
+                                        currentBuild.result = 'UNSTABLE'
+                                        error "Some slowBuild stage(s) were unstable (expected failure did fail)"
+                                    }
+                                } else if (mapCountStages.getAt('NOT_BUILT')) {
+                                    warnError(message: 'Marking as not built') {
+                                        currentBuild.result = 'NOT_BUILT'
+                                        error "Some slowBuild stage(s) were not built"
+                                    }
+                                }
                             }
                         }
 
@@ -722,6 +755,34 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     'STARTED', 'COMPLETED', 'ABORTED_SAFE'
                                 ]) {
                                     if (mapresOther.containsKey(r)) {
+                                        if (Utils.isListNotEmpty(mapresOther[r])) {
+                                            switch (r) {
+                                                case 'FAILURE':
+                                                    catchError(message: 'Marking a hard FAILURE') {
+                                                        currentBuild.result = 'FAILURE'
+                                                        error "Some slowBuild stage(s) failed"
+                                                    }
+                                                    break
+                                                case ['ABORTED', 'ABORTED_SAFE']:
+                                                    warnError(message: 'Marking a soft abort') {
+                                                        currentBuild.result = 'ABORTED'
+                                                        error "Some slowBuild stage(s) were aborted"
+                                                    }
+                                                    break
+                                                case 'UNSTABLE':
+                                                    warnError(message: 'Marking a soft fault') {
+                                                        currentBuild.result = 'UNSTABLE'
+                                                        error "Some slowBuild stage(s) were unstable (expected failure did fail)"
+                                                    }
+                                                    break
+                                                case 'NOT_BUILT':
+                                                    warnError(message: 'Marking as not built') {
+                                                        currentBuild.result = 'NOT_BUILT'
+                                                        error "Some slowBuild stage(s) were not built"
+                                                    }
+                                                    break
+                                            }
+                                        }
                                         mapresOther.remove(r)
                                     }
                                 }
