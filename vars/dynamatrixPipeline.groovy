@@ -674,7 +674,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     if (mapres == null || mapCountStages == null) {
                         reportedNonSuccess = true
                         catchError(message: 'Marking a hard FAILURE') {
-                            currentBuild.result = FAILURE
+                            currentBuild.result = 'FAILURE'
                             error "Could not investigate dynamatrix stage results"
                         }
                     } else {
@@ -683,7 +683,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         ) {
                             reportedNonSuccess = true
                             warnError(message: 'Marking a soft abort') {
-                                currentBuild.result = ABORTED
+                                currentBuild.result = 'ABORTED'
                                 def txt = "Only started ${mapCountStages.STARTED} and completed ${mapCountStages.COMPLETED} dynamatrix 'slowBuild' stages, while we should have had ${stagesBinBuild.size() - 1} builds"
                                 try {
                                     createSummary(text: "Build seems not finished: " + txt, icon: '/images/48x48/error.png')
@@ -695,13 +695,13 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         if (mapres.size() < 1) {
                             reportedNonSuccess = true
                             catchError(message: 'Marking a hard FAILURE') {
-                                currentBuild.result = FAILURE
+                                currentBuild.result = 'FAILURE'
                                 error "Did not find any recorded dynamatrix stage results while we should have had some builds"
                             }
                         } else if (mapres.size() < (stagesBinBuild.size() - 1)) {
                             reportedNonSuccess = true
                             warnError(message: 'Marking a soft abort') {
-                                currentBuild.result = ABORTED
+                                currentBuild.result = 'ABORTED'
                                 error "Only found ${mapres.size()} recorded dynamatrix stage results while we should have had ${stagesBinBuild.size() - 1} builds"
                             }
                         } else {
@@ -724,7 +724,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 // Some categories (key names) remain:
                                 reportedNonSuccess = true
                                 warnError(message: 'Marking a soft abort') {
-                                    currentBuild.result = ABORTED
+                                    currentBuild.result = 'ABORTED'
                                     def count = 0
                                     mapresOther.each { k, v ->
                                         count += v
