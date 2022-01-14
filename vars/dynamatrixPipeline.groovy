@@ -694,42 +694,49 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                         if (mapres.size() < 1) {
                             reportedNonSuccess = true
-                            catchError(message: 'Marking a hard FAILURE') {
-                                currentBuild.result = 'FAILURE'
+                            catchError(message: 'Marking as NOT_BUILT') {
+                                currentBuild.result = 'NOT_BUILT'
                                 error "Did not find any recorded dynamatrix stage results while we should have had some builds"
                             }
-                        } else if (mapres.size() < (stagesBinBuild.size() - 1)) {
-                            reportedNonSuccess = true
-                            warnError(message: 'Marking a soft abort') {
-                                currentBuild.result = 'ABORTED'
-                                error "Only found ${mapres.size()} recorded dynamatrix stage results while we should have had ${stagesBinBuild.size() - 1} builds"
-                            }
                         } else {
-                            // We seem to know enough verdicts; but are they
-                            // definitive?
-
-                            // Remove Jenkins-defined results; and also the
-                            // data Dynamatix.groovy classifies; do any remain?
-                            def mapresOther = mapCountStages.clone()
-                            for (def r in [
-                                'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
-                                'STARTED', 'COMPLETED', 'ABORTED_SAFE'
-                            ]) {
-                                if (mapresOther.containsKey(r)) {
-                                    mapresOther.remove(r)
-                                }
+                            def count = 0
+                            mapres.each { k, v ->
+                                if (Utils.isList(v))
+                                    count += v.size()
                             }
-
-                            if (mapresOther.size() > 0) {
-                                // Some categories (key names) remain:
+                            if (count < (stagesBinBuild.size() - 1)) {
                                 reportedNonSuccess = true
                                 warnError(message: 'Marking a soft abort') {
                                     currentBuild.result = 'ABORTED'
-                                    def count = 0
-                                    mapresOther.each { k, v ->
-                                        count += v
+                                    error "Only found ${count} recorded dynamatrix stage results while we should have had ${stagesBinBuild.size() - 1} builds"
+                                }
+                            } else {
+                                // We seem to know enough verdicts; but are they
+                                // definitive?
+
+                                // Remove Jenkins-defined results; and also the
+                                // data Dynamatix.groovy classifies; do any remain?
+                                def mapresOther = mapCountStages.clone()
+                                for (def r in [
+                                    'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
+                                    'STARTED', 'COMPLETED', 'ABORTED_SAFE'
+                                ]) {
+                                    if (mapresOther.containsKey(r)) {
+                                        mapresOther.remove(r)
                                     }
-                                    error "Got ${count} unclassified recorded dynamatrix stage results (exceptions, etc?)"
+                                }
+
+                                if (mapresOther.size() > 0) {
+                                    // Some categories (key names) remain:
+                                    reportedNonSuccess = true
+                                    warnError(message: 'Marking a soft abort') {
+                                        currentBuild.result = 'ABORTED'
+                                        def countOther = 0
+                                        mapresOther.each { k, v ->
+                                            countOther += v
+                                        }
+                                        error "Got ${countOther} unclassified recorded dynamatrix stage results (exceptions, etc?)"
+                                    }
                                 }
                             }
                         }
