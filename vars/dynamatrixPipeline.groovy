@@ -699,24 +699,24 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             // Do we have any faults recorded?
                             if (mapCountStages.getAt('SUCCESS') != mapCountStages.getAt('COMPLETED')) {
                                 reportedNonSuccess = true
-                                if (mapCountStages.getAt('FAILURE')) {
+                                if (mapCountStages.getAt('FAILURE') > 0) {
                                     catchError(message: 'Marking a hard FAILURE') {
                                         currentBuild.result = 'FAILURE'
                                         error "Some slowBuild stage(s) failed"
                                     }
-                                } else if (mapCountStages.getAt('ABORTED') || mapCountStages.getAt('ABORTED_SAFE')) {
+                                } else if (mapCountStages.getAt('ABORTED') > 0 || mapCountStages.getAt('ABORTED_SAFE') > 0) {
                                     warnError(message: 'Marking a soft abort') {
                                         currentBuild.result = 'ABORTED'
                                         error "Some slowBuild stage(s) were aborted"
                                     }
-                                } else if (mapCountStages.getAt('UNSTABLE')
-                                       || (mapCountStages.getAt('NOT_BUILT') && mapCountStages.getAt('NOT_BUILT') != mapCountStages.getAt('COMPLETED'))
+                                } else if (mapCountStages.getAt('UNSTABLE') > 0
+                                       || (mapCountStages.getAt('NOT_BUILT') > 0 && mapCountStages.getAt('NOT_BUILT') != mapCountStages.getAt('COMPLETED'))
                                 ) {
                                     warnError(message: 'Marking a soft fault') {
                                         currentBuild.result = 'UNSTABLE'
                                         error "Some slowBuild stage(s) were unstable (expected failure did fail)"
                                     }
-                                } else if (mapCountStages.getAt('NOT_BUILT')) {
+                                } else if (mapCountStages.getAt('NOT_BUILT') > 0) {
                                     warnError(message: 'Marking as not built') {
                                         currentBuild.result = 'NOT_BUILT'
                                         error "Some slowBuild stage(s) were not built"
