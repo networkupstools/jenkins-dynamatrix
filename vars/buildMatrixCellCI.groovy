@@ -406,6 +406,15 @@ for F in .ci.*.log ; do
 done
 """
 
+        // NOTE: No subdirs support for cppcheck*.xml here, unlike analysis above
+        sh label: 'Compress collected logs', script: """
+if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
+for F in config.log cppcheck*.xml ; do
+    if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$F"'.gz' || true ; fi
+done
+"""
+        archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
+
         // Log scan analyses, once finely grained per tool/config,
         // and another clumping all tools together to deduplicate
         def i = null
@@ -483,15 +492,6 @@ done
                 doSummarizeIssues([cppcheckAggregated], "CppCheck aggregated analysis", "CppCheck aggregated analysis")
             }
         }
-
-        // NOTE: No subdirs support for cppcheck*.xml here, unlike analysis above
-        sh label: 'Compress collected logs', script: """
-if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
-for F in config.log cppcheck*.xml ; do
-    if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$F"'.gz' || true ; fi
-done
-"""
-        archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
 
         if (shRes != 0) {
             // Add a summary page entry as we go through the build,
