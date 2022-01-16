@@ -428,23 +428,25 @@ done
         // some bugs in generated dist'ed code even if original does not
         // have them?
         def filterSysHeaders = ".*[/\\\\]usr[/\\\\].*\\.(h|hpp)\$"
+        // Scanner has a limitation regex for "URL" of the analysis:
+        def warningsNgId = (id + "-" + archPrefix) //.toLowerCase()
         switch (compilerTool) {
             case 'gcc':
-                i = scanForIssues tool: gcc(id: id + "." + archPrefix, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
-                ia = scanForIssues tool: gcc(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                i = scanForIssues tool: gcc(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                ia = scanForIssues tool: gcc(id: 'CC_CXX_compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
                 break
             case 'gcc3':
-                i = scanForIssues tool: gcc3(id: id + "." + archPrefix, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
-                ia = scanForIssues tool: gcc3(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                i = scanForIssues tool: gcc3(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                ia = scanForIssues tool: gcc3(id: 'CC_CXX_compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
                 break
             case 'clang':
-                i = scanForIssues tool: clang(id: id + "." + archPrefix, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
-                ia = scanForIssues tool: clang(id: 'C/C++ compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                i = scanForIssues tool: clang(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                ia = scanForIssues tool: clang(id: 'CC_CXX_compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
                 break
         }
         if (0 == sh (returnStatus:true, script: """ test -n "`find . -name 'cppcheck*.xml' 2>/dev/null`" && echo "Found cppcheck XML reports" """)) {
-            cppcheck = scanForIssues tool: cppCheck(id: id + ".CppCheck." + archPrefix, pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
-            cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck analyser', pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
+            cppcheck = scanForIssues tool: cppCheck(id: "CppCheck--" + warningsNgId, pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
+            cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck_analyser', pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
         }
 
         if (i != null) {
@@ -455,7 +457,7 @@ done
                 echo "Collected issues analysis was logged to make a big summary in the end"
             } else {
                 // Publish individual build scenario results now
-                doSummarizeIssues([i], id + "." + archPrefix + "--analysis", id + "." + archPrefix + "--analysis")
+                doSummarizeIssues([i], warningsNgId + "--analysis", warningsNgId + "--analysis")
             }
         }
         if (ia != null) {
@@ -466,7 +468,7 @@ done
                 echo "Collected aggregated issues analysis was logged to make a big summary in the end"
             } else {
                 // Publish individual build scenario results now
-                doSummarizeIssues([ia], "C/C++ compiler aggregated analysis", "C/C++ compiler aggregated analysis")
+                doSummarizeIssues([ia], "CC_CXX_compiler_aggregated_analysis", "C/C++ compiler aggregated analysis")
             }
         }
 
@@ -478,7 +480,7 @@ done
                 echo "Collected issues analysis was logged to make a big summary in the end"
             } else {
                 // Publish individual build scenario results now
-                doSummarizeIssues([cppcheck], id + "." + archPrefix + "-CppCheck--analysis", id + "." + archPrefix + "-CppCheck--analysis")
+                doSummarizeIssues([cppcheck], "CppCheck--" + warningsNgId + "--analysis", "CppCheck--" + warningsNgId + "--analysis")
             }
         }
         if (cppcheckAggregated != null) {
@@ -489,7 +491,7 @@ done
                 echo "Collected aggregated issues analysis was logged to make a big summary in the end"
             } else {
                 // Publish individual build scenario results now
-                doSummarizeIssues([cppcheckAggregated], "CppCheck aggregated analysis", "CppCheck aggregated analysis")
+                doSummarizeIssues([cppcheckAggregated], "CppCheck_aggregated_analysis", "CppCheck aggregated analysis")
             }
         }
 
