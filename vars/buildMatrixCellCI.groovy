@@ -445,8 +445,8 @@ done
                 break
         }
         if (0 == sh (returnStatus:true, script: """ test -n "`find . -name 'cppcheck*.xml' 2>/dev/null`" && echo "Found cppcheck XML reports" """)) {
-            cppcheck = scanForIssues tool: cppCheck(id: "CppCheck--" + warningsNgId, pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
-            cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck_analyser', pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ]
+            cppcheck = scanForIssues tool: cppCheck(id: "CppCheck--" + warningsNgId, pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ], sourceCodeEncoding: 'UTF-8'
+            cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck_analyser', pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ], sourceCodeEncoding: 'UTF-8'
         }
 
         if (i != null) {
