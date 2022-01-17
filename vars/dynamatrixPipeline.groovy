@@ -139,11 +139,11 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     }
 
     if (!dynacfgPipeline.containsKey('delayedIssueAnalysis')) {
-        // NOTE: "false" here makes build summary page very noisy:
-        // every analysis is published separately in its left menu
-        // and so far no way was found to remove them during e.g.
-        // final grouped or aggregated analysis publishing stage.
-        // This does not however preclude that final publication.
+        // NOTE: "false" here makes build and branch summary pages very
+        // noisy: every analysis is published separately in its left menu
+        // and so far no way was found to remove them during e.g. final
+        // grouped or aggregated analysis publishing stage.
+        // This flag does not however preclude that final publication.
         dynacfgPipeline.delayedIssueAnalysis = true
     }
 
