@@ -46,4 +46,9 @@ void call() {
     // Summary at end of pipeline
     doSummarizeIssues(dynamatrixGlobalState.issueAnalysis, 'analysis', 'All Issues')
     doSummarizeIssues(dynamatrixGlobalState.issueAnalysisAggregated, 'aggregated-analysis', 'All Issues - Aggregated')
+    // This is not always collected and so is accounted separately
+    if (Utils.isListNotEmpty(dynamatrixGlobalState?.issueAnalysisCppcheck))
+        doSummarizeIssues(dynamatrixGlobalState.issueAnalysisCppcheck, 'CppCheck-analysis', 'CppCheck Issues')
+    if (Utils.isListNotEmpty(dynamatrixGlobalState?.issueAnalysisAggregatedCppcheck))
+        doSummarizeIssues(dynamatrixGlobalState.issueAnalysisAggregatedCppcheck, 'CppCheck-aggregated-analysis', 'CppCheck Issues - Aggregated')
 } // doSummarizeIssues()

@@ -480,7 +480,7 @@ done
         }
 
         if (cppcheck != null) {
-            dynamatrixGlobalState.issueAnalysis << cppcheck
+            dynamatrixGlobalState.issueAnalysisCppcheck << cppcheck
             if (dynacfgPipeline?.delayedIssueAnalysis) {
                 // job should call doSummarizeIssues() in the end
                 // for aggregated results over all build codepaths
@@ -491,7 +491,7 @@ done
             }
         }
         if (cppcheckAggregated != null) {
-            dynamatrixGlobalState.issueAnalysisAggregated << cppcheckAggregated
+            dynamatrixGlobalState.issueAnalysisAggregatedCppcheck << cppcheckAggregated
             if (dynacfgPipeline?.delayedIssueAnalysis) {
                 // job should call doSummarizeIssues() in the end
                 // for aggregated results over all build codepaths
