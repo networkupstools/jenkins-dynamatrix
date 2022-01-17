@@ -794,7 +794,6 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                                 if (mapresOther.size() > 0) {
                                     // Some categories (key names) remain:
-                                    reportedNonSuccess = true
                                     def countOther = 0
                                     mapresOther.each { k, v ->
                                         countOther += v
@@ -804,6 +803,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     // with zero hit counts - ignore them:
                                     if (countOther > 0) {
                                         warnError(message: 'Marking a soft abort') {
+                                            reportedNonSuccess = true
                                             currentBuild.result = 'ABORTED'
                                             error "Got ${countOther} unclassified recorded dynamatrix stage results (exceptions, etc?)"
                                         }
