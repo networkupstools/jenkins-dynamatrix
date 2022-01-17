@@ -468,7 +468,8 @@ done
                 echo "Collected aggregated issues analysis was logged to make a big summary in the end"
             } else {
                 // Publish individual build scenario results now
-                doSummarizeIssues([ia], "CC_CXX_compiler_aggregated_analysis", "C/C++ compiler aggregated analysis")
+                //doSummarizeIssues([ia], "CC_CXX_compiler_aggregated_analysis", "C/C++ compiler aggregated analysis")
+                echo "Aggregated analysis is always delayed (C/C++ compiler)"
             }
         }
 
@@ -491,7 +492,8 @@ done
                 echo "Collected aggregated issues analysis was logged to make a big summary in the end"
             } else {
                 // Publish individual build scenario results now
-                doSummarizeIssues([cppcheckAggregated], "CppCheck_aggregated_analysis", "CppCheck aggregated analysis")
+                //doSummarizeIssues([cppcheckAggregated], "CppCheck_aggregated_analysis", "CppCheck aggregated analysis")
+                echo "Aggregated analysis is always delayed (CppCheck)"
             }
         }
 
