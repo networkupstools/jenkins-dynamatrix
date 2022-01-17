@@ -1688,7 +1688,42 @@ def parallelStages = prepareDynamatrix(
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         throw rae
-                    } catch (java.lang.InterruptedException rae) {
+                    } catch (hudson.remoting.RemotingSystemException rse) {
+                        // Tends to happen with networking lags or agent crash, e.g.:
+                        //   hudson.remoting.RemotingSystemException:
+                        //   java.io.IOException: SSH channel is closed
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
+                        if (rse == null) {
+                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                        } else {
+                            // Involve localization?..
+                            if (rse.toString() ==~ /Unexpected termination of the channel/
+                            ) {
+                                dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                            } else {
+                                String jlieRes = "hudson.remoting.RemotingSystemException: " +
+                                    "Message: " + rse.getMessage() +
+                                    "; Cause: " + rse.getCause() +
+                                    "; toString: " + rse.toString();
+                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
+                                if (dsbc.enableDebugTrace) {
+                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
+                                    StringWriter errors = new StringWriter();
+                                    rse.printStackTrace(new PrintWriter(errors));
+                                    script.echo (
+                                        "[DEBUG] A DSBC stage running on node " +
+                                        "'${script.env?.NODE_NAME}' requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " completed with an exception:\n" +
+                                        jlieRes +
+                                        "\nDetailed trace: " + errors.toString()
+                                        )
+                                }
+                            }
+                        }
+                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        throw rse
+                    } catch (java.lang.InterruptedException jlie) {
                         // Tends to happen if e.g. Jenkins restarted during build
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (jlie == null) {
