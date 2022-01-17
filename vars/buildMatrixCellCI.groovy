@@ -445,7 +445,9 @@ done
                 break
         }
         if (0 == sh (returnStatus:true, script: """ test -n "`find . -name 'cppcheck*.xml' 2>/dev/null`" && echo "Found cppcheck XML reports" """)) {
-            cppcheck = scanForIssues tool: cppCheck(id: "CppCheck--" + warningsNgId, pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ], sourceCodeEncoding: 'UTF-8'
+            // Note: warningsNgId starts with e.g. "_gnu17..."
+            // so no trailing punctuation after "CppCheck" string:
+            cppcheck = scanForIssues tool: cppCheck(id: "CppCheck" + warningsNgId, pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ], sourceCodeEncoding: 'UTF-8'
             cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck_analyser', pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ], sourceCodeEncoding: 'UTF-8'
         }
 
@@ -485,7 +487,7 @@ done
                 echo "Collected issues analysis was logged to make a big summary in the end"
             } else {
                 // Publish individual build scenario results now
-                doSummarizeIssues([cppcheck], "CppCheck--" + warningsNgId + "--analysis", "CppCheck--" + warningsNgId + "--analysis")
+                doSummarizeIssues([cppcheck], "CppCheck" + warningsNgId + "--analysis", "CppCheck--" + warningsNgId + "--analysis")
             }
         }
         if (cppcheckAggregated != null) {
