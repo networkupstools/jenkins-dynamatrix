@@ -457,6 +457,10 @@ done
                 echo "Collected issues analysis was logged to make a big summary in the end"
             } else {
                 // Publish individual build scenario results now
+                // NOTE: This makes build summary page very noisy:
+                // every analysis is published separately in its left menu
+                // and so far no way was found to remove them during e.g.
+                // final grouped or aggregated analysis publishing stage.
                 doSummarizeIssues([i], warningsNgId + "--analysis", warningsNgId + "--analysis")
             }
         }
