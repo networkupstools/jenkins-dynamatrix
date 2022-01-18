@@ -46,12 +46,16 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
             dynacfgPipeline.buildPhases['build'] = "( eval time \${MAKE} \${MAKE_OPTS} -k all )"
         }
 
+        // Note: here and below, the "first parallel" run tries to not
+        // emit any log messages, unless there are issues (including
+        // non-fatal warnings), so the Jenkins saved logs are not in
+        // gigabytes range per dynamatrix run :)
         if (!dynacfgPipeline.buildPhases.containsKey('buildQuiet')) {
-            dynacfgPipeline.buildPhases['buildQuiet'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} -k -j 4 all >/dev/null 2>&1 && echo "SUCCESS" && exit 0; echo "First attempt failed (\$?), retrying to log what did:"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
+            dynacfgPipeline.buildPhases['buildQuiet'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} VERBOSE=0 V=0 -s -k -j 4 all >/dev/null && echo "SUCCESS" && exit 0; echo "First attempt failed (\$?), retrying to log what did:"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('buildQuietCautious')) {
-            dynacfgPipeline.buildPhases['buildQuietCautious'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} -k -j 4 all >/dev/null 2>&1 && echo "Seemingly a SUCCESS" ; echo "First attempt finished (\$?), retrying to log what fails (if any):"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
+            dynacfgPipeline.buildPhases['buildQuietCautious'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} VERBOSE=0 V=0 -s -k -j 4 all >/dev/null && echo "Seemingly a SUCCESS" ; echo "First attempt finished (\$?), retrying to log what fails (if any):"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('check')) {
