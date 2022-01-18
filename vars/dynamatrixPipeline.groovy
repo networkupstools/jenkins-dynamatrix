@@ -155,6 +155,11 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         dynacfgPipeline.traceBuildShell = true
     }
 
+    // Use milestones to cancel older PR builds if new iterations land?
+    if (!dynacfgPipeline.containsKey('useMilestones')) {
+        dynacfgPipeline.useMilestones = true
+    }
+
     return dynacfgPipeline
 }
 
@@ -209,6 +214,25 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     Set changedFiles = []
 
     node(infra.labelDefaultWorker()) {
+        // On a farm with constrained resources, getting to
+        // a build node can take time and current job may
+        // be obsolete by then. Note this is re-checked after
+        // initial "quick" tests stage. Also note that per
+        // https://plugins.jenkins.io/pipeline-milestone-step/
+        // a newer build passing the milestone would cancel
+        // older jobs that had already passed it!
+        // FIXME: We may want trickery to avoid this part?..
+        if (dynacfgPipeline?.useMilestones && env?.BRANCH_NAME) {
+            if (env.BRANCH_NAME ==~ /^PR-[0-9]+/
+            ||  (dynacfgPipeline?.branchStableRegex
+                 && !(env.BRANCH_NAME ==~ dynacfgPipeline.branchStableRegex))
+            ) {
+                // Current build is a PR or not a stable branch
+                // Fence off older iteration builds if newer ones exist
+                milestone label: "Milestone before quick tests and slowBuild discovery"
+            }
+        }
+
         skipDefaultCheckout()
 
         // Avoid occasional serialization of pipeline during run:
@@ -606,6 +630,17 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             } catch (Throwable t) {
                 echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                 if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+            }
+
+            if (dynacfgPipeline?.useMilestones && env?.BRANCH_NAME) {
+                if (env.BRANCH_NAME ==~ /^PR-[0-9]+/
+                ||  (dynacfgPipeline?.branchStableRegex
+                     && !(env.BRANCH_NAME ==~ dynacfgPipeline.branchStableRegex))
+                ) {
+                    // Current build is a PR or not a stable branch
+                    // Fence off older iteration builds if newer ones exist
+                    milestone label: "Milestone before slowBuild matrix"
+                }
             }
 
             def tmpRes = currentBuild.result
