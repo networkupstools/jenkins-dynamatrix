@@ -339,6 +339,23 @@ git status || true
         script.stash (name: stashName, includes: '**,.*,*,.git,.git/**,.git/refs', excludes: '', useDefaultExcludes: false)
     } // stashCleanSrc()
 
+    static void unstashScriptedSrc(def script, String stashName) {
+        script.unstash (stashName)
+        if (script.isUnix()) {
+            // Try a workaround with `git init` per https://issues.jenkins.io/browse/JENKINS-56098?focusedCommentId=380303
+            script.sh label:"Debug git checkout contents after unstash()", script:"""
+sync || true
+echo "[DEBUG] Unstashed workspace size (Kb): `du -ks .`" || true
+git status || if test -e .git ; then
+    echo "(Re-)init unstashed git workspace:"
+    git init
+    git status || true
+fi
+echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
+"""
+        }
+    }
+
     static void unstashCleanSrc(def script, String stashName) {
         deleteWS(script)
         if (script?.env?.NODE_LABELS) {
@@ -373,20 +390,8 @@ git status || true
             }
         }
 
-        script.unstash (stashName)
-        if (script.isUnix()) {
-            // Try a workaround with `git init` per https://issues.jenkins.io/browse/JENKINS-56098?focusedCommentId=380303
-            script.sh label:"Debug git checkout contents after unstash()", script:"""
-sync || true
-echo "[DEBUG] Unstashed workspace size (Kb): `du -ks .`" || true
-git status || if test -e .git ; then
-    echo "(Re-)init unstashed git workspace:"
-    git init
-    git status || true
-fi
-echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
-"""
-        }
+        // Default handling: populate current workspace dir by unstash()
+        unstashScriptedSrc(script, stashName)
     } // unstashCleanSrc()
 
 } // class DynamatrixStash
