@@ -61,17 +61,32 @@ class DynamatrixStash {
         }
     } // deleteWS()
 
+    static Boolean useGitRefrepoDirWS(def script) {
+        return (dynamatrixGlobalState?.useGitRefrepoDirWS || "WS" == script?.env?.GIT_REFERENCE_REPO_DIR)
+    }
+
+    static String getGitRefrepoDirWSbase(def script) {
+        if (!useGitRefrepoDirWS(script)) return null
+        return "${script.env.WORKSPACE}/../.gitcache-dynamatrix"
+    }
+
     static String getGitRefrepoDir(def script) {
         // NOTE: Have this logic defined and extensible in one place
         // Returns the reference repository URL usable by git-client-plugin
         // or null if none was found.
+        String refrepo = getGitRefrepoDirWSbase(script)
+        if (refrepo) {
+            script.dir(refrepo) {}
+            return refrepo + '/${GIT_SUBMODULES}'
+        }
 
         // Does the current build agent's set of envvars declare the path?
         if (script?.env?.GIT_REFERENCE_REPO_DIR) {
-            String refrepo = "${script.env.GIT_REFERENCE_REPO_DIR}"
+            refrepo = "${script.env.GIT_REFERENCE_REPO_DIR}"
             script.echo "Got GIT_REFERENCE_REPO_DIR='${refrepo}'"
-            if (refrepo != "")
+            if (refrepo != "") {
                 return refrepo
+            }
         }
 
         // Query Jenkins global config for defaults?..
@@ -368,10 +383,13 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     if (val == "scm:${stashName}") {
                         useMethod = 'scm'
                     }
+                    if (val == "scm-ws:${stashName}") {
+                        useMethod = 'scm-ws'
+                    }
                     if (val == "unstash:${stashName}") {
                         useMethod = 'unstash'
                     }
-                    if (val in ["scm", "unstash"]) {
+                    if (val in ["scm", "scm-ws", "unstash"]) {
                         if (useMethod == null) {
                             useMethod = val
                         }
@@ -386,6 +404,21 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     // We error out otherwise, same as would for unstash().
                     checkoutCleanSrc(script, stashCode[stashName])
                     return
+                case 'scm-ws':
+                    // check if workspace-based refrepo dir is up to date (has
+                    // the needed commits) or ensure that if needed (by direct
+                    // SCM operation from source or by unstash + update from
+                    // this copy) and finally check out current build workspace
+                    // using this refrepo. Use locking!
+                    String refrepo = getGitRefrepoDirWSbase(script)
+                    if (!refrepo) {
+                        script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but it seems not enabled on node '${script?.env?.NODE_NAME}' or globally. Falling back to 'scm'."
+                        checkoutCleanSrc(script, stashCode[stashName])
+                        return
+                    }
+                    // else: got non-null return if behavior is enabled
+                    checkoutCleanSrcRefrepoWS(script, stashCode[stashName])
+                    return
                 // case 'unstash', null, etc: fall through
             }
         }
@@ -393,5 +426,20 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         // Default handling: populate current workspace dir by unstash()
         unstashScriptedSrc(script, stashName)
     } // unstashCleanSrc()
+
+    static def checkoutCleanSrcRefrepoWS(def script, Closure scmbody = null) {
+        // lock
+
+        // check if commit is there
+
+        // update if commit is not there
+
+        // checkout with refrepo
+        def ret = checkoutCleanSrc(script, scmbody)
+
+        // unlock
+
+        return ret
+    }
 
 } // class DynamatrixStash
