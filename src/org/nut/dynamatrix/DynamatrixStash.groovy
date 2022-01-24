@@ -461,8 +461,17 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     // e.g. "nut/nut/master" or "nut/nut/PR-683" for MBR pipelines
                     refrepoName = script?.env?.JOB_NAME?.replaceLast(/\\/PR-[0-9]+$/, '')
                 }
-                if (!refrepoName) refrepoName = "" // make a big pile
-
+                if (!refrepoName) {
+                    refrepoName = scmURL.replaceLast(/\\.git$/, '')
+                    def rOld = null
+                    while (rOld != refrepoName) {
+                        rOld = refrepoName
+                        refrepoName = refrepoName - ~/^.*\\//
+                    }
+                    refrepoName = refrepoName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
+                }
+                if (!Utils.isStringNotEmpty(refrepoName))
+                    refrepoName = "" // make a big pile
 
                 // Use unique dir name for this repo
                 script.dir (refrepoBase + "/" + refrepoName) {
