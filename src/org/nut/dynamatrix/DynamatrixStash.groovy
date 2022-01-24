@@ -498,7 +498,8 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 git remote -v | grep -w '${scmURL}' || git remote add "`LANG=C TZ=UTC LC_ALL=C date -u | tr ' :,' '_'`" '${scmUrl}' || exit
 RET=0
 git fetch --all || git fetch '${scmURL}' || RET=\$?
-git fetch '${scmURL}' '${scmCommit}' && exit || RET=\$?
+git fetch '${scmURL}' '${scmCommit}' && { sync || true; exit; } || RET=\$?
+sync || true
 exit \$RET
 """)
 
@@ -519,6 +520,7 @@ git fetch 'git-unstash' || git fetch './.git-unstash' || RET=\$?
 git fetch 'git-unstash' '${scmCommit}' || git fetch './.git-unstash' '${scmCommit}' || RET=\$?
 git remote remove 'git-unstash' || RET=\$?
 rm -rf './.git-unstash' || RET=\$?
+sync || true
 exit \$RET
 """)
 
