@@ -66,6 +66,8 @@ class DynamatrixStash {
     }
 
     static String getGitRefrepoDirWSbase(def script) {
+        // TODO: Find a way to know build agent workdir - that
+        // is what we want; "path relative to workspace" may lie
         if (!useGitRefrepoDirWS(script)) return null
         return "${script.env.WORKSPACE}/../.gitcache-dynamatrix"
     }
@@ -74,19 +76,23 @@ class DynamatrixStash {
         // NOTE: Have this logic defined and extensible in one place
         // Returns the reference repository URL usable by git-client-plugin
         // or null if none was found.
-        String refrepo = getGitRefrepoDirWSbase(script)
-        if (refrepo) {
-            script.dir(refrepo) {}
-            return refrepo + '/${GIT_SUBMODULES}'
-        }
+        String refrepo
 
         // Does the current build agent's set of envvars declare the path?
-        if (script?.env?.GIT_REFERENCE_REPO_DIR) {
+        if (script?.env?.GIT_REFERENCE_REPO_DIR && "WS" != script?.env?.GIT_REFERENCE_REPO_DIR) {
             refrepo = "${script.env.GIT_REFERENCE_REPO_DIR}"
             script.echo "Got GIT_REFERENCE_REPO_DIR='${refrepo}'"
             if (refrepo != "") {
                 return refrepo
             }
+        }
+
+        // Does the current build agent's set of envvars declare that
+        // we want a refrepo maintained in the workspace holder?
+        refrepo = getGitRefrepoDirWSbase(script)
+        if (refrepo) {
+            script.dir(refrepo) {}
+            return refrepo + '/${GIT_SUBMODULES}'
         }
 
         // Query Jenkins global config for defaults?..
@@ -270,7 +276,7 @@ class DynamatrixStash {
         return script.checkout(scmParams)
     }
 
-    static def checkoutCleanSrc(def script, Closure scmbody = null) {
+    static def checkoutCleanSrc(def script, String stashName = null, Closure scmbody = null) {
         // Optional closure can fully detail how the code is checked out
         deleteWS(script)
 
@@ -357,7 +363,8 @@ git status || true
     static void unstashScriptedSrc(def script, String stashName) {
         script.unstash (stashName)
         if (script.isUnix()) {
-            // Try a workaround with `git init` per https://issues.jenkins.io/browse/JENKINS-56098?focusedCommentId=380303
+            // Try a workaround with `git init` per
+            // https://issues.jenkins.io/browse/JENKINS-56098?focusedCommentId=380303
             script.sh label:"Debug git checkout contents after unstash()", script:"""
 sync || true
 echo "[DEBUG] Unstashed workspace size (Kb): `du -ks .`" || true
@@ -369,6 +376,156 @@ fi
 echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
 """
         }
+    }
+
+    synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName) {
+        // lock: rely on Lockable Resources plugin
+        // TODO: try/catch to do similar via filesystem, e.g. using some
+        // file with the name of the build in that directory.
+        // NOTE: different build agents may be using the same filesystem
+        // with the git-cache (containers on same host, NFS share, etc.)
+        // so naming a lock by agent name alone may be folly.
+        // See also:
+        //   https://stackoverflow.com/questions/36581015/accessing-the-current-jenkins-build-in-groovy-script
+
+        def scm = script.scm
+
+        if (!(Utils.isMap(scm)
+              && scm.containsKey('$class')
+              && scm['$class'] in ['GitSCM']
+             )
+        && !(scm instanceof hudson.plugins.git.GitSCM)
+        ) {
+            script.echo "checkoutCleanSrcRefrepoWS: scm = ${Utils.castString(scm)} is not git, falling back"
+            checkoutCleanSrc(script, stashCode[stashName])
+            return
+        }
+
+        // TODO: Less shell-scripting below, more groovy, to alleviate this:
+        if (!script.isUnix()) {
+            script.echo "checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' is not Unix (can't shell-script git), falling back"
+            checkoutCleanSrc(script, stashCode[stashName])
+            return
+        }
+
+        // NOTE: For the first shot, PoCing mostly with shell; groovy later
+        // and per above, our "scm" is a Map, not directly a GitSCM object
+        //   https://javadoc.jenkins.io/plugin/git/hudson/plugins/git/GitSCM.html
+        def ret = null
+        try {
+            String scmCommit = null
+            String scmURL = null
+            if (scm instanceof hudson.plugins.git.GitSCM) {
+                // GitSCM object
+                scmCommit = scm?.GIT_COMMIT
+                scmURL = scm?.GIT_URL
+                for (extset in scm?.extensions) {
+                    if (extset.containsKey('$class')) {
+                        switch (extset['$class']) {
+                            case 'SubmoduleOption':
+                                if (!(extset?.disableSubmodules in [null, true])
+                                ||  !(extset?.recursiveSubmodules in [null, false])
+                                ||  !(extset?.trackingSubmodules in [null, false])
+                                ) {
+                                    script.echo "checkoutCleanSrcRefrepoWS: currently no support for submodules"
+                                    ret = false
+                                }
+                                break
+                        } // switch
+                    } // if class
+                } // for extset
+            } else {
+                // Map for checkout()
+                scmCommit = scm?.branches[0]?.name
+                scmURL = scm?.userRemoteConfigs[0]?.url
+            }
+            if (!scmCommit || !scmURL || ret == false) {
+                script.echo "checkoutCleanSrcRefrepoWS: could not determine build info from SCM, falling back"
+                checkoutCleanSrc(script, stashCode[stashName])
+                return
+            }
+
+            script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' waiting for exclusive use of git cache dir"
+            lock (resource: 'gitcache-dynamatrix', quantity: 1) {
+                // NOTE: Currently this means one lock for all git ops of the CI
+                // farm. An apparent bottleneck to optimize (smartly!) later.
+
+                String refrepoBase = getGitRefrepoDirWSbase(script)
+                String refrepoName = stashName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
+                if (!refrepoName) {
+                    // e.g. "nut/nut/master" or "nut/nut/PR-683" for MBR pipelines
+                    refrepoName = script?.env?.JOB_NAME?.replaceLast(/\\/PR-[0-9]+$/, '')
+                }
+                if (!refrepoName) refrepoName = "" // make a big pile
+
+
+                // Use unique dir name for this repo
+                script.dir (refrepoBase + "/" + refrepoName) {
+                    script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' exclusively using git cache dir ${script.pwd()}"
+                    // Maybe the agent had another refrepo, maybe not
+                    // They specified "scm-ws", so now they get this:
+                    script.withEnv(["GIT_REFERENCE_REPO_DIR= ${script.pwd()}"]) {
+                        // check if git is there at all (error out if can't init)
+                        scipt.sh (label:"Ensuring git workspace presence",
+                            script: "if [ -e .git ] ; then true ; else git init --bare && git config gc.auto 0 || exit ; fi; test -e .git")
+
+                        // check if commit is there (non-fatal)
+                        // TODO: generic SCM revision check? Specific GitSCM trick?
+                        ret = scipt.sh (label:"Checking git commit presence for ${scmCommit}",
+                            script: "git log -1 '${scmCommit}'")
+
+                        if (ret != 0) {
+                            // update if commit is not there
+
+                            // Checkout from SCM URL (may fail if
+                            // e.g. build agent has no internet)...
+                            ret = scipt.sh (label:"Trying direct git fetch from URL ${scmURL} for ${scmCommit}",
+                                script: """
+git remote -v | grep -w '${scmURL}' || git remote add "`LANG=C TZ=UTC LC_ALL=C date -u | tr ' :,' '_'`" '${scmUrl}' || exit
+git fetch --all || git fetch '${scmURL}'
+""")
+
+                            if (ret != 0) {
+                                // ...or unstash and replicate into refrepodir (gitscm at least)
+                                dir (".git-unstash") {
+                                    deleteDir()
+                                }
+                                dir (".git-unstash") {
+                                    unstashScriptedSrc(script, stashName)
+                                }
+
+                                scipt.sh (label:"Trying to fetch newest commits from unstashed archive provided by the build",
+                                    script: """
+git remote add 'git-unstash' './.git-unstash' || exit
+RET=0
+git fetch 'git-unstash' || git fetch './.git-unstash' || RET=\$?
+git remote remove 'git-unstash' || RET=\$?
+rm -rf './.git-unstash' || RET=\$?
+exit \$RET
+""")
+
+                                // Final clean-up, to be sure unstash does not pollute us
+                                dir (".git-unstash") {
+                                    deleteDir()
+                                }
+                            }
+                        }
+
+                        // checkout with refrepo
+                        ret = checkoutCleanSrc(script, stashCode[stashName])
+                    } // withEnv
+                } // dir
+            } // unlock
+        } catch (Throwable t) {
+            script.echo "checkoutCleanSrcRefrepoWS: failed to use git refrepo on node '${script?.env?.NODE_NAME}', falling back if we can"
+            ret = checkoutCleanSrc(script, stashCode[stashName])
+        }
+
+        if (ret == null) {
+            script.echo "checkoutCleanSrcRefrepoWS: WARNING: got ret==null"
+        }
+
+        return ret
     }
 
     static void unstashCleanSrc(def script, String stashName) {
@@ -410,14 +567,13 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     // SCM operation from source or by unstash + update from
                     // this copy) and finally check out current build workspace
                     // using this refrepo. Use locking!
-                    String refrepo = getGitRefrepoDirWSbase(script)
-                    if (!refrepo) {
+                    if (!useGitRefrepoDirWS(script)) {
                         script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but it seems not enabled on node '${script?.env?.NODE_NAME}' or globally. Falling back to 'scm'."
                         checkoutCleanSrc(script, stashCode[stashName])
                         return
                     }
                     // else: got non-null return if behavior is enabled
-                    checkoutCleanSrcRefrepoWS(script, stashCode[stashName])
+                    checkoutCleanSrcRefrepoWS(script, stashName)
                     return
                 // case 'unstash', null, etc: fall through
             }
@@ -426,20 +582,5 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         // Default handling: populate current workspace dir by unstash()
         unstashScriptedSrc(script, stashName)
     } // unstashCleanSrc()
-
-    static def checkoutCleanSrcRefrepoWS(def script, Closure scmbody = null) {
-        // lock
-
-        // check if commit is there
-
-        // update if commit is not there
-
-        // checkout with refrepo
-        def ret = checkoutCleanSrc(script, scmbody)
-
-        // unlock
-
-        return ret
-    }
 
 } // class DynamatrixStash
