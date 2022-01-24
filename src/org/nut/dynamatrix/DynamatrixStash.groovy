@@ -345,6 +345,8 @@ git status || true
             def useMethod = null
             script.env.NODE_LABELS.split('[ \r\n\t]+').each() { KV ->
                 if (KV =~ /^DYNAMATRIX_UNSTASH_PREFERENCE=.*$/) {
+                    def key = null
+                    def val = null
                     (key, val) = KV.split('=')
                     if (val == "scm:${stashName}") {
                         useMethod = 'scm'
