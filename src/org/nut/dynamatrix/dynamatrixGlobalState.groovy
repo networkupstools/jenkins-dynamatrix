@@ -19,6 +19,8 @@ class dynamatrixGlobalState {
     // Something with tools to generate MAN, PDF, HTML... and to spell-check:
     static String labelDocumentationWorker = null
 
+    static Boolean useGitRefrepoDirWS = false
+
     // For build quality evolution analysis, which branch is the reference?
     static String branchDefaultStable = null
 
