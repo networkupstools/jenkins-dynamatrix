@@ -496,7 +496,10 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                             ret = scipt.sh (label:"Trying direct git fetch from URL ${scmURL} for ${scmCommit}",
                                 script: """
 git remote -v | grep -w '${scmURL}' || git remote add "`LANG=C TZ=UTC LC_ALL=C date -u | tr ' :,' '_'`" '${scmUrl}' || exit
-git fetch --all || git fetch '${scmURL}'
+RET=0
+git fetch --all || git fetch '${scmURL}' || RET=\$?
+git fetch '${scmURL}' '${scmCommit}' && exit || RET=\$?
+exit \$RET
 """)
 
                             if (ret != 0) {
@@ -513,6 +516,7 @@ git fetch --all || git fetch '${scmURL}'
 git remote add 'git-unstash' './.git-unstash' || exit
 RET=0
 git fetch 'git-unstash' || git fetch './.git-unstash' || RET=\$?
+git fetch 'git-unstash' '${scmCommit}' || git fetch './.git-unstash' '${scmCommit}' || RET=\$?
 git remote remove 'git-unstash' || RET=\$?
 rm -rf './.git-unstash' || RET=\$?
 exit \$RET
