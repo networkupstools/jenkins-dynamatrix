@@ -451,7 +451,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
             }
 
             script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' waiting for exclusive use of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
-            lock (resource: 'gitcache-dynamatrix', quantity: 1) {
+            script.lock (resource: 'gitcache-dynamatrix', quantity: 1) {
                 // NOTE: Currently this means one lock for all git ops of the CI
                 // farm. An apparent bottleneck to optimize (smartly!) later.
 
@@ -485,12 +485,12 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     // care about GIT_REFERENCE_REPO_DIR, but just in case)
                     script.withEnv(["GIT_REFERENCE_REPO_DIR="]) {
                         // check if git is there at all (error out if can't init)
-                        scipt.sh (label:"Ensuring git workspace presence",
-                            script: "if [ -e .git ] ; then true ; else git init --bare && git config gc.auto 0 || exit ; fi; test -e .git")
+                        script.sh (label:"Ensuring git workspace presence",
+                            script: "if [ -e .git ] || grep -qw bare config ; then true ; else git init --bare && git config gc.auto 0 || exit ; fi; test -e .git || grep -qw bare config")
 
                         // check if commit is there (non-fatal)
                         // TODO: generic SCM revision check? Specific GitSCM trick?
-                        ret = scipt.sh (label:"Checking git commit presence for ${scmCommit}",
+                        ret = script.sh (label:"Checking git commit presence for ${scmCommit}",
                             script: "git log -1 '${scmCommit}'")
 
                         if (ret != 0) {
@@ -498,7 +498,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
                             // Checkout from SCM URL (may fail if
                             // e.g. build agent has no internet)...
-                            ret = scipt.sh (label:"Trying direct git fetch from URL ${scmURL} for ${scmCommit}",
+                            ret = script.sh (label:"Trying direct git fetch from URL ${scmURL} for ${scmCommit}",
                                 script: """
 git remote -v | grep -w '${scmURL}' || git remote add "`LANG=C TZ=UTC LC_ALL=C date -u | tr ' :,' '_'`" '${scmUrl}' || exit
 RET=0
@@ -517,7 +517,7 @@ exit \$RET
                                     unstashScriptedSrc(script, stashName)
                                 }
 
-                                scipt.sh (label:"Trying to fetch newest commits from unstashed archive provided by the build",
+                                script.sh (label:"Trying to fetch newest commits from unstashed archive provided by the build",
                                     script: """
 git remote add 'git-unstash' './.git-unstash' || exit
 RET=0
@@ -535,7 +535,7 @@ exit \$RET
                                 }
                             }
 
-                            ret = scipt.sh (label:"Checking git commit presence for ${scmCommit} after updating refrepo",
+                            ret = script.sh (label:"Checking git commit presence for ${scmCommit} after updating refrepo",
                                 script: "git log -1 '${scmCommit}'")
                         }
                     } // withEnv for checking/populating refrepo
