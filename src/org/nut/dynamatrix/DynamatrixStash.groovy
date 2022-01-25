@@ -272,7 +272,7 @@ class DynamatrixStash {
             }
         }
 
-        script.echo "checkoutSCM: scmParams = ${Utils.castString(scmParams)}"
+        script.echo "checkoutSCM: running on '${script?.env?.NODE_NAME}' in '${script?.pwd()}', scmParams = ${Utils.castString(scmParams)}"
         return script.checkout(scmParams)
     }
 
