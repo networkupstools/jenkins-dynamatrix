@@ -519,6 +519,7 @@ exit \$RET
             } // unlock
         } catch (Throwable t) {
             script.echo "checkoutCleanSrcRefrepoWS: failed to use git refrepo on node '${script?.env?.NODE_NAME}', falling back if we can"
+            script.echo t.toString()
             ret = checkoutCleanSrc(script, stashCode[stashName])
         }
 
