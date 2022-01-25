@@ -450,7 +450,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
             }
 
             if (!scmCommit || !scmURL || ret == false) {
-                script.echo "checkoutCleanSrcRefrepoWS: could not determine build info from SCM, falling back"
+                script.echo "checkoutCleanSrcRefrepoWS: could not determine build info from SCM, falling back: scmCommit='${scmCommit}' scmURL='${scmURL}' ret='${ret}'"
                 checkoutCleanSrc(script, stashCode[stashName])
                 return
             }
