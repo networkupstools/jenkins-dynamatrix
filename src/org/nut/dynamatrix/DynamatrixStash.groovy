@@ -445,6 +445,10 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 scmCommit = scm?.branches[0]?.name
                 scmURL = scm?.userRemoteConfigs[0]?.url
             }
+            if (scmCommit == null || "${scmCommit}" == "GIT_COMMIT") {
+                scmCommit = script.env.getAt('GIT_COMMIT')
+            }
+
             if (!scmCommit || !scmURL || ret == false) {
                 script.echo "checkoutCleanSrcRefrepoWS: could not determine build info from SCM, falling back"
                 checkoutCleanSrc(script, stashCode[stashName])
