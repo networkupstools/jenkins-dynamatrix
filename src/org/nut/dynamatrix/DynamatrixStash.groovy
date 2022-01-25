@@ -415,6 +415,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         try {
             String scmCommit = null
             String scmURL = null
+            script.echo "checkoutCleanSrcRefrepoWS: on node '${script?.env?.NODE_NAME}' checking refrepo for '${stashName}'"
             if (scm instanceof hudson.plugins.git.GitSCM) {
                 // GitSCM object
                 scmCommit = scm?.GIT_COMMIT
@@ -445,7 +446,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 return
             }
 
-            script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' waiting for exclusive use of git cache dir"
+            script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' waiting for exclusive use of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
             lock (resource: 'gitcache-dynamatrix', quantity: 1) {
                 // NOTE: Currently this means one lock for all git ops of the CI
                 // farm. An apparent bottleneck to optimize (smartly!) later.
