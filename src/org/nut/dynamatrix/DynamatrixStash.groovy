@@ -607,14 +607,19 @@ exit \$RET
                     // SCM operation from source or by unstash + update from
                     // this copy) and finally check out current build workspace
                     // using this refrepo. Use locking!
+/*
                     if (!useGitRefrepoDirWS(script)) {
                         script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but it seems not enabled on node '${script?.env?.NODE_NAME}' or globally. Falling back to 'scm'."
                         checkoutCleanSrc(script, stashCode[stashName])
                         return
                     }
                     // else: got non-null return if behavior is enabled
+*/
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
-                    checkoutCleanSrcRefrepoWS(script, stashName)
+                    script.withEnv(["GIT_REFERENCE_REPO_DIR=WS"]) {
+                        // hack to let code there use the workspace for refrepo
+                        checkoutCleanSrcRefrepoWS(script, stashName)
+                    }
                     return
                 // case 'unstash', null, etc: fall through
             }
