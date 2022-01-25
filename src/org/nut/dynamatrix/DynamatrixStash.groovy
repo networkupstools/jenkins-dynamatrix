@@ -421,19 +421,23 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 scmCommit = scm?.GIT_COMMIT
                 scmURL = scm?.GIT_URL
                 for (extset in scm?.extensions) {
-                    if (extset.containsKey('$class')) {
-                        switch (extset['$class']) {
-                            case 'SubmoduleOption':
-                                if (!(extset?.disableSubmodules in [null, true])
-                                ||  !(extset?.recursiveSubmodules in [null, false])
-                                ||  !(extset?.trackingSubmodules in [null, false])
-                                ) {
-                                    script.echo "checkoutCleanSrcRefrepoWS: currently no support for submodules"
-                                    ret = false
-                                }
-                                break
-                        } // switch
-                    } // if class
+                    if (Utils.isMapNotEmpty(extset)) {
+                        if (extset.containsKey('$class')) {
+                            switch (extset['$class']) {
+                                case 'SubmoduleOption':
+                                    if (!(extset?.disableSubmodules in [null, true])
+                                    ||  !(extset?.recursiveSubmodules in [null, false])
+                                    ||  !(extset?.trackingSubmodules in [null, false])
+                                    ) {
+                                        script.echo "checkoutCleanSrcRefrepoWS: currently no support for submodules"
+                                        ret = false
+                                    }
+                                    break
+                            } // switch
+                        } // if Map with $class
+                    } else if (extset instanceof hudson.plugins.git.extensions.impl.CloneOption) {
+                        // no-op for now
+                    } // if CloneOption
                 } // for extset
             } else {
                 // Map for checkout()
