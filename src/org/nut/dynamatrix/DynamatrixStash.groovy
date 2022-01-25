@@ -569,10 +569,12 @@ exit \$RET
         if (script?.env?.NODE_LABELS) {
             def useMethod = null
             script.env.NODE_LABELS.split('[ \r\n\t]+').each() { KV ->
+                //script.echo "[D] unstashCleanSrc(): Checking node label '${KV}'"
                 if (KV =~ /^DYNAMATRIX_UNSTASH_PREFERENCE=.*$/) {
                     def key = null
                     def val = null
                     (key, val) = KV.split('=')
+                    //script.echo "[D] unstashCleanSrc(): Checking node label deeper: '${key}'='${val}' (stashName='${stashName}')"
                     if (val == "scm:${stashName}") {
                         useMethod = 'scm'
                     }
@@ -587,6 +589,7 @@ exit \$RET
                             useMethod = val
                         }
                     }
+                    //script.echo "[D] unstashCleanSrc(): From val='${val}' deduced useMethod='${useMethod}'"
                 }
             }
 
@@ -595,6 +598,7 @@ exit \$RET
                     // The stashCode[stashName] should be defined, maybe null,
                     // by an earlier stashCleanSrc() with same stashName.
                     // We error out otherwise, same as would for unstash().
+                    //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrc"
                     checkoutCleanSrc(script, stashCode[stashName])
                     return
                 case 'scm-ws':
@@ -609,13 +613,17 @@ exit \$RET
                         return
                     }
                     // else: got non-null return if behavior is enabled
+                    //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
                     checkoutCleanSrcRefrepoWS(script, stashName)
                     return
                 // case 'unstash', null, etc: fall through
             }
+
+            //script.echo "[D] unstashCleanSrc(): ${useMethod}: not handled"
         }
 
         // Default handling: populate current workspace dir by unstash()
+        //script.echo "[D] unstashCleanSrc(): default: calling unstashScriptedSrc"
         unstashScriptedSrc(script, stashName)
     } // unstashCleanSrc()
 
