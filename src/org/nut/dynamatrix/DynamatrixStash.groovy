@@ -457,6 +457,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
                 String refrepoBase = getGitRefrepoDirWSbase(script)
                 String refrepoName = stashName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
+                String refrepoPath = null
                 if (!refrepoName) {
                     // e.g. "nut/nut/master" or "nut/nut/PR-683" for MBR pipelines
                     refrepoName = script?.env?.JOB_NAME?.replaceLast(/\\/PR-[0-9]+$/, '')
@@ -474,11 +475,15 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     refrepoName = "" // make a big pile
 
                 // Use unique dir name for this repo
+                script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': determined individual refrepo dir path: '" + refrepoBase + "'/'" + refrepoName + "'"
                 script.dir (refrepoBase + "/" + refrepoName) {
-                    script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' exclusively using git cache dir ${script.pwd()}"
-                    // Maybe the agent had another refrepo, maybe not
-                    // They specified "scm-ws", so now they get this:
-                    script.withEnv(["GIT_REFERENCE_REPO_DIR= ${script.pwd()}"]) {
+                    refrepoPath = script.pwd()
+                    script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' exclusively using git cache dir ${refrepoPath}"
+
+                    // Update (maybe init) the refrepo dir itself
+                    // (currently does not use git-plugin so does not really
+                    // care about GIT_REFERENCE_REPO_DIR, but just in case)
+                    script.withEnv(["GIT_REFERENCE_REPO_DIR="]) {
                         // check if git is there at all (error out if can't init)
                         scipt.sh (label:"Ensuring git workspace presence",
                             script: "if [ -e .git ] ; then true ; else git init --bare && git config gc.auto 0 || exit ; fi; test -e .git")
@@ -529,12 +534,22 @@ exit \$RET
                                     deleteDir()
                                 }
                             }
-                        }
 
-                        // checkout with refrepo
-                        ret = checkoutCleanSrc(script, stashCode[stashName])
-                    } // withEnv
-                } // dir
+                            ret = scipt.sh (label:"Checking git commit presence for ${scmCommit} after updating refrepo",
+                                script: "git log -1 '${scmCommit}'")
+                        }
+                    } // withEnv for checking/populating refrepo
+
+                } // back to workspace dir
+
+                // Maybe the agent had another refrepo, maybe not
+                // They specified "scm-ws", so now they get this:
+                script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
+                    // checkout with refrepo
+                    script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' with refrepoPath='${refrepoPath}': repo '${scmURL}' commit '${scmCommit}'"
+                    ret = checkoutCleanSrc(script, stashCode[stashName])
+                } // withEnv for checking/populating original workspace
+                  // just using refrepo (if usable in the end)
             } // unlock
         } catch (Throwable t) {
             script.echo "checkoutCleanSrcRefrepoWS: failed to use git refrepo on node '${script?.env?.NODE_NAME}', falling back if we can"
