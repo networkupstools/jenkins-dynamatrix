@@ -361,6 +361,8 @@ git status || true
     } // stashCleanSrc()
 
     static void unstashScriptedSrc(def script, String stashName) {
+        // only unstashes into current dir() from caller,
+        // no pre-cleanup done here (may be in caller)
         script.unstash (stashName)
         if (script.isUnix()) {
             // Try a workaround with `git init` per
@@ -460,9 +462,17 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 // NOTE: Currently this means one lock for all git ops of the CI
                 // farm. An apparent bottleneck to optimize (smartly!) later.
 
-                String refrepoBase = getGitRefrepoDirWSbase(script)
-                String refrepoName = stashName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
+                String refrepoBase = null
+                String refrepoName = null
                 String refrepoPath = null
+
+                script.withEnv(["GIT_REFERENCE_REPO_DIR=WS"]) {
+                    // hack to let code there use the workspace for refrepo, not
+                    // the refrepos possibly defined for "normal" ops by default
+                    refrepoBase = getGitRefrepoDirWSbase(script)
+                } // hacky withEnv for checking/populating refrepo in a workspace
+
+                refrepoName = stashName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
                 if (!refrepoName) {
                     // e.g. "nut/nut/master" or "nut/nut/PR-683" for MBR pipelines
                     refrepoName = script?.env?.JOB_NAME?.replaceLast(/\\/PR-[0-9]+$/, '')
@@ -488,7 +498,9 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     // Update (maybe init) the refrepo dir itself
                     // (currently does not use git-plugin so does not really
                     // care about GIT_REFERENCE_REPO_DIR, but just in case)
-                    script.withEnv(["GIT_REFERENCE_REPO_DIR="]) {
+                    // TOCHECK: Maybe this interacts poorly with the variable
+                    // maintained by the agent process; disabled for now:
+                    //script.withEnv(["GIT_REFERENCE_REPO_DIR="]) {
                         // check if git is there at all (error out if can't init)
                         script.sh (label:"Ensuring git workspace presence",
                             script: "if [ -e .git ] || grep -qw bare config ; then true ; else git init --bare && git config gc.auto 0 || exit ; fi; test -e .git || grep -qw bare config")
@@ -538,23 +550,28 @@ exit \$RET
                                 dir (".git-unstash") {
                                     deleteDir()
                                 }
-                            }
+                            } // if direct git fetch failed
 
                             ret = script.sh (label:"Checking git commit presence for ${scmCommit} after updating refrepo",
                                 script: "git log -1 '${scmCommit}'")
-                        }
-                    } // withEnv for checking/populating refrepo
+                        } // if commit not present
+                    //} // neutered withEnv for checking/populating refrepo
 
                 } // back to workspace dir
 
                 // Maybe the agent had another refrepo, maybe not
                 // They specified "scm-ws", so now they get this:
-                script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
-                    // checkout with refrepo
-                    script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' with refrepoPath='${refrepoPath}': repo '${scmURL}' commit '${scmCommit}'"
+                if (refrepoPath == null) {
+                    script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' did not determine a refrepoPath cached in agent workspace: repo '${scmURL}' commit '${scmCommit}'"
                     ret = checkoutCleanSrc(script, stashCode[stashName])
-                } // withEnv for checking/populating original workspace
-                  // just using refrepo (if usable in the end)
+                } else {
+                    script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
+                        // checkout with refrepo
+                        script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' with refrepoPath='${refrepoPath}': repo '${scmURL}' commit '${scmCommit}'"
+                        ret = checkoutCleanSrc(script, stashCode[stashName])
+                    } // withEnv for checking/populating original workspace
+                      // just using refrepo (if usable in the end)
+                }
             } // unlock
         } catch (Throwable t) {
             script.echo "checkoutCleanSrcRefrepoWS: failed to use git refrepo on node '${script?.env?.NODE_NAME}', falling back if we can"
@@ -621,10 +638,7 @@ exit \$RET
                     // else: got non-null return if behavior is enabled
 */
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
-                    script.withEnv(["GIT_REFERENCE_REPO_DIR=WS"]) {
-                        // hack to let code there use the workspace for refrepo
-                        checkoutCleanSrcRefrepoWS(script, stashName)
-                    }
+                    checkoutCleanSrcRefrepoWS(script, stashName)
                     return
                 // case 'unstash', null, etc: fall through
             }
