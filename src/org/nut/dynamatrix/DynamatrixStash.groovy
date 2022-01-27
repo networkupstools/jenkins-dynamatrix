@@ -286,7 +286,7 @@ class DynamatrixStash {
         return s
     }
 
-    static void checkoutCleanSrc(def script, String stashName, Closure scmbody = null) {
+    static def checkoutCleanSrc(def script, String stashName, Closure scmbody = null) {
         return checkoutCleanSrc(script, stashName, true, scmbody)
     }
 
@@ -354,11 +354,11 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         } // node isUnix(), can sh
     }
 
-    static void checkoutCleanSrcNamed(def script, String stashName, Closure scmbody = null) {
+    static def checkoutCleanSrcNamed(def script, String stashName, Closure scmbody = null) {
         return checkoutCleanSrcNamed(script, stashName, true, scmbody)
     }
 
-    static void checkoutCleanSrcNamed(def script, String stashName, Boolean untieRefrepoNow, Closure scmbody = null) {
+    static def checkoutCleanSrcNamed(def script, String stashName, Boolean untieRefrepoNow, Closure scmbody = null) {
         // Different name because groovy gets lost with parameter count
         // when some can be defaulted
 
@@ -368,12 +368,12 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         script.echo "Saving scmbody for ${stashName}: ${Utils.castString(scmbody)}"
         stashCode[stashName] = scmbody
         script.echo "Calling actual checkoutCleanSrc()"
-        checkoutCleanSrc(script, untieRefrepoNow, scmbody)
+        return checkoutCleanSrc(script, untieRefrepoNow, scmbody)
     } // checkoutCleanSrcNamed()
 
-    static void stashCleanSrc(def script, String stashName, Closure scmbody = null) {
+    static def stashCleanSrc(def script, String stashName, Closure scmbody = null) {
         // Optional closure can fully detail how the code is checked out
-        checkoutCleanSrcNamed(script, stashName, scmbody)
+        def res = checkoutCleanSrcNamed(script, stashName, scmbody)
 
         // Be sure to get also "hidden" files like .* in Unix customs => .git*
         // so avoid default exclude patterns
@@ -396,12 +396,13 @@ git status || true
             }
         }
         script.stash (name: stashName, includes: '**,.*,*,.git,.git/**,.git/refs', excludes: '', useDefaultExcludes: false)
+        return res
     } // stashCleanSrc()
 
-    static void unstashScriptedSrc(def script, String stashName) {
+    static def unstashScriptedSrc(def script, String stashName) {
         // only unstashes into current dir() from caller,
         // no pre-cleanup done here (may be in caller)
-        script.unstash (stashName)
+        def res = script.unstash (stashName)
         if (script.isUnix()) {
             // Try a workaround with `git init` per
             // https://issues.jenkins.io/browse/JENKINS-56098?focusedCommentId=380303
@@ -416,6 +417,7 @@ fi
 echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
 """
         }
+        return res
     }
 
     synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName) {
@@ -684,7 +686,7 @@ exit \$RET
         return ret
     }
 
-    static void unstashCleanSrc(def script, String stashName) {
+    static def unstashCleanSrc(def script, String stashName) {
         deleteWS(script)
         if (script?.env?.NODE_LABELS) {
             def useMethod = null
@@ -751,7 +753,7 @@ exit \$RET
 
         // Default handling: populate current workspace dir by unstash()
         //script.echo "[D] unstashCleanSrc(): default: calling unstashScriptedSrc"
-        unstashScriptedSrc(script, stashName)
+        return unstashScriptedSrc(script, stashName)
     } // unstashCleanSrc()
 
 } // class DynamatrixStash
