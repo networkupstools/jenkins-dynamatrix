@@ -423,36 +423,42 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
     } // checkoutCleanSrcNamed()
 
     static def stashCleanSrc(def script, String stashName, Closure scmbody = null) {
-        // Optional closure can fully detail how the code is checked out
-        def res = checkoutCleanSrcNamed(script, stashName, true, scmbody)
+        script.lock (resource: "dynamatrix-stash:${stashName}:${script?.env?.BUILD_TAG}", quantity: 1) {
+            // Optional closure can fully detail how the code is checked out
+            def res = checkoutCleanSrcNamed(script, stashName, true, scmbody)
 
-        // Be sure to get also "hidden" files like .* in Unix customs => .git*
-        // so avoid default exclude patterns
-        // TODO: What if not git?..
-        if (script.isUnix()) {
-            script.sh label:"Debug git checkout contents before stash()", script:"""
+            // Be sure to get also "hidden" files like .* in Unix customs => .git*
+            // so avoid default exclude patterns
+            // TODO: What if not git?..
+            if (script.isUnix()) {
+                script.sh label:"Debug git checkout contents before stash()", script:"""
 sync || true
 echo "[DEBUG before stash()] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
 git status || true
 """
 
-            if (stashName != null && !(stashSCMVars.containsKey(stashName))) {
-                stashSCMVars[stashName] = [:]
-                stashSCMVars[stashName].GIT_COMMIT = script.sh (returnStdout: true,
-                    label:"Investigate git checkout metadata before stash()",
-                    script:'git log -1 --format="%H"').trim()
-                stashSCMVars[stashName].GIT_URL = script.sh (returnStdout: true,
-                    label:"Investigate git checkout metadata before stash()",
-                    script:'git config remote.origin.url').trim()
+                if (stashName != null && !(stashSCMVars.containsKey(stashName))) {
+                    stashSCMVars[stashName] = [:]
+                    stashSCMVars[stashName].GIT_COMMIT = script.sh (returnStdout: true,
+                        label:"Investigate git checkout metadata before stash()",
+                        script:'git log -1 --format="%H"').trim()
+                    stashSCMVars[stashName].GIT_URL = script.sh (returnStdout: true,
+                        label:"Investigate git checkout metadata before stash()",
+                        script:'git config remote.origin.url').trim()
+                }
             }
-        }
-        script.stash (name: stashName, includes: '**,.*,*,.git,.git/**,.git/refs', excludes: '', useDefaultExcludes: false)
-        return res
+            script.stash (name: stashName, includes: '**,.*,*,.git,.git/**,.git/refs', excludes: '', useDefaultExcludes: false)
+            return res
+        } // lock
     } // stashCleanSrc()
 
     static def unstashScriptedSrc(def script, String stashName) {
         // only unstashes into current dir() from caller,
         // no pre-cleanup done here (may be in caller)
+
+        // a no-op lock to make sure stashing above has completed
+        script.lock (resource: "dynamatrix-stash:${stashName}:${script?.env?.BUILD_TAG}", quantity: 1) {}
+
         def res = script.unstash (stashName)
         if (script.isUnix()) {
             // Try a workaround with `git init` per
