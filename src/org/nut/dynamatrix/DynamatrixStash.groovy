@@ -286,7 +286,11 @@ class DynamatrixStash {
         return s
     }
 
-    static def checkoutCleanSrc(def script, String stashName = null, Closure scmbody = null) {
+    static void checkoutCleanSrc(def script, String stashName, Closure scmbody = null) {
+        return checkoutCleanSrc(script, stashName, true, scmbody)
+    }
+
+    static def checkoutCleanSrc(def script, String stashName = null, Boolean untieRefrepoNow, Closure scmbody = null) {
         // Optional closure can fully detail how the code is checked out
         deleteWS(script)
 
@@ -317,6 +321,16 @@ class DynamatrixStash {
             res = scmbody()
         }
 
+        if (untieRefrepoNow) {
+            // For initial checkouts headed to stashing
+            // Not desired for subsequent checkouts on build agents
+            untieRefrepo(script)
+        } // node isUnix(), can sh
+
+        return res
+    } // checkoutCleanSrc()
+
+    static void untieRefrepo(def script) {
         // If we made a git checkout with a refrepo, untie it before stashing
         // https://stackoverflow.com/questions/2248228/how-to-detach-alternates-after-git-clone-reference
         // TODO: Would a `git gc` reduce footprint to stash?
@@ -338,11 +352,13 @@ git status || true
 echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
 """
         } // node isUnix(), can sh
-
-        return res
-    } // checkoutCleanSrc()
+    }
 
     static void checkoutCleanSrcNamed(def script, String stashName, Closure scmbody = null) {
+        return checkoutCleanSrcNamed(script, stashName, true, scmbody)
+    }
+
+    static void checkoutCleanSrcNamed(def script, String stashName, Boolean untieRefrepoNow, Closure scmbody = null) {
         // Different name because groovy gets lost with parameter count
         // when some can be defaulted
 
@@ -352,8 +368,8 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         script.echo "Saving scmbody for ${stashName}: ${Utils.castString(scmbody)}"
         stashCode[stashName] = scmbody
         script.echo "Calling actual checkoutCleanSrc()"
-        checkoutCleanSrc(script, scmbody)
-    } // checkoutCleanSrc()
+        checkoutCleanSrc(script, untieRefrepoNow, scmbody)
+    } // checkoutCleanSrcNamed()
 
     static void stashCleanSrc(def script, String stashName, Closure scmbody = null) {
         // Optional closure can fully detail how the code is checked out
@@ -649,7 +665,8 @@ exit \$RET
                     script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
                         // checkout with refrepo
                         script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' with refrepoPath='${refrepoPath}': repo '${scmURL}' commit '${scmCommit}'"
-                        ret = checkoutCleanSrc(script, stashCode[stashName])
+                        // "false" says to not "untie" refrepo in the build agent:
+                        ret = checkoutCleanSrc(script, stashCode[stashName], false)
                     } // withEnv for checking/populating original workspace
                       // just using refrepo (if usable in the end)
                 }
@@ -705,6 +722,11 @@ exit \$RET
                     checkoutCleanSrc(script, stashCode[stashName])
                     return
                 case 'scm-ws':
+                    // TODO: This currently checks out as a fallback mode
+                    // Just in case, extension is desirable to fall back to
+                    // unstashing instead (if direct/refrepo checkouts fail)
+                    // One way can be to return "false" and handle it below.
+
                     // check if workspace-based refrepo dir is up to date (has
                     // the needed commits) or ensure that if needed (by direct
                     // SCM operation from source or by unstash + update from
