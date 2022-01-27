@@ -242,7 +242,9 @@ class DynamatrixStash {
 // Example object name and spec (from a stacktrace): 'private final
 //   java.lang.String hudson.plugins.git.extensions.impl.CloneOption.reference'
 // with class 'java.lang.reflect.Field'
-                                if (extension.hasProperty('reference') && extension.reference instanceof String) {
+                                if (extension.hasProperty('reference') && extension.reference instanceof String
+                                &&  extension.reference.trim() != refrepo.trim()
+                                ) {
                                     def originalReference = extension.reference
                                     script.print('replacing reference: ' +
                                         originalReference +
