@@ -293,11 +293,11 @@ class DynamatrixStash {
         return s
     }
 
-    static def checkoutCleanSrc(def script, String stashName, Closure scmbody = null) {
+    static def checkoutCleanSrc(def script, String stashName, Closure scmbody) {
         return checkoutCleanSrc(script, stashName, true, scmbody)
     }
 
-    static def checkoutCleanSrc(def script, String stashName = null, Boolean untieRefrepoNow, Closure scmbody = null) {
+    static def checkoutCleanSrc(def script, String stashName = null, Boolean untieRefrepoNow = true, Closure scmbody = null) {
         // Optional closure can fully detail how the code is checked out
         deleteWS(script)
 
@@ -318,7 +318,10 @@ class DynamatrixStash {
                 res = checkoutSCM(script, scm)
                 //res = script.checkout (scm)
             }
-            stashSCMVars[stashName] = res
+            if (stashName != null) {
+                script.echo "Saving scm result for ${stashName}: ${Utils.castString(res)}"
+                stashSCMVars[stashName] = res
+            }
         } else {
             // Per experience, that body defined in the pipeline script
             // sees its methods and vars, no delegation etc. required.
@@ -375,12 +378,12 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         script.echo "Saving scmbody for ${stashName}: ${Utils.castString(scmbody)}"
         stashCode[stashName] = scmbody
         script.echo "Calling actual checkoutCleanSrc()"
-        return checkoutCleanSrc(script, untieRefrepoNow, scmbody)
+        return checkoutCleanSrc(script, stashName, untieRefrepoNow, scmbody)
     } // checkoutCleanSrcNamed()
 
     static def stashCleanSrc(def script, String stashName, Closure scmbody = null) {
         // Optional closure can fully detail how the code is checked out
-        def res = checkoutCleanSrcNamed(script, stashName, scmbody)
+        def res = checkoutCleanSrcNamed(script, stashName, true, scmbody)
 
         // Be sure to get also "hidden" files like .* in Unix customs => .git*
         // so avoid default exclude patterns
