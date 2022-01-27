@@ -19,8 +19,10 @@ import java.lang.reflect.Modifier;
  * especially if optimizations like Git reference repository local
  * to that worker are involved. Such agents can declare this by
  * specifying a node label DYNAMATRIX_UNSTASH_PREFERENCE=... with
- *   ...=unstash(:stashName)
+ *   ...=scm-ws(:stashName)
  *   ...=scm(:stashName)
+ *   ...=unstash(:stashName)
+ * with fallback handling in this order.
  * The optional ":stashName" suffix allows to limit the preference
  * to builds of a particular project which uses that string, e.g.
  * DYNAMATRIX_UNSTASH_PREFERENCE=scm:nut-ci-src
@@ -41,6 +43,11 @@ import java.lang.reflect.Modifier;
  * '/${GIT_SUBMODULES}' should be verbatim in the expanded envvar:
  *   https://issues.jenkins.io/browse/JENKINS-64383
  *   https://github.com/jenkinsci/git-client-plugin/pull/644
+ *
+ * TODO: Refactor to not abuse GIT_REFERENCE_REPO_DIR for "scm-ws"
+ * checkouts, we can "just populate" the alternates config directly
+ * and avoid confusing Jenkins - it seems to use one definiton for
+ * that envvar across the board, impacting later builds :\
  */
 
 class DynamatrixStash {
