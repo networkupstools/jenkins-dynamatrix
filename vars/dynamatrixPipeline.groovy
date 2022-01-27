@@ -271,6 +271,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
  * maintained on the stashing worker (as a Reference Repo), and do just
  * shallow checkouts (depth=1). Longer history may make sense for release
  * builds with changelog generation, but not for quick test iterations.
+ *
+ * NOTE: stashCleanSrc() now uses a uniquely named lock which unstashing
+ * methods should wait on, so it is safe to proceed into the quick build
+ * matrix to not delay with agents that prefer to use "scm" or "scm-ws".
  */
                     if (infra.labelCheckoutWorker() != infra.labelDefaultWorker()) {
                         node(infra.labelCheckoutWorker()) {
@@ -287,298 +291,301 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     echo "This build involves the following changedFiles list: ${changedFiles.toString()}"
                 }, // stage - stash
 
-                "Discover quick build matrix": {
-                    // Relatively quick discovery (e.g. filtering axes
-                    // by regexes takes long when many build agents are
-                    // involved, so that part happens in parallel to
-                    // this shellcheck and also optional spellcheck and/or
-                    // stylecheck, which presumably can be prepared quickly):
+                "Quick builds and discovery": {
 
-                    // Have some defaults, if only to have all
-                    // expected fields defined and node caps cached
-                    dynamatrix.prepareDynamatrix(dynacfgBase)
+                    stage("Discover quick build matrix") {
+                        // Relatively quick discovery (e.g. filtering axes
+                        // by regexes takes long when many build agents are
+                        // involved, so that part happens in parallel to
+                        // this shellcheck and also optional spellcheck and/or
+                        // stylecheck, which presumably can be prepared quickly):
 
-                    // In outer layer, select all suitable builders;
-                    // In inner layer, unpack+config the source on
-                    // that chosen host once, and use that workspace
-                    // for distinct test stages with different shells.
-                    stagesShellcheck_arr = shellcheck(dynacfgPipeline, true)
+                        // Have some defaults, if only to have all
+                        // expected fields defined and node caps cached
+                        dynamatrix.prepareDynamatrix(dynacfgBase)
 
-                    /* As noted above, any relatively heavy axis filters,
-                     * which need many seconds to process just to decide
-                     * what should be built this time, should happen in
-                     * the next stage along with quick tests - like the
-                     * stylecheck, spellcheck and shellcheck targets.
-                     */
-                } // stage - discover the matrix
+                        // In outer layer, select all suitable builders;
+                        // In inner layer, unpack+config the source on
+                        // that chosen host once, and use that workspace
+                        // for distinct test stages with different shells.
+                        stagesShellcheck_arr = shellcheck(dynacfgPipeline, true)
+
+                        /* As noted above, any relatively heavy axis filters,
+                         * which need many seconds to process just to decide
+                         * what should be built this time, should happen in
+                         * the next stage along with quick tests - like the
+                         * stylecheck, spellcheck and shellcheck targets.
+                         */
+                    } // stage - discover the matrix
+
+                    // Do not mix parallel and usual sub-stages inside the
+                    // stage below - at least, BO does not render that well
+                    // and it may cause (or not?) CPS faults somehow...
+                    stage("Quick tests and prepare the bigger dynamatrix") {
+                        echo "Beginning quick-test stage"
+
+                        // Convert back from the Set of tuples we used to
+                        // avoid storing a Map for too long - and making CPS sad
+                        def par1 = shellcheck.makeMap(stagesShellcheck_arr)
+
+                        // Nothing gets added (empty [:] ignored) if not enabled:
+                        par1 += spellcheck.makeMap(dynacfgPipeline)
+                        par1 += stylecheck.makeMap(dynacfgPipeline)
+
+                        // For this stage, we do not want parallel build scenarios
+                        // aborted if stuff breaks in one codepath, it is relatively
+                        // small and fast anyway:
+                        par1.failFast = false
+
+                        if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
+                            par1["Discover slow build matrix"] = {
+                                def countFiltersSeen = 0
+                                def countFiltersSkipped = 0
+                                // The "slowBuild" is a set of Maps, each of them describes
+                                // a dynamatrix selection filter. Having a series of those
+                                // with conditions known to developer of the pipeline (and
+                                // project it represents) can be more efficient than making
+                                // a huge matrix of virtual or agent-driven labels and then
+                                // filtering away lots of "excludeCombos" from that.
+
+                                if (dynacfgPipeline?.failFastSafe) {
+                                    dynamatrix.failFast = (dynacfgPipeline?.failFast ? true : false)
+                                    dynamatrix.mustAbort = false
+                                }
+
+                                dynamatrix.saveDynacfg()
+                                dynacfgPipeline.slowBuild.each { def sb ->
+                                    if (dynamatrixGlobalState.enableDebugTrace) {
+                                        echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
+                                    } else if (sb?.name) {
+                                        echo "Inspecting a slow build filter configuration: ${sb.name}"
+                                    }
+
+                                    if (Utils.isClosureNotEmpty(sb?.getParStages)) {
+                                        countFiltersSeen ++
+                                        if (sb?.disabled) {
+                                            if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                                                echo "SKIP: This slow build filter configuration is marked as disabled for this run" + (sb?.name ? ": " + sb.name : "")
+                                            countFiltersSkipped++
+                                            return // continue
+                                        }
+
+                                        if (Utils.isRegex(sb?.branchRegexSource) && Utils.isStringNotEmpty(env?.BRANCH_NAME)) {
+                                            // TOTHINK: For PR builds, the BRANCH_NAME
+                                            // is `PR-[0-9]+` while there is also a
+                                            // CHANGE_BRANCH with the original value.
+                                            if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
+                                                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                                                    echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ~/${sb.branchRegexSource}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                                countFiltersSkipped++
+                                                return // continue
+                                            }
+                                        }
+
+                                        if (Utils.isRegex(sb?.branchRegexTarget)) {
+                                            if (Utils.isStringNotEmpty(env?.CHANGE_TARGET)
+                                            && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
+                                            ) {
+                                                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                                                    echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                                countFiltersSkipped++
+                                                return // continue
+                                            } // else: CHANGE_TARGET is empty (probably not
+                                              // building a PR), or regex matches, so go on
+
+                                            def _CHANGE_TARGET = null
+                                            try {
+                                                // May be not defined
+                                                _CHANGE_TARGET = CHANGE_TARGET
+                                            } catch (Throwable t) {
+                                                try {
+                                                    // May be not defined
+                                                    _CHANGE_TARGET = env.CHANGE_TARGET
+                                                } catch (Throwable tt) {}
+                                            }
+
+                                            if (Utils.isStringNotEmpty(_CHANGE_TARGET)
+                                            && (!(_CHANGE_TARGET ==~ sb.branchRegexTarget))
+                                            ) {
+                                                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                                                    echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                                countFiltersSkipped++
+                                                return // continue
+                                            }
+
+                                            if ( !Utils.isStringNotEmpty(env?.CHANGE_TARGET)
+                                            &&   !Utils.isStringNotEmpty(_CHANGE_TARGET)
+                                            ) {
+                                                // If callers want some setup only for PR
+                                                // builds, they can use the source branch
+                                                // regex set to /^PR-\d+$/
+                                                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                                                    echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ~/${sb.branchRegexTarget}/ set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                                    // NOT a "skip", just a "FYI"!
+                                            }
+                                        } // if branchRegexTarget
+
+                                        // By default we run all otherwise not disabled
+                                        // scenarios... but really, some test cases do
+                                        // not make sense for certain changes and are a
+                                        // waste of roud-trip time and compute resources.
+                                        if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
+                                            if (dynamatrixGlobalState.enableDebugTrace)
+                                                echo "[DEBUG] Analysing the changedFiles=${changedFiles.toString()} list against the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' ..."
+                                            if (changedFiles.size() > 0) {
+                                                def skip = true
+
+                                                for (cf in changedFiles) {
+                                                    if (cf ==~ sb.appliesToChangedFilesRegex) {
+                                                        // A changed file name did match
+                                                        // the regex for files covered by a
+                                                        // scenario, so this scenario should
+                                                        // apply to this changeset and not
+                                                        // skipped
+                                                        skip = false
+                                                        break
+                                                    }
+                                                }
+
+                                                if (skip) {
+                                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                                                        echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                                    countFiltersSkipped++
+                                                    return // continue
+                                                } else {
+                                                    if (dynamatrixGlobalState.enableDebugTrace)
+                                                        echo "[DEBUG] Changeset did include some file name(s) which matched the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                                }
+                                            } else {
+                                                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                                                    echo "WARNING: while handling appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' " +
+                                                        "for this slow build filter configuration, " +
+                                                        "the listChangedFiles() call returned an " +
+                                                        "empty list, thus either we had no changes " +
+                                                        "(would a re-run do that?) or had some error?.. " +
+                                                        "So build everything to be safe" + (sb?.name ? ": " + sb.name : ".")
+                                            }
+                                        } // if appliesToChangedFilesRegex
+
+                                        echo "Did not rule out this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                                        // This magic envvar is mapped into stage name
+                                        // in the dynamatrix
+                                        //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
+                                        withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().trim() : "N/A" )]) {
+                                            sb.mapParStages = [:]
+                                            // Use unique clones of "dynamatrix.dynacfg" below,
+                                            // to avoid polluting their applied dynacfg based
+                                            // just on order of slowBuild scenario parsing:
+                                            dynamatrix.restoreDynacfg()
+                                            if (Utils.isClosure(sb?.bodyParStages)) {
+                                                // body may be empty {}, if user wants so
+                                                sb.mapParStages = sb.getParStages(dynamatrix, sb.bodyParStages)
+                                            } else {
+                                                if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
+                                                    sb.mapParStages = sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                                                } else {
+                                                    sb.mapParStages = sb.getParStages(dynamatrix, null)
+                                                }
+                                            }
+                                            stagesBinBuild += sb.mapParStages
+                                        }
+                                    } else { // if not getParStages
+                                        sb.mapParStages = null
+                                        if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                                            echo "SKIP: No (valid) slow build filter definition in this entry" + (sb?.name ? ": " + sb.name : "")
+                                        countFiltersSkipped++
+                                    }
+                                } // dynacfgPipeline.slowBuild.each { sb -> ... }
+
+                                String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
+                                    "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
+                                String sbSummary = null
+                                String sbSummaryCount = "" // non-null string in any case
+                                if (stagesBinBuild.size() == 0) {
+                                    sbSummary = "Did not discover any ${sbSummarySuffix}"
+                                } else {
+                                    sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
+                                    dynacfgPipeline.slowBuild.each { def sb ->
+                                        if (sb?.mapParStages) {
+                                            // Note: Char sequence at start of string is parsed for badge markup below
+                                            sbSummaryCount += "\n\t* ${sb.mapParStages.size()} hits for: " +
+                                                (Utils.isStringNotEmpty(sb?.name) ? sb.name : Utils.castString(sb))
+                                        }
+                                    }
+
+                                    try {
+                                        // TODO: Something similar but with each stage's
+                                        // own buildResult verdicts after the build...
+                                        def txt = "${sbSummary}\nfor this run ${env?.BUILD_URL}:\n\n"
+                                        stagesBinBuild.keySet().sort().each { txt += "${it}\n\n" }
+                                        txt += sbSummaryCount
+                                        writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
+                                        archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
+
+                                        try {
+                                            createSummary(text: "Saved the list of slowBuild stages into a text artifact " +
+                                                "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>",
+                                                icon: '/images/48x48/notepad.png')
+                                        } catch (Throwable ts) {
+                                            echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
+                                            if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                                        }
+
+                                    } catch (Throwable t) {
+                                        echo "WARNING: Tried to save the list of slowBuild stages into a text artifact '.ci.slowBuildStages-list.txt', but failed to"
+                                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                                    }
+
+                                    // Note: adds one more point to stagesBinBuild.size() checked below:
+                                    if (dynacfgPipeline?.failFastSafe) {
+                                        stagesBinBuild.failFast = false
+                                    } else {
+                                        stagesBinBuild.failFast = dynacfgPipeline.failFast
+                                    }
+                                }
+                                echo sbSummary + sbSummaryCount
+
+                                try {
+                                    // Note: we also report "Running..." more or less
+                                    // the same message below; but with CI farm contention
+                                    // much time can be spent before getting to that line
+                                    // Note we are not using "manager" leading to Groovy
+                                    // PostBuild Plugin implementation, but the better
+                                    // featured jenkins-badge-plugin step
+                                    //addInfoBadge(text: sbSummary, id: "Discovery-counter")
+                                    // While we add temporarily and remove one badge,
+                                    // GPBP is okay (for some reason, Badge plugin leaves
+                                    // ugly formatting in job's main page with list of builds):
+                                    manager.addInfoBadge(sbSummary)
+
+                                    // Add a line to the build's info page too (note the
+                                    // path here is somewhat relative to /static/hexhash/
+                                    // that Jenkins adds):
+                                    if (sbSummaryCount != "") {
+                                        // Note: replace goes by regex so '\*'
+                                        sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<p>Detailed hit counts:<ul>') + '</li></ul></p>'
+                                    }
+                                    createSummary(text: sbSummary + sbSummaryCount, icon: '/images/48x48/notepad.png')
+                                } catch (Throwable t) {
+                                    echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
+                                    if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                                }
+
+                                echo "NOTE: If this is the last line you see in job console log for a long time, then we are waiting for some build agents for shellcheck/spellcheck; slowBuild stage discovery is completed"
+                            } // stage item: par1["Discover slow build matrix"]
+                        } // if slowBuild...
+
+                        // Walk the plank
+                        parallel par1
+
+                        echo "Completed the 'Quick tests and prepare the bigger dynamatrix' stage"
+                    } // stage-quick tests
+                } // stage quick builds
 
             ) // parallel-initial
         } // stage-initial
 
         // Rest of code continues like a scripted pipeline
-
-        // Do not mix parallel and usual sub-stages inside the
-        // stage below - at least, BO does not render that well
-        // and it may cause (or not?) CPS faults somehow...
-        stage("Quick tests and prepare the bigger dynamatrix") {
-            echo "Beginning quick-test stage"
-
-            // Convert back from the Set of tuples we used to
-            // avoid storing a Map for too long - and making CPS sad
-            def par1 = shellcheck.makeMap(stagesShellcheck_arr)
-
-            // Nothing gets added (empty [:] ignored) if not enabled:
-            par1 += spellcheck.makeMap(dynacfgPipeline)
-            par1 += stylecheck.makeMap(dynacfgPipeline)
-
-            // For this stage, we do not want parallel build scenarios
-            // aborted if stuff breaks in one codepath, it is relatively
-            // small and fast anyway:
-            par1.failFast = false
-
-            if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
-                par1["Discover slow build matrix"] = {
-                    def countFiltersSeen = 0
-                    def countFiltersSkipped = 0
-                    // The "slowBuild" is a set of Maps, each of them describes
-                    // a dynamatrix selection filter. Having a series of those
-                    // with conditions known to developer of the pipeline (and
-                    // project it represents) can be more efficient than making
-                    // a huge matrix of virtual or agent-driven labels and then
-                    // filtering away lots of "excludeCombos" from that.
-
-                    if (dynacfgPipeline?.failFastSafe) {
-                        dynamatrix.failFast = (dynacfgPipeline?.failFast ? true : false)
-                        dynamatrix.mustAbort = false
-                    }
-
-                    dynamatrix.saveDynacfg()
-                    dynacfgPipeline.slowBuild.each { def sb ->
-                        if (dynamatrixGlobalState.enableDebugTrace) {
-                            echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
-                        } else if (sb?.name) {
-                            echo "Inspecting a slow build filter configuration: ${sb.name}"
-                        }
-
-                        if (Utils.isClosureNotEmpty(sb?.getParStages)) {
-                            countFiltersSeen ++
-                            if (sb?.disabled) {
-                                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                    echo "SKIP: This slow build filter configuration is marked as disabled for this run" + (sb?.name ? ": " + sb.name : "")
-                                countFiltersSkipped++
-                                return // continue
-                            }
-
-                            if (Utils.isRegex(sb?.branchRegexSource) && Utils.isStringNotEmpty(env?.BRANCH_NAME)) {
-                                // TOTHINK: For PR builds, the BRANCH_NAME
-                                // is `PR-[0-9]+` while there is also a
-                                // CHANGE_BRANCH with the original value.
-                                if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
-                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ~/${sb.branchRegexSource}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                                    countFiltersSkipped++
-                                    return // continue
-                                }
-                            }
-
-                            if (Utils.isRegex(sb?.branchRegexTarget)) {
-                                if (Utils.isStringNotEmpty(env?.CHANGE_TARGET)
-                                && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
-                                ) {
-                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                                    countFiltersSkipped++
-                                    return // continue
-                                } // else: CHANGE_TARGET is empty (probably not
-                                  // building a PR), or regex matches, so go on
-
-                                def _CHANGE_TARGET = null
-                                try {
-                                    // May be not defined
-                                    _CHANGE_TARGET = CHANGE_TARGET
-                                } catch (Throwable t) {
-                                    try {
-                                        // May be not defined
-                                        _CHANGE_TARGET = env.CHANGE_TARGET
-                                    } catch (Throwable tt) {}
-                                }
-
-                                if (Utils.isStringNotEmpty(_CHANGE_TARGET)
-                                && (!(_CHANGE_TARGET ==~ sb.branchRegexTarget))
-                                ) {
-                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                                    countFiltersSkipped++
-                                    return // continue
-                                }
-
-                                if ( !Utils.isStringNotEmpty(env?.CHANGE_TARGET)
-                                &&   !Utils.isStringNotEmpty(_CHANGE_TARGET)
-                                ) {
-                                    // If callers want some setup only for PR
-                                    // builds, they can use the source branch
-                                    // regex set to /^PR-\d+$/
-                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ~/${sb.branchRegexTarget}/ set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                                        // NOT a "skip", just a "FYI"!
-                                }
-                            } // if branchRegexTarget
-
-                            // By default we run all otherwise not disabled
-                            // scenarios... but really, some test cases do
-                            // not make sense for certain changes and are a
-                            // waste of roud-trip time and compute resources.
-                            if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
-                                if (dynamatrixGlobalState.enableDebugTrace)
-                                    echo "[DEBUG] Analysing the changedFiles=${changedFiles.toString()} list against the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' ..."
-                                if (changedFiles.size() > 0) {
-                                    def skip = true
-
-                                    for (cf in changedFiles) {
-                                        if (cf ==~ sb.appliesToChangedFilesRegex) {
-                                            // A changed file name did match
-                                            // the regex for files covered by a
-                                            // scenario, so this scenario should
-                                            // apply to this changeset and not
-                                            // skipped
-                                            skip = false
-                                            break
-                                        }
-                                    }
-
-                                    if (skip) {
-                                        if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                            echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                                        countFiltersSkipped++
-                                        return // continue
-                                    } else {
-                                        if (dynamatrixGlobalState.enableDebugTrace)
-                                            echo "[DEBUG] Changeset did include some file name(s) which matched the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                                    }
-                                } else {
-                                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                        echo "WARNING: while handling appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' " +
-                                            "for this slow build filter configuration, " +
-                                            "the listChangedFiles() call returned an " +
-                                            "empty list, thus either we had no changes " +
-                                            "(would a re-run do that?) or had some error?.. " +
-                                            "So build everything to be safe" + (sb?.name ? ": " + sb.name : ".")
-                                }
-                            } // if appliesToChangedFilesRegex
-
-                            echo "Did not rule out this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                            // This magic envvar is mapped into stage name
-                            // in the dynamatrix
-                            //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
-                            withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().trim() : "N/A" )]) {
-                                sb.mapParStages = [:]
-                                // Use unique clones of "dynamatrix.dynacfg" below,
-                                // to avoid polluting their applied dynacfg based
-                                // just on order of slowBuild scenario parsing:
-                                dynamatrix.restoreDynacfg()
-                                if (Utils.isClosure(sb?.bodyParStages)) {
-                                    // body may be empty {}, if user wants so
-                                    sb.mapParStages = sb.getParStages(dynamatrix, sb.bodyParStages)
-                                } else {
-                                    if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                                        sb.mapParStages = sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
-                                    } else {
-                                        sb.mapParStages = sb.getParStages(dynamatrix, null)
-                                    }
-                                }
-                                stagesBinBuild += sb.mapParStages
-                            }
-                        } else { // if not getParStages
-                            sb.mapParStages = null
-                            if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                echo "SKIP: No (valid) slow build filter definition in this entry" + (sb?.name ? ": " + sb.name : "")
-                            countFiltersSkipped++
-                        }
-                    } // dynacfgPipeline.slowBuild.each { sb -> ... }
-
-                    String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
-                        "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
-                    String sbSummary = null
-                    String sbSummaryCount = "" // non-null string in any case
-                    if (stagesBinBuild.size() == 0) {
-                        sbSummary = "Did not discover any ${sbSummarySuffix}"
-                    } else {
-                        sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
-                        dynacfgPipeline.slowBuild.each { def sb ->
-                            if (sb?.mapParStages) {
-                                // Note: Char sequence at start of string is parsed for badge markup below
-                                sbSummaryCount += "\n\t* ${sb.mapParStages.size()} hits for: " +
-                                    (Utils.isStringNotEmpty(sb?.name) ? sb.name : Utils.castString(sb))
-                            }
-                        }
-
-                        try {
-                            // TODO: Something similar but with each stage's
-                            // own buildResult verdicts after the build...
-                            def txt = "${sbSummary}\nfor this run ${env?.BUILD_URL}:\n\n"
-                            stagesBinBuild.keySet().sort().each { txt += "${it}\n\n" }
-                            txt += sbSummaryCount
-                            writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
-                            archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
-
-                            try {
-                                createSummary(text: "Saved the list of slowBuild stages into a text artifact " +
-                                    "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>",
-                                    icon: '/images/48x48/notepad.png')
-                            } catch (Throwable ts) {
-                                echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
-                                if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
-                            }
-
-                        } catch (Throwable t) {
-                            echo "WARNING: Tried to save the list of slowBuild stages into a text artifact '.ci.slowBuildStages-list.txt', but failed to"
-                            if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
-                        }
-
-                        // Note: adds one more point to stagesBinBuild.size() checked below:
-                        if (dynacfgPipeline?.failFastSafe) {
-                            stagesBinBuild.failFast = false
-                        } else {
-                            stagesBinBuild.failFast = dynacfgPipeline.failFast
-                        }
-                    }
-                    echo sbSummary + sbSummaryCount
-
-                    try {
-                        // Note: we also report "Running..." more or less
-                        // the same message below; but with CI farm contention
-                        // much time can be spent before getting to that line
-                        // Note we are not using "manager" leading to Groovy
-                        // PostBuild Plugin implementation, but the better
-                        // featured jenkins-badge-plugin step
-                        //addInfoBadge(text: sbSummary, id: "Discovery-counter")
-                        // While we add temporarily and remove one badge,
-                        // GPBP is okay (for some reason, Badge plugin leaves
-                        // ugly formatting in job's main page with list of builds):
-                        manager.addInfoBadge(sbSummary)
-
-                        // Add a line to the build's info page too (note the
-                        // path here is somewhat relative to /static/hexhash/
-                        // that Jenkins adds):
-                        if (sbSummaryCount != "") {
-                            // Note: replace goes by regex so '\*'
-                            sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<p>Detailed hit counts:<ul>') + '</li></ul></p>'
-                        }
-                        createSummary(text: sbSummary + sbSummaryCount, icon: '/images/48x48/notepad.png')
-                    } catch (Throwable t) {
-                        echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
-                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
-                    }
-
-                    echo "NOTE: If this is the last line you see in job console log for a long time, then we are waiting for some build agents for shellcheck/spellcheck; slowBuild stage discovery is completed"
-                } // stage item: par1["Discover slow build matrix"]
-            } // if slowBuild...
-
-            // Walk the plank
-            parallel par1
-
-            echo "Completed the 'Quick tests and prepare the bigger dynamatrix' stage"
-        } // stage-quick
 
         // Something in our dynamatrix wrappings precludes seeing
         // what failed on high-level in the parallel block above
