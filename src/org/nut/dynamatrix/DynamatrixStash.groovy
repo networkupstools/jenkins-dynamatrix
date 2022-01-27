@@ -566,6 +566,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                         // check if commit is there (non-fatal)
                         // TODO: generic SCM revision check? Specific GitSCM trick?
                         ret = script.sh (label:"Checking git commit presence for ${scmCommit}",
+                            returnStatus: true,
                             script: "git log -1 '${scmCommit}'")
 
                         if (ret != 0) {
@@ -574,6 +575,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                             // Checkout from SCM URL (may fail if
                             // e.g. build agent has no internet)...
                             ret = script.sh (label:"Trying direct git fetch from URL ${scmURL} for ${scmCommit}",
+                                returnStatus: true,
                                 script: """
 git remote -v | grep -w '${scmURL}' || git remote add "`LANG=C TZ=UTC LC_ALL=C date -u | tr ' :,' '_'`" '${scmUrl}' || exit
 RET=0
@@ -592,6 +594,7 @@ exit \$RET
                                     unstashScriptedSrc(script, stashName)
                                 }
 
+                                // here we throw (and catch below) if failed
                                 script.sh (label:"Trying to fetch newest commits from unstashed archive provided by the build",
                                     script: """
 git remote add 'git-unstash' './.git-unstash' || exit
@@ -610,7 +613,8 @@ exit \$RET
                                 }
                             } // if direct git fetch failed
 
-                            ret = script.sh (label:"Checking git commit presence for ${scmCommit} after updating refrepo",
+                            // here we throw (and catch below) if failed
+                            script.sh (label:"Checking git commit presence for ${scmCommit} after updating refrepo",
                                 script: "git log -1 '${scmCommit}'")
                         } // if commit not present
                     //} // neutered withEnv for checking/populating refrepo
