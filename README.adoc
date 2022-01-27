@@ -161,6 +161,46 @@ For certain compiler toolkits (e.g. 'C' family) it would provide an
 automatic preparation of variables for several same-versioned tools
 (e.g. C and C++ compilers).
 
+Declaring additional configuration of build agents
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Depending on their implementation and connectivity, build agents may
+have different preferences, and this library allows to tune them with
+their node labels.
+
+One such area is delivery of tested codebase to the agents: default
+approach which is to stash on master, and unstash on agents, should
+be reliable (should reach agents that can not use the SCM platform
+directly, and should ensure all agents test the same revision even
+if it disappears from the SCM platform -- by e.g. force-push to a PR),
+but at a cost of repetitive traffic and I/O to unstash same code time
+and again (often on same machine) during a matrix build.
+
+Setting `DYNAMATRIX_UNSTASH_PREFERENCE` to `scm-ws`, `scm` or `unstash`
+in the individual agent labels allows that system to start with either
+an SCM checkout augmented by a Git reference repository (persistent) in
+the workspace and maintained during each run (this currently requires
+a custom build of Jenkins Git Client plugin including the feature from
+https://github.com/jenkinsci/git-client-plugin/pull/644 unless/until
+it gets properly merged); or using a plain SCM checkout; or unstashing.
+These methods fall-back from one to next in the order listed above.
+
+The DynamatrixStash methods dealing with code checkout, stashing and
+unstashing, allow a concept of `stashName` used to identify archives
+as well as to track metadata for that codebase (so the same pipeline
+can mix several repositories). Preferences for each repository can
+be tailored, using e.g. `scm:githubProject` and `unstash:privateRepo`
+label values to use different delivery methods for the two stashNames.
+
+To prevent several parallel jobs and build scenarios from corrupting
+the reference repository maintained in the workspace, maintenance of
+this location is protected by Lockable Resources plugin. Since agents
+running with independent storage should not wait on each other, this
+lock can be tuned by setting `DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME`
+label; note that agents that do indeed use same storage (shared over
+NFS, or using containers with same homedirs from their host) should
+set identical values in their common lock name.
+
 Directory naming
 ~~~~~~~~~~~~~~~~
 
