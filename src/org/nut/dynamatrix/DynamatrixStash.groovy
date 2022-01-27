@@ -439,15 +439,16 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         && !(scm instanceof hudson.plugins.git.GitSCM)
         ) {
             script.echo "checkoutCleanSrcRefrepoWS: scm = ${Utils.castString(scm)} is not git, falling back"
-            checkoutCleanSrc(script, stashCode[stashName])
-            return
+            // Here and below, caller should catch "false" to try e.g.
+            //   checkoutCleanSrc(script, stashCode[stashName])
+            // or unstashing, probably after deleting the target dir to be sure
+            return false
         }
 
         // TODO: Less shell-scripting below, more groovy, to alleviate this:
         if (!script.isUnix()) {
             script.echo "checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' is not Unix (can't shell-script git), falling back"
-            checkoutCleanSrc(script, stashCode[stashName])
-            return
+            return false
         }
 
         // NOTE: For the first shot, PoCing mostly with shell; groovy later
@@ -531,8 +532,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
             if (!scmCommit || !scmURL || ret == false) {
                 script.echo "checkoutCleanSrcRefrepoWS: could not determine build info from SCM, falling back: scmCommit='${scmCommit}' scmURL='${scmURL}' ret='${ret}'"
-                checkoutCleanSrc(script, stashCode[stashName])
-                return
+                return false
             }
 
             def lockName = script?.env?.DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME
@@ -662,7 +662,8 @@ exit \$RET
                 // They specified "scm-ws", so now they get this:
                 if (refrepoPath == null) {
                     script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' did not determine a refrepoPath cached in agent workspace: repo '${scmURL}' commit '${scmCommit}'"
-                    ret = checkoutCleanSrc(script, stashCode[stashName])
+                    //ret = checkoutCleanSrc(script, stashCode[stashName])
+                    ret = false
                 } else {
                     script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
                         // checkout with refrepo
@@ -676,7 +677,8 @@ exit \$RET
         } catch (Throwable t) {
             script.echo "checkoutCleanSrcRefrepoWS: failed to use git refrepo on node '${script?.env?.NODE_NAME}', falling back if we can"
             script.echo t.toString()
-            ret = checkoutCleanSrc(script, stashCode[stashName])
+            //ret = checkoutCleanSrc(script, stashCode[stashName])
+            ret = false
         }
 
         if (ret == null) {
@@ -721,30 +723,35 @@ exit \$RET
                     // by an earlier stashCleanSrc() with same stashName.
                     // We error out otherwise, same as would for unstash().
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrc"
-                    checkoutCleanSrc(script, stashCode[stashName])
-                    return
-                case 'scm-ws':
-                    // TODO: This currently checks out as a fallback mode
-                    // Just in case, extension is desirable to fall back to
-                    // unstashing instead (if direct/refrepo checkouts fail)
-                    // One way can be to return "false" and handle it below.
+                    if (checkoutCleanSrc(script, stashCode[stashName]))
+                        return
 
+                    // on error, fall through to unstash
+                    script.echo "WARNING: unstashCleanSrc() asked to use 'scm' but failed on node '${script?.env?.NODE_NAME}'. Falling back to 'unstash'."
+                    deleteWS(script)
+                    break
+
+                case 'scm-ws':
                     // check if workspace-based refrepo dir is up to date (has
                     // the needed commits) or ensure that if needed (by direct
                     // SCM operation from source or by unstash + update from
                     // this copy) and finally check out current build workspace
                     // using this refrepo. Use locking!
-/*
-                    if (!useGitRefrepoDirWS(script)) {
-                        script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but it seems not enabled on node '${script?.env?.NODE_NAME}' or globally. Falling back to 'scm'."
-                        checkoutCleanSrc(script, stashCode[stashName])
+
+                    //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
+                    if (checkoutCleanSrcRefrepoWS(script, stashName) == false) {
+                        script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but failed on node '${script?.env?.NODE_NAME}'. Falling back to 'scm'."
+                        if (checkoutCleanSrc(script, stashCode[stashName]))
+                            return
+                    } else {
                         return
                     }
-                    // else: got non-null return if behavior is enabled
-*/
-                    //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
-                    checkoutCleanSrcRefrepoWS(script, stashName)
-                    return
+
+                    // on error, fall through to unstash
+                    script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but failed on node '${script?.env?.NODE_NAME}'. Falling back to 'unstash'."
+                    deleteWS(script)
+                    break
+
                 // case 'unstash', null, etc: fall through
             }
 
