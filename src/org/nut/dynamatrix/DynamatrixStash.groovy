@@ -44,7 +44,11 @@ import java.lang.reflect.Modifier;
  */
 
 class DynamatrixStash {
+    // If closures were used to check out a stashName, track it here:
     private static def stashCode = [:]
+
+    // Track info about whatever we checked out with helpers here:
+    private static def stashSCMVars = [:]
 
     static void deleteWS(def script) {
         /* clean up our workspace (current directory) */
@@ -179,8 +183,10 @@ class DynamatrixStash {
             }
         }
 
-        script.echo "checkoutGit: scmParams = ${Utils.castString(scmParams)}"
-        return script.checkout(scmParams)
+        script.echo "checkoutGit: running on '${script?.env?.NODE_NAME}' in '${script?.pwd()}', scmParams = ${Utils.castString(scmParams)}"
+        def s = script.checkout(scmParams)
+        stashSCMVars[scmParams] = s
+        return s
     }
 
     static def checkoutSCM(def script, def scmParams, String coRef = null) {
@@ -273,7 +279,9 @@ class DynamatrixStash {
         }
 
         script.echo "checkoutSCM: running on '${script?.env?.NODE_NAME}' in '${script?.pwd()}', scmParams = ${Utils.castString(scmParams)}"
-        return script.checkout(scmParams)
+        def s = script.checkout(scmParams)
+        stashSCMVars[scmParams] = s
+        return s
     }
 
     static def checkoutCleanSrc(def script, String stashName = null, Closure scmbody = null) {
@@ -297,6 +305,7 @@ class DynamatrixStash {
                 res = checkoutSCM(script, scm)
                 //res = script.checkout (scm)
             }
+            stashSCMVars[stashName] = res
         } else {
             // Per experience, that body defined in the pipeline script
             // sees its methods and vars, no delegation etc. required.
@@ -350,12 +359,23 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
         // Be sure to get also "hidden" files like .* in Unix customs => .git*
         // so avoid default exclude patterns
+        // TODO: What if not git?..
         if (script.isUnix()) {
             script.sh label:"Debug git checkout contents before stash()", script:"""
 sync || true
 echo "[DEBUG before stash()] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
 git status || true
 """
+
+            if (stashName != null && !(stashSCMVars.containsKey(stashName))) {
+                stashSCMVars[stashName] = [:]
+                stashSCMVars[stashName].GIT_COMMIT = script.sh (returnStdout: true,
+                    label:"Investigate git checkout metadata before stash()",
+                    script:'git log -1 --format="%H"').trim()
+                stashSCMVars[stashName].GIT_URL = script.sh (returnStdout: true,
+                    label:"Investigate git checkout metadata before stash()",
+                    script:'git config remote.origin.url').trim()
+            }
         }
         script.stash (name: stashName, includes: '**,.*,*,.git,.git/**,.git/refs', excludes: '', useDefaultExcludes: false)
     } // stashCleanSrc()
@@ -417,12 +437,18 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         try {
             String scmCommit = null
             String scmURL = null
+
+            if (stashName != null && stashSCMVars.containsKey(stashName)) {
+                // https://stackoverflow.com/a/48567672
+                scmCommit = stashSCMVars[stashName]?.GIT_COMMIT
+                scmURL    = stashSCMVars[stashName]?.GIT_URL
+            }
+
             script.echo "checkoutCleanSrcRefrepoWS: on node '${script?.env?.NODE_NAME}' checking refrepo for '${stashName}'"
             script.sh "hostname; set | sort -n"
             if (scm instanceof hudson.plugins.git.GitSCM) {
                 // GitSCM object
-                scmCommit = scm?.GIT_COMMIT
-                scmURL = scm?.GIT_URL
+
                 for (extset in scm?.extensions) {
                     if (Utils.isMapNotEmpty(extset)) {
                         if (extset.containsKey('$class')) {
@@ -442,11 +468,43 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                         // no-op for now
                     } // if CloneOption
                 } // for extset
-            } else {
-                // Map for checkout()
-                scmCommit = scm?.branches[0]?.name
-                scmURL = scm?.userRemoteConfigs[0]?.url
+            } // else a Map for checkout()
+
+            // A series of fallbacks:
+            if (scmCommit == null)
+                scmCommit = scm?.GIT_COMMIT
+            if (scmURL == null)
+                scmURL = scm?.GIT_URL
+
+            // We want a specific commit for checkouts... but in worst case
+            // a branch name can do, at least to init the refrepo
+            if (scmCommit == null || "${scmCommit}" == "GIT_COMMIT"
+            ||  scmURL == null || "${scmURL}" == "GIT_URL"
+            ) {
+                // Iterate the possibly several configs;
+                // at least, dynamatrix vs tested project
+                for (def urc in scm.getUserRemoteConfigs()) {
+                    scmURL = urc.getUrl()
+                    if (scmURL.contains("/jenkins-dynamatrix")) {
+                        scmURL = null
+                        //scmCommit = null
+                        continue
+                    }
+                    //scmCommit = ...
+                    break
+                }
             }
+
+            // TODO: Not "[0]" please...
+            if (scmCommit == null) {
+                scmCommit = scm?.branches[0]?.name
+                if (Utils.isStringNotEmpty(scmCommit)) {
+                    script.echo "checkoutCleanSrcRefrepoWS: WARNING: using branch name as scmCommit: ${scmCommit}"
+                }
+            }
+            if (scmURL == null)
+                scmURL = scm?.userRemoteConfigs[0]?.url
+
             if (scmCommit == null || "${scmCommit}" == "GIT_COMMIT") {
                 scmCommit = script.env.getAt('GIT_COMMIT')
             }
