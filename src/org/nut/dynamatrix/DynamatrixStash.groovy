@@ -515,8 +515,25 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 return
             }
 
-            script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' waiting for exclusive use of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
-            script.lock (resource: 'gitcache-dynamatrix', quantity: 1) {
+            def lockName = script?.env?.DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME
+            if (!Utils.isStringNotEmpty(lockName)) {
+                if (script?.env?.NODE_LABELS) {
+                    script.env.NODE_LABELS.split('[ \r\n\t]+').each() { KV ->
+                        if (KV =~ /^DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME=.*$/) {
+                            def key = null
+                            def val = null
+                            (key, val) = KV.split('=')
+                            lockName = val
+                        }
+                    }
+                }
+            }
+            if (!Utils.isStringNotEmpty(lockName)) {
+                lockName = 'gitcache-dynamatrix:defaultLock'
+            }
+
+            script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' waiting for exclusive use (${lockName}) of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
+            script.lock (resource: lockName, quantity: 1) {
                 // NOTE: Currently this means one lock for all git ops of the CI
                 // farm. An apparent bottleneck to optimize (smartly!) later.
 
