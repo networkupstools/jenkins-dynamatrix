@@ -445,7 +445,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
             }
 
             script.echo "checkoutCleanSrcRefrepoWS: on node '${script?.env?.NODE_NAME}' checking refrepo for '${stashName}'"
-            script.sh "hostname; set | sort -n"
+            //script.sh "hostname; set | sort -n"
             if (scm instanceof hudson.plugins.git.GitSCM) {
                 // GitSCM object
 
