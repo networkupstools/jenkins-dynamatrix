@@ -632,7 +632,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                             ret = script.sh (label:"Trying direct git fetch from URL ${scmURL} for ${scmCommit}",
                                 returnStatus: true,
                                 script: """
-git remote -v | grep -w '${scmURL}' || git remote add "`LANG=C TZ=UTC LC_ALL=C date -u | tr ' :,' '_'`" '${scmURL}' || exit
+git remote -v | grep -w '${scmURL}' || git remote add "`LANG=C TZ=UTC LC_ALL=C date -u | tr ' :,' '_'`_\$\$" '${scmURL}' || exit
 RET=0
 git fetch --all || git fetch '${scmURL}' || RET=\$?
 git fetch '${scmURL}' '${scmCommit}' && { sync || true; exit; } || RET=\$?
