@@ -6,6 +6,8 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
+import hudson.plugins.git.extensions.GitSCMExtension;
+
 /* For Jenkins Swarm build agents that dial in to the controller,
  * which themselves may have or not have access to the SCM server,
  * we offer a way for the controller to push sources of the current
@@ -298,6 +300,43 @@ class DynamatrixStash {
         return s
     }
 
+    static def cloneSCM(def script, def scm = null) {
+        // Per https://plugins.jenkins.io/workflow-scm-step/ the common
+        // "scm" is a Map maintained by the pipeline, so we can tweak it
+        // Per other observations, it can be e.g. a GitSCM object instead.
+        // In any case, use a clone to avoid manipulating options of the
+        // original object (refrepo, etc.) when tuning individual builds.
+        def clonedScm = null
+        if (scm == null) scm = script.scm
+
+        if (scm instanceof hudson.plugins.git.GitSCM) {
+            // GitSCM has no clone(); using constructor per
+            // https://javadoc.jenkins.io/plugin/git/hudson/plugins/git/GitSCM.html
+            // Deprecated: GitSCM(List<UserRemoteConfig> userRemoteConfigs, List<BranchSpec> branches, Boolean doGenerateSubmoduleConfigurations, Collection<SubmoduleConfig> submoduleCfg, GitRepositoryBrowser browser, String gitTool, List<GitSCMExtension> extensions)
+            // GitSCM(List<UserRemoteConfig> userRemoteConfigs, List<BranchSpec> branches, GitRepositoryBrowser browser, String gitTool, List<GitSCMExtension> extensions)
+            //List<GitSCMExtension> scmExts = new ArrayList<GitSCMExtension>()
+            //scmExts.addAll(scm.getExtensions().toMap().keySet())
+            clonedScm = new hudson.plugins.git.GitSCM(
+                scm.getUserRemoteConfigs(),
+                scm.getBranches(),
+                scm.getBrowser(),
+                scm.getGitTool(),
+                scm.getExtensions()
+                //scmExts
+                )
+        } else {
+            // Map ok, others unhandled => exception?..
+            try {
+                clonedScm = scm.clone()
+            } catch (java.lang.CloneNotSupportedException e) {
+                script.echo "[WARNING] java.lang.CloneNotSupportedException, using reference to original: " + e.toString()
+                clonedScm = scm
+            }
+        }
+
+        return clonedScm
+    }
+
     static def checkoutCleanSrc(def script, String stashName, Closure scmbody) {
         return checkoutCleanSrc(script, stashName, true, scmbody)
     }
@@ -306,13 +345,7 @@ class DynamatrixStash {
         // Optional closure can fully detail how the code is checked out
         deleteWS(script)
 
-        // Per https://plugins.jenkins.io/workflow-scm-step/ the common
-        // "scm" is a Map maintained by the pipeline, so we can tweak it
-        // Per other observations, it can be e.g. a GitSCM object instead.
-        // In any case, use a clone to avoid manipulating options of the
-        // original object (refrepo, etc.) when tuning individual builds.
-        def scm = script?.scm?.clone()
-
+        def scm = cloneSCM(script)
         def res = null
 
         if (scmbody == null) {
@@ -448,7 +481,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         // See also:
         //   https://stackoverflow.com/questions/36581015/accessing-the-current-jenkins-build-in-groovy-script
 
-        def scm = script?.scm?.clone()
+        def scm = cloneSCM(script)
 
         if (!(Utils.isMap(scm)
               && scm.containsKey('$class')
