@@ -308,7 +308,10 @@ class DynamatrixStash {
 
         // Per https://plugins.jenkins.io/workflow-scm-step/ the common
         // "scm" is a Map maintained by the pipeline, so we can tweak it
-        def scm = script.scm
+        // Per other observations, it can be e.g. a GitSCM object instead.
+        // In any case, use a clone to avoid manipulating options of the
+        // original object (refrepo, etc.) when tuning individual builds.
+        def scm = script?.scm?.clone()
 
         def res = null
 
@@ -445,7 +448,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         // See also:
         //   https://stackoverflow.com/questions/36581015/accessing-the-current-jenkins-build-in-groovy-script
 
-        def scm = script.scm
+        def scm = script?.scm?.clone()
 
         if (!(Utils.isMap(scm)
               && scm.containsKey('$class')
