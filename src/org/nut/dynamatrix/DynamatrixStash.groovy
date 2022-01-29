@@ -642,10 +642,10 @@ exit \$RET
 
                             if (ret != 0) {
                                 // ...or unstash and replicate into refrepodir (gitscm at least)
-                                dir (".git-unstash") {
-                                    deleteDir()
+                                script.dir (".git-unstash") {
+                                    script.deleteDir()
                                 }
-                                dir (".git-unstash") {
+                                script.dir (".git-unstash") {
                                     unstashScriptedSrc(script, stashName)
                                 }
 
@@ -663,8 +663,8 @@ exit \$RET
 """)
 
                                 // Final clean-up, to be sure unstash does not pollute us
-                                dir (".git-unstash") {
-                                    deleteDir()
+                                script.dir (".git-unstash") {
+                                    script.deleteDir()
                                 }
                             } // if direct git fetch failed
 
