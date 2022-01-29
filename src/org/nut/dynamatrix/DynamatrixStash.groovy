@@ -43,11 +43,16 @@ import java.lang.reflect.Modifier;
  * '/${GIT_SUBMODULES}' should be verbatim in the expanded envvar:
  *   https://issues.jenkins.io/browse/JENKINS-64383
  *   https://github.com/jenkinsci/git-client-plugin/pull/644
+ *   https://github.com/jimklimov/git-refrepo-scripts
  *
- * TODO: Refactor to not abuse GIT_REFERENCE_REPO_DIR for "scm-ws"
- * checkouts, we can "just populate" the alternates config directly
- * and avoid confusing Jenkins - it seems to use one definiton for
- * that envvar across the board, impacting later builds :\
+ * TODO: the plugin itself does not define nor use the environment
+ * variable GIT_REFERENCE_REPO_DIR, it only consults the setting in
+ * its "scm" object (coming down from organization folder or other
+ * pipeline checkout configuration advanced options). The same-named
+ * environment variable is however defined in `git-refrepo-scripts`.
+ * With this library class, the variable set at build agent level
+ * can be honoured (along with DYNAMATRIX_UNSTASH_PREFERENCE="scm")
+ * to use a refrepo defined (and somehow maintained) on that agent.
  */
 
 class DynamatrixStash {
