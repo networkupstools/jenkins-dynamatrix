@@ -213,6 +213,18 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     // Lists unique files changed in the Git checkout, just after stashCleanSrc()
     Set changedFiles = []
 
+    // This may be a big hammer (possibly causing this pipeline to change
+    // the settings for Jenkins controller), but anyhow the other option
+    // is to set the controller launch command line, per discussion in
+    // https://issues.jenkins.io/browse/JENKINS-48300
+    // Generally, this helps avoid treating laggy filesystems (NFS, slow
+    // VMs, etc.) as dead build agents that in fact keep processing their
+    // workload properly. Another symptomatically related issue may be
+    // true loss of Remoting Channel (OOM of agent, network break) that
+    // is harder to reliably diagnoze or fix, beside reducing load on the
+    // farm to make it less probable...
+    System.setProperty("org.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL", "86400");
+
     node(infra.labelDefaultWorker()) {
         // On a farm with constrained resources, getting to
         // a build node can take time and current job may
