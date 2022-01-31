@@ -675,6 +675,7 @@ exit \$RET
 
                             if (ret != 0) {
                                 // ...or unstash and replicate into refrepodir (gitscm at least)
+                                script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': refrepo dir path '" + refrepoBase + "/" + refrepoName + "' and/or URL ${scmURL} did not resolve commit ${scmCommit} (maybe an ephemeral merge?); updating refrepo via unstash copy"
                                 script.dir (".git-unstash") {
                                     script.deleteDir()
                                 }
