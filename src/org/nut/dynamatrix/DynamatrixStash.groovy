@@ -776,8 +776,9 @@ exit \$RET
                     // The stashCode[stashName] should be defined, maybe null,
                     // by an earlier stashCleanSrc() with same stashName.
                     // We error out otherwise, same as would for unstash().
+                    // Do benefit from local reference repo, if any (untie=false)
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrc"
-                    if (checkoutCleanSrc(script, stashCode[stashName]))
+                    if (checkoutCleanSrc(script, stashCode[stashName], false))
                         return
 
                     // on error, fall through to unstash
@@ -791,11 +792,12 @@ exit \$RET
                     // SCM operation from source or by unstash + update from
                     // this copy) and finally check out current build workspace
                     // using this refrepo. Use locking!
+                    // Do benefit from local reference repo, if any (untie=false)
 
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
                     if (checkoutCleanSrcRefrepoWS(script, stashName) == false) {
                         script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but failed on node '${script?.env?.NODE_NAME}'. Falling back to 'scm'."
-                        if (checkoutCleanSrc(script, stashCode[stashName]))
+                        if (checkoutCleanSrc(script, stashCode[stashName], false))
                             return
                     } else {
                         return
