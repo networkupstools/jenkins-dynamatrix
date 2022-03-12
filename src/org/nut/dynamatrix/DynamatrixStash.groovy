@@ -376,7 +376,9 @@ class DynamatrixStash {
             // For initial checkouts headed to stashing
             // Not desired for subsequent checkouts on build agents
             untieRefrepo(script)
-        } // node isUnix(), can sh
+        } else {
+            script.echo "checkoutCleanSrc: NOT calling untieRefrepo() - benefitting from refrepo and risking if it is garbage-collected, removed, etc."
+        }
 
         return res
     } // checkoutCleanSrc()
