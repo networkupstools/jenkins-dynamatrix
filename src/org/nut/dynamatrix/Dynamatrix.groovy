@@ -1597,13 +1597,16 @@ def parallelStages = prepareDynamatrix(
                         def res = payloadTmp()
                         if (dsbc.dsbcResult != null) {
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
+                            dsbc.dsbcResultInterim = dsbcResult.toString()
                         } else {
                             if (dsbc.thisDynamatrix?.trackStageResults.containsKey(stageName)
                             &&  dsbc.thisDynamatrix?.trackStageResults[stageName] != null
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement(dsbc.thisDynamatrix?.trackStageResults[stageName], stageName + sbName)
+                                dsbc.dsbcResultInterim = dsbc.thisDynamatrix.trackStageResults[stageName]
                             } else {
                                 dsbc.thisDynamatrix?.countStagesIncrement('SUCCESS', stageName + sbName)
+                                dsbc.dsbcResultInterim = 'SUCCESS'
                             }
                         }
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
@@ -1613,10 +1616,12 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (fex == null) {
                             dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                            dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             String fexres = fex.getResult()
                             if (fexres == null) fexres = 'SUCCESS'
                             dsbc.thisDynamatrix?.countStagesIncrement(fexres, stageName + sbName)
+                            dsbc.dsbcResultInterim = fexres
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         throw fex
@@ -1625,15 +1630,18 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (dsbc.dsbcResult != null) {
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
+                            dsbc.dsbcResultInterim = dsbc.dsbcResult.toString()
                         } else {
                             if (hexA == null) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                                dsbc.dsbcResultInterim = 'UNKNOWN'
                             } else {
                                 String hexAres = "hudson.AbortException: " +
                                     "Message: " + hexA.getMessage() +
                                     "; Cause: " + hexA.getCause() +
                                     "; toString: " + hexA.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName) // could be unstable, learn how to differentiate?
+                                dsbc.dsbcResultInterim = 'hudson.AbortException'
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-FAILURE: ' + hexAres, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
@@ -1660,17 +1668,20 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (rae == null) {
                             dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                            dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
                             if (rae.toString() ==~ /Unexpected termination of the channel/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                                dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                             } else {
                                 String raeRes = "hudson.remoting.RequestAbortedException: " +
                                     "Message: " + rae.getMessage() +
                                     "; Cause: " + rae.getCause() +
                                     "; toString: " + rae.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
+                                dsbc.dsbcResultInterim = 'hudson.remoting.RequestAbortedException'
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + raeRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
@@ -1695,17 +1706,20 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (rse == null) {
                             dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                            dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
                             if (rse.toString() ==~ /Unexpected termination of the channel/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                                dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                             } else {
                                 String jlieRes = "hudson.remoting.RemotingSystemException: " +
                                     "Message: " + rse.getMessage() +
                                     "; Cause: " + rse.getCause() +
                                     "; toString: " + rse.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
+                                dsbc.dsbcResultInterim = 'hudson.remoting.RemotingSystemException'
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
@@ -1729,6 +1743,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (jioe == null) {
                             dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                            dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
                             if (jioe.toString() ==~ /Unable to create live FilePath for/
@@ -1736,12 +1751,14 @@ def parallelStages = prepareDynamatrix(
                                 // Per https://github.com/jenkinsci/workflow-durable-task-step-plugin/blob/master/src/main/java/org/jenkinsci/plugins/workflow/support/steps/FilePathDynamicContext.java
                                 // in this case Jenkins would terminate the build agent connection
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                                dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                             } else {
                                 String jlieRes = "java.io.IOException: " +
                                     "Message: " + jioe.getMessage() +
                                     "; Cause: " + jioe.getCause() +
                                     "; toString: " + jioe.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
+                                dsbc.dsbcResultInterim = 'java.io.IOException'
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
@@ -1764,17 +1781,20 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (jlie == null) {
                             dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                            dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
                             if (jlie.toString() ==~ /Unexpected termination of the channel/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                                dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                             } else {
                                 String jlieRes = "java.lang.InterruptedException: " +
                                     "Message: " + jlie.getMessage() +
                                     "; Cause: " + jlie.getCause() +
                                     "; toString: " + jlie.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
+                                dsbc.dsbcResultInterim = 'java.lang.InterruptedException'
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
@@ -1795,10 +1815,16 @@ def parallelStages = prepareDynamatrix(
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement(Utils.castString(t), stageName + sbName)
                         dsbc.thisDynamatrix?.updateProgressBadge()
+                        dsbc.dsbcResultInterim = 'Throwable'
                         throw t
                     }
                 }
             }
+
+            // TODO: Further payload wrapper which looks at dsbc.dsbcResultInterim
+            // and reschedules the earlier payload if the error seems retryable.
+            // Needs more work in pipeline accounting code to agree that all build
+            // scenarios succeeded in the end even if we ran more than 100% of job.
 
             // Note: non-declarative pipeline syntax inside the generated stages
             // in particular, no steps{}. Note that most of our builds require a
