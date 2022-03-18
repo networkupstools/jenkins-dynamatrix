@@ -1723,6 +1723,42 @@ def parallelStages = prepareDynamatrix(
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         throw rse
+                    } catch (java.io.IOException jioe) {
+                        // Tends to happen with networking lags or agent crash, e.g.:
+                        //   java.io.IOException: Unable to create live FilePath for agentName
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
+                        if (jioe == null) {
+                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                        } else {
+                            // Involve localization?..
+                            if (jioe.toString() ==~ /Unable to create live FilePath for/
+                            ) {
+                                // Per https://github.com/jenkinsci/workflow-durable-task-step-plugin/blob/master/src/main/java/org/jenkinsci/plugins/workflow/support/steps/FilePathDynamicContext.java
+                                // in this case Jenkins would terminate the build agent connection
+                                dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                            } else {
+                                String jlieRes = "java.io.IOException: " +
+                                    "Message: " + jioe.getMessage() +
+                                    "; Cause: " + jioe.getCause() +
+                                    "; toString: " + jioe.toString();
+                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
+                                if (dsbc.enableDebugTrace) {
+                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
+                                    StringWriter errors = new StringWriter();
+                                    jioe.printStackTrace(new PrintWriter(errors));
+                                    script.echo (
+                                        "[DEBUG] A DSBC stage running on node " +
+                                        "'${script.env?.NODE_NAME}' requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " completed with an exception:\n" +
+                                        jlieRes +
+                                        "\nDetailed trace: " + errors.toString()
+                                        )
+                                }
+                            }
+                        }
+                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        throw jioe
                     } catch (java.lang.InterruptedException jlie) {
                         // Tends to happen if e.g. Jenkins restarted during build
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
