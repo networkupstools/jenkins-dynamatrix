@@ -74,6 +74,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     // If this is 'UNKNOWN', exception summary, etc. we may want to retry the
     // build scenario which did not necessarily fail due to bad code
     public String dsbcResultInterim = null
+    public Integer startCount = 0
     public DynamatrixSingleBuildConfig (script) {
         this.script = script
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace

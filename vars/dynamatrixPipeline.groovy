@@ -734,13 +734,13 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             error "Could not investigate dynamatrix stage results"
                         }
                     } else {
-                        if (mapCountStages.getAt('STARTED') != mapCountStages.getAt('COMPLETED')
+                        if ((mapCountStages.getAt('STARTED') + mapCountStages.getAt('RESTARTED')) != mapCountStages.getAt('COMPLETED')
                         ||  mapCountStages.getAt('STARTED') < (stagesBinBuild.size() - 1)
                         ) {
                             reportedNonSuccess = true
                             warnError(message: 'Marking a soft abort') {
                                 currentBuild.result = 'ABORTED'
-                                def txt = "Only started ${mapCountStages.STARTED} and completed ${mapCountStages.COMPLETED} dynamatrix 'slowBuild' stages, while we should have had ${stagesBinBuild.size() - 1} builds"
+                                def txt = "Only started ${mapCountStages.STARTED} (restarted ${mapCountStages.RESTARTED}) and completed ${mapCountStages.COMPLETED} dynamatrix 'slowBuild' stages, while we should have had ${stagesBinBuild.size() - 1} builds"
                                 try {
                                     createSummary(text: "Build seems not finished: " + txt, icon: '/images/48x48/error.png')
                                 } catch (Throwable t) {} // no-op
@@ -804,7 +804,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 def mapresOther = mapCountStages.clone()
                                 for (def r in [
                                     'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
-                                    'STARTED', 'COMPLETED', 'ABORTED_SAFE'
+                                    'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'
                                 ]) {
                                     if (mapresOther.containsKey(r)) {
                                         if (Utils.isListNotEmpty(mapresOther[r])) {

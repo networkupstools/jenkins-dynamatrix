@@ -70,6 +70,7 @@ class Dynamatrix implements Cloneable {
     // the toString*() methods below:
     private Map<String, Integer> countStages = [
         'STARTED': 0,
+        'RESTARTED': 0,
         'COMPLETED': 0,
         'ABORTED_SAFE': 0,
         'SUCCESS': 0,
@@ -88,7 +89,7 @@ class Dynamatrix implements Cloneable {
         def r = null
         try {
             switch (k) {
-                case ['STARTED', 'COMPLETED']: break;
+                case ['STARTED', 'RESTARTED', 'COMPLETED']: break;
                 case 'ABORTED_SAFE':
                     r = Result.fromString('ABORTED')
                     break
@@ -224,7 +225,7 @@ class Dynamatrix implements Cloneable {
 
     // Reporting the accounted values:
     // We started the stage:
-    public Integer countStagesStarted() { return intNullZero(countStages?.STARTED) }
+    public Integer countStagesStarted() { return intNullZero(countStages?.STARTED) + intNullZero(countStages?.RESTARTED) }
     // We know we finished the stage, successfully or with "fex" exception caught:
     public Integer countStagesCompleted() { return intNullZero(countStages?.COMPLETED) }
     // We canceled the stage before start of actual work
@@ -1606,7 +1607,16 @@ def parallelStages = prepareDynamatrix(
                 def payloadTmp = payload
 
                 payload = {
-                    dsbc.thisDynamatrix?.countStagesIncrement('STARTED', stageName + sbName)
+                    dsbc.startCount = dsbc.startCount + 1
+                    if (dsbc.dsbcResultInterim == null) {
+                        dsbc.thisDynamatrix?.countStagesIncrement('STARTED', stageName + sbName)
+                    } else {
+                        def msgRestart = "[WARNING] Re-starting stage '" + stageName + sbName +
+                            "' which ended with '${dsbc.dsbcResultInterim}' on a previous attempt"
+                        script.echo msgRestart
+                        createSummary(msgRestart, null, "${dsbc.objectID}-restarted-${dsbc.startCount}")
+                        dsbc.thisDynamatrix?.countStagesIncrement('RESTARTED', stageName + sbName)
+                    }
                     dsbc.thisDynamatrix?.updateProgressBadge()
                     try {
                         def res = payloadTmp()
@@ -1675,7 +1685,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
+                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1721,7 +1731,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
+                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1765,7 +1775,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
+                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1810,7 +1820,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
+                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1852,7 +1862,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
+                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1883,17 +1893,12 @@ def parallelStages = prepareDynamatrix(
                             script.echo "[ERROR] " + msgEx
                         }
 
-                        createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
+                        createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
 
                         throw t
                     }
                 }
             }
-
-            // TODO: Further payload wrapper which looks at dsbc.dsbcResultInterim
-            // and reschedules the earlier payload if the error seems retryable.
-            // Needs more work in pipeline accounting code to agree that all build
-            // scenarios succeeded in the end even if we ran more than 100% of job.
 
             // Note: non-declarative pipeline syntax inside the generated stages
             // in particular, no steps{}. Note that most of our builds require a
@@ -1918,6 +1923,64 @@ def parallelStages = prepareDynamatrix(
                 parstageName = "NO-NODE: " + stageName + sbName
                 parstageCode = generateParstageWithoutAgent(script, dsbc, stageName, sbName, payload)
             } // if got agent-label
+
+            // Further parstageCode wrapper which looks at dsbc.dsbcResultInterim
+            // and reschedules the earlier payload if the error seems retryable.
+            // TODO: May nneed more work in pipeline accounting code to agree
+            // that all build scenarios succeeded in the end, even if we ran
+            // more than 100% of originally planned job.
+            if (true) { // scoping
+                def parstageCodeTmp = parstageCode
+
+                parstageCode = {
+                    def parstageCompleted = false
+                    while (!parstageCompleted) {
+                        try {
+                            parstageCode()
+                            parstageCompleted = true
+                        } catch (Throwable t) {
+                            switch (dsbc.dsbcResultInterim) {
+                                case [null, 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT']:
+                                    script.echo "[DEBUG]: DSBC requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " finished with standard verdict " +
+                                        "'${dsbc.dsbcResultInterim}' but a " +
+                                        "Throwable was caught: ${Utils.castString(t)}"
+                                    parstageCompleted = true
+                                    break
+
+                                case ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']:
+                                    script.echo "[DEBUG]: DSBC requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " finished somehow with unexpected verdict " +
+                                        "'${dsbc.dsbcResultInterim}' and a " +
+                                        "Throwable was caught: ${Utils.castString(t)}"
+                                    parstageCompleted = true
+                                    break
+
+                                case ['AGENT_DISCONNECTED', 'UNKNOWN']:
+                                    script.echo "[DEBUG]: DSBC requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " finished with a verdict classified as " +
+                                        "'${dsbc.dsbcResultInterim}' - " +
+                                        "will re-schedule"
+                                    // continue to loop
+                                    break
+
+                                default:
+                                    script.echo "[DEBUG]: DSBC requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " finished with unclassified verdict " +
+                                        "'${dsbc.dsbcResultInterim}' - " +
+                                        "will re-schedule; a " +
+                                        "Throwable was caught: ${Utils.castString(t)}"
+                                    // continue to loop
+                                    return
+                            } // switch
+                        } // catch
+                    } // while
+                } // new parstageCode
+            }
 
             // record the new parallelStages[] entry
             parallelStages << [parstageName, parstageCode]
