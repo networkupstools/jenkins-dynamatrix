@@ -1674,6 +1674,8 @@ def parallelStages = prepareDynamatrix(
                                 } else {
                                     script.echo "[ERROR] " + msgEx
                                 }
+
+                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1718,6 +1720,8 @@ def parallelStages = prepareDynamatrix(
                                 } else {
                                     script.echo "[ERROR] " + msgEx
                                 }
+
+                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1760,6 +1764,8 @@ def parallelStages = prepareDynamatrix(
                                 } else {
                                     script.echo "[ERROR] " + msgEx
                                 }
+
+                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1803,6 +1809,8 @@ def parallelStages = prepareDynamatrix(
                                 } else {
                                     script.echo "[ERROR] " + msgEx
                                 }
+
+                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1843,6 +1851,8 @@ def parallelStages = prepareDynamatrix(
                                 } else {
                                     script.echo "[ERROR] " + msgEx
                                 }
+
+                                createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -1872,6 +1882,8 @@ def parallelStages = prepareDynamatrix(
                         } else {
                             script.echo "[ERROR] " + msgEx
                         }
+
+                        createSummary(msgEx, '/images/48x48/warning.png', dsbc.objectID)
 
                         throw t
                     }
