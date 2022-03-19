@@ -1936,7 +1936,7 @@ def parallelStages = prepareDynamatrix(
                     def parstageCompleted = false
                     while (!parstageCompleted) {
                         try {
-                            parstageCode()
+                            parstageCodeTmp()
                             parstageCompleted = true
                         } catch (Throwable t) {
                             switch (dsbc.dsbcResultInterim) {
