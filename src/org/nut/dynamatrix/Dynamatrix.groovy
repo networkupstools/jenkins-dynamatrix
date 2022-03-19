@@ -1836,6 +1836,28 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + Utils.castString(t), stageName + sbName)
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         dsbc.dsbcResultInterim = 'Throwable'
+
+                        String tRes = "Got a Throwable not classified specifically: " +
+                            "Message: " + t.getMessage() +
+                            "; Cause: " + t.getCause() +
+                            "; toString: " + Utils.castString(t);
+
+                        def msgEx =
+                            "[DEBUG] A DSBC stage running on node " +
+                            "'${script.env?.NODE_NAME}' requested " +
+                            "for stage '${stageName}'" + sbName +
+                            " completed with an exception:\n" +
+                            tRes
+
+                        if (dsbc.enableDebugTrace) {
+                            StringWriter errors = new StringWriter();
+                            t.printStackTrace(new PrintWriter(errors));
+                            script.echo "[DEBUG] " + msgEx +
+                                "\nDetailed trace: " + errors.toString()
+                        } else {
+                            script.echo "[ERROR] " + msgEx
+                        }
+
                         throw t
                     }
                 }
