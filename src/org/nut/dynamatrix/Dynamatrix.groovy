@@ -1784,7 +1784,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (jlie.toString() ==~ /Unexpected termination of the channel/
+                            if (jlie.toString() ==~ /(Unexpected termination of the channel|Cannot contact .*: java.lang.InterruptedException)/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
