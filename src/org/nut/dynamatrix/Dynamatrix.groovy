@@ -1642,18 +1642,22 @@ def parallelStages = prepareDynamatrix(
                                     "; toString: " + hexA.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName) // could be unstable, learn how to differentiate?
                                 dsbc.dsbcResultInterim = 'hudson.AbortException'
+
+                                def msgEx =
+                                    "A DSBC stage running on node " +
+                                    "'${script.env?.NODE_NAME}' requested " +
+                                    "for stage '${stageName}'" + sbName +
+                                    " completed with an exception:\n" +
+                                    hexAres
+
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-FAILURE: ' + hexAres, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     hexA.printStackTrace(new PrintWriter(errors));
-                                    script.echo (
-                                        "[DEBUG] A DSBC stage running on node " +
-                                        "'${script.env?.NODE_NAME}' requested " +
-                                        "for stage '${stageName}'" + sbName +
-                                        " completed with an exception:\n" +
-                                        hexAres +
+                                    script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
-                                        )
+                                } else {
+                                    script.echo "[ERROR] " + msgEx
                                 }
                             }
                         }
@@ -1682,18 +1686,22 @@ def parallelStages = prepareDynamatrix(
                                     "; toString: " + rae.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'hudson.remoting.RequestAbortedException'
+
+                                def msgEx =
+                                    "A DSBC stage running on node " +
+                                    "'${script.env?.NODE_NAME}' requested " +
+                                    "for stage '${stageName}'" + sbName +
+                                    " completed with an exception:\n" +
+                                    raeRes
+
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + raeRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     rae.printStackTrace(new PrintWriter(errors));
-                                    script.echo (
-                                        "[DEBUG] A DSBC stage running on node " +
-                                        "'${script.env?.NODE_NAME}' requested " +
-                                        "for stage '${stageName}'" + sbName +
-                                        " completed with an exception:\n" +
-                                        raeRes +
+                                    script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
-                                        )
+                                } else {
+                                    script.echo "[ERROR] " + msgEx
                                 }
                             }
                         }
@@ -1720,18 +1728,22 @@ def parallelStages = prepareDynamatrix(
                                     "; toString: " + rse.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'hudson.remoting.RemotingSystemException'
+
+                                def msgEx =
+                                    "A DSBC stage running on node " +
+                                    "'${script.env?.NODE_NAME}' requested " +
+                                    "for stage '${stageName}'" + sbName +
+                                    " completed with an exception:\n" +
+                                    rseRes
+
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + rseRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     rse.printStackTrace(new PrintWriter(errors));
-                                    script.echo (
-                                        "[DEBUG] A DSBC stage running on node " +
-                                        "'${script.env?.NODE_NAME}' requested " +
-                                        "for stage '${stageName}'" + sbName +
-                                        " completed with an exception:\n" +
-                                        rseRes +
+                                    script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
-                                        )
+                                } else {
+                                    script.echo "[ERROR] " + msgEx
                                 }
                             }
                         }
@@ -1759,19 +1771,22 @@ def parallelStages = prepareDynamatrix(
                                     "; toString: " + jioe.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'java.io.IOException'
+
+                                def msgEx =
+                                    "A DSBC stage running on node " +
+                                    "'${script.env?.NODE_NAME}' requested " +
+                                    "for stage '${stageName}'" + sbName +
+                                    " completed with an exception:\n" +
+                                    jioeRes
+
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jioeRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     jioe.printStackTrace(new PrintWriter(errors));
-                                    script.echo (
-                                        "[DEBUG] A DSBC stage running on node " +
-                                        "'${script.env?.NODE_NAME}' requested " +
-                                        "for stage '${stageName}'" + sbName +
-                                        " completed with an exception:\n" +
-                                        jlieRes +
-                                        jioeRes +
+                                    script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
-                                        )
+                                } else {
+                                    script.echo "[ERROR] " + msgEx
                                 }
                             }
                         }
@@ -1796,18 +1811,22 @@ def parallelStages = prepareDynamatrix(
                                     "; toString: " + jlie.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'java.lang.InterruptedException'
+
+                                def msgEx =
+                                    "A DSBC stage running on node " +
+                                    "'${script.env?.NODE_NAME}' requested " +
+                                    "for stage '${stageName}'" + sbName +
+                                    " completed with an exception:\n" +
+                                    jlieRes
+
                                 if (dsbc.enableDebugTrace) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     jlie.printStackTrace(new PrintWriter(errors));
-                                    script.echo (
-                                        "[DEBUG] A DSBC stage running on node " +
-                                        "'${script.env?.NODE_NAME}' requested " +
-                                        "for stage '${stageName}'" + sbName +
-                                        " completed with an exception:\n" +
-                                        jlieRes +
+                                    script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
-                                        )
+                                } else {
+                                    script.echo "[ERROR] " + msgEx
                                 }
                             }
                         }
