@@ -1833,7 +1833,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         throw jlie
                     } catch (Throwable t) {
-                        dsbc.thisDynamatrix?.countStagesIncrement(Utils.castString(t), stageName + sbName)
+                        dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + Utils.castString(t), stageName + sbName)
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         dsbc.dsbcResultInterim = 'Throwable'
                         throw t
