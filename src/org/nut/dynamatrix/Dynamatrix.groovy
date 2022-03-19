@@ -1714,14 +1714,14 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                             } else {
-                                String jlieRes = "hudson.remoting.RemotingSystemException: " +
+                                String rseRes = "hudson.remoting.RemotingSystemException: " +
                                     "Message: " + rse.getMessage() +
                                     "; Cause: " + rse.getCause() +
                                     "; toString: " + rse.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'hudson.remoting.RemotingSystemException'
                                 if (dsbc.enableDebugTrace) {
-                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
+                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + rseRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     rse.printStackTrace(new PrintWriter(errors));
                                     script.echo (
@@ -1729,7 +1729,7 @@ def parallelStages = prepareDynamatrix(
                                         "'${script.env?.NODE_NAME}' requested " +
                                         "for stage '${stageName}'" + sbName +
                                         " completed with an exception:\n" +
-                                        jlieRes +
+                                        rseRes +
                                         "\nDetailed trace: " + errors.toString()
                                         )
                                 }
