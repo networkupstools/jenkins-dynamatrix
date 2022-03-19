@@ -239,6 +239,30 @@ class Dynamatrix implements Cloneable {
 
     // Must be CPS - calls pipeline script steps
     synchronized
+    def createSummary(String txt, String icon = 'info.gif', def objid = null) {
+        // Roll a text entry in the build overview page
+        // Note that with current badge plugin releases,
+        // we can't later remove or replace this entry
+        def res = null
+
+        if (this.script && Utils.isStringNotEmpty(txt)) {
+            try {
+                this.script.createSummary(icon: icon, text: txt, id: "Build-progress-summary@" + (objid == null ? this.objectID : objid))
+                if (res == null) res = true
+            } catch (Throwable t) {
+                this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                if (this.shouldDebugTrace()) {
+                    this.script.echo (t.toString())
+                }
+                res = false
+            }
+        }
+
+        return res
+    }
+
+    // Must be CPS - calls pipeline script steps
+    synchronized
     def updateProgressBadge(Boolean removeOnly = false) {
         if (!this.script)
             return null
@@ -294,17 +318,8 @@ class Dynamatrix implements Cloneable {
         }
 
 /*
-        try {
-            // Roll a text entry in the build overview page
-            this.script.createSummary(icon: 'info.gif', text: txt, id: "Build-progress-summary@" + this.objectID)
-            if (res == null) res = true
-        } catch (Throwable t) {
-            this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-            if (this.shouldDebugTrace()) {
-                this.script.echo (t.toString())
-            }
-            res = false
-        }
+        def resSummary = this.createSummary(txt)
+        if (res == null || resSummary == false) res = resSummary
 */
 
         return res
