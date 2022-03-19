@@ -76,7 +76,7 @@ class Dynamatrix implements Cloneable {
         'FAILURE': 0,
         'UNSTABLE': 0,
         'ABORTED': 0,
-        'NUT_BUILT': 0
+        'NOT_BUILT': 0
         ]
     // For each stageName, track its Result object (if set by stage payload)
     private Map<String, Result> trackStageResults = [:]
