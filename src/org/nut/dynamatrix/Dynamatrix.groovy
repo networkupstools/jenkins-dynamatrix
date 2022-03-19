@@ -1753,14 +1753,14 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                             } else {
-                                String jlieRes = "java.io.IOException: " +
+                                String jioeRes = "java.io.IOException: " +
                                     "Message: " + jioe.getMessage() +
                                     "; Cause: " + jioe.getCause() +
                                     "; toString: " + jioe.toString();
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'java.io.IOException'
                                 if (dsbc.enableDebugTrace) {
-                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
+                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jioeRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     jioe.printStackTrace(new PrintWriter(errors));
                                     script.echo (
@@ -1769,6 +1769,7 @@ def parallelStages = prepareDynamatrix(
                                         "for stage '${stageName}'" + sbName +
                                         " completed with an exception:\n" +
                                         jlieRes +
+                                        jioeRes +
                                         "\nDetailed trace: " + errors.toString()
                                         )
                                 }
