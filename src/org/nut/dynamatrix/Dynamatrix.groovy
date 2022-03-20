@@ -2005,7 +2005,7 @@ def parallelStages = prepareDynamatrix(
                                         "will re-schedule; a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
                                     // continue to loop
-                                    return
+                                    break
                             } // switch
                         } // catch
                     } // while
