@@ -1942,7 +1942,32 @@ def parallelStages = prepareDynamatrix(
                     while (!parstageCompleted) {
                         try {
                             parstageCodeTmp()
-                            parstageCompleted = true
+
+                            // might still be failed, just not re-thrown:
+                            switch (dsbc.dsbcResultInterim) {
+                                case [null, 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
+                                      'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']:
+                                    parstageCompleted = true
+                                    break
+
+                                case ['AGENT_DISCONNECTED', 'UNKNOWN']:
+                                    script.echo "[DEBUG]: DSBC requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " finished with a verdict classified as " +
+                                        "'${dsbc.dsbcResultInterim}' - " +
+                                        "will re-schedule"
+                                    // continue to loop
+                                    break
+
+                                default:
+                                    script.echo "[DEBUG]: DSBC requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " finished with unclassified verdict " +
+                                        "'${dsbc.dsbcResultInterim}' - " +
+                                        "will re-schedule"
+                                    // continue to loop
+                                    break
+                            }
                         } catch (Throwable t) {
                             switch (dsbc.dsbcResultInterim) {
                                 case [null, 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT']:
