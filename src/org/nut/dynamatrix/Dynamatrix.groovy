@@ -224,8 +224,9 @@ class Dynamatrix implements Cloneable {
     private Integer intNullZero(Integer i) { if (i == null) { return 0 } else { return i } }
 
     // Reporting the accounted values:
-    // We started the stage:
+    // We started the stage (maybe more than once):
     public Integer countStagesStarted() { return intNullZero(countStages?.STARTED) + intNullZero(countStages?.RESTARTED) }
+    public Integer countStagesRestarted() { return intNullZero(countStages?.RESTARTED) }
     // We know we finished the stage, successfully or with "fex" exception caught:
     public Integer countStagesCompleted() { return intNullZero(countStages?.COMPLETED) }
     // We canceled the stage before start of actual work
@@ -361,6 +362,7 @@ class Dynamatrix implements Cloneable {
 
     public String toStringStageCount() {
         return "countStagesStarted:${countStagesStarted()} " +
+            "(of which countStagesRestarted:${countStagesRestarted()}) " +
             "countStagesCompleted:${countStagesCompleted()} " +
             "countStagesAbortedSafe:${countStagesAbortedSafe()} " +
             "countStagesFinishedOK:${countStagesFinishedOK()} " +
@@ -376,6 +378,9 @@ class Dynamatrix implements Cloneable {
 
         if ( (i = countStagesStarted()) > 0)
             s += "countStagesStarted:${i} "
+
+        if ( (i = countStagesRestarted()) > 0)
+            s += "(of which countStagesRestarted:${i}) "
 
         if ( (i = countStagesCompleted()) > 0)
             s += "countStagesCompleted:${i} "
