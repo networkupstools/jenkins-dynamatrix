@@ -15,6 +15,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     private def script = null
     def stageNameFunc = null
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public boolean enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
     // By default, we wipe workspaces after a build
@@ -78,13 +79,15 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     public DynamatrixSingleBuildConfig (script) {
         this.script = script
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+        this.enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
     }
 
     /* Compare class instances as equal in important fields (e.g. to dedup
      * when adding again to Sets), despite possible variation in some
-     * inconcequential fields:
-     *   "script", "stageNameFunc", "enableDebugTrace", "enableDebugErrors",
+     * inconsequential fields:
+     *   "script", "stageNameFunc",
+     *   "enableDebugTrace", "enableDebugTraceFailures", "enableDebugErrors",
      *   "isExcluded", "isAllowedFailure"
      */
     public boolean equals(java.lang.Object other) {
@@ -125,8 +128,13 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     }
 
     @NonCPS
+    public boolean shouldDebugTraceFailures() {
+        return ( this.enableDebugTraceFailures && this.script != null)
+    }
+
+    @NonCPS
     public boolean shouldDebugErrors() {
-        return ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
+        return ( (this.enableDebugTrace || this.enableDebugTraceFailures || this.enableDebugErrors) && this.script != null)
     }
 
     @NonCPS

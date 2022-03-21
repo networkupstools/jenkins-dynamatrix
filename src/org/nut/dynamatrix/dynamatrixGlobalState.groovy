@@ -27,6 +27,7 @@ class dynamatrixGlobalState {
     // These settings can make constructors of NodeCaps and NodeData more
     // verbose (when called from wrapping code that passes these args)
     static Boolean enableDebugTrace = false
+    static Boolean enableDebugTraceFailures = true
     static Boolean enableDebugErrors = true
     static Boolean enableDebugMilestones = true
     static Boolean enableDebugMilestonesDetails = false

@@ -30,6 +30,7 @@ class Dynamatrix implements Cloneable {
     private def script
     private final String objectID = Integer.toHexString(hashCode())
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public boolean enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
     public boolean enableDebugMilestones = dynamatrixGlobalState.enableDebugMilestones
     public boolean enableDebugMilestonesDetails = dynamatrixGlobalState.enableDebugMilestonesDetails
@@ -333,6 +334,7 @@ class Dynamatrix implements Cloneable {
         this.script = script
         this.dynacfg = new DynamatrixConfig(script)
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+        this.enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
     }
 
@@ -442,13 +444,18 @@ class Dynamatrix implements Cloneable {
     }
 
     @NonCPS
+    public boolean shouldDebugTraceFailures() {
+        return ( this.enableDebugTraceFailures && this.script != null)
+    }
+
+    @NonCPS
     public boolean shouldDebugErrors() {
-        return ( (this.enableDebugErrors || this.enableDebugTrace) && this.script != null)
+        return ( (this.enableDebugErrors || this.enableDebugTraceFailures || this.enableDebugTrace) && this.script != null)
     }
 
     @NonCPS
     public boolean shouldDebugMilestones() {
-        return ( (this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
+        return ( (this.enableDebugMilestones || this.enableDebugMilestonesDetails || this.enableDebugTrace || this.enableDebugErrors || this.enableDebugTraceFailures) && this.script != null)
     }
 
     @NonCPS
@@ -1621,6 +1628,7 @@ def parallelStages = prepareDynamatrix(
                         script.echo msgRestart
                         createSummary(msgRestart, null, "${dsbc.objectID}-restarted-${dsbc.startCount}")
                         dsbc.thisDynamatrix?.countStagesIncrement('RESTARTED', stageName + sbName)
+                        dsbc.dsbcResultInterim = null
                     }
                     dsbc.thisDynamatrix?.updateProgressBadge()
                     try {
@@ -1680,7 +1688,7 @@ def parallelStages = prepareDynamatrix(
                                     " completed with an exception:\n" +
                                     hexAres
 
-                                if (dsbc.enableDebugTrace) {
+                                if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-FAILURE: ' + hexAres, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     hexA.printStackTrace(new PrintWriter(errors));
@@ -1726,7 +1734,7 @@ def parallelStages = prepareDynamatrix(
                                     " completed with an exception:\n" +
                                     raeRes
 
-                                if (dsbc.enableDebugTrace) {
+                                if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + raeRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     rae.printStackTrace(new PrintWriter(errors));
@@ -1770,7 +1778,7 @@ def parallelStages = prepareDynamatrix(
                                     " completed with an exception:\n" +
                                     rseRes
 
-                                if (dsbc.enableDebugTrace) {
+                                if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + rseRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     rse.printStackTrace(new PrintWriter(errors));
@@ -1815,7 +1823,7 @@ def parallelStages = prepareDynamatrix(
                                     " completed with an exception:\n" +
                                     jioeRes
 
-                                if (dsbc.enableDebugTrace) {
+                                if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jioeRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     jioe.printStackTrace(new PrintWriter(errors));
@@ -1857,7 +1865,7 @@ def parallelStages = prepareDynamatrix(
                                     " completed with an exception:\n" +
                                     jlieRes
 
-                                if (dsbc.enableDebugTrace) {
+                                if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
                                     StringWriter errors = new StringWriter();
                                     jlie.printStackTrace(new PrintWriter(errors));
@@ -1889,7 +1897,7 @@ def parallelStages = prepareDynamatrix(
                             " completed with an exception:\n" +
                             tRes
 
-                        if (dsbc.enableDebugTrace) {
+                        if (dsbc.enableDebugTraceFailures) {
                             StringWriter errors = new StringWriter();
                             t.printStackTrace(new PrintWriter(errors));
                             script.echo "[DEBUG] " + msgEx +
