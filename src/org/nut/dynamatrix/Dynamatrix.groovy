@@ -1682,31 +1682,38 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'UNKNOWN'
                             } else {
-                                String hexAres = "hudson.AbortException: " +
-                                    "Message: " + hexA.getMessage() +
-                                    "; Cause: " + hexA.getCause() +
-                                    "; toString: " + hexA.toString();
-                                dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName) // could be unstable, learn how to differentiate?
-                                dsbc.dsbcResultInterim = 'hudson.AbortException'
-
-                                def msgEx =
-                                    "A DSBC stage running on node " +
-                                    "'${script.env?.NODE_NAME}' requested " +
-                                    "for stage '${stageName}'" + sbName +
-                                    " completed with an exception:\n" +
-                                    hexAres
-
-                                if (dsbc.enableDebugTraceFailures) {
-                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-FAILURE: ' + hexAres, stageName + sbName) // for debug
-                                    StringWriter errors = new StringWriter();
-                                    hexA.printStackTrace(new PrintWriter(errors));
-                                    script.echo "[DEBUG] " + msgEx +
-                                        "\nDetailed trace: " + errors.toString()
+                                // Involve localization?..
+                                if (hexA.toString() ==~ /.*missing workspace.*/)
+                                ) {
+                                    dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                                    dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                                 } else {
-                                    script.echo "[ERROR] " + msgEx
-                                }
+                                    String hexAres = "hudson.AbortException: " +
+                                        "Message: " + hexA.getMessage() +
+                                        "; Cause: " + hexA.getCause() +
+                                        "; toString: " + hexA.toString();
+                                    dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName) // could be unstable, learn how to differentiate?
+                                    dsbc.dsbcResultInterim = 'hudson.AbortException'
 
-                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                    def msgEx =
+                                        "A DSBC stage running on node " +
+                                        "'${script.env?.NODE_NAME}' requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " completed with an exception:\n" +
+                                        hexAres
+
+                                    if (dsbc.enableDebugTraceFailures) {
+                                        dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-FAILURE: ' + hexAres, stageName + sbName) // for debug
+                                        StringWriter errors = new StringWriter();
+                                        hexA.printStackTrace(new PrintWriter(errors));
+                                        script.echo "[DEBUG] " + msgEx +
+                                            "\nDetailed trace: " + errors.toString()
+                                    } else {
+                                        script.echo "[ERROR] " + msgEx
+                                    }
+
+                                    createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                }
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
