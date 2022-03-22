@@ -12,6 +12,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  * and Dynamatrix class field values.
  */
 class DynamatrixSingleBuildConfig implements Cloneable {
+    private final String objectID = Integer.toHexString(hashCode())
     private def script = null
     def stageNameFunc = null
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
