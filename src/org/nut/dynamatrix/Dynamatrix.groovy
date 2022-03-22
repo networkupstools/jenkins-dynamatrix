@@ -1950,6 +1950,11 @@ def parallelStages = prepareDynamatrix(
                     def parstageCompleted = false
                     while (!parstageCompleted) {
                         try {
+                            System.err.println("[${script?.env?.BUILD_TAG}] " +
+                                "[DEBUG]: DSBC requested " +
+                                "for stage '${stageName}'" + sbName +
+                                " starting...")
+
                             parstageCodeTmp()
 
                             System.err.println("[${script?.env?.BUILD_TAG}] " +
