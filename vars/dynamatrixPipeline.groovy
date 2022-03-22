@@ -8,6 +8,10 @@
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
+
 /*
 // For in-place tests as Replay pipeline:
 @Library('jenkins-dynamatrix') _
@@ -122,6 +126,10 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
 
     if (!dynacfgPipeline.stashnameSrc) {
         dynacfgPipeline.stashnameSrc = 'src-checkedout'
+    }
+
+    if (!dynacfgPipeline.containsKey('fixedGitTimestamp')) {
+        dynacfgPipeline.fixedGitTimestamp = true
     }
 
     if (!dynacfgPipeline.containsKey('failFast')) {
@@ -271,6 +279,20 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             stage("Handle build parameters") {
                 dynacfgPipeline.paramsHandler()
             }
+        }
+
+        if (dynacfgPipeline?.fixedGitTimestamp) {
+            // Export git timestamp variables so all merged commits
+            // generated for PR builds (PR source + target branches)
+            // would have same hashes and check out more efficiently
+            // via DynamatrixStash support.
+            def sdf = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss +00:00")
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"))
+            String now = sdf.format(new Date()).toString()
+
+            echo "Bolting GIT_AUTHOR_DATE and GIT_COMMITTER_DATE to '${now}' for this run"
+            env['GIT_AUTHOR_DATE'] = now
+            env['GIT_COMMITTER_DATE'] = now
         }
 
         stage("Initial discovery") {
