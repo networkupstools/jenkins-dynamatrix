@@ -1630,8 +1630,10 @@ def parallelStages = prepareDynamatrix(
                     if (dsbc.dsbcResultInterim == null) {
                         dsbc.thisDynamatrix?.countStagesIncrement('STARTED', stageName + sbName)
                     } else {
-                        def msgRestart = "[WARNING] Re-starting stage '" + stageName + sbName +
-                            "' which ended with '${dsbc.dsbcResultInterim}' on a previous attempt"
+                        def msgRestart = "[WARNING] Re-starting " +
+                            "DSBC requested for stage '" + stageName + sbName +
+                            "' which ended with '${dsbc.dsbcResultInterim}' " +
+                            "on a previous attempt"
                         script.echo msgRestart
                         if (enableDebugSysprint) System.out.println("[${script?.env?.BUILD_TAG}] " + msgRestart)
                         createSummary(msgRestart, null, "${dsbc.objectID}-restarted-${dsbc.startCount}")
