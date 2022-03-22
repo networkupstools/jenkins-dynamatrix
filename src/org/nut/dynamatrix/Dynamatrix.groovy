@@ -1730,7 +1730,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (rae.toString() ==~ /Unexpected termination of the channel/
+                            if (rae.toString() ==~ /.*Unexpected termination of the channel.*/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
@@ -1774,7 +1774,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (rse.toString() ==~ /Unexpected termination of the channel/
+                            if (rse.toString() ==~ /.*Unexpected termination of the channel.*/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
@@ -1817,7 +1817,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (jioe.toString() ==~ /Unable to create live FilePath for/
+                            if (jioe.toString() ==~ /.*Unable to create live FilePath for.*/
                             ) {
                                 // Per https://github.com/jenkinsci/workflow-durable-task-step-plugin/blob/master/src/main/java/org/jenkinsci/plugins/workflow/support/steps/FilePathDynamicContext.java
                                 // in this case Jenkins would terminate the build agent connection
@@ -1861,7 +1861,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (jlie.toString() ==~ /(Unexpected termination of the channel|Cannot contact .*: java.lang.InterruptedException)/
+                            if (jlie.toString() ==~ /.*(Unexpected termination of the channel|Cannot contact .*: java.lang.InterruptedException).*/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
