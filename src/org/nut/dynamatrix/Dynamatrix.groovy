@@ -2005,10 +2005,24 @@ def parallelStages = prepareDynamatrix(
                                     parstageCompleted = true
                                     break
 
-                                case ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']:
+                                case ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE',
+                                      'hudson.remoting.RequestAbortedException',
+                                      'hudson.remoting.RemotingSystemException',
+                                      'java.io.IOException',
+                                      'java.lang.InterruptedException'
+                                     ]:
                                     script.echo "[DEBUG]: DSBC requested " +
                                         "for stage '${stageName}'" + sbName +
                                         " finished somehow with unexpected verdict " +
+                                        "'${dsbc.dsbcResultInterim}' and a " +
+                                        "Throwable was caught: ${Utils.castString(t)}"
+                                    parstageCompleted = true
+                                    break
+
+                                case ['hudson.AbortException']:
+                                    script.echo "[DEBUG]: DSBC requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " finished with abortion verdict " +
                                         "'${dsbc.dsbcResultInterim}' and a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
                                     parstageCompleted = true
@@ -2028,9 +2042,12 @@ def parallelStages = prepareDynamatrix(
                                         "for stage '${stageName}'" + sbName +
                                         " finished with unclassified verdict " +
                                         "'${dsbc.dsbcResultInterim}' - " +
-                                        "will re-schedule; a " +
+                                        "aborting the stage-running loop; a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
-                                    // continue to loop
+                                    // DO NOT continue to loop
+                                    parstageCompleted = true
+                                    // Forward the diagnosis to Jenkins
+                                    throw t
                                     break
                             } // switch
                         } // catch
@@ -2040,7 +2057,6 @@ def parallelStages = prepareDynamatrix(
 
             // record the new parallelStages[] entry
             parallelStages << [parstageName, parstageCode]
-
         }
 
         if (returnSet) {
