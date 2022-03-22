@@ -1732,7 +1732,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (rae.toString() ==~ /.*Unexpected termination of the channel.*/
+                            if (rae.toString() ==~ /.*(Unexpected termination of the channel|java.nio.channels.ClosedChannelException).*/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
@@ -1776,7 +1776,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (rse.toString() ==~ /.*Unexpected termination of the channel.*/
+                            if (rse.toString() ==~ /.*(Unexpected termination of the channel|java.nio.channels.ClosedChannelException).*/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
@@ -1863,7 +1863,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (jlie.toString() ==~ /.*(Unexpected termination of the channel|Cannot contact .*: java.lang.InterruptedException).*/
+                            if (jlie.toString() ==~ /.*(Unexpected termination of the channel|Cannot contact .*: java.lang.InterruptedException|java.nio.channels.ClosedChannelException).*/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
