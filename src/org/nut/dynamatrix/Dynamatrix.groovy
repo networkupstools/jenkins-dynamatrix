@@ -1683,7 +1683,7 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.dsbcResultInterim = 'UNKNOWN'
                             } else {
                                 // Involve localization?..
-                                if (hexA.toString() ==~ /.*missing workspace.*/)
+                                if (hexA.toString() ==~ /.*missing workspace.*/
                                 ) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                     dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
