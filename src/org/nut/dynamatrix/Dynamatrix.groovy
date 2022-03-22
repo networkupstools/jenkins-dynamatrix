@@ -1626,6 +1626,7 @@ def parallelStages = prepareDynamatrix(
                         def msgRestart = "[WARNING] Re-starting stage '" + stageName + sbName +
                             "' which ended with '${dsbc.dsbcResultInterim}' on a previous attempt"
                         script.echo msgRestart
+                        System.out.println("[${script?.env?.BUILD_TAG}] " + msgRestart)
                         createSummary(msgRestart, null, "${dsbc.objectID}-restarted-${dsbc.startCount}")
                         dsbc.thisDynamatrix?.countStagesIncrement('RESTARTED', stageName + sbName)
                         dsbc.dsbcResultInterim = null
@@ -1951,6 +1952,12 @@ def parallelStages = prepareDynamatrix(
                         try {
                             parstageCodeTmp()
 
+                            System.err.println("[${script?.env?.BUILD_TAG}] " +
+                                "[DEBUG]: DSBC requested " +
+                                "for stage '${stageName}'" + sbName +
+                                " finished with verdict " +
+                                "'${dsbc.dsbcResultInterim}'")
+
                             // might still be failed, just not re-thrown:
                             switch (dsbc.dsbcResultInterim) {
                                 case [null, 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
@@ -1977,6 +1984,12 @@ def parallelStages = prepareDynamatrix(
                                     break
                             }
                         } catch (Throwable t) {
+                            System.err.println("[${script?.env?.BUILD_TAG}] " +
+                                "[DEBUG]: DSBC requested " +
+                                "for stage '${stageName}'" + sbName +
+                                " finished with verdict " +
+                                "'${dsbc.dsbcResultInterim}'" +
+                                "; a Throwable was caught: ${Utils.castString(t)}")
                             switch (dsbc.dsbcResultInterim) {
                                 case [null, 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT']:
                                     script.echo "[DEBUG]: DSBC requested " +
