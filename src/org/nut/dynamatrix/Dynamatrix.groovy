@@ -2051,6 +2051,11 @@ def parallelStages = prepareDynamatrix(
                                     break
                             } // switch
                         } // catch
+
+                        if (!parstageCompleted) {
+                            // even if we would loop, not too intensively please
+                            script.sleep(10)
+                        }
                     } // while
                 } // new parstageCode
             }
