@@ -34,6 +34,7 @@ class Dynamatrix implements Cloneable {
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
     public boolean enableDebugMilestones = dynamatrixGlobalState.enableDebugMilestones
     public boolean enableDebugMilestonesDetails = dynamatrixGlobalState.enableDebugMilestonesDetails
+    public boolean enableDebugSysprint = dynamatrixGlobalState.enableDebugSysprint
 
     // Store values populated by prepareDynamatrix() so further generateBuild()
     // and practical generateBuildConfigSet() calls can use these quickly.
@@ -336,6 +337,7 @@ class Dynamatrix implements Cloneable {
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
         this.enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+        this.enableDebugSysprint = dynamatrixGlobalState.enableDebugSysprint
     }
 
     public boolean canEqual(java.lang.Object other) {
@@ -461,6 +463,11 @@ class Dynamatrix implements Cloneable {
     @NonCPS
     public boolean shouldDebugMilestonesDetails() {
         return ( (this.enableDebugMilestonesDetails || this.enableDebugTrace) && this.script != null)
+    }
+
+    @NonCPS
+    public boolean shouldDebugSysprint() {
+        return ( this.enableDebugSysprint ) // this.script is not required
     }
 
 
@@ -1626,7 +1633,7 @@ def parallelStages = prepareDynamatrix(
                         def msgRestart = "[WARNING] Re-starting stage '" + stageName + sbName +
                             "' which ended with '${dsbc.dsbcResultInterim}' on a previous attempt"
                         script.echo msgRestart
-                        System.out.println("[${script?.env?.BUILD_TAG}] " + msgRestart)
+                        if (enableDebugSysprint) System.out.println("[${script?.env?.BUILD_TAG}] " + msgRestart)
                         createSummary(msgRestart, null, "${dsbc.objectID}-restarted-${dsbc.startCount}")
                         dsbc.thisDynamatrix?.countStagesIncrement('RESTARTED', stageName + sbName)
                         dsbc.dsbcResultInterim = null
@@ -1950,14 +1957,16 @@ def parallelStages = prepareDynamatrix(
                     def parstageCompleted = false
                     while (!parstageCompleted) {
                         try {
-                            System.err.println("[${script?.env?.BUILD_TAG}] " +
+                            if (enableDebugSysprint)
+                              System.err.println("[${script?.env?.BUILD_TAG}] " +
                                 "[DEBUG]: DSBC requested " +
                                 "for stage '${stageName}'" + sbName +
                                 " starting...")
 
                             parstageCodeTmp()
 
-                            System.err.println("[${script?.env?.BUILD_TAG}] " +
+                            if (enableDebugSysprint)
+                              System.err.println("[${script?.env?.BUILD_TAG}] " +
                                 "[DEBUG]: DSBC requested " +
                                 "for stage '${stageName}'" + sbName +
                                 " finished with verdict " +
@@ -1989,7 +1998,8 @@ def parallelStages = prepareDynamatrix(
                                     break
                             }
                         } catch (Throwable t) {
-                            System.err.println("[${script?.env?.BUILD_TAG}] " +
+                            if (enableDebugSysprint)
+                              System.err.println("[${script?.env?.BUILD_TAG}] " +
                                 "[DEBUG]: DSBC requested " +
                                 "for stage '${stageName}'" + sbName +
                                 " finished with verdict " +

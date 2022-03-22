@@ -32,6 +32,10 @@ class dynamatrixGlobalState {
     static Boolean enableDebugMilestones = true
     static Boolean enableDebugMilestonesDetails = false
 
+    // (Duplicate) Debug of some key troubleshooting
+    // points to System.(out|err).println?
+    static Boolean enableDebugSysprint = true
+
     // Takes a (DynamatrixSingleBuildConfig) object as argument and returns
     // a string. Can be used for definition of "meaningful" short tags by a
     // project, like "gnu99-gcc-freebsd-nowarn" or "c17-clang-xcode10.2-warn"
