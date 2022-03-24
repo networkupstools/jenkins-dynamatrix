@@ -1289,6 +1289,12 @@ def parallelStages = prepareDynamatrix(
             if (debugMilestonesDetails) this.script.println "[DEBUG] generateBuildConfigSet(): excluded ${removedCNL} build combos due to additional Node Labels constraints"
         }
 
+        if (Utils.isMapNotEmpty(dynacfgBuild.dsbcStageTimeoutSettings)) {
+            dsbcSet.each() {DynamatrixSingleBuildConfig dsbc ->
+                dsbc.stageTimeoutSettings = dynacfgBuild.dsbcStageTimeoutSettings
+            }
+        }
+
         // Uncomment here to just detail the collected combos:
         //this.enableDebugMilestonesDetails = true
         //debugTrace = this.shouldDebugTrace()
@@ -1621,6 +1627,30 @@ def parallelStages = prepareDynamatrix(
                 }
             }
 
+            if (Utils.isMapNotEmpty(dsbc.stageTimeoutSettings)) {
+                // Further parstageCode optional wrapper which limits how much
+                // time a stage may run - primarily to retry if an agent node
+                // itself gets stuck/disconnected, but Jenkins won't notice:
+                //     dsbc.stageTimeoutSettings = {time: 12, unit: "HOURS"}
+                def payloadTmp = payload
+
+                payload = {
+                    def Throwable caught = null
+                    try {
+                        script.timeout (dsbc.stageTimeoutSettings) {
+                            payloadTmp
+                        }
+                    } catch (FlowInterruptedException fie) {
+                        dsbc.dsbcResultInterim = 'AGENT_TIMEOUT'
+                        caught = fie
+                        // will re-throw for other wraps to handle and account this
+                    } catch (Throwable t) {
+                        caught = t
+                    }
+                    if (caught) throw caught
+                }
+            }
+
             // Support accounting of slowBuild scenario outcomes
             if (true) { // scoping
                 def payloadTmp = payload
@@ -1662,14 +1692,20 @@ def parallelStages = prepareDynamatrix(
                         return res
                     } catch (FlowInterruptedException fex) {
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
-                        if (fex == null) {
-                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
-                            dsbc.dsbcResultInterim = 'UNKNOWN'
+                        if (Utils.isStringNotEmpty(dsbc.dsbcResultInterim)
+                        &&  Utils.isMapNotEmpty(dsbc.stageTimeoutSettings)) {
+                            // Can be our stageTimeoutSettings handler, not an abortion
+                            dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResultInterim, stageName + sbName)
                         } else {
-                            String fexres = fex.getResult()
-                            if (fexres == null) fexres = 'SUCCESS'
-                            dsbc.thisDynamatrix?.countStagesIncrement(fexres, stageName + sbName)
-                            dsbc.dsbcResultInterim = fexres
+                            if (fex == null) {
+                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                                dsbc.dsbcResultInterim = 'UNKNOWN'
+                            } else {
+                                String fexres = fex.getResult()
+                                if (fexres == null) fexres = 'SUCCESS'
+                                dsbc.thisDynamatrix?.countStagesIncrement(fexres, stageName + sbName)
+                                dsbc.dsbcResultInterim = fexres
+                            }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         throw fex
@@ -1956,7 +1992,7 @@ def parallelStages = prepareDynamatrix(
 
             // Further parstageCode wrapper which looks at dsbc.dsbcResultInterim
             // and reschedules the earlier payload if the error seems retryable.
-            // TODO: May nneed more work in pipeline accounting code to agree
+            // TODO: May need more work in pipeline accounting code to agree
             // that all build scenarios succeeded in the end, even if we ran
             // more than 100% of originally planned job.
             if (true) { // scoping
@@ -1988,7 +2024,7 @@ def parallelStages = prepareDynamatrix(
                                     parstageCompleted = true
                                     break
 
-                                case ['AGENT_DISCONNECTED', 'UNKNOWN']:
+                                case ['AGENT_DISCONNECTED', 'AGENT_TIMEOUT', 'UNKNOWN']:
                                     script.echo "[DEBUG]: DSBC requested " +
                                         "for stage '${stageName}'" + sbName +
                                         " finished with a verdict classified as " +
@@ -2047,7 +2083,7 @@ def parallelStages = prepareDynamatrix(
                                     parstageCompleted = true
                                     break
 
-                                case ['AGENT_DISCONNECTED', 'UNKNOWN']:
+                                case ['AGENT_DISCONNECTED', 'AGENT_TIMEOUT', 'UNKNOWN']:
                                     script.echo "[DEBUG]: DSBC requested " +
                                         "for stage '${stageName}'" + sbName +
                                         " finished with a verdict classified as " +

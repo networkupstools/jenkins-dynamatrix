@@ -77,6 +77,11 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     // build scenario which did not necessarily fail due to bad code
     public String dsbcResultInterim = null
     public Integer startCount = 0
+
+    // Same as for timeout() step, e.g.
+    //    dsbc.stageTimeoutSettings = {time: 12, unit: "HOURS"}
+    public Map stageTimeoutSettings = [:]
+
     public DynamatrixSingleBuildConfig (script) {
         this.script = script
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace

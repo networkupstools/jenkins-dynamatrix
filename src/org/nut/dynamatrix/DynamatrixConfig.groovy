@@ -170,6 +170,10 @@ class DynamatrixConfig implements Cloneable {
     public Set requiredNodelabels = []
     public Set excludedNodelabels = []
 
+    // Same as for timeout() step, e.g.
+    //    dsbc.stageTimeoutSettings = {time: 12, unit: "HOURS"}
+    public Map dsbcStageTimeoutSettings = [:]
+
     @NonCPS
     @Override
     public String toString() {
@@ -190,6 +194,7 @@ class DynamatrixConfig implements Cloneable {
                 ",\n    excludeCombos: '${excludeCombos}'" +
                 ",\n    requiredNodelabels: '${requiredNodelabels}'" +
                 ",\n    excludedNodelabels: '${excludedNodelabels}'" +
+                ",\n    dsbcStageTimeoutSettings: '${dsbcStageTimeoutSettings}'" +
                 "\n}" ;
     }
 
@@ -493,6 +498,13 @@ def parallelStages = prepareDynamatrix(
                 this.stageNameFunc = dynacfgOrig.stageNameFunc
                 dynacfgOrig.remove('stageNameFunc')
             }
+
+            if (dynacfgOrig.containsKey('dsbcStageTimeoutSettings')) {
+                // Should be a Map or null; raise an error otherwise
+                this.dsbcStageTimeoutSettings = dynacfgOrig.dsbcStageTimeoutSettings
+                dynacfgOrig.remove('dsbcStageTimeoutSettings')
+            }
+
         }
 
         String errs = ""
