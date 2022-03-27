@@ -1719,7 +1719,17 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.dsbcResultInterim = 'UNKNOWN'
                             } else {
                                 String fexres = fex.getResult()
-                                if (fexres == null) fexres = 'SUCCESS'
+                                if (fexres == null) {
+                                    fexres = 'SUCCESS'
+                                } else {
+                                    StringWriter errors = new StringWriter();
+                                    hexA.printStackTrace(new PrintWriter(errors));
+                                    if (errors.toString().contains('RemovedNodeListener')) {
+                                        // at org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution$RemovedNodeListener.lambda$onDeleted$3(ExecutorStepExecution.java:288)
+                                        fexres = 'AGENT_DISCONNECTED'
+                                    }
+                                }
+
                                 dsbc.thisDynamatrix?.countStagesIncrement(fexres, stageName + sbName)
                                 dsbc.dsbcResultInterim = fexres
                             }
