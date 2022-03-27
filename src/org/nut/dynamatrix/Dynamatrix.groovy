@@ -1602,6 +1602,7 @@ def parallelStages = prepareDynamatrix(
                         if (dsbc.thisDynamatrix?.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
                             script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
                             dsbc.thisDynamatrix?.countStagesIncrement('ABORTED_SAFE', stageName + sbName)
+                            dsbc.dsbcResultInterim = 'ABORTED_SAFE'
                             throw new FlowInterruptedException(Result.NOT_BUILT)
 
                             //script?.currentBuild?.result = 'ABORTED'
@@ -1707,7 +1708,9 @@ def parallelStages = prepareDynamatrix(
                     } catch (FlowInterruptedException fex) {
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (Utils.isStringNotEmpty(dsbc.dsbcResultInterim)
-                        &&  Utils.isMapNotEmpty(dsbc.stageTimeoutSettings)) {
+                        &&  (Utils.isMapNotEmpty(dsbc.stageTimeoutSettings)
+                             || dsbc.dsbcResultInterim == 'ABORTED_SAFE')
+                        ) {
                             // Can be our stageTimeoutSettings handler, not an abortion
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResultInterim, stageName + sbName)
                         } else {
