@@ -1656,6 +1656,20 @@ def parallelStages = prepareDynamatrix(
                 def payloadTmp = payload
 
                 payload = {
+                    def printStackTraceStderrOptional = { Throwable t ->
+                        if (enableDebugSysprint) {
+                            StringWriter errors = new StringWriter();
+                            t.printStackTrace(new PrintWriter(errors));
+                            System.err.println("[${script?.env?.BUILD_TAG}] " +
+                                "[DEBUG]: DSBC requested " +
+                                "for stage '${stageName}'" + sbName +
+                                " threw an exception and got interim " +
+                                "verdict '${dsbc.dsbcResultInterim}': " +
+                                errors.toString()
+                                )
+                        }
+                    }
+
                     dsbc.startCount = dsbc.startCount + 1
                     if (dsbc.dsbcResultInterim == null) {
                         dsbc.thisDynamatrix?.countStagesIncrement('STARTED', stageName + sbName)
@@ -1708,6 +1722,7 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
+                        printStackTraceStderrOptional(fex)
                         throw fex
                     } catch (hudson.AbortException hexA) {
                         // This is thrown by steps like "error" and "unstable" (both)
@@ -1755,6 +1770,7 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
+                        printStackTraceStderrOptional(hexA)
                         throw hexA
                     } catch (hudson.remoting.RequestAbortedException rae) {
                         // https://javadoc.jenkins.io/component/remoting/hudson/remoting/RequestAbortedException.html
@@ -1801,6 +1817,7 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
+                        printStackTraceStderrOptional(rae)
                         throw rae
                     } catch (hudson.remoting.RemotingSystemException rse) {
                         // Tends to happen with networking lags or agent crash, e.g.:
@@ -1845,6 +1862,7 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
+                        printStackTraceStderrOptional(rse)
                         throw rse
                     } catch (java.io.IOException jioe) {
                         // Tends to happen with networking lags or agent crash, e.g.:
@@ -1890,6 +1908,7 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
+                        printStackTraceStderrOptional(jioe)
                         throw jioe
                     } catch (java.lang.InterruptedException jlie) {
                         // Tends to happen if e.g. Jenkins restarted during build
@@ -1932,6 +1951,7 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
+                        printStackTraceStderrOptional(jlie)
                         throw jlie
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + Utils.castString(t), stageName + sbName)
@@ -1961,6 +1981,7 @@ def parallelStages = prepareDynamatrix(
 
                         createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
 
+                        printStackTraceStderrOptional(t)
                         throw t
                     }
                 }
