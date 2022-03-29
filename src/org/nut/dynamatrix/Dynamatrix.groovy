@@ -1723,7 +1723,7 @@ def parallelStages = prepareDynamatrix(
                                     fexres = 'SUCCESS'
                                 } else {
                                     StringWriter errors = new StringWriter();
-                                    hexA.printStackTrace(new PrintWriter(errors));
+                                    fex.printStackTrace(new PrintWriter(errors));
                                     if (errors.toString().contains('RemovedNodeListener')) {
                                         // at org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution$RemovedNodeListener.lambda$onDeleted$3(ExecutorStepExecution.java:288)
                                         fexres = 'AGENT_DISCONNECTED'
