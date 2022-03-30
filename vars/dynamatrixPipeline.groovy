@@ -771,9 +771,14 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         } else {
                             // Totals are as expected, but contents?..
                             // Do we have any faults recorded?
-                            if (mapCountStages.getAt('SUCCESS') != mapCountStages.getAt('COMPLETED')) {
+                            if (mapCountStages.getAt('SUCCESS') + mapCountStages.getAt('RESTARTED') != mapCountStages.getAt('COMPLETED')
+                            ||  mapCountStages.getAt('SUCCESS') != (stagesBinBuild.size() - 1)
+                            ) {
+                                // Something failed and was not restarted to ultimately succeed...
                                 reportedNonSuccess = true
                                 if (mapCountStages.getAt('FAILURE')) {
+                                    // TOCHECK: Does this include AGENT_DISCONNECTED and/or AGENT_TIMEOUT builds?
+                                    // Can they be scored via setWorstResult() and later retried to succeed?
                                     catchError(message: 'Marking a hard FAILURE') {
                                         currentBuild.result = 'FAILURE'
                                         error "Some slowBuild stage(s) failed"
@@ -826,12 +831,15 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 def mapresOther = mapCountStages.clone()
                                 for (def r in [
                                     'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
-                                    'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'
+                                    'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE',
+                                    'AGENT_DISCONNECTED', 'AGENT_TIMEOUT'
                                 ]) {
                                     if (mapresOther.containsKey(r)) {
                                         if (Utils.isListNotEmpty(mapresOther[r])) {
                                             switch (r) {
                                                 case 'FAILURE':
+                                                    // TOCHECK: Does this include AGENT_DISCONNECTED and/or AGENT_TIMEOUT builds?
+                                                    // Can they be scored via setWorstResult() and later retried to succeed?
                                                     catchError(message: 'Marking a hard FAILURE') {
                                                         currentBuild.result = 'FAILURE'
                                                         error "Some slowBuild stage(s) failed"
