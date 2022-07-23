@@ -530,6 +530,12 @@ done
                             sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
                         }
                     }
+                    def files = findFiles(glob: ".ci.${archPrefix}.*_config.log.gz")
+                    if (Utils.isListNotEmpty(files)) {
+                        files.each { def FF -> // FileWrapper FF ->
+                            sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${FF.name}'>${FF.name}</a></li>"
+                        }
+                    }
                 } catch (Throwable tF) {} // no-op, possibly some iteration/fileExists problem
                 sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
 
