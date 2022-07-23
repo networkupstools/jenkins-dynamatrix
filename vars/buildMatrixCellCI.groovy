@@ -410,7 +410,7 @@ done
         // similar to analysis above allows for out-of-tree builds etc.
         sh label: 'Compress collected logs', script: """
 if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
-find . -type f -name config.log -o -name 'cppcheck*.xml' | sed 's,^\./,,' \
+find . -type f -name config.log -o -name 'cppcheck*.xml' | sed 's,^\\./,,' \
 | while read F ; do
     N="`echo "\$F" | tr '/' '_'`"
     if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$N"'.gz' || true ; fi
