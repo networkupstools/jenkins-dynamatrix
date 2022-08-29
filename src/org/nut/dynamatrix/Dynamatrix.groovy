@@ -1901,8 +1901,12 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (jioe.toString() ==~ /.*Unable to create live FilePath for.*/
+                            if (jioe.toString() ==~ /.*(Unable to create live FilePath for|No space left on device).*/
                             ) {
+                                // Note: "No space left" is not exactly a disconnection, but is
+                                // a cause to retry the stage on another agent (or even same one
+                                // after someone else cleans up) rather than fail the build.
+                                // As for "live FilePath", this can mean a Remoting (comms) error.
                                 // Per https://github.com/jenkinsci/workflow-durable-task-step-plugin/blob/master/src/main/java/org/jenkinsci/plugins/workflow/support/steps/FilePathDynamicContext.java
                                 // in this case Jenkins would terminate the build agent connection
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
