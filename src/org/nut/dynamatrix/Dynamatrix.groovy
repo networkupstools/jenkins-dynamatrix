@@ -1901,7 +1901,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (jioe.toString() ==~ /.*(Unable to create live FilePath for|No space left on device).*/
+                            if (jioe.toString() ==~ /.*(Unable to create live FilePath for|No space left on device|was marked offline|Connection was broken).*/
                             ) {
                                 // Note: "No space left" is not exactly a disconnection, but is
                                 // a cause to retry the stage on another agent (or even same one
