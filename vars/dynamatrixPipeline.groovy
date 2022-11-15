@@ -955,6 +955,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         txt += "\n<p>See build artifacts keyed with: '${archPrefix}' e.g. similar to:<ul>\n"
                                         for (url in [
                                             "${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz",
+                                            "${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.nut_report_feature.log.gz",
                                             "${env.BUILD_URL}/artifact/.ci.${archPrefix}.build.log.gz",
                                             "${env.BUILD_URL}/artifact/.ci.${archPrefix}.check.log.gz"
                                         ]) {
