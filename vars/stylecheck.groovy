@@ -21,7 +21,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 def call(dynacfgPipeline = [:]) {
     if (dynacfgPipeline?.stylecheck) {
         node(infra.labelDocumentationWorker()) {
-            infra.withEnvOptional(dynacfgPipeline?.defaultTools) {
+            withEnvOptional(dynacfgPipeline?.defaultTools) {
                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
 
                 if (dynacfgPipeline?.stylecheck_prepconf != null) {
