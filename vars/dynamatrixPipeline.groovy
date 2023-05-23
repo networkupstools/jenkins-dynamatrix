@@ -46,7 +46,7 @@ import org.nut.dynamatrix.*;
     //  sh """ hostname; date -u; echo "\${MATRIX_TAG}"; set | sort -n """ }
     // or something like this for a realistic build
     //dynacfgPipeline.slowBuildDefaultBody = { delegate -> setDelegate(delegate)
-    //    infra.withEnvOptional(dynacfgPipeline.defaultTools) {
+    //    withEnvOptional(dynacfgPipeline.defaultTools) {
     //        unstashCleanSrc(dynacfgPipeline.stashnameSrc)
     //        buildMatrixCellCI(dynacfgPipeline, dsbc)
     //    }
