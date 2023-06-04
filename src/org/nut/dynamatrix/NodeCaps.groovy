@@ -10,36 +10,39 @@ import org.nut.dynamatrix.NodeData;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
+/**
+ * This class encapsulates retrieval, storage and queries to information
+ * about labels declared by Jenkins build agents which is of interest to
+ * the dynamatrix effort, to know the agents' capabilities.
+ */
 class NodeCaps implements Cloneable {
-    /* This class encapsulates retrieval, storage and queries to information
-     * about labels declared by Jenkins build agents which is of interest to
-     * the dynamatrix effort, to know the agents' capabilities.
-     */
-
     def script
 
     private boolean isInitialized = false
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
-    // What we looked for (null means all known nodes):
+    /** What we looked for (null means all known nodes) */
     public String labelExpr
 
-    // Collected data:
-    // TODO: Is a Map needed now that we have a copy of "node" in NodeData?
-    // Maybe a Set is okay? On the other hand, being a Map key guarantees
-    // uniqueness...
+    /**
+     * Collected data.<br/>
+     *
+     * TODO: Is a Map needed now that we have a copy of "node" in {@link NodeData}?
+     *  Maybe a Set is okay? On the other hand, being a Map key guarantees
+     *  uniqueness...
+     */
     public Map<String, NodeData> nodeData
 
+    /**
+     * Collect all info about useful build agents in one collection:<br/>
+     *
+     * Returns a Map with names of currently known agent which matched the
+     * nodeLabelExpr (or all agents if nodeLabelExpr content is trivial),
+     * mapped to the Map of nodes' selected metadata including capabilities
+     * they declared with further labels mapped as KEY=VALUE entries.
+     */
     public NodeCaps(script, String nodeLabelExpr = null, boolean debugTrace = null, boolean debugErrors = null) {
-        /*
-         * Collect all info about useful build agents in one collection:
-         * Returns a Map with names of currently known agent which matched the
-         * nodeLabelExpr (or all agents if nodeLabelExpr content is trivial),
-         * mapped to the Map of nodes' selected metadata including capabilities
-         * they declared with further labels mapped as KEY=VALUE entries.
-         */
-
         this.script = script
         if (debugTrace != null) {
             this.enableDebugTrace = debugTrace
@@ -81,7 +84,7 @@ class NodeCaps implements Cloneable {
         if (this.enableDebugTrace) this.script.println("NodeCaps: saved this.node data: ${Utils.castString(this.nodeData)}")
     }
 
-    public boolean canEqual(java.lang.Object other) {
+    public boolean canEqual(Object other) {
         return other instanceof NodeCaps
     }
 
@@ -130,13 +133,15 @@ class NodeCaps implements Cloneable {
         }
     }
 
+    /**
+     * The "axis" may be a fixed string to return quickly, or
+     * a regex to match among nodeCaps.nodeData[].labelMap[] keys
+     * or a groovy expansion to look up value(s) of another axis
+     * which is not directly used in the resulting build set.
+     * Recurse until (a flattened Set of) fixed strings with
+     * axis names (keys of labelMap[] above) can be returned.
+     */
     def resolveAxisName(Object axis) {
-        // The "axis" may be a fixed string to return quickly, or
-        // a regex to match among nodeCaps.nodeData[].labelMap[] keys
-        // or a groovy expansion to look up value(s) of another axis
-        // which is not directly used in the resulting build set.
-        // Recurse until (a flattened Set of) fixed strings with
-        // axis names (keys of labelMap[] above) can be returned.
         Set res = []
         def debugErrors = this.shouldDebugErrors()
         def debugTrace = this.shouldDebugTrace()
@@ -238,24 +243,28 @@ class NodeCaps implements Cloneable {
         return res.flatten()
     }
 
+    /**
+     * For a fixed-string name or regex pattern, return a flattened Set of
+     * values which have it as a key in {@code nodeCaps.nodeData[].labelMap[]}
+     * (so not including labels that were *not* originally a {@code KEY=VALUE}).<br/>
+     *
+     * The {@code returnAssignments} flag controls whether the set would contain
+     * individual value labels like {@code ['8', '9']} or strings with assignments
+     * that can be quickly put into label matching expression strings like
+     * {@code ['GCCVER=8', 'GCCVER=9']}.<br/>
+     *
+     * NOTE: For axis passed as a regex {@link Pattern}, a wording too strict
+     * (like including dollars for end-of-pattern) can preclude matching
+     * of the entries we want. This is not handled now - to e.g. trawl
+     * through the arrays of earlier parsed values per labels in {@code labelMap}.<br/>
+     *
+     * NOTE: Currently there is no error-checking whether the axis param
+     * itself contains an equality sign, unsure how to do it for Pattern.
+     *
+     * @see #resolveAxisValues(Object, boolean)
+     */
     def resolveAxisValues(Object axis, node, boolean returnAssignments = false) {
         /* Look into a single node */
-
-        /* For a fixed-string name or regex pattern, return a flattened Set of
-         * values which have it as a key in nodeCaps.nodeData[].labelMap[]
-         * (so not including labels that were not originally a KEY=VALUE).
-         * The returnAssignments flag controls whether the set would contain
-         * individual value labels like ['8', '9'] or strings with assignments
-         * that can be quickly put into label matching expression strings like
-         * ['GCCVER=8', 'GCCVER=9'].
-         * NOTE: For axis passed as a regex Pattern, a wording too strict
-         * (like including dollars for end-of-pattern) can preclude matching
-         * of the entries we want. This is not handled now - to e.g. trawl
-         * through the arrays of earlier parsed values per labels in labelMap.
-         * NOTE: Currently there is no error-checking whether the axis param
-         * itself contains an equality sign, unsure how to do it for Pattern.
-         */
-
         Set res = []
         def debugErrors = this.shouldDebugErrors()
         def debugTrace = this.shouldDebugTrace()
@@ -370,11 +379,13 @@ class NodeCaps implements Cloneable {
         return res.flatten()
     }
 
+    /**
+     * See comments in the per-node variant - this method calls it
+     * for all selected and cached nodes, and aggregates the results.
+     *
+     * @see #resolveAxisValues(Object, Object, boolean)
+     */
     def resolveAxisValues(Object axis, boolean returnAssignments = false) {
-        /* See comments in the per-node variant above - this method calls
-         * it for all selected and cached nodes, and aggregates the results
-         */
-
         Set res = []
         def debugErrors = this.shouldDebugErrors()
         def debugTrace = this.shouldDebugTrace()
@@ -405,4 +416,3 @@ class NodeCaps implements Cloneable {
         return res.flatten()
     }
 }
-

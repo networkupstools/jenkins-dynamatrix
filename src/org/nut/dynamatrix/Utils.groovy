@@ -1,18 +1,8 @@
 package org.nut.dynamatrix;
 
-/*
- * Strangely, the Set or list classes I needed in dynamatrix did not include
- * a cartesian multiplication seen in many examples and complained about a
- *    groovy.lang.MissingMethodException: No signature of method:
- *      java.util.ArrayList.multiply() is applicable for argument
- *      types: (java.util.ArrayList) values: ...
- * Injecting this method into Collection base class is suggested by the
- * articles linked below (using "Iterable.metaClass.mixin newClassName" or
- * "java.util.Collection.metaClass.newFuncName", but I am not sure how to
- * do that via Jenkins shared library once and for all its use-cases.
- * So the next best thing is to call a function to do stuff.
+/**
+ * Various generic helpers to check or process our data.
  */
-
 class Utils {
     public static final def classesStrings = [String, GString, org.codehaus.groovy.runtime.GStringImpl, java.lang.String]
     public static final def classesRegex = [java.util.regex.Pattern]
@@ -125,9 +115,26 @@ class Utils {
         return "<${obj?.getClass()}>(${obj?.toString()})"
     }
 
+    /**
+     * Strangely, the Set or list classes I needed in dynamatrix did not include
+     * a cartesian multiplication seen in many examples and complained about a
+     * <pre>
+     *    groovy.lang.MissingMethodException: No signature of method:
+     *      java.util.ArrayList.multiply() is applicable for argument
+     *      types: (java.util.ArrayList) values: ...
+     * </pre>
+     * Injecting this method into Collection base class is suggested by the
+     * articles linked below (using "Iterable.metaClass.mixin newClassName" or
+     * "java.util.Collection.metaClass.newFuncName", but I am not sure how to
+     * do that via Jenkins shared library once and for all its use-cases.
+     * So the next best thing is to call a function to do stuff.<br/>
+     *
+     * Inspired by https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists#Groovy
+     * and https://coviello.blog/2013/05/19/adding-a-method-for-computing-cartesian-product-to-groovys-collections/
+     *
+     * @see #cartesianSquared
+     */
     static Iterable cartesianProduct(Iterable a, Iterable b) {
-        // Inspired by https://rosettacode.org/wiki/Cartesian_product_of_two_or_more_lists#Groovy
-        // and https://coviello.blog/2013/05/19/adding-a-method-for-computing-cartesian-product-to-groovys-collections/
         if (a.size() == 0) return b
         if (b.size() == 0) return a
         assert [a,b].every { it != null }
@@ -135,11 +142,14 @@ class Utils {
         return ( (0..<(m*n)).inject([]) { prod, i -> prod << [a[i.intdiv(n)], b[i%n]].flatten().sort() } )
     }
 
+    /**
+     * Return a cartesian product of items stored in a single set.
+     * This likely can be made more efficient, but this codepath
+     * is not too hot in practice anyway.
+     *
+     * @see #cartesianProduct
+     */
     static Iterable cartesianSquared(Iterable arr) {
-        /* Return a cartesian product of items stored in a single set.
-         * This likely can be made more efficient, but this codepath
-         * is not too hot in practice anyway.
-         */
         Iterable res = []
         arr.each() {a ->
             // Be more forgiving of parameters that are just arrays of strings, etc.
@@ -161,16 +171,19 @@ class Utils {
         return res
     }
 
+    /**
+     * For objects that are like an Array, List or Set, this routine
+     * simply appends contents of "addon" to "orig".<br/>
+     *
+     * For Maps it recurses, so it can process the object which is value
+     * in a Map for same key.<br/>
+     *
+     * For other types, replace orig with addon.<br/>
+     *
+     * Returns the result of merge (or whatever did happen there).
+     */
     static def mergeMapSet(orig, addon, boolean debug = false) {
         // Note: debug println() below might not go anywhere
-
-        /* For objects that are like an Array, List or Set, this routine
-         * simply appends contents of "addon" to "orig". For Maps it recurses
-         * so it can process the object which is value in a Map for same key.
-         * For other types, replace orig with addon.
-         * Returns the result of merge (or whatever did happen there).
-         */
-
         if (isList(orig)) {
             if (isList(addon)) {
                 // Concatenate

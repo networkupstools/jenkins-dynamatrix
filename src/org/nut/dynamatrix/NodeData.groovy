@@ -8,24 +8,28 @@ import hudson.model.Node;
 
 import org.nut.dynamatrix.Utils;
 
+/**
+ * This class encapsulates interesting data about a single Jenkins {@link Node}.
+ * A lot of these data points are stored in a {@link NodeCaps} object below.
+ */
 class NodeData {
-    /* This class encapsulates interesting data about a single Jenkins Node.
-     * A lot of these data points are stored in a NodeCaps object below.
-     */
-
     // Info about the build agent (node) detailed here.
     //NotSerializable//public final hudson.model.Node node
     public final String name
 
-    // Original full-string set of labels received from Jenkins Node:
+    /** Original full-string set of labels received from Jenkins Node */
     public final String labelString
-    // Labels split into an array (or rather sorted set) by whitespaces:
+
+    /** Labels split into an array (or rather sorted set) by whitespaces */
     public final TreeSet<String> labelSet
-    // The array of labels split further into a Map: those with an equality
-    // sign are converted into key=[valueSet] (since our use-case can have
-    // many values with same key, like compiler versions); those without
-    // the sign become key=null; also the original unique key=value strings
-    // are saved as keys similarly mapped to null:
+
+    /**
+     * The array of labels split further into a Map: those with an equality
+     * sign are converted into key=[valueSet] (since our use-case can have
+     * many values with same key, like compiler versions); those without
+     * the sign become key=null; also the original unique key=value strings
+     * are saved as keys similarly mapped to null:
+     */
     public final Map<String, Object> labelMap
 
     public NodeData(Object nodeOrig) throws Exception {
