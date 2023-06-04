@@ -3,7 +3,8 @@ package org.nut.dynamatrix;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
-/* This class intends to represent one build request configuration
+/**
+ * This class intends to represent one build request configuration
  * An instance of it can be passed as the set of arguments for the
  * customized run Dynamatrix routines, while some defaults can be
  * applied so needed fields are all "defined" when we look at them.
@@ -14,164 +15,261 @@ class DynamatrixConfig implements Cloneable {
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
-    // Define fields to satisfy the build example below
-    //    commonLabelExpr: 'nut-builder',
+    /**
+     * Define fields to satisfy the build example in docs:
+     *    <pre>commonLabelExpr: 'nut-builder',</pre>
+     */
     public String commonLabelExpr = null
 
     // TODO: Abstract the compiler/tool related tunables and perhaps methods
-    // into a separate class and implement variants as its subclasses.
+    //  into a separate class and implement variants as its subclasses.
 
-    //    compilerType: 'C',
+    /**
+     * Define fields to satisfy the build example in docs:
+     *    <pre>compilerType: 'C',</pre>
+     */
     public CompilerTypes compilerType = null
 
-    // This represents the axis (originating from labels declared by build
-    // nodes) which defines the different compiler families. It can help
-    // to e.g. set specific flags not supported by other compilers:
-    //    compilerLabel: 'COMPILER',
+    /** This represents the axis (originating from labels declared by build
+     * nodes) which defines the different compiler families. It can help
+     * to e.g. set specific flags not supported by other compilers:
+     *    <pre>compilerLabel: 'COMPILER',</pre>
+     */
     public String compilerLabel = null
 
-    // envvars that would be exported to point to a particular compiler
-    // implementation and version for one build scenario:
-    //    compilerTools: ['CC', 'CXX', 'CPP'],
+    /** envvars that would be exported to point to a particular compiler
+     * implementation and version for one build scenario:
+     *    <pre>compilerTools: ['CC', 'CXX', 'CPP'],</pre>
+     */
     public Set<String> compilerTools = []
 
-    // Each of these labels can be String, GString or Pattern object
-    // to match labels (named as key=value pairs) of build agents:
-    //    dynamatrixAxesLabels: ['OS', '${COMPILER}VER', 'ARCH'],
+    /** Each of these labels can be String, GString or Pattern object
+     * to match labels (named as key=value pairs) of build agents:
+     *    <pre>dynamatrixAxesLabels: ['OS', '${COMPILER}VER', 'ARCH'],</pre>
+     */
     public Set dynamatrixAxesLabels = []
 
     // TODO: Need a way to specify that we only want some extreme value
-    // but not the whole range, somehow specifiable per-system (e.g. to
-    // say that we want the newest GCCVER (and/or CLANGVER) to build a
-    // docs-only scenario where we do not benefit from iterating all
-    // compilers available, and yet do not care which specific version
-    // numbers our particular agents serve so don't specify them in a
-    // dynamatrix specification).
+    //  but not the whole range, somehow specifiable per-system (e.g. to
+    //  say that we want the newest GCCVER (and/or CLANGVER) to build a
+    //  docs-only scenario where we do not benefit from iterating all
+    //  compilers available, and yet do not care which specific version
+    //  numbers our particular agents serve so don't specify them in a
+    //  dynamatrix specification).
+
     // TODO: Similarly, want a way to specify that we only want to run
-    // some dynamatrix scenario once (at all, or per OS type etc.) --
-    // e.g. to test buildability of complete documentation set or some
-    // distcheck target; this is more about tools on agent and recipes
-    // in the Makefiles of the project than about an exhaustive matrix.
+    //  some dynamatrix scenario once (at all, or per OS type etc.) --
+    //  e.g. to test buildability of complete documentation set or some
+    //  distcheck target; this is more about tools on agent and recipes
+    //  in the Makefiles of the project than about an exhaustive matrix.
 
     // TODO: Need a way to specify optional labels, so that nodes which
-    // do not declare any value (e.g. do not state which ARCH(es) they
-    // support) can still be used for some unique build combos ("...but
-    // that is our only system that runs SUPERCCVER=123").
+    //  do not declare any value (e.g. do not state which ARCH(es) they
+    //  support) can still be used for some unique build combos ("...but
+    //  that is our only system that runs SUPERCCVER=123").
 
-    // Let the caller specify additional dimensions to the matrix which
-    // are not based on values of labels declared by current workers, as
-    // a map of labels and a set of their values. For example, a matrix
-    // for C/C++ builds can declare several standards to check:
-    //    dynamatrixAxesVirtualLabelsMap: [
-    //      'CSTDVERSION': ['89', '99', '03', '11', '14', '17', '2x'],
-    //      'CSTDVARIANT': ['c', 'gnu'],
-    //    ]
-    // Like other (label) values, these would be ultimately mixed as a
-    // cartesian product with values from combos provided into the closure
-    // doing the build, subject to "excludeCombos" and "allowedFailure"
-    // detailed below, but they should not end up in label expressions
-    // to match the build agents by Jenkins.
-    // Parsing of dynamatrixAxesVirtualLabelsMap also supports a special
-    // syntax to process sub-maps of linked values that should be together:
-    // for this mode, the key string in dynamatrixAxesVirtualLabelsMap
-    // should contain a verbatim sub-string '${KEY}' which would then be
-    // replaced by key of the sub-map value or by 'DEFAULT' if the item
-    // is not a map; note that like other labels, these would be exported
-    // to shell so compatible names are recommended (e.g. 'cxx' not 'c++'):
-    //    dynamatrixAxesVirtualLabelsMap: [
-    //      'CSTDVERSION_${KEY}': [ ['c': '89', 'cxx': '98'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx: '17'] ],
-    //      'CSTDVARIANT': ['c', 'gnu'],
-    //    ]
-    // WARNING: main-map keys that do not contain a '${KEY}' (or have
-    // value types that are not a sub-map) would be assigned via toString()
-    // and can lead to bogus results like `CSTDVERSION="[c:89, cxx:98]"`.
+    /** Let the caller specify additional dimensions to the matrix which
+     * are not based on values of labels declared by current workers, as
+     * a map of labels and a set of their values. For example, a matrix
+     * for C/C++ builds can declare several standards to check:
+     * <pre>
+     *    dynamatrixAxesVirtualLabelsMap: [
+     *      'CSTDVERSION': ['89', '99', '03', '11', '14', '17', '2x'],
+     *      'CSTDVARIANT': ['c', 'gnu'],
+     *    ]
+     * </pre>
+     *
+     * <p>Like other (label) values, these would be ultimately mixed as a
+     * cartesian product with values from combos provided into the closure
+     * doing the build, subject to "excludeCombos" and "allowedFailure"
+     * detailed below, but they should not end up in label expressions
+     * to match the build agents by Jenkins.</p>
+     *
+     * Parsing of dynamatrixAxesVirtualLabelsMap also supports a special
+     * syntax to process sub-maps of linked values that should be together:
+     * for this mode, the key string in dynamatrixAxesVirtualLabelsMap
+     * should contain a verbatim sub-string '${KEY}' which would then be
+     * replaced by key of the sub-map value or by 'DEFAULT' if the item
+     * is not a map; note that like other labels, these would be exported
+     * to shell so compatible names are recommended (e.g. 'cxx' not 'c++'):
+     * <pre>
+     *    dynamatrixAxesVirtualLabelsMap: [
+     *      'CSTDVERSION_${KEY}': [ ['c': '89', 'cxx': '98'], ['c': '99', 'cxx': '98'], ['c': '17', 'cxx: '17'] ],
+     *      'CSTDVARIANT': ['c', 'gnu'],
+     *    ]
+     * </pre>
+     *
+     * WARNING: main-map keys that do not contain a '${KEY}' (or have
+     * value types that are not a sub-map) would be assigned via toString()
+     * and can lead to bogus results like `CSTDVERSION="[c:89, cxx:98]"`.
+     *
+     * @see #dynamatrixAxesCommonEnvCartesian
+     */
     public Map dynamatrixAxesVirtualLabelsMap = [:]
 
-    // Set of (Sets of envvars to export) - the resulting build matrix
-    // picks one of these at a time for otherwise same conditions made
-    // from other influences. This example defines two build variants:
-    //    dynamatrixAxesCommonEnv: [['LANG=C', 'TZ=UTC'], ['LANG=ru_RU', 'SHELL=ksh']],
+    /**
+     * Set of (Sets of envvars to export) - the resulting build matrix
+     * picks one of these at a time for otherwise same conditions made
+     * from other influences. This example defines two build variants:
+     * <pre>
+     *    dynamatrixAxesCommonEnv: [['LANG=C', 'TZ=UTC'], ['LANG=ru_RU', 'SHELL=ksh']],
+     * </pre>
+     */
     public Set<Set> dynamatrixAxesCommonEnv = []
-    // Same goal as above, but builds would get a Cartesian multiplication
-    // of the variants listed in the sub-sets, e.g. this example:
-    //    dynamatrixAxesCommonEnvCartesian: [['LANG=C', 'LANG=ru_RU'], ['TZ=UTC', 'TZ=CET']]
-    // ...should produce four build variants that would feed into the
-    // dynamatrixAxesCommonEnv use-case, namely:
-    //    [['LANG=C','TZ=UTC'], ['LANG=ru_RU','TZ=UTC'], ['LANG=C','TZ=CET'], ['LANG=ru_RU','TZ=CET']]
-    // NOTE: third-layer objects (e.g. meaningful sets not strings) should
-    // get plugged into the result "as is" and can help group related options
-    // without "internal conflict", e.g.:
-    //    dynamatrixAxesCommonEnvCartesian: [[ ['LANG=C','LC_ALL=C'], 'LANG=ru_RU'], ['TZ=UTC', 'TZ=CET']]
-    // should yield such four build variants:
-    //    [['LANG=C','LC_ALL=C','TZ=UTC'], ['LANG=ru_RU','TZ=UTC'], ['LANG=C','LC_ALL=C','TZ=CET'], ['LANG=ru_RU','TZ=CET']]
+
+    /**
+     * Same goal as in {@link #dynamatrixAxesCommonEnv}, but builds would
+     * get a Cartesian multiplication of the variants listed in the sub-sets,
+     * e.g. this example:
+     * <pre>
+     *    dynamatrixAxesCommonEnvCartesian: [
+     *       ['LANG=C', 'LANG=ru_RU'],
+     *       ['TZ=UTC', 'TZ=CET']
+     *    ]
+     * </pre>
+     * ...should produce four build variants that would feed into the
+     * dynamatrixAxesCommonEnv use-case, namely:
+     * <pre>
+     *    [['LANG=C','TZ=UTC'],
+     *     ['LANG=ru_RU','TZ=UTC'],
+     *     ['LANG=C','TZ=CET'],
+     *     ['LANG=ru_RU','TZ=CET']]
+     * </pre>
+     *
+     * NOTE: third-layer objects (e.g. meaningful sets not strings) should
+     * get plugged into the result "as is" and can help group related options
+     * without "internal conflict", e.g.:
+     * <pre>
+     *    dynamatrixAxesCommonEnvCartesian: [
+     *       [ ['LANG=C','LC_ALL=C'], 'LANG=ru_RU'],
+     *       ['TZ=UTC', 'TZ=CET']
+     *    ]
+     * </pre>
+     * should yield such four build variants:
+     * <pre>
+     *    [['LANG=C','LC_ALL=C','TZ=UTC'],
+     *     ['LANG=ru_RU','TZ=UTC'],
+     *     ['LANG=C','LC_ALL=C','TZ=CET'],
+     *     ['LANG=ru_RU','TZ=CET']]
+     * </pre>
+     */
     public Set<Set> dynamatrixAxesCommonEnvCartesian = []
 
-    // Set of (Sets of args to build tool into its command-line options).
-    // Similar approach as above:
-    // This defines four builds, two of these would set two build options
-    // each (for trying two C/C++ standards), and the other two would set
-    // different build bitness (with other default configuration settings):
-    //    dynamatrixAxesCommonOpts: [
-    //        ["CFLAGS=-stdc=gnu99", "CXXFLAGS=-stdcxx=gnu++99"],
-    //        ["CFLAGS=-stdc=c89", "CXXFLAGS=-stdcxx=c++89"],
-    //        ['-m32'], ['-m64'] ]
+    /**
+     * Set of (Sets of args to build tool into its command-line options).
+     * Similar approach as in {@link #dynamatrixAxesCommonEnv}:<br/>
+     * This defines four builds, two of these would set two build options
+     * each (for trying two C/C++ standards), and the other two would set
+     * different build bitness (with other default configuration settings):
+     * <pre>
+     *    dynamatrixAxesCommonOpts: [
+     *        ["CFLAGS=-stdc=gnu99", "CXXFLAGS=-stdcxx=gnu++99"],
+     *        ["CFLAGS=-stdc=c89", "CXXFLAGS=-stdcxx=c++89"],
+     *        ['-m32'], ['-m64'] ]
+     * </pre>
+     * @see #dynamatrixAxesCommonOptsCartesian
+     * @see #dynamatrixAxesCommonEnv
+     */
     public Set<Set> dynamatrixAxesCommonOpts = []
-    // ...and this (also with third-layer support) example:
-    //    dynamatrixAxesCommonOptsCartesian: [
-    //        [ ["CFLAGS=-stdc=gnu99", "CXXFLAGS=-stdcxx=g++99"],
-    //          ["CFLAGS=-stdc=c89", "CXXFLAGS=-stdcxx=c++89"]     ],
-    //        ['-m32', '-m64'] ]
-    // has two second-layer sets: one varies (grouped sets of) C/C++
-    // standards, another varies bitnesses. The result is also to try
-    // four build scenarios, but these four would run each combination
-    // of language revision and bitness, compactly worded like this:
-    //    [ [gnu99,m32], [c89,m32], [gnu99,m64], [c89,m64] ]
-    // WARNING: This is an illustrative example, -mXX should belong inside
-    // the CFLAGS, CXXFLAGS and LDFLAGS values, so the closure doing some
-    // build in an ultimate shell command should take care of that.
+
+    /**
+     * Building up from {@link #dynamatrixAxesCommonOpts} and
+     * {@link #dynamatrixAxesCommonEnvCartesian} ideas...
+     * and this example (also with third-layer support):
+     * <pre>
+     *    dynamatrixAxesCommonOptsCartesian: [
+     *        [ ["CFLAGS=-stdc=gnu99", "CXXFLAGS=-stdcxx=g++99"],
+     *          ["CFLAGS=-stdc=c89", "CXXFLAGS=-stdcxx=c++89"] ],
+     *        ['-m32', '-m64']
+     *    ]
+     * </pre>
+     * has two second-layer sets: one varies (grouped sets of) C/C++
+     * standards, another varies bitnesses. The result is also to try
+     * four build scenarios, but these four would run each combination
+     * of language revision and bitness, compactly worded like this:
+     * <pre>
+     *    [ [gnu99,m32], [c89,m32], [gnu99,m64], [c89,m64] ]
+     * </pre>
+     * WARNING: This is an illustrative example, -mXX should belong inside
+     * the CFLAGS, CXXFLAGS and LDFLAGS values, so the closure doing some
+     * build in an ultimate shell command should take care of that.
+     */
     public Set<Set> dynamatrixAxesCommonOptsCartesian = []
 
-    // On top of combinations discovered from existing nodes, add the
-    // following combinations as required for a build. While these are
-    // not labels (values or even names) proclaimed by the running agents,
-    // in some Jenkins agent plugins the pressure to have requested type
-    // of workers can get them tailored to order and deployed:
-    //    dynamatrixRequiredLabelCombos: [["OS=bsd", "CLANG=12"]],
+    /**
+     * On top of combinations discovered from existing nodes, add the
+     * following combinations as required for a build. While these are
+     * not labels (values or even names) proclaimed by the running agents,
+     * in some Jenkins agent plugins the pressure to have requested type
+     * of workers can get them tailored to order and deployed:
+     * <pre>
+     *    dynamatrixRequiredLabelCombos: [["OS=bsd", "CLANG=12"]],
+     * </pre>
+     */
     public Set dynamatrixRequiredLabelCombos = []
 
-    // During a build, configure variants which match these optional
-    // conditions as something that may fail and not be fatal to the
-    // overall job - like experimental builds on platforms we know we
-    // do not yet support well, but already want to keep watch on:
-    //    allowedFailure: [[~/OS=.+/, ~/GCCVER=4\..+/], ['ARCH=armv7l'], [~/std.+=.+89/]],
+    /**
+     * During a build, configure variants which match these optional
+     * conditions as something that may fail and not be fatal to the
+     * overall job - like experimental builds on platforms we know we
+     * do not yet support well, but already want to keep a watch on:
+     * <pre>
+     *    allowedFailure: [
+     *       [~/OS=.+/, ~/GCCVER=4\..+/],
+     *       ['ARCH=armv7l'],
+     *       [~/std.+=.+89/]
+     *    ],
+     * </pre>
+     */
     public Set allowedFailure = []
 
-    // Flag to conserve resources of CI farm - only run the builds in
-    // the allowedFailure list then this flag is "true" (on demand),
-    // but otherwise (false) treat them as excludeCombos and do not
-    // run them at all - that's by default.
+    /**
+     * Flag to conserve resources of CI farm - only run the builds in the
+     * {@link #allowedFailure} list then this flag is {@code true}
+     * (i.e. on demand), but otherwise ({@code false}) treat them as
+     * {@link #excludeCombos} and do not run them at all - that's by default.
+     */
     public Boolean runAllowedFailure = false
 
-    // After defining a build matrix from combinations which did match
-    // various requirements, drop combinations we know would be doomed,
-    // like trying the latest modern revision of C++ on the 20 year old
-    // version of the compiler.
-    //    excludeCombos: [[~/OS=openindiana/, ~/CLANGVER=9/, ~/ARCH=x86/], [~/GCCVER=4\.[0-7]\..+/, ~/std.+=+(!?89|98|99|03)/], [~/GCCVER=4\.([8-9]|1[0-9]+)\..+/, ~/std.+=+(!?89|98|99|03|11)/]]
+    /**
+     * After defining a build matrix from combinations which did match
+     * various requirements, drop combinations we know would be doomed,
+     * like trying the latest modern revision of C++ on the 20 year old
+     * version of the compiler.
+     * <pre>
+     *    excludeCombos: [
+     *       [~/OS=openindiana/, ~/CLANGVER=9/, ~/ARCH=x86/],
+     *       [~/GCCVER=4\.[0-7]\..+/, ~/std.+=+(!?89|98|99|03)/],
+     *       [~/GCCVER=4\.([8-9]|1[0-9]+)\..+/, ~/std.+=+(!?89|98|99|03|11)/]
+     *    ]
+     * </pre>
+     */
     public Set excludeCombos = []
 
-    // Beside values that are permutated in the matrix combos, we can
-    // also use other labels declared by build agents to filter further.
-    // This differs from dynamatrixRequiredLabelCombos above which add
-    // combinations on top of filtered permutations and might cause some
-    // build agents to be deployed, etc. to fulfill that requirement.
-    // Here we *filter away* combos that would land to nodes that *have*
-    // labels which match any of excludedNodelabels, or that *do not have*
-    // labels which match all of requiredNodelabels.
+    /**
+     * Beside values that are permutated in the matrix combos, we can
+     * also use other labels declared by build agents to filter further.<br/>
+     *
+     * This differs from {@link #dynamatrixRequiredLabelCombos} which add
+     * combinations on top of filtered permutations and might cause some
+     * build agents to be deployed, etc. to fulfill that requirement.<br/>
+     *
+     * Here we *filter away* combos that would land to nodes that
+     * *have* labels which match any of {@link #excludedNodelabels}, or that
+     * *do not have* labels which match all of {@code requiredNodelabels}.<br/>
+     *
+     * @see #excludedNodelabels
+     */
     public Set requiredNodelabels = []
+    /** @see #requiredNodelabels */
     public Set excludedNodelabels = []
 
-    // Same as for timeout() step, e.g.
-    //    dsbc.stageTimeoutSettings = {time: 12, unit: "HOURS"}
+    /**
+     * Same values as for {@code timeout()} step, e.g.
+     * <pre>
+     *    dsbc.stageTimeoutSettings = {time: 12, unit: "HOURS"}
+     * </pre>
+     */
     public Map dsbcStageTimeoutSettings = [:]
 
     @NonCPS
@@ -264,7 +362,7 @@ def parallelStages = prepareDynamatrix(
         this.initDefault(defaultCfg)
     }
 
-    public boolean canEqual(java.lang.Object other) {
+    public boolean canEqual(Object other) {
         return other instanceof DynamatrixConfig
     }
 
@@ -279,8 +377,7 @@ def parallelStages = prepareDynamatrix(
         if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(String): called with defaultCfg = ${Utils.castString(defaultCfg)}")
 
         switch (defaultCfg) {
-            case null:
-            case '':
+            case [null, '']:
                 break;
 
             case ['C', 'C-all', 'CXX', 'CXX-all', 'C+CXX', 'C+CXX-all']:
@@ -559,10 +656,12 @@ def parallelStages = prepareDynamatrix(
         return true
     }
 
+    /**
+     * If the incoming configuration would rewrite some fields that
+     * need re-initialization by Dynamatrix.prepareDynamatrix(),
+     * then let these config point be re-defined (in that reinit).
+     */
     def clearNeedsPrepareDynamatrixClone(dc = [:]) {
-        // If the incoming configuration would rewrite some fields that
-        // need re-initialization by Dynamatrix.prepareDynamatrix(),
-        // then let these config point be re-defined (in that reinit).
         if (dc?.commonLabelExpr)
             this.commonLabelExpr = null
         if (dc?.dynamatrixAxesLabels)
@@ -574,10 +673,12 @@ def parallelStages = prepareDynamatrix(
         return this
     }
 
+    /*
+     * Our callers expect a few specific data constructs here:
+     * either a single string or pattern (that will be remade into
+     * a single-element array), or an array/list/set/... of such types
+     */
     public def sanitycheckDynamatrixAxesLabels() {
-        // Our callers expect a few specific data constructs here:
-        // either a single string or pattern (that will be remade into
-        // a single-element array), or an array/list/set/... of such types
         String errs = ""
         if (this.dynamatrixAxesLabels != null) {
             if (Utils.isList(this.dynamatrixAxesLabels)) {
@@ -622,6 +723,7 @@ def parallelStages = prepareDynamatrix(
         def debugErrors = this.shouldDebugErrors()
         def debugTrace = this.shouldDebugTrace()
 
+        // TODO: Use StringBuilder
         if (Utils.isListNotEmpty(this.requiredNodelabels)) {
             def le = null
             this.requiredNodelabels.each() { l ->
@@ -635,6 +737,7 @@ def parallelStages = prepareDynamatrix(
             commonLabelExpr += " && (${le})"
         }
 
+        // TODO: Use StringBuilder
         if (Utils.isListNotEmpty(this.excludedNodelabels)) {
             def le = null
             this.excludedNodelabels.each() { l ->

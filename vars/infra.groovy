@@ -1,7 +1,7 @@
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.Utils;
 
-/*
+/**
  * Return the label (expression) string for a worker that handles
  * git checkouts and stashing of the source for other build agents.
  * Unlike the other agents, this worker should have appropriate
@@ -15,6 +15,12 @@ def labelDefaultWorker() {
     return 'master-worker'
 }
 
+/**
+ * Returns the Jenkins agent label (expression) for a worker that
+ * can be used for SCM checkouts.
+ * @see infra#labelDefaultWorker
+ * @see dynamatrixGlobalState#labelCheckoutWorker
+ */
 def labelCheckoutWorker() {
     // Global/modifiable config point:
     if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelCheckoutWorker)) {
@@ -23,6 +29,18 @@ def labelCheckoutWorker() {
     return labelDefaultWorker()
 }
 
+/**
+ * Returns the Jenkins agent label (expression) for a worker that
+ * can be used for documentation processing (spell check, HTML/PDF
+ * rendering, etc.)<br/>
+ *
+ * As a fallback (if not specified in the
+ * {@link dynamatrixGlobalState#labelDocumentationWorker} setting,
+ * looks for {@code 'doc-builder'} in currently defined build agents.
+ *
+ * @see infra#labelDefaultWorker
+ * @see dynamatrixGlobalState#labelDocumentationWorker
+ */
 def labelDocumentationWorker() {
     // Global/modifiable config point:
     if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelDocumentationWorker)) {
@@ -38,6 +56,11 @@ def labelDocumentationWorker() {
     return labelDefaultWorker()
 }
 
+/**
+ * Returns the default "stable branch" name for SCM operations, from
+ * settings or a hard-coded default.
+ * @see dynamatrixGlobalState#branchDefaultStable
+ */
 def branchDefaultStable() {
     if (Utils.isStringNotEmpty(dynamatrixGlobalState.branchDefaultStable)) {
         return dynamatrixGlobalState.branchDefaultStable
@@ -52,6 +75,8 @@ def branchDefaultStable() {
  * Compares the current branch and target branch and list the changed files.
  *
  * @return the PR or directly branch changed files.
+ *
+ * @see #listChangedFilesJenkinsData
  */
 Set listChangedFilesGitWorkspace() {
     Set changedFiles = []
@@ -90,6 +115,12 @@ Set listChangedFilesGitWorkspace() {
     return changedFiles
 }
 
+/**
+ * Returns the source code path names impacted by the current build
+ * as compared to an earlier one, according to Jenkins' own logic.
+ *
+ * @see #listChangedFilesGitWorkspace
+ */
 Set listChangedFilesJenkinsData() {
     // https://stackoverflow.com/a/59462020/4715872
     Set changedFiles = []
@@ -108,6 +139,14 @@ Set listChangedFilesJenkinsData() {
     return changedFiles
 }
 
+/**
+ * Compares different clues to list the changed files.
+ *
+ * @return the PR or directly branch changed files.
+ *
+ * @see #listChangedFilesJenkinsData
+ * @see #listChangedFilesGitWorkspace
+ */
 Set listChangedFiles() {
     Set changedFiles = listChangedFilesGitWorkspace()
     changedFiles += listChangedFilesJenkinsData()

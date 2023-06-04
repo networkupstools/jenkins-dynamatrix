@@ -14,62 +14,121 @@ import org.nut.dynamatrix.NodeData;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
-/* This class intends to represent one build matrix which can be used
+/**
+ * This class intends to represent one build matrix which can be used
  * to produce several "closely related" build stages re-using the same
  * set of build agents and project configurations.
  */
 class Dynamatrix implements Cloneable {
-    // Class-shared cache of the collected nodeCaps per label expression
-    // so we only query Jenkins core once for those, even if we prepare
-    // many build scenarios:
+    /**
+     * Class-shared cache of the collected {@link #nodeCaps} per label
+     * expression, so we only query Jenkins core once for those, even
+     * if we prepare many build scenarios.
+     */
     private static Map<String, NodeCaps> nodeCapsCache = [:]
 
-    // Have some defaults, if only to have all expected fields defined
+    /** Have some defaults, if only to have all expected fields defined */
     private DynamatrixConfig dynacfg
+    /** Have some defaults, if only to have all expected fields defined */
     private DynamatrixConfig dynacfgSaved = null
+    /** Have some defaults, if only to have all expected fields defined */
     private def script
+    /** Have some defaults, if only to have all expected fields defined */
     private final String objectID = Integer.toHexString(hashCode())
+    /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
+    /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugMilestones = dynamatrixGlobalState.enableDebugMilestones
+    /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugMilestonesDetails = dynamatrixGlobalState.enableDebugMilestonesDetails
+    /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugSysprint = dynamatrixGlobalState.enableDebugSysprint
 
-    // Store values populated by prepareDynamatrix() so further generateBuild()
-    // and practical generateBuildConfigSet() calls can use these quickly.
+    /**
+     * Store values populated by {@link #prepareDynamatrix} so that a further
+     * {@link #generateBuild} and practical {@link #generateBuildConfigSet} calls
+     * can use these quickly.
+     */
     private NodeCaps nodeCaps
-    // The following Sets contain different levels of processing of data about
-    // build agent capabilities proclaimed in their agent labels (via nodeCaps)
+
+    /**
+     * The following Sets contain different levels of processing of data about
+     * build agent capabilities proclaimed in their agent labels (via {@link #nodeCaps})
+     */
     private Set effectiveAxes = []
+    /**
+     * The following Sets contain different levels of processing of data about
+     * build agent capabilities proclaimed in their agent labels (via {@link #nodeCaps})
+     */
     private Set buildLabelCombos = []
+    /**
+     * The following Sets contain different levels of processing of data about
+     * build agent capabilities proclaimed in their agent labels (via {@link #nodeCaps})
+     */
     private Set buildLabelCombosFlat = []
-    // This is one useful final result, mapping strings for `agent{label 'expr'}`
-    // clauses to arrays of label contents (including "composite" labels where
-    // key=value's are persistently grouped, e.g. "COMPILER=GCC GCCVER=123",
-    // and the original label set e.g. "nut-builder" used to initialize the
-    // set of agents this dynamatrix is interested in)
+
+    /**
+     * This is one useful final result, mapping strings for
+     * @{code agent{label 'expr'}} clauses to arrays of label contents
+     * (including "composite" labels where @{code key=value}'s are
+     * persistently grouped, e.g. @{code "COMPILER=GCC GCCVER=123"},
+     * and the original label set e.g. @{code "nut-builder"} used to
+     * initialize the set of agents this dynamatrix is interested in).
+     */
     private Map<String, Set> buildLabelsAgents = [:]
 
 ///////////////////////////////// RESULTS ACCOUNTING ///////////////////
 
-    // Similar to parallel() step's support for aborting builds if a stage
-    // fails, but this implementation allows to let already running stages
-    // complete. Technically depends on the limited amount of build nodes,
-    // so we get build diags from scenarios we have already invested a node
-    // into, but would not waste much firepower after we know we failed.
-    // This would still block to get a node{} first, and quickly release
-    // it just then as we have the mustAbort flag raised.
+    /**
+     * Similar to Jenkins parallel() step's support for aborting builds if
+     * a stage fails, but this implementation allows to let already running
+     * stages complete. Technically depends on the limited amount of build
+     * nodes, so we get build diagnostics from scenarios we have already
+     * invested a node into, but would not waste much firepower after we
+     * know we failed.<br/>
+     * This would still block to get a node{} first, and quickly release
+     * it just then as we have the {@link #mustAbort} flag raised.
+     */
     public Boolean failFast = null
+    /**
+     * A flag which helps {@link #failFast} mode track that the current
+     * build should wrap up quickly now.
+     */
     public boolean mustAbort = false
-    // See also https://javadoc.jenkins.io/hudson/model/class-use/Result.html
-    // https://javadoc.jenkins-ci.org/hudson/model/Result.html
+
+    // TODO: Derive a class from Jenkins standard Result, with
+    //  dynamatrix-specific values added, to simplify usage here.
+    /**
+     * Track the worst result of all executed dynamatrix stages.
+     * @see #getWorstResult
+     * @see <a href="https://javadoc.jenkins.io/hudson/model/class-use/Result.html">https://javadoc.jenkins.io/hudson/model/class-use/Result.html</a>
+     * @see <a href="https://javadoc.jenkins-ci.org/hudson/model/Result.html">https://javadoc.jenkins-ci.org/hudson/model/Result.html</a>
+     */
     private Result dmWorstResult = null
+
+    /**
+     * Report the worst result of all executed dynamatrix stages.
+     *
+     * @see #setWorstResult(String)
+     * @see #setWorstResult(String, String)
+     * @see #resultFromString
+     */
     public Result getWorstResult() { return dmWorstResult }
 
-    // Count each type of verdict
-    // Predefine the Map so its print-out happens in same order as in
-    // the toString*() methods below:
+    /**
+     * Count each type of verdict.<br/>
+     * Predefine the Map so its print-out happens in same order as in
+     * the {@code toString*()} methods defined in the class.
+     *
+     * @see #toStringStageCount
+     * @see #toStringStageCountNonZero
+     * @see #toStringStageCountDump
+     * @see #toStringStageCountDumpNonZero
+     */
     private Map<String, Integer> countStages = [
         'STARTED': 0,
         'RESTARTED': 0,
@@ -81,11 +140,29 @@ class Dynamatrix implements Cloneable {
         'ABORTED': 0,
         'NOT_BUILT': 0
         ]
-    // For each stageName, track its Result object (if set by stage payload)
+
+    /**
+     * For each {@code stageName} (map key), track its {@link Result}
+     * object value (if set by stage payload)
+     */
     private Map<String, Result> trackStageResults = [:]
-    // Plaintext or shortened-hash names of log files and other data saved for stage
+    /** Plaintext or shortened-hash names of log files and other data saved for stage */
     private Map<String, String> trackStageLogkeys = [:]
 
+    /**
+     * Convert a {@link String} into a {@link Result} with added
+     * consideration for values defined by the dynamatrix ecosystem.
+     * May return {@code null} for states which do not map into
+     * a Jenkins standard Result value.
+     * @param k A String key, with either one of Jenkins standard
+     *  {@link Result} values, or a dynamatrix state machine value:
+     *  ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']
+     * @return  A {@link Result} constant, or {@code null}.
+     *
+     * @see #getWorstResult
+     * @see #setWorstResult(String)
+     * @see #setWorstResult(String, String)
+     */
     @NonCPS
     public static Result resultFromString(String k) {
         def r = null
@@ -105,6 +182,20 @@ class Dynamatrix implements Cloneable {
         return r
     }
 
+    /**
+     * Assign the currently tracked worst result among recently executed
+     * dynamatrix stages. The verdict may not improve.
+     *
+     * @param k A String key, with either one of Jenkins standard
+     *  {@link Result} values, or a dynamatrix state machine value:
+     *  ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']
+     * @return  Current value of {@link #dmWorstResult} after the
+     *  assignment (a {@link Result}, may be {@code null}).
+     *
+     * @see #getWorstResult
+     * @see #resultFromString
+     * @see #setWorstResult(String, String)
+     */
     @NonCPS
     synchronized public Result setWorstResult(String k) {
         def r = Dynamatrix.resultFromString(k)
@@ -119,9 +210,25 @@ class Dynamatrix implements Cloneable {
         return this.dmWorstResult
     }
 
+    /**
+     * Similar to {@link #setWorstResult(String)}, but also populates
+     * {@link #trackStageResults} for stage name "sn" with the verdict
+     * from "k".
+     *
+     * @param k A String key, with either one of Jenkins standard
+     *  {@link Result} values, or a dynamatrix state machine value:
+     *  ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']
+     * @param sn A String stage name, used as a key in the
+     *  {@link #trackStageResults} map.
+     * @return  Current value of verdict for the stage name after the
+     *  assignment (a {@link Result}, may be {@code null}).
+     *
+     * @see #getWorstResult
+     * @see #resultFromString
+     * @see #setWorstResult(String)
+     */
     @NonCPS
     synchronized public Result setWorstResult(String sn, String k) {
-        // Similar to above, but also populate trackStageResults for stage name
         def res = this.setWorstResult(k)
 
         if (sn != null) {
@@ -168,15 +275,28 @@ class Dynamatrix implements Cloneable {
         return res
     }
 
+    /**
+     * Save a "log key" (plaintext or shortened-hash names of log
+     * files and other data saved for stage) for a "stage name".
+     *
+     * @see #trackStageLogkeys
+     * @see #getLogKey
+     */
     @NonCPS
     synchronized public void setLogKey(String sn, String lk) {
         trackStageLogkeys[sn] = lk
     }
 
+    /**
+     * Return either direct hit, or startsWith (where the tail
+     * would be description of the slowBuild scenario group).
+     * May be null if no hit.
+     *
+     * @see #trackStageLogkeys
+     * @see #setLogKey
+     */
     @NonCPS
     synchronized public String getLogKey(String s) {
-        // Return either direct hit, or startsWith (where the tail
-        // would be description of the slowBuild scenario group)
         if (trackStageLogkeys.containsKey(s)) {
             return trackStageLogkeys[s]
         }
@@ -194,6 +314,13 @@ class Dynamatrix implements Cloneable {
         return k // may be null if no hit
     }
 
+    /**
+     * Transposes {@link #trackStageResults} contents, to map each collected
+     * {@link Result} values to a {@link Set} of stage names which had this
+     * verdict.
+     *
+     * @return
+     */
     @NonCPS
     synchronized public Map<Result, Set<String>> reportStageResults() {
         def mapres = [:]
@@ -206,11 +333,23 @@ class Dynamatrix implements Cloneable {
         return mapres
     }
 
+    /** @see #countStagesIncrement(String, String) */
     @NonCPS
     synchronized public Integer countStagesIncrement(Result r, String sn = null) {
         return this.countStagesIncrement(r?.toString(), sn)
     }
 
+    /**
+     * Count each type of verdict (including Jenkins standard
+     * {@link Result} values, and dynamatrix state machine values)
+     * represented by "k" for a stage name "sn". Also sets the
+     * known worst verdict for the dynamatrix overall, and the
+     * tracked verdict for that stage name.
+     *
+     * @see #countStagesIncrement(Result, String)
+     * @see #setWorstResult(String, String)
+     * @see #countStages
+     */
     @NonCPS
     synchronized public Integer countStagesIncrement(String k, String sn = null) {
         if (k == null)
@@ -223,30 +362,46 @@ class Dynamatrix implements Cloneable {
         }
         return this.countStages[k]
     }
+
+    /** Helper to treat {@code null} {@link Integer} values as zeroes for counting */
     private Integer intNullZero(Integer i) { if (i == null) { return 0 } else { return i } }
 
-    // Reporting the accounted values:
-    // We started the stage (maybe more than once):
+    /** Reporting the accounted values:
+     * We started the stage (maybe more than once) */
     public Integer countStagesStarted() { return intNullZero(countStages?.STARTED) + intNullZero(countStages?.RESTARTED) }
+    /** Reporting the accounted values:
+     * We restarted the stage */
     public Integer countStagesRestarted() { return intNullZero(countStages?.RESTARTED) }
-    // We know we finished the stage, successfully or with "fex" exception caught:
+    /** Reporting the accounted values:
+     * We know we finished the stage, successfully or with "fex" exception caught */
     public Integer countStagesCompleted() { return intNullZero(countStages?.COMPLETED) }
-    // We canceled the stage before start of actual work
-    // (due to mustAbort, after getting a node):
+    /** Reporting the accounted values:
+     * We canceled the stage before start of actual work
+     * (due to {@link #mustAbort}, after getting a node
+     * to execute our logic on)
+     */
     public Integer countStagesAbortedSafe() { return intNullZero(countStages?.ABORTED_SAFE) }
-    // Standard Jenkins build results:
+    /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesFinishedOK() { return intNullZero(countStages?.SUCCESS) }
+    /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesFinishedFailure() { return intNullZero(countStages?.FAILURE) }
+    /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesFinishedFailureAllowed() { return intNullZero(countStages?.UNSTABLE) }
+    /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesAborted() { return intNullZero(countStages?.ABORTED) }
+    /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesAbortedNotBuilt() { return intNullZero(countStages?.NOT_BUILT) }
 
+    /**
+     * Roll a new text entry in the build overview page.<br/>
+     * Note that with current badge plugin releases,
+     * we can't later remove or replace this entry,
+     * like we can with {@link #updateProgressBadge}
+     * for "yellow boxes".
+     */
     // Must be CPS - calls pipeline script steps
     synchronized
     def createSummary(String txt, String icon = 'info.gif', def objid = null) {
-        // Roll a text entry in the build overview page
-        // Note that with current badge plugin releases,
-        // we can't later remove or replace this entry
         def res = null
 
         if (this.script && Utils.isStringNotEmpty(txt)) {
@@ -265,6 +420,27 @@ class Dynamatrix implements Cloneable {
         return res
     }
 
+    /**
+     * Roll a text entry in the "yellow boxes" of the left column (job build
+     * current+history list) in the classic Jenkins user interface - page for
+     * a job definition overview.<br/>
+     *
+     * This method populates the "yellow box" (identified by {@link #objectID})
+     * with {@link #countStages} summarized by one of the {@code toString*()}
+     * methods defined in this class (depending on which of them produces
+     * non-trivial output).<br/>
+     *
+     * Note that with current badge plugin releases, we can usually remove or
+     * replace these entries (with rare mis-fires), unlike what we can manage
+     * with {@link #createSummary} for build overview page. Also unlike that
+     * method, this one does not accept arbitrary text and other metadata
+     * arguments.<br/>
+     *
+     * @see #toStringStageCount
+     * @see #toStringStageCountNonZero
+     * @see #toStringStageCountDump
+     * @see #toStringStageCountDumpNonZero
+     */
     // Must be CPS - calls pipeline script steps
     synchronized
     def updateProgressBadge(Boolean removeOnly = false) {
@@ -349,12 +525,19 @@ class Dynamatrix implements Cloneable {
         return (Dynamatrix) super.clone();
     }
 
+    /** Clone current {@link #dynacfg} into {@link #dynacfgSaved}.
+     * @see #restoreDynacfg
+     */
     public boolean saveDynacfg() {
         this.dynacfgSaved = null // GC
         this.dynacfgSaved = this.dynacfg.clone()
         return true
     }
 
+    /** Clone back current {@link #dynacfgSaved} (if not null)
+     * into {@link #dynacfg}.
+     * @see #saveDynacfg
+     */
     public boolean restoreDynacfg() {
         if (this.dynacfgSaved != null) {
             this.dynacfg = null // GC
@@ -364,6 +547,10 @@ class Dynamatrix implements Cloneable {
         return false
     }
 
+    /**
+     * Report amounts of stages which have certain verdicts,
+     * zero or not, in layman wording.
+     */
     public String toStringStageCount() {
         return "countStagesStarted:${countStagesStarted()} " +
             "(of which countStagesRestarted:${countStagesRestarted()}) " +
@@ -376,6 +563,10 @@ class Dynamatrix implements Cloneable {
             "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt()}"
     }
 
+    /**
+     * Report amounts of stages which have certain verdicts,
+     * greater than zero, in layman wording.
+     */
     public String toStringStageCountNonZero() {
         String s = ""
         Integer i
@@ -410,6 +601,11 @@ class Dynamatrix implements Cloneable {
         return s.trim()
     }
 
+    /**
+     * Report amounts of stages which have certain verdicts,
+     * greater than zero, in debug-friendly wording (using
+     * key names from {@link #countStages} map).
+     */
     public String toStringStageCountDumpNonZero() {
         def m = [:]
         countStages.each {k, v ->
@@ -418,14 +614,22 @@ class Dynamatrix implements Cloneable {
         return m.toString()
     }
 
+    /** Returns a clone of current {@link #countStages} map contents. */
     public Map getCountStages() {
         return countStages.clone()
     }
 
+    /** Returns stringification of current {@link #countStages} map contents. */
     public String toStringStageCountDump() {
         return countStages.toString()
     }
 
+    /**
+     * Returns cached {@link NodeCaps} from {@link #nodeCapsCache}
+     * for the specified "labelExpr".
+     * @param labelExpr Jenkins node matching labels expression
+     * @return  A cached or new {@link NodeCaps} value
+     */
     public NodeCaps getNodeCaps(String labelExpr = null) {
         if (labelExpr == null) {
             labelExpr = ""
@@ -465,9 +669,13 @@ class Dynamatrix implements Cloneable {
         return ( (this.enableDebugMilestonesDetails || this.enableDebugTrace) && this.script != null)
     }
 
+    /**
+     * Extreme debugging, from groovy to system printouts (e.g. to
+     * Jenkins server logs); this.script is not required in this case.
+     */
     @NonCPS
     public boolean shouldDebugSysprint() {
-        return ( this.enableDebugSysprint ) // this.script is not required
+        return ( this.enableDebugSysprint )
     }
 
 
@@ -518,11 +726,16 @@ def parallelStages = prepareDynamatrix(
 
  */
 
+    /**
+     * Return {@code true} if "dynacfgOrig" argument contains fields used in
+     * {@link #prepareDynamatrix} that need recalculation or otherwise
+     * would be ignored by {@link #generateBuild}.
+     *
+     * @see #clearNeedsPrepareDynamatrixClone
+     * @see #clearMapNeedsPrepareDynamatrixClone
+     * @see #prepareDynamatrix
+     */
     def needsPrepareDynamatrixClone(dynacfgOrig = [:]) {
-        // Return true if dynacfgOrig contains fields used in
-        // prepareDynamatrix() that need recalculation or otherwise
-        // would be ignored by generateBuild()
-
         if (Utils.isListNotEmpty(dynacfgOrig?.requiredNodelabels)) {
             if (Utils.isListNotEmpty(dynacfg.requiredNodelabels)) {
                 if (dynacfg.requiredNodelabels != dynacfgOrig.requiredNodelabels) {
@@ -575,6 +788,14 @@ def parallelStages = prepareDynamatrix(
         return false
     }
 
+    /**
+     * Return a clone of "dynacfgOrig" map, from which certain keys are
+     * removed so they can be subsequently re-initialized by the caller.
+     *
+     * @see #clearNeedsPrepareDynamatrixClone
+     * @see #needsPrepareDynamatrixClone
+     * @see #prepareDynamatrix
+     */
     static def clearMapNeedsPrepareDynamatrixClone(dynacfgOrig = [:]) {
         def dc = dynacfgOrig.clone()
         if (dc?.commonLabelExpr)
@@ -588,9 +809,16 @@ def parallelStages = prepareDynamatrix(
         return dc
     }
 
+    /**
+     * We are reusing a {@link Dynamatrix} object, maybe a clone.
+     * Wipe {@link #dynacfg} data points that may impact re-init later
+     * with {@link #prepareDynamatrix}.
+     *
+     * @see #needsPrepareDynamatrixClone
+     * @see #clearMapNeedsPrepareDynamatrixClone
+     * @see #prepareDynamatrix
+     */
     def clearNeedsPrepareDynamatrixClone(dynacfgOrig = [:]) {
-        // We are reusing a Dynamatrix object, maybe a clone
-        // Wipe dynacfg data points that may impact re-init below
         def debugTrace = this.shouldDebugTrace()
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Clearing certain pre-existing data points from dynacfg object"
         this.dynacfg.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
@@ -606,6 +834,14 @@ def parallelStages = prepareDynamatrix(
         return this
     }
 
+    /**
+     * Initialize properties of the current {@link Dynamatrix} object,
+     * using entries of the {@code dynacfgOrig} map with certain keys.
+     *
+     * @see #clearNeedsPrepareDynamatrixClone
+     * @see #clearMapNeedsPrepareDynamatrixClone
+     * @see #needsPrepareDynamatrixClone
+     */
     def prepareDynamatrix(dynacfgOrig = [:]) {
         def debugErrors = this.shouldDebugErrors()
         def debugTrace = this.shouldDebugTrace()
@@ -853,14 +1089,16 @@ def parallelStages = prepareDynamatrix(
         return true
     }
 
+    /** Take {@code blcSet[]} which is a Set of Sets (equivalent to field
+     * {@link #buildLabelCombosFlat} in the class), with contents like this:
+     * <pre>
+     * [ [ARCH_BITS=64 ARCH64=amd64, COMPILER=CLANG CLANGVER=9, OS_DISTRO=openindiana],
+     *   [ARCH_BITS=32 ARCH32=armv7l, COMPILER=GCC GCCVER=4.9, OS_DISTRO=debian] ]
+     * </pre>
+     * ...and convert into a Map where keys are agent label expression strings.
+     */
     static Map mapBuildLabelExpressions(Set<Set> blcSet) {
-        // Take blcSet[] which is a Set of Sets (equivalent to field
-        // buildLabelCombosFlat in the class), with contents like this:
-        // [ [ARCH_BITS=64 ARCH64=amd64, COMPILER=CLANG CLANGVER=9, OS_DISTRO=openindiana],
-        //   [ARCH_BITS=32 ARCH32=armv7l, COMPILER=GCC GCCVER=4.9, OS_DISTRO=debian] ]
-        // ...and convert into a Map where keys are agent label expression strings
-
-        // Equivalent to buildLabelsAgents in the class
+        /** Equivalent to buildLabelsAgents in the class */
         def blaMap = [:]
         blcSet.each() {combo ->
             // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
@@ -871,9 +1109,9 @@ def parallelStages = prepareDynamatrix(
         return blaMap
     }
 
+    /** Returns a set of (unique) {@link DynamatrixSingleBuildConfig} items */
 //    @NonCPS
     def generateBuildConfigSet(dynacfgOrig = [:]) {
-        /* Returns a set of (unique) DynamatrixSingleBuildConfig items */
         def debugErrors = this.shouldDebugErrors()
         def debugTrace = this.shouldDebugTrace()
         def debugMilestones = this.shouldDebugMilestones()
@@ -1323,11 +1561,12 @@ def parallelStages = prepareDynamatrix(
         return dsbcSet
     } // generateBuildConfigSet()
 
+    /**
+     * Helper for {@link #generateBuild} method to not repeat the
+     * same code structure in different handled situations.
+     */
     //private Closure generatedBuildWrapperLayer2 (String stageName, DynamatrixSingleBuildConfig dsbc, Closure body = null) {
     private Closure generatedBuildWrapperLayer2 (stageName, dsbc, body = null) {
-        /* Helper for generatedBuild() below to not repeat the
-         * same code structure in different handled situations
-         */
         def debugTrace = this.shouldDebugTrace()
 
         // For delegation to closure and beyond
@@ -1398,15 +1637,15 @@ def parallelStages = prepareDynamatrix(
 
     }
 
+    /** Helper for {@link #generateBuild} method to not repeat the
+     * same code structure in different handled situations.<br/>
+     *
+     * The stageName may be hard to (re-)calculate and/or
+     * may be tweaked for some build scenario, so we pass
+     * the string around.
+     */
     //private Closure generatedBuildWrapperLayer1 (String stageName, DynamatrixSingleBuildConfig dsbc, Closure body = null) {
     private Closure generatedBuildWrapperLayer1 (stageName, dsbc, body = null) {
-        /* Helper for generatedBuild() below to not repeat the
-         * same code structure in different handled situations.
-         * The stageName may be hard to (re-)calculate and/or
-         * may be tweaked for some build scenario, so we pass
-         * the string around.
-         */
-
 //CLS//
         return { ->
 //            script.stage(stageName) {
@@ -1449,7 +1688,12 @@ def parallelStages = prepareDynamatrix(
     // ... so which platform was it really? which test case? expected fault or not?
 
     // NOTE: Seems that to ensure object locality, arguments SHOULD NOT be
-    // declared with "def" or a specific type"
+    // declared with "def" or a specific type!
+
+    /**
+     * Helper which returns a Closure for optional build-log trace and
+     * execution of the payload without a dedicated build agent.
+     */
     def generateParstageWithoutAgent(script, dsbc, stageName, sbName, payload) {
         return { ->
             if (dsbc.enableDebugTrace) script.echo "Not requesting any node for stage '${stageName}'" + sbName
@@ -1457,7 +1701,11 @@ def parallelStages = prepareDynamatrix(
         }
     }
 
-
+    /**
+     * Helper which returns a Closure for optional build-log trace and
+     * execution of the payload on a dedicated build agent selected by
+     * the {@code dsbc.buildLabelExpression}.
+     */
     def generateParstageWithAgentBLE(script, dsbc, stageName, sbName, payload) {
         return { ->
             if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
@@ -1468,6 +1716,11 @@ def parallelStages = prepareDynamatrix(
         }
     }
 
+    /**
+     * Helper which returns a Closure for optional build-log trace and
+     * execution of the payload on a dedicated build agent selected as
+     * "any" currently available one.
+     */
     def generateParstageWithAgentAnon(script, dsbc, stageName, sbName, payload) {
         return { ->
             if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'" + sbName
@@ -1478,15 +1731,18 @@ def parallelStages = prepareDynamatrix(
         }
     }
 
+    /** @see generateBuild(Map, boolean, Closure) */
     def generateBuild(Map dynacfgOrig = [:], Closure bodyOrig = null) {
         return generateBuild(dynacfgOrig, false, bodyOrig)
     }
 
+    /**
+     * Returns a Map of stages generated according to "dynacfgOrig".
+     * Or a Set, if called from inside a pipeline stage (CPS code) --
+     * see "returnSet" parameter.
+     */
 //    @NonCPS
     def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Closure bodyOrig = null) {
-        /* Returns a map of stages.
-         * Or a Set, if called from inside a pipeline stage (CPS code).
-         */
         //def debugErrors = this.shouldDebugErrors()
         //def debugTrace = this.shouldDebugTrace()
         //def debugMilestones = this.shouldDebugMilestones()
