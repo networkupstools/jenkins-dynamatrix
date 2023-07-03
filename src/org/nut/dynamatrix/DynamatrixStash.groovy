@@ -175,7 +175,7 @@ class DynamatrixStash {
                 def seenClone = false
                 def seenSubmodules = false
                 // TODO? Just detect, do not change the iterated set?
-                scmParams.extensions.each() { extset ->
+                scmParams.extensions.each() {Map extset ->
                     if (extset.containsKey('$class')) {
                         switch (extset['$class']) {
                             case 'CloneOption':
@@ -618,7 +618,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
             def lockName = script?.env?.DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME
             if (!Utils.isStringNotEmpty(lockName)) {
                 if (script?.env?.NODE_LABELS) {
-                    script.env.NODE_LABELS.split('[ \r\n\t]+').each() { KV ->
+                    script.env.NODE_LABELS.split('[ \r\n\t]+').each() {String KV ->
                         if (KV =~ /^DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME=.*$/) {
                             def key = null
                             def val = null
@@ -773,7 +773,7 @@ exit \$RET
         deleteWS(script)
         if (script?.env?.NODE_LABELS) {
             def useMethod = null
-            script.env.NODE_LABELS.split('[ \r\n\t]+').each() { KV ->
+            script.env.NODE_LABELS.split('[ \r\n\t]+').each() {String KV ->
                 //script.echo "[D] unstashCleanSrc(): Checking node label '${KV}'"
                 if (KV =~ /^DYNAMATRIX_UNSTASH_PREFERENCE=.*$/) {
                     def key = null

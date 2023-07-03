@@ -606,7 +606,7 @@ def parallelStages = prepareDynamatrix(
 
         String errs = ""
         if (dynacfgOrig.size() > 0) {
-            dynacfgOrig.keySet().each() {k ->
+            dynacfgOrig.keySet().each() {def k ->
                 if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): checking dynacfgOrig[${k}] = ${Utils.castString(dynacfgOrig[k])}")
 
                 if (k.equals("mergeMode")) return // continue
@@ -661,7 +661,7 @@ def parallelStages = prepareDynamatrix(
      * need re-initialization by Dynamatrix.prepareDynamatrix(),
      * then let these config point be re-defined (in that reinit).
      */
-    def clearNeedsPrepareDynamatrixClone(dc = [:]) {
+    def clearNeedsPrepareDynamatrixClone(Map dc = [:]) {
         if (dc?.commonLabelExpr)
             this.commonLabelExpr = null
         if (dc?.dynamatrixAxesLabels)
@@ -725,8 +725,8 @@ def parallelStages = prepareDynamatrix(
 
         // TODO: Use StringBuilder
         if (Utils.isListNotEmpty(this.requiredNodelabels)) {
-            def le = null
-            this.requiredNodelabels.each() { l ->
+            String le = null
+            this.requiredNodelabels.each() {String l ->
                 if (le == null) {
                     le = l
                 } else {
@@ -739,8 +739,8 @@ def parallelStages = prepareDynamatrix(
 
         // TODO: Use StringBuilder
         if (Utils.isListNotEmpty(this.excludedNodelabels)) {
-            def le = null
-            this.excludedNodelabels.each() { l ->
+            String le = null
+            this.excludedNodelabels.each() {String l ->
                 if (le == null) {
                     le = "!" + l
                 } else {
