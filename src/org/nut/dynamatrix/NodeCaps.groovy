@@ -113,7 +113,7 @@ class NodeCaps implements Cloneable {
             //this.script.println "[DEBUG] raw nodeCaps: " + this
             this.script.println "[DEBUG] nodeCaps.labelExpr: " + this.labelExpr
             this.script.println "[DEBUG] nodeCaps.nodeData.size(): " + this.nodeData.size()
-            this.nodeData.keySet().each() {nodeName ->
+            this.nodeData.keySet().each() {String nodeName ->
                 if (nodeName == null) return // continue
                 this.script.println "[DEBUG] nodeCaps.nodeData[${nodeName}].labelMap.size()\t: " + this.nodeData[nodeName].labelMap.size()
                 this.nodeData[nodeName].labelMap.keySet().each() {String label ->
@@ -177,7 +177,7 @@ class NodeCaps implements Cloneable {
                 // of the variable axis itself (like fixed 'COMPILER'
                 // string for variable part '${COMPILER}' in originally
                 // requested axis name '${COMPILER}VAR').
-                this.resolveAxisName(varAxis).each() {expandedAxisName ->
+                this.resolveAxisName(varAxis).each() {def expandedAxisName ->
                     if (!Utils.isStringNotEmpty(expandedAxisName)) return; // continue
 
                     // This layer of recursion gets us fixed-string name
@@ -185,7 +185,7 @@ class NodeCaps implements Cloneable {
                     // 'CLANG' for variable '${COMPILER}' in originally
                     // requested axis name '${COMPILER}VAR').
                     // Pattern looks into nodeCaps.
-                    this.resolveAxisValues(expandedAxisName).each() {expandedAxisValue ->
+                    this.resolveAxisValues(expandedAxisName).each() {def expandedAxisValue ->
                         if (!Utils.isStringNotEmpty(expandedAxisValue)) return; // continue
 
                         // In the original axis like '${COMPILER}VER' apply current item
@@ -221,7 +221,7 @@ class NodeCaps implements Cloneable {
 
         if (Utils.isRegex(axis)) {
             // Return label keys which match the expression
-            this.nodeData.keySet().each() {nodeName ->
+            this.nodeData.keySet().each() {String nodeName ->
                 if (nodeName == null) return // continue
 
                 this.nodeData[nodeName].labelMap.keySet().each() {String label ->
@@ -263,7 +263,7 @@ class NodeCaps implements Cloneable {
      *
      * @see #resolveAxisValues(Object, boolean)
      */
-    def resolveAxisValues(Object axis, node, boolean returnAssignments = false) {
+    def resolveAxisValues(Object axis,  String node, boolean returnAssignments = false) {
         /* Look into a single node */
         Set res = []
         def debugErrors = this.shouldDebugErrors()
@@ -383,7 +383,7 @@ class NodeCaps implements Cloneable {
      * See comments in the per-node variant - this method calls it
      * for all selected and cached nodes, and aggregates the results.
      *
-     * @see #resolveAxisValues(Object, Object, boolean)
+     * @see #resolveAxisValues(Object, String, boolean)
      */
     def resolveAxisValues(Object axis, boolean returnAssignments = false) {
         Set res = []
@@ -406,7 +406,7 @@ class NodeCaps implements Cloneable {
 
         if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${returnAssignments}): looking for: ${Utils.castString(axis)}"
 
-        this.nodeData.keySet().each() {nodeName ->
+        this.nodeData.keySet().each() {String nodeName ->
             if (nodeName == null) return // continue
             def nres = resolveAxisValues(axis, nodeName, returnAssignments)
             if (nres != null && nres.size() > 0)
