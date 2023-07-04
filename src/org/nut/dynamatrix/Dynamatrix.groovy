@@ -1,10 +1,14 @@
 package org.nut.dynamatrix;
 
+import hudson.AbortException;
+import hudson.model.Result;
+import hudson.remoting.RequestAbortedException;
+import hudson.remoting.RemotingSystemException;
+
 import java.util.ArrayList;
 import java.util.Arrays.*;
 import java.util.regex.*;
 
-import hudson.model.Result;
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
 
 import org.nut.dynamatrix.DynamatrixConfig;
@@ -1996,7 +2000,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         printStackTraceStderrOptional(fex)
                         throw fex
-                    } catch (hudson.AbortException hexA) {
+                    } catch (AbortException hexA) {
                         // This is thrown by steps like "error" and "unstable" (both)
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (dsbc.dsbcResult != null) {
@@ -2059,7 +2063,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         printStackTraceStderrOptional(hexA)
                         throw hexA
-                    } catch (hudson.remoting.RequestAbortedException rae) {
+                    } catch (RequestAbortedException rae) {
                         // https://javadoc.jenkins.io/component/remoting/hudson/remoting/RequestAbortedException.html
                         // > Signals that the communication is aborted and thus
                         // > the pending Request will never recover its Response.
@@ -2106,7 +2110,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         printStackTraceStderrOptional(rae)
                         throw rae
-                    } catch (hudson.remoting.RemotingSystemException rse) {
+                    } catch (RemotingSystemException rse) {
                         // Tends to happen with networking lags or agent crash, e.g.:
                         //   hudson.remoting.RemotingSystemException:
                         //   java.io.IOException: SSH channel is closed
@@ -2151,7 +2155,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         printStackTraceStderrOptional(rse)
                         throw rse
-                    } catch (java.io.IOException jioe) {
+                    } catch (IOException jioe) {
                         // Tends to happen with networking lags or agent crash, e.g.:
                         //   java.io.IOException: Unable to create live FilePath for agentName
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
@@ -2201,7 +2205,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.updateProgressBadge()
                         printStackTraceStderrOptional(jioe)
                         throw jioe
-                    } catch (java.lang.InterruptedException jlie) {
+                    } catch (InterruptedException jlie) {
                         // Tends to happen if e.g. Jenkins restarted during build
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (jlie == null) {
