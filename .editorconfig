@@ -1,0 +1,11 @@
+# Do not look upwards to include settings from other dirs
+root = true
+
+[*.groovy]
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[Jenkinsfile*]
+insert_final_newline = true
+trim_trailing_whitespace = true
+
