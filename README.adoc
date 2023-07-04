@@ -1,6 +1,53 @@
 Dynamatrix
 ==========
 
+General overview
+~~~~~~~~~~~~~~~~
+
+A Jenkins Pipeline Shared Library allows to re-use code blocks in
+different pipelines, to use Java class approach to data and logic
+implementation, as well as to store global static state data for
+the duration of a pipeline script execution.
+
+Its source repo has a predefined structure, and has to be registered
+on the Jenkins controller to be trusted, and the pipeline scripts
+can then include it like this:
+
+----
+@Library ('org.nut.dynamatrix') _
+----
+
+With https://github.com/jenkinsci/pipeline-groovy-lib-plugin/pull/19
+feature used in the build of the `@Library` implementation running on
+the Jenkins server, it is also possible to request "same branch of the
+library as the branch of pipeline script" with fallback to configured
+default branch, to avoid superficial differences between pipeline code
+branches, like this:
+
+----
+@Library ('org.nut.dynamatrix@${BRANCH_NAME}') _
+----
+
+Keep in mind that this is not a Groovy variable, just intentionally
+looks like one for simpler code maintenance. The `@Library` annotation
+is processed before compilation of pipeline script to Groovy and Java.
+
+[NOTE]
+.Obsoleted Note (valid for unmodified Jenkins servers):
+======
+The `@Library` method only allows non-dynamic references to the library
+(a different approach is possible for run-time resolution of branches
+with `library` step whose limitations make it not usable for us).
+
+For this reason, dev/test version of the code of the library from
+dev/test versions of its consumers had to be named explicitly, like this:
+
+----
+@Library ('org.nut.dynamatrix@fightwarn') _
+----
+
+======
+
 What and why
 ~~~~~~~~~~~~
 
@@ -207,11 +254,25 @@ Directory naming
 This is a Jenkins Shared Library. As such, it has some required file
 system structure including:
 
-* vars/ - the "groovy variables" which are, at least in this context,
+* `vars/` -- the "groovy variables" which are, at least in this context,
   sources for single-use class instances and their methods that can
-  be called from each other or from the pipeline which uses the lib;
-* src/ - formal classes including ones that can be static, such as
+  be called from each other or from the pipeline which uses the lib,
+  and as far as the pipeline is concerned, `call()` methods in these
+  groovy files are custom "steps" (named same as the file);
+
+* `src/` -- formal classes including ones that can be static, such as
   to store some persistent configuration for the run.
+
+There are further standard structure points that we do not currently
+use, such as location and naming of documentation to accompany the
+declared steps so this can be displayed by Jenkins UI, and location
+for resources such as shell scripts and arbitrary data used by JSL.
+
+Approach recommended in some of the articles linked below is that the
+logic is mostly (ideally all) in `src/` classes, while the `vars/`
+steps only wrap calls to that.
+
+Practice, especially during early development iterations, may be mixed.
 
 Inspirational reading
 ~~~~~~~~~~~~~~~~~~~~~
@@ -267,3 +328,29 @@ Standard reading library:
 * https://www.jenkins.io/doc/pipeline/steps/workflow-cps-global-lib/
 * https://www.jenkins.io/blog/2019/12/02/matrix-building-with-scripted-pipeline/
 * https://www.jenkins.io/blog/2019/11/22/welcome-to-the-matrix/
+
+Development info
+~~~~~~~~~~~~~~~~
+
+IntelliJ IDEA setup as the IDE for Jenkins-related contents, and creation
+of a Gradle project for easier maintenance and testing of Jenkins Shared
+Pipeline Libraries followed these articles:
+
+* http://tdongsi.github.io/blog/2018/02/09/intellij-setup-for-jenkins-shared-library-development/
+** https://github.com/tdongsi/jenkins-config/blob/develop/docs/IDE.md
+* https://github.com/mkobit/jenkins-pipeline-shared-libraries-gradle-plugin
+* https://github.com/mkobit/jenkins-pipeline-shared-library-example
+* https://stackoverflow.com/questions/53363828/jenkins-shared-library-with-intellij
+
+Random example self-tests:
+* https://github.com/jenkinsci/workflow-cps-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/cps/DSLTest.java
+
+Unit-tests of the JSL library
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This library is tested with the help of "mkobit" plugins referenced above.
+Tests are located in the `tests/` directory and implement example pipelines
+which are executed in either a temporary Jenkins environment provided by a
+`JenkinsRule` environment (from `jenkins-test-harness` project) or by a more
+dedicated server behind a `RealJenkinsRule`. They can be executed by an IDE
+(e.g. press `F9` in IntelliJ IDEA) or by `./gradlew integrationTest`.
