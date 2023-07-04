@@ -1,0 +1,5 @@
+This location is not a standard part of Jenkins Shared Library directory
+structure, it just contains pipelines and helper code for Replaying as
+we develop the library.
+
+For more details see link:../README.adoc[README.adoc in the repo root directory].

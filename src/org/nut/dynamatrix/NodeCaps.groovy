@@ -1,10 +1,11 @@
 package org.nut.dynamatrix;
 
 import java.util.ArrayList;
-import java.util.Arrays.*;
+import java.util.Arrays;
 import java.util.regex.*;
 
 import hudson.model.Node;
+import hudson.model.Label;
 
 import org.nut.dynamatrix.NodeData;
 import org.nut.dynamatrix.Utils;
@@ -71,7 +72,7 @@ class NodeCaps implements Cloneable {
         }
 
         if (builders != null) {
-            builders.each() {hudson.model.Node node ->
+            builders.each() {Node node ->
                 if (node == null) return
                 if (this.enableDebugTrace) this.script.println("NodeCaps: looking for node data: ${Utils.castString(node)}")
                 tmpNodeData[node.getNodeName()] = new NodeData(node)

@@ -1,7 +1,9 @@
 package org.nut.dynamatrix;
 
+import jenkins.model.Jenkins;
+
 import java.util.ArrayList;
-import java.util.Arrays.*;
+import java.util.Arrays;
 import java.util.regex.*;
 
 import hudson.model.Node;
@@ -35,7 +37,7 @@ class NodeData {
     public NodeData(Object nodeOrig) throws Exception {
         // System.out.println("NodeData: got arg: ${Utils.castString(nodeOrig)}"
 
-        hudson.model.Node node = null
+        Node node = null
         if (Utils.isNode(nodeOrig)) {
             node = nodeOrig
         } else if (Utils.isString(nodeOrig)) {
@@ -89,7 +91,7 @@ class NodeData {
     }
 
     @NonCPS
-    static hudson.model.Node getNodeByName(String name) {
+    static Node getNodeByName(String name) {
         def jenkins = Jenkins.getInstanceOrNull()
         if (jenkins != null) {
             return jenkins.getNode(name)
@@ -98,11 +100,11 @@ class NodeData {
     }
 
     @NonCPS
-    hudson.model.Node getNode() {
+    Node getNode() {
         return getNodeByName(this.name);
     }
 
-    hudson.model.Node getNodeName() {
+    Node getNodeName() {
         return this.name;
     }
 
