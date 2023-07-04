@@ -8,60 +8,71 @@ import java.lang.reflect.Modifier;
 
 import hudson.plugins.git.extensions.GitSCMExtension;
 
-/* For Jenkins Swarm build agents that dial in to the controller,
+/**
+ * For Jenkins Swarm build agents that dial in to the controller,
  * which themselves may have or not have access to the SCM server,
  * we offer a way for the controller to push sources of the current
  * tested build as a stash. There is currently no way to cache it
  * however, so multiple builds landing on same agent suffer this
- * push many times (time, traffic, I/O involved).
+ * push many times (time, traffic, I/O involved).<br/>
  *
  * For agents that know they can access the original SCM server
  * (e.g. GitHub with public repos and generally available Internet),
  * it may be more optimal to tell them to just check out locally,
  * especially if optimizations like Git reference repository local
  * to that worker are involved. Such agents can declare this by
- * specifying a node label DYNAMATRIX_UNSTASH_PREFERENCE=... with
+ * specifying a node label {@code DYNAMATRIX_UNSTASH_PREFERENCE=...}
+ * with values like:
+ * <pre>
  *   ...=scm-ws(:stashName)
  *   ...=scm(:stashName)
  *   ...=unstash(:stashName)
- * with fallback handling in this order.
- * The optional ":stashName" suffix allows to limit the preference
- * to builds of a particular project which uses that string, e.g.
- * DYNAMATRIX_UNSTASH_PREFERENCE=scm:nut-ci-src
+ * </pre>
+ * with fallback handling in this order.<br/>
+ *
+ * The optional {@code ":stashName"} suffix allows to limit the
+ * preference to builds of a particular project which uses that
+ * string, e.g.
+ * <pre>
+ *    DYNAMATRIX_UNSTASH_PREFERENCE=scm:nut-ci-src
+ * </pre>
+ *
  * A node may define the default preference and ones customized for
- * the stashName(s), the latter would be preferred. A node should
- * not define two or more preferences for same stashName, behavior
- * would be undefined in that case.
+ * the {@code stashName}(s), the latter would be preferred. A node
+ * should not define two or more preferences for same {@code stashName},
+ * behavior would be undefined in that case.<br/>
  *
- * The original optional "scmbody" Closure used for stashCleanSrc()
+ * The original optional "scmbody" Closure used for {@link #stashCleanSrc}()
  * with that stashName would be replayed on the agent, if "scm" is
- * preferred.
+ * preferred.<br/>
  *
- * Also, if the current node running unstashCleanSrc() declares a
- * GIT_REFERENCE_REPO_DIR environment variable, its value would be
- * injected into GitSCM configuration for repo cloning operations.
- * For deployments running git-client-plugin with support for fanned
- * out refrepo like /some/path/${GIT_SUBMODULES}, that suffix string
- * '/${GIT_SUBMODULES}' should be verbatim in the expanded envvar:
+ * Also, if the current node running {@link #unstashCleanSrc}() declares a
+ * {@code GIT_REFERENCE_REPO_DIR} environment variable, its value would be
+ * injected into GitSCM configuration for repo cloning operations.<br/>
+ *
+ * NOTE: For deployments running git-client-plugin with support for fanned
+ * out refrepo like {@code /some/path/${GIT_SUBMODULES}}, that suffix string
+ * {@code '/${GIT_SUBMODULES}'} should be verbatim in the expanded envvar:
  *   https://issues.jenkins.io/browse/JENKINS-64383
  *   https://github.com/jenkinsci/git-client-plugin/pull/644
  *   https://github.com/jimklimov/git-refrepo-scripts
+ * <br/>
  *
- * TODO: the plugin itself does not define nor use the environment
- * variable GIT_REFERENCE_REPO_DIR, it only consults the setting in
- * its "scm" object (coming down from organization folder or other
- * pipeline checkout configuration advanced options). The same-named
- * environment variable is however defined in `git-refrepo-scripts`.
- * With this library class, the variable set at build agent level
- * can be honoured (along with DYNAMATRIX_UNSTASH_PREFERENCE="scm")
- * to use a refrepo defined (and somehow maintained) on that agent.
+ * TODO: the plugin itself does not define nor use the environment variable
+ *  {@code GIT_REFERENCE_REPO_DIR}, it only consults the setting in
+ *  its "scm" object (coming down from organization folder or other
+ *  pipeline checkout configuration advanced options). The same-named
+ *  environment variable is however defined in `git-refrepo-scripts`.
+ *  With this library class, the variable set at build agent level
+ *  can be honoured (along with {@code DYNAMATRIX_UNSTASH_PREFERENCE="scm"})
+ *  to use a refrepo defined (and somehow maintained) on that agent.
  */
 
 class DynamatrixStash {
-    // If closures were used to check out a stashName, track it here:
+    /** If closures were used to check out a stashName, track it here */
     private static def stashCode = [:]
 
-    // Track info about whatever we checked out with helpers here:
+    /** Track info about whatever we checked out with helpers here */
     private static def stashSCMVars = [:]
 
     static void deleteWS(def script) {
@@ -85,15 +96,17 @@ class DynamatrixStash {
 
     static String getGitRefrepoDirWSbase(def script) {
         // TODO: Find a way to know build agent workdir - that
-        // is what we want; "path relative to workspace" may lie
+        //  is what we want; "path relative to workspace" may lie
         if (!useGitRefrepoDirWS(script)) return null
         return "${script.env.WORKSPACE}/../.gitcache-dynamatrix"
     }
 
+    /**
+     * Returns the reference repository URL usable by git-client-plugin
+     * or null if none was found.
+     */
     static String getGitRefrepoDir(def script) {
         // NOTE: Have this logic defined and extensible in one place
-        // Returns the reference repository URL usable by git-client-plugin
-        // or null if none was found.
         String refrepo
 
         // Does the current build agent's set of envvars declare the path?
@@ -119,31 +132,33 @@ class DynamatrixStash {
         return null
     }
 
+    /**
+     * Helper to produce a git checkout with the parameter array
+     * similar to that of the standard checkout() step, which we
+     * can tune here. The optional "coRef" can specify the code
+     * revision to checkout, as branch name e.g. "master", or as
+     * the commit hash identifier, or a tag as "refs/tags/v1.2.3".<br/>
+     *
+     * This routine only intrudes in a few parts of the scmParams
+     * spec, if customized by run-time circumstances and not
+     * specified by caller: the $class, branches, and extensions
+     * for git reference repository.<br/>
+     *
+     * Example code that caller might directly specify:
+     * <pre>
+     *    checkout([$class: 'GitSCM', branches: [[name: "refs/tags/v2.7.4"]],
+     *        doGenerateSubmoduleConfigurations: false,
+     *        extensions: [
+     *            [$class: 'SubmoduleOption', disableSubmodules: false,
+     *             parentCredentials: false, recursiveSubmodules: false,
+     *             reference: '', trackingSubmodules: false]
+     *        ],
+     *        submoduleCfg: [],
+     *        userRemoteConfigs: [[url: "https://github.com/networkupstools/nut"]]
+     *    ])
+     * </pre>
+     */
     static def checkoutGit(def script, Map scmParams = [:], String coRef = null) {
-        // Helper to produce a git checkout with the parameter array
-        // similar to that of the standard checkout() step, which we
-        // can tune here. The optional "coRef" can specify the code
-        // revision to checkout, as branch name e.g. "master", or as
-        // the commit hash identifier, or a tag as "refs/tags/v1.2.3".
-
-        // This routine only intrudes in a few parts of the scmParams
-        // spec, if customized by run-time circumstances and not
-        // specified by caller: the $class, branches, and extensions
-        // for git reference repository.
-
-/* // Example code that caller might directly specify:
-    checkout([$class: 'GitSCM', branches: [[name: "refs/tags/v2.7.4"]],
-        doGenerateSubmoduleConfigurations: false,
-        extensions: [
-            [$class: 'SubmoduleOption', disableSubmodules: false,
-             parentCredentials: false, recursiveSubmodules: false,
-             reference: '', trackingSubmodules: false]
-        ],
-        submoduleCfg: [],
-        userRemoteConfigs: [[url: "https://github.com/networkupstools/nut"]]
-        ])
-*/
-
         if (!scmParams.containsKey('$class')) {
             script.echo "scmParams: inject class"
             scmParams << [$class: 'GitSCM']
@@ -160,7 +175,7 @@ class DynamatrixStash {
                 def seenClone = false
                 def seenSubmodules = false
                 // TODO? Just detect, do not change the iterated set?
-                scmParams.extensions.each() { extset ->
+                scmParams.extensions.each() {Map extset ->
                     if (extset.containsKey('$class')) {
                         switch (extset['$class']) {
                             case 'CloneOption':
@@ -203,9 +218,11 @@ class DynamatrixStash {
         return s
     }
 
+    /**
+     * Similar to {@link #checkoutGit}(), but for an SCM class; inspired by
+     * https://issues.jenkins.io/browse/JENKINS-43894?focusedCommentId=332158
+     */
     static def checkoutSCM(def script, def scmParams, String coRef = null) {
-        // Similar to checkoutGit() above, but for an SCM class; inspired by
-        // https://issues.jenkins.io/browse/JENKINS-43894?focusedCommentId=332158
         Field field = null
 
         if (scmParams instanceof hudson.plugins.git.GitSCM) {
@@ -300,12 +317,15 @@ class DynamatrixStash {
         return s
     }
 
+    /**
+     * Per https://plugins.jenkins.io/workflow-scm-step/ the common
+     * "scm" is a Map maintained by the pipeline, so we can tweak it
+     * Per other observations, it can be e.g. a GitSCM object instead.<br/>
+     *
+     * In any case, use a clone to avoid manipulating options of the
+     * original object (refrepo, etc.) when tuning individual builds.
+     */
     static def cloneSCM(def script, def scm = null) {
-        // Per https://plugins.jenkins.io/workflow-scm-step/ the common
-        // "scm" is a Map maintained by the pipeline, so we can tweak it
-        // Per other observations, it can be e.g. a GitSCM object instead.
-        // In any case, use a clone to avoid manipulating options of the
-        // original object (refrepo, etc.) when tuning individual builds.
         def clonedScm = null
         if (scm == null) scm = script.scm
 
@@ -341,8 +361,8 @@ class DynamatrixStash {
         return checkoutCleanSrc(script, stashName, true, scmbody)
     }
 
+    /** Optional closure can fully detail how the code is checked out */
     static def checkoutCleanSrc(def script, String stashName = null, Boolean untieRefrepoNow = true, Closure scmbody = null) {
-        // Optional closure can fully detail how the code is checked out
         deleteWS(script)
 
         def scm = cloneSCM(script)
@@ -376,14 +396,18 @@ class DynamatrixStash {
             // For initial checkouts headed to stashing
             // Not desired for subsequent checkouts on build agents
             untieRefrepo(script)
-        } // node isUnix(), can sh
+        } else {
+            script.echo "checkoutCleanSrc: NOT calling untieRefrepo() - benefitting from refrepo and risking if it is garbage-collected, removed, etc."
+        }
 
         return res
     } // checkoutCleanSrc()
 
+    /**
+     * If we made a git checkout with a refrepo, untie it before stashing
+     * https://stackoverflow.com/questions/2248228/how-to-detach-alternates-after-git-clone-reference
+     */
     static void untieRefrepo(def script) {
-        // If we made a git checkout with a refrepo, untie it before stashing
-        // https://stackoverflow.com/questions/2248228/how-to-detach-alternates-after-git-clone-reference
         // TODO: Would a `git gc` reduce footprint to stash?
         if (script.isUnix()) {
             script.sh label:"Untie the git checkout from reference repo (if any)", script:"""
@@ -409,22 +433,23 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         return checkoutCleanSrcNamed(script, stashName, true, scmbody)
     }
 
+    /**
+     * Optional closure can fully detail how the code is checked out.<br/>
+     * Remember last used method for this stashName,
+     * we may have to replay it on some workers
+     */
     static def checkoutCleanSrcNamed(def script, String stashName, Boolean untieRefrepoNow, Closure scmbody = null) {
         // Different name because groovy gets lost with parameter count
-        // when some can be defaulted
-
-        // Optional closure can fully detail how the code is checked out
-        // Remember last used method for this stashName,
-        // we may have to replay it on some workers
+        // when some can be defaulted.
         script.echo "Saving scmbody for ${stashName}: ${Utils.castString(scmbody)}"
         stashCode[stashName] = scmbody
         script.echo "Calling actual checkoutCleanSrc()"
         return checkoutCleanSrc(script, stashName, untieRefrepoNow, scmbody)
     } // checkoutCleanSrcNamed()
 
+    /** Optional closure can fully detail how the code is checked out */
     static def stashCleanSrc(def script, String stashName, Closure scmbody = null) {
         script.lock (resource: "dynamatrix-stash:${stashName}:${script?.env?.BUILD_TAG}", quantity: 1) {
-            // Optional closure can fully detail how the code is checked out
             def res = checkoutCleanSrcNamed(script, stashName, true, scmbody)
 
             // Be sure to get also "hidden" files like .* in Unix customs => .git*
@@ -446,17 +471,18 @@ git status || true
                         label:"Investigate git checkout metadata before stash()",
                         script:'git config remote.origin.url').trim()
                 }
-            }
+            } // isUnix
+
             script.stash (name: stashName, includes: '**,.*,*,.git,.git/**,.git/refs', excludes: '', useDefaultExcludes: false)
             return res
         } // lock
     } // stashCleanSrc()
 
+    /** only unstashes into current dir() from caller,
+     * no pre-cleanup done here (may be in caller)
+     */
     static def unstashScriptedSrc(def script, String stashName) {
-        // only unstashes into current dir() from caller,
-        // no pre-cleanup done here (may be in caller)
-
-        // a no-op lock to make sure stashing above has completed
+        // a no-op lock to make sure stashing above has completed:
         script.lock (resource: "dynamatrix-stash:${stashName}:${script?.env?.BUILD_TAG}", quantity: 1) {}
 
         def res = script.unstash (stashName)
@@ -477,16 +503,19 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         return res
     }
 
+    /**
+     * lock: rely on Lockable Resources plugin<br/>
+     *
+     * TODO: try/catch to do similar via filesystem, e.g. using some
+     *  file with the name of the build in that directory.<br/>
+     *
+     * NOTE: different build agents may be using the same filesystem
+     * with the git-cache (containers on same host, NFS share, etc.)
+     * so naming a lock by agent name alone may be folly.
+     * See also:
+     *   https://stackoverflow.com/questions/36581015/accessing-the-current-jenkins-build-in-groovy-script
+     */
     synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName) {
-        // lock: rely on Lockable Resources plugin
-        // TODO: try/catch to do similar via filesystem, e.g. using some
-        // file with the name of the build in that directory.
-        // NOTE: different build agents may be using the same filesystem
-        // with the git-cache (containers on same host, NFS share, etc.)
-        // so naming a lock by agent name alone may be folly.
-        // See also:
-        //   https://stackoverflow.com/questions/36581015/accessing-the-current-jenkins-build-in-groovy-script
-
         def scm = cloneSCM(script)
 
         if (!(Utils.isMap(scm)
@@ -595,7 +624,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
             def lockName = script?.env?.DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME
             if (!Utils.isStringNotEmpty(lockName)) {
                 if (script?.env?.NODE_LABELS) {
-                    script.env.NODE_LABELS.split('[ \r\n\t]+').each() { KV ->
+                    script.env.NODE_LABELS.split('[ \r\n\t]+').each() {String KV ->
                         if (KV =~ /^DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME=.*$/) {
                             def key = null
                             def val = null
@@ -750,7 +779,7 @@ exit \$RET
         deleteWS(script)
         if (script?.env?.NODE_LABELS) {
             def useMethod = null
-            script.env.NODE_LABELS.split('[ \r\n\t]+').each() { KV ->
+            script.env.NODE_LABELS.split('[ \r\n\t]+').each() {String KV ->
                 //script.echo "[D] unstashCleanSrc(): Checking node label '${KV}'"
                 if (KV =~ /^DYNAMATRIX_UNSTASH_PREFERENCE=.*$/) {
                     def key = null
@@ -780,8 +809,9 @@ exit \$RET
                     // The stashCode[stashName] should be defined, maybe null,
                     // by an earlier stashCleanSrc() with same stashName.
                     // We error out otherwise, same as would for unstash().
+                    // Do benefit from local reference repo, if any (untie=false)
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrc"
-                    if (checkoutCleanSrc(script, stashCode[stashName]))
+                    if (checkoutCleanSrc(script, stashCode[stashName], false))
                         return
 
                     // on error, fall through to unstash
@@ -795,11 +825,12 @@ exit \$RET
                     // SCM operation from source or by unstash + update from
                     // this copy) and finally check out current build workspace
                     // using this refrepo. Use locking!
+                    // Do benefit from local reference repo, if any (untie=false)
 
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
                     if (checkoutCleanSrcRefrepoWS(script, stashName) == false) {
                         script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but failed on node '${script?.env?.NODE_NAME}'. Falling back to 'scm'."
-                        if (checkoutCleanSrc(script, stashCode[stashName]))
+                        if (checkoutCleanSrc(script, stashCode[stashName], false))
                             return
                     } else {
                         return

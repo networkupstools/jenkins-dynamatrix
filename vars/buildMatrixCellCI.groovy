@@ -406,11 +406,14 @@ for F in .ci.*.log ; do
 done
 """
 
-        // NOTE: No subdirs support for cppcheck*.xml here, unlike analysis above
+        // NOTE: Subdirs support for cppcheck*.xml and config.log here,
+        // similar to analysis above allows for out-of-tree builds etc.
         sh label: 'Compress collected logs', script: """
 if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
-for F in config.log cppcheck*.xml ; do
-    if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$F"'.gz' || true ; fi
+find . -type f -name config.log -o config.nut_report_feature.log -o -name 'cppcheck*.xml' | sed 's,^\\./,,' \
+| while read F ; do
+    N="`echo "\$F" | tr '/' '_'`"
+    if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$N"'.gz' || true ; fi
 done
 """
         archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
@@ -527,6 +530,12 @@ done
                             sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
                         }
                     }
+                    def files = findFiles(glob: ".ci.${archPrefix}.*_config*.log.gz")
+                    if (Utils.isListNotEmpty(files)) {
+                        files.each { def FF -> // FileWrapper FF ->
+                            sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${FF.name}'>${FF.name}</a></li>"
+                        }
+                    }
                 } catch (Throwable tF) {} // no-op, possibly some iteration/fileExists problem
                 sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
 
@@ -597,10 +606,26 @@ EOF
 ...logged into: ${logfile} => ${env.BUILD_URL}/artifact/${logfile}.gz
 EOF
   echo "NOTE: Saved big job artifacts for this single build scenario usually have same identifier in the middle of file name"
-  if [ -s config.log ] || [ -s ".ci.${archPrefix}.config.log.gz" ]; then
+  if [ -s config.log ] || [ -n "`ls -1 .ci.${archPrefix}.config.log.gz .ci.${archPrefix}.*_config.log.gz 2>/dev/null`" ]; then
     echo "...e.g. a (renamed, compressed) copy of config.log for this build"
     if [ -n "${archPrefix}" ] && [ "${archPrefix}" != null ] ; then
-        echo "...like ${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz"
+        CONFIG_LOG_URLS=""
+        for C in .ci.${archPrefix}.config.log.gz .ci.${archPrefix}.*_config.log.gz ; do
+            [ -s "\$C" ] && CONFIG_LOG_URLS="\$CONFIG_LOG_URLS ${env.BUILD_URL}/artifact/\$C"
+        done
+        [ -n "\$CONFIG_LOG_URLS" ] || CONFIG_LOG_URLS="${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz"
+        echo "...like \${CONFIG_LOG_URLS}"
+    fi
+  fi
+  if [ -s config.nut_report_feature.log ] || [ -n "`ls -1 .ci.${archPrefix}.config.nut_report_feature.log.gz .ci.${archPrefix}.*_config_nut_report_feature.log.gz 2>/dev/null`" ]; then
+    echo "...e.g. a (renamed, compressed) copy of config.nut_report_feature.log for this build"
+    if [ -n "${archPrefix}" ] && [ "${archPrefix}" != null ] ; then
+        CONFIG_LOG_URLS=""
+        for C in .ci.${archPrefix}.config.nut_report_feature.log.gz .ci.${archPrefix}.*_config_nut_report_feature.log.gz ; do
+            [ -s "\$C" ] && CONFIG_LOG_URLS="\$CONFIG_LOG_URLS ${env.BUILD_URL}/artifact/\$C"
+        done
+        [ -n "\$CONFIG_LOG_URLS" ] || CONFIG_LOG_URLS="${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.nut_report_feature.log.gz"
+        echo "...like \${CONFIG_LOG_URLS}"
     fi
   fi
 ) >&2
