@@ -117,11 +117,13 @@ dependencies {
     //   - Update required: Pipeline: Groovy (workflow-cps 2.72) to be updated to 2660.vb_c0412dc4e6d or higher
     testRuntimeOnly("org.jenkins-ci.plugins.workflow:workflow-cps:3624.v43b_a_38b_62b_b_7")
     testImplementation ("com.cloudbees:groovy-cps:3624.v43b_a_38b_62b_b_7")
+    implementation ("org.jenkins-ci.main:remoting:3131.vf2b_b_798b_ce99")
+    implementation ("org.jenkins-ci.plugins:git:5.1.0")
     implementation ("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    testImplementation("org.assertj:assertj-core:3.12.2")
 /*
   val spock = "org.spockframework:spock-core:1.2-groovy-2.4"
   testImplementation(spock)
-  testImplementation("org.assertj:assertj-core:3.12.2")
   integrationTestImplementation(spock)
 */
 }
@@ -173,6 +175,9 @@ sharedLibrary {
 
         dependency("org.jenkins-ci.plugins", "matrix-project", "1.20")
         dependency("org.jenkins-ci.plugins", "pipeline-utility-steps", "2.13.0")
+
+        dependency("org.jenkins-ci.plugins", "git", "5.1.0")
+        dependency("org.jenkins-ci.main", "remoting", "3131.vf2b_b_798b_ce99")
 
         dependency("javax.activation", "activation", "1.1")
         //dependency("com.sun.activation", "jakarta.activation", "2.0.0")

@@ -6,7 +6,7 @@ import hudson.remoting.RequestAbortedException;
 import hudson.remoting.RemotingSystemException;
 
 import java.util.ArrayList;
-import java.util.Arrays.*;
+import java.util.Arrays;
 import java.util.regex.*;
 
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;

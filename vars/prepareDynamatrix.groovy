@@ -1,5 +1,5 @@
 import java.util.ArrayList;
-import java.util.Arrays.*;
+import java.util.Arrays;
 import java.util.regex.*;
 
 import org.nut.dynamatrix.DynamatrixConfig;
