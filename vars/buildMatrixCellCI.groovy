@@ -539,7 +539,7 @@ done
                 } catch (Throwable tF) {} // no-op, possibly some iteration/fileExists problem
                 sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
 
-                createSummary(text: sumtxt, icon: '/images/48x48/' + sumimg + '.png')
+                createSummary(text: sumtxt, icon: sumimg + '.gif')
             } catch (Throwable t) {} // no-op, possibly missing badge plugin
         }
 

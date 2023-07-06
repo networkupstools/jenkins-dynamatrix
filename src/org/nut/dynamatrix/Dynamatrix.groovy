@@ -2055,7 +2055,7 @@ def parallelStages = prepareDynamatrix(
                                             script.echo "[ERROR] " + msgEx
                                         }
 
-                                        createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                        createSummary(msgEx, 'warning.gif', "${dsbc.objectID}-exception-${dsbc.startCount}")
                                         break
                                 }
                             }
@@ -2104,7 +2104,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                createSummary(msgEx, 'warning.gif', "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -2149,7 +2149,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                createSummary(msgEx, 'warning.gif', "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -2199,7 +2199,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                createSummary(msgEx, 'warning.gif', "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -2242,7 +2242,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                createSummary(msgEx, 'warning.gif', "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         dsbc.thisDynamatrix?.updateProgressBadge()
@@ -2274,7 +2274,7 @@ def parallelStages = prepareDynamatrix(
                             script.echo "[ERROR] " + msgEx
                         }
 
-                        createSummary(msgEx, '/images/48x48/warning.png', "${dsbc.objectID}-exception-${dsbc.startCount}")
+                        createSummary(msgEx, 'warning.gif', "${dsbc.objectID}-exception-${dsbc.startCount}")
 
                         printStackTraceStderrOptional(t)
                         throw t

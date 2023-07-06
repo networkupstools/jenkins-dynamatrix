@@ -559,7 +559,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         try {
                                             createSummary(text: "Saved the list of slowBuild stages into a text artifact " +
                                                 "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>",
-                                                icon: '/images/48x48/notepad.png')
+                                                icon: 'text.gif')
                                         } catch (Throwable ts) {
                                             echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                                             if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -599,7 +599,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         // Note: replace goes by regex so '\*'
                                         sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<p>Detailed hit counts:<ul>') + '</li></ul></p>'
                                     }
-                                    createSummary(text: sbSummary + sbSummaryCount, icon: '/images/48x48/notepad.png')
+                                    createSummary(text: sbSummary + sbSummaryCount, icon: 'text.gif')
                                 } catch (Throwable t) {
                                     echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                                     if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -771,7 +771,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 currentBuild.result = 'ABORTED'
                                 def txt = "Only started ${mapCountStages.STARTED} (restarted ${mapCountStages.RESTARTED}) and completed ${mapCountStages.COMPLETED} dynamatrix 'slowBuild' stages, while we should have had ${stagesBinBuild.size() - 1} builds"
                                 try {
-                                    createSummary(text: "Build seems not finished: " + txt, icon: '/images/48x48/error.png')
+                                    createSummary(text: "Build seems not finished: " + txt, icon: 'error.gif')
                                 } catch (Throwable t) {} // no-op
                                 error txt
                             }
@@ -925,7 +925,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                         def txtOK = "Build completed successfully"
                         manager.addShortText(txtOK)
-                        createSummary(text: txtOK + ": " + txt, icon: '/images/48x48/notepad.png')
+                        createSummary(text: txtOK + ": " + txt, icon: 'text.gif')
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -944,7 +944,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         }
                         txt = "Not all went well: " + txt
                         manager.addShortText(txt)
-                        createSummary(text: txt, icon: '/images/48x48/warning.png')
+                        createSummary(text: txt, icon: 'warning.gif')
 
                         // returns Map<Result, Set<String>>
                         def mapres = dynamatrix.reportStageResults()
@@ -973,7 +973,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     txt += "</li>\n"
                                 }
                                 txt += "</nl>\n"
-                                createSummary(text: txt, icon: '/images/48x48/warning.png')
+                                createSummary(text: txt, icon: 'warning.gif')
                             }
                         }
                     } catch (Throwable t) {
