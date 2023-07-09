@@ -5,7 +5,7 @@ import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 /**
- * This class intends to represent one build request configuration
+ * This class intends to represent one build request configuration.
  * An instance of it can be passed as the set of arguments for the
  * customized run Dynamatrix routines, while some defaults can be
  * applied so needed fields are all "defined" when we look at them.
@@ -374,6 +374,14 @@ def parallelStages = prepareDynamatrix(
         return (DynamatrixConfig) super.clone();
     }
 
+    /**
+     * Prepares the class instance settings for one of pre-defined
+     * default configurations:
+     *   ['C', 'C-all', 'CXX', 'CXX-all', 'C+CXX', 'C+CXX-all']
+     *<br/>
+     * Returns a boolean status (true if OK), or a string with error details.
+     * @see #initDefault(Map)
+     */
     public def initDefault(String defaultCfg) {
         boolean debugTrace = this.shouldDebugTrace()
 
@@ -570,6 +578,10 @@ def parallelStages = prepareDynamatrix(
         this.initDefault(dynacfgOrig)
     }
 
+    /**
+     * Returns a boolean status (true if OK), or a string with error details
+     * @see #initDefault(String)
+     */
     public def initDefault(Map dynacfgOrig) {
         boolean debugErrors = this.shouldDebugErrors()
         boolean debugTrace = this.shouldDebugTrace()
@@ -676,7 +688,7 @@ def parallelStages = prepareDynamatrix(
         return this
     }
 
-    /*
+    /**
      * Our callers expect a few specific data constructs here:
      * either a single string or pattern (that will be remade into
      * a single-element array), or an array/list/set/... of such types
