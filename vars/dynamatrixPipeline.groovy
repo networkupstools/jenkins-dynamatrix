@@ -215,7 +215,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     DynamatrixConfig dynacfg = new DynamatrixConfig(this)
     dynacfg.initDefault(dynacfgBase)
 
-    if (dynacfg.compilerType in ['C']) {
+    if (dynacfg.compilerType in [CompilerTypes.C]) {
         // Set global default
         dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc
     }

@@ -759,7 +759,9 @@ def parallelStages = prepareDynamatrix(
 
 } // end of class DynamatrixConfig
 
+/** Used in {@link DynamatrixConfig#initDefault}() to pre-select tools and dynamatrix axes */
 enum CompilerTypes {
 //    null,
+    /** C/C++ compiler type */
     C
 }
