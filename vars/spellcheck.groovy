@@ -65,6 +65,13 @@ Map makeMap(Map dynacfgPipeline = [:]) {
 }
 
 Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
+
     if (dynacfgPipeline.containsKey('spellcheck')) {
         if ("${dynacfgPipeline['spellcheck']}".trim().equals("true")) {
             dynacfgPipeline['spellcheck'] = '( \${MAKE} spellcheck )'

@@ -113,8 +113,14 @@ def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
 //dynacfgPipeline.shellcheck.stageNameFunc = this.&stageNameFunc_ShellcheckCustom
 */
 
+/** Revise base defaults not too specific for any particular toolchain we would use */
 Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
-    // Base defaults not too specific for any particular toolchain we would use
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
 
     if (!dynacfgPipeline.containsKey('buildSystem')) {
         dynacfgPipeline.buildSystem = 'autotools'
@@ -177,6 +183,19 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
 def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     // dynacfgBase = Base configuration for Dynamatrix for this pipeline
     // dynacfgPipeline = Step-dependent setup in sub-maps
+
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
+
+    if (dynacfgBase == null) {
+        dynacfgBase = [:]
+    } else {
+        dynacfgBase = (Map)(dynacfgBase.clone())
+    }
 
     // Hacky big switch for a max debug option
     if (true)

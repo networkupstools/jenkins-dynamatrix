@@ -581,7 +581,7 @@ def parallelStages = prepareDynamatrix(
         // Combine a config with defaults from a Set passed to a groovy call()
         if (dynacfgOrig.size() > 0) {
             // Be sure to only mutilate a copy below, not the original object
-            dynacfgOrig = dynacfgOrig.clone()
+            dynacfgOrig = (Map)(dynacfgOrig.clone())
 
             // Note: in addition to standard contents of class DynamatrixConfig,
             // the Map passed by caller may contain "defaultDynamatrixConfig" as

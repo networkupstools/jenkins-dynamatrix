@@ -265,6 +265,13 @@ Map makeMap(Set<List> stagesShellcheck_arr = []) {
 }
 
 Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
+
     if (dynacfgPipeline.containsKey('shellcheck')) {
         if (Utils.isMap(dynacfgPipeline['shellcheck'])) {
             if (!dynacfgPipeline['shellcheck'].containsKey('dynamatrixAxesLabels') || "".equals(dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'])) {

@@ -803,7 +803,7 @@ def parallelStages = prepareDynamatrix(
      * @see #prepareDynamatrix
      */
     static def clearMapNeedsPrepareDynamatrixClone(Map dynacfgOrig = [:]) {
-        Map dc = dynacfgOrig?.clone()
+        Map dc = (Map)(dynacfgOrig?.clone())
         if (dc?.commonLabelExpr)
             dc.remove('commonLabelExpr')
         if (dc?.dynamatrixAxesLabels)
@@ -853,6 +853,13 @@ def parallelStages = prepareDynamatrix(
         boolean debugTrace = this.shouldDebugTrace()
         boolean debugMilestones = this.shouldDebugMilestones()
         boolean debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+
+        // Avoid NPEs and changing the original Map's entries unexpectedly:
+        if (dynacfgOrig == null) {
+            dynacfgOrig = [:]
+        } else {
+            dynacfgOrig = (Map)(dynacfgOrig.clone())
+        }
 
         //if (debugErrors) this.script.println "[WARNING] NOT FULLY IMPLEMENTED: Dynamatrix.prepareDynamatrix()"
 
