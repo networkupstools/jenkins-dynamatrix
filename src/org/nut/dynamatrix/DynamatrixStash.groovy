@@ -631,7 +631,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                         if (KV =~ /^DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME=.*$/) {
                             String key = null
                             String val = null
-                            (key, val) = KV.split('=')
+                            (key, val) = KV.split('=', 2)
                             lockName = val
                         }
                     }
@@ -787,7 +787,7 @@ exit \$RET
                 if (KV =~ /^DYNAMATRIX_UNSTASH_PREFERENCE=.*$/) {
                     String key = null
                     String val = null
-                    (key, val) = KV.split('=')
+                    (key, val) = KV.split('=', 2)
                     //script.echo "[D] unstashCleanSrc(): Checking node label deeper: '${key}'='${val}' (stashName='${stashName}')"
                     if (val == "scm:${stashName}") {
                         useMethod = 'scm'
