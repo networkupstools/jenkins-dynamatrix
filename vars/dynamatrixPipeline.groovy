@@ -6,6 +6,8 @@
  * SHELL_PROGS, MAKE, ARCH_BITS, ARCH${ARCH_BITS} (e.g. ARCH32)
  */
 
+package org.nut.dynamatrix;
+
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 

@@ -1,3 +1,5 @@
+package org.nut.dynamatrix;
+
 /* A little PoC to test the excludeCombos in-vivo with Jenkins console */
 def call(Boolean debug = false) {
     def CSTDVERSION = ['89', '99', '03', '11', '14', '17', '2x']

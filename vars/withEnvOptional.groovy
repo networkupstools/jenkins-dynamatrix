@@ -1,3 +1,5 @@
+package org.nut.dynamatrix;
+
 import org.joda.time.Instant;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.NodeData;

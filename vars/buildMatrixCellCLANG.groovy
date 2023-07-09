@@ -1,3 +1,5 @@
+package org.nut.dynamatrix;
+
 import org.nut.dynamatrix.*;
 
 /*
