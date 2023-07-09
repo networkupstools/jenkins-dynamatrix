@@ -302,7 +302,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
         if (Utils.isClosure(dynacfgPipeline?.paramsHandler)) {
             // Optional sanity-checks, assignment of dynacfgPipeline.* fields, etc.
             stage("Handle build parameters") {
-                dynacfgPipeline.paramsHandler()
+                dynacfgPipeline.paramsHandler.call()
             }
         }
 
@@ -667,7 +667,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     try {
                         // Can depend on plugins not available at this Jenkins
                         // instance, e.g. instant-messaging and IRC plugins
-                        dynacfgPipeline.notifyHandler()
+                        dynacfgPipeline.notifyHandler.call()
                     } catch (Throwable t) {
                         echo "WARNING: Tried to notify about build result (${currentBuild.result}) by user-provided method, and failed to"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -1035,7 +1035,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             try {
                 // Can depend on plugins not available at this Jenkins
                 // instance, e.g. instant-messaging and IRC plugins
-                dynacfgPipeline.notifyHandler()
+                dynacfgPipeline.notifyHandler.call()
             } catch (Throwable t) {
                 echo "WARNING: Tried to notify about build result (${currentBuild.result}) by user-provided method, and failed to"
                 if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
