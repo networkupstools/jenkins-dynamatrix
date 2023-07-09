@@ -1845,7 +1845,7 @@ def parallelStages = prepareDynamatrix(
 
             // Used to be '/images/48x48/warning.png', an arg for createSummary()
             // Maybe sourced from https://github.com/jenkinsci/jenkins/blob/master/war/src/main/webapp/images/48x48 :
-            def badgeImageDSBCcaughtException = '/images/48x48/aborted.png'
+            def badgeImageDSBCcaughtException = '/images/48x48/aborted.png'	// '/images/svgs/warning.svg'
 
             // Support optional "failFastSafe" mechanism to raise the "mustAbort" flag
             if (true) { // scoping

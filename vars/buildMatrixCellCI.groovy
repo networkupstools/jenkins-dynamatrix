@@ -516,14 +516,14 @@ done
                 // after the logic below, an arg for createSummary()
                 // Maybe sourced from https://github.com/jenkinsci/jenkins/blob/master/war/src/main/webapp/images/48x48 :
                 def sumimg = null
-                def suming_prefix = '/images/48x48/'
-                def suming_suffix = '.png'
+                def suming_prefix = '/images/svgs/'
+                def suming_suffix = '.svg'
                 if (dsbc?.isAllowedFailure) {
                     sumtxt = "[UNSTABLE (non-success is expected)] "
-                    sumimg = 'yellow'	// 'warning'
+                    sumimg = 'warning'
                 } else {
                     sumtxt = "[FAILURE (not anticipated)] "
-                    sumimg = 'red'		// 'error'
+                    sumimg = 'error'
                 }
 
                 if (Utils.isStringNotEmpty(msg))

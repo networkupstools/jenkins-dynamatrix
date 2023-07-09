@@ -559,7 +559,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         try {
                                             createSummary(text: "Saved the list of slowBuild stages into a text artifact " +
                                                 "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>",
-                                                icon: '/images/svgs/document.svg'	// '/images/48x48/notepad.png'
+                                                icon: '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
                                                 )
                                         } catch (Throwable ts) {
                                             echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
@@ -602,7 +602,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     }
                                     createSummary(
                                         text: sbSummary + sbSummaryCount,
-                                        icon: '/images/svgs/document.svg'	// '/images/48x48/notepad.png'
+                                        icon: '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
                                         )
                                 } catch (Throwable t) {
                                     echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
@@ -934,7 +934,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         manager.addShortText(txtOK)
                         createSummary(
                             text: txtOK + ": " + txt,
-                            icon: '/images/svgs/document.svg'	// '/images/48x48/notepad.png'
+                            icon: '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
                             )
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
