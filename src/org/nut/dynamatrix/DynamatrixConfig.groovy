@@ -46,8 +46,10 @@ class DynamatrixConfig implements Cloneable {
     /** Each of these labels can be String, GString or Pattern object
      * to match labels (named as key=value pairs) of build agents:
      *    <pre>dynamatrixAxesLabels: ['OS', '${COMPILER}VER', 'ARCH'],</pre>
+     * Normally this object is a Set, but may be initialized as
+     * a String, List, etc. so a getter is provided.
      */
-    public Set dynamatrixAxesLabels = []
+    public def dynamatrixAxesLabels = []
 
     // TODO: Need a way to specify that we only want some extreme value
     //  but not the whole range, somehow specifiable per-system (e.g. to
@@ -260,9 +262,9 @@ class DynamatrixConfig implements Cloneable {
      *
      * @see #excludedNodelabels
      */
-    public Set requiredNodelabels = []
+    public Set<String> requiredNodelabels = []
     /** @see #requiredNodelabels */
-    public Set excludedNodelabels = []
+    public Set<String> excludedNodelabels = []
 
     /**
      * Same values as for {@code timeout()} step, e.g.
@@ -372,7 +374,7 @@ def parallelStages = prepareDynamatrix(
     }
 
     public def initDefault(String defaultCfg) {
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugTrace = this.shouldDebugTrace()
 
         if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(String): called with defaultCfg = ${Utils.castString(defaultCfg)}")
 
@@ -568,8 +570,8 @@ def parallelStages = prepareDynamatrix(
     }
 
     public def initDefault(Map dynacfgOrig) {
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): called with dynacfgOrig = ${Utils.castString(dynacfgOrig)}")
 
@@ -585,7 +587,7 @@ def parallelStages = prepareDynamatrix(
             // the Map passed by caller may contain "defaultDynamatrixConfig" as
             // a key for a String value to specify default pre-sets, e.g. "C".
             if (dynacfgOrig.containsKey('defaultDynamatrixConfig')) {
-                def str = dynacfgOrig['defaultDynamatrixConfig'].toString()
+                String str = dynacfgOrig['defaultDynamatrixConfig'].toString()
                 if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): calling initDefault(${str}) first")
                 this.initDefault(str)
                 dynacfgOrig.remove('defaultDynamatrixConfig')
@@ -611,36 +613,36 @@ def parallelStages = prepareDynamatrix(
 
                 if (k.equals("mergeMode")) return // continue
                 try {
-                    def mergeMode = "replace"
+                    String mergeMode = "replace"
                     try {
                         // Expected optional value "replace" or "merge"
-                        mergeMode = dynacfgOrig.mergeMode[k].trim()
-                        dynacfgOrig.mergeMode.remove(k)
+                        mergeMode = (((Map)(dynacfgOrig['mergeMode']))[k]).toString().trim()
+                        (Map)(dynacfgOrig['mergeMode']).remove(k)
                     } catch (Throwable t) {} // keep default setting if no action requested
 
                     if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): mergeMode for k='${k}' is '${mergeMode}'")
                     switch ("${mergeMode}") {
                         case "merge":
-                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): merging: ${this[k]}\n    with: ${dynacfgOrig[k]}")
-                            this[k] = Utils.mergeMapSet(this[k], dynacfgOrig[k])
-                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of merge: ${this[k]}")
+                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): merging: ${this[k.toString()]}\n    with: ${dynacfgOrig[k]}")
+                            this[k.toString()] = Utils.mergeMapSet(this[k.toString()], dynacfgOrig[k])
+                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of merge: ${this[k.toString()]}")
                             break
 
                         case "replace":
                             if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): replacing with: ${dynacfgOrig[k]}")
-                            this[k] = dynacfgOrig[k]
+                            this[k.toString()] = dynacfgOrig[k]
                             //if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of replacement: ${this[k]}")
                             break
 
                         default:
                             if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): defaulting to replace with: ${dynacfgOrig[k]}")
-                            this[k] = dynacfgOrig[k]
+                            this[k.toString()] = dynacfgOrig[k]
                             //if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of replacement: ${this[k]}")
                             break
                     }
                 } catch(Exception e) {
                     if (!errs.equals("")) errs += "\n"
-                    def str = "[DEBUG] DynamatrixConfig(Map): ignoring unsupported config key from request: '${k}' => " + dynacfgOrig[k] + " : " + e.toString()
+                    String str = "[DEBUG] DynamatrixConfig(Map): ignoring unsupported config key from request: '${k}' => " + dynacfgOrig[k] + " : " + e.toString()
                     errs += str
                     if (debugTrace) this.script.println str
                 }
@@ -720,8 +722,8 @@ def parallelStages = prepareDynamatrix(
         // deliberately does not include this.commonLabelExpr in the return
         String commonLabelExpr = ""
 
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         // TODO: Use StringBuilder
         if (Utils.isListNotEmpty(this.requiredNodelabels)) {

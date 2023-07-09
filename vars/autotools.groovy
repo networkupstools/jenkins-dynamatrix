@@ -11,7 +11,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 
  */
 
-def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
+def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // Sanity-check the pipeline options
 
     if (dynacfgPipeline.containsKey('buildSystem') &&

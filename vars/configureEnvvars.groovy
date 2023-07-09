@@ -11,7 +11,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 
  */
 
-def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
+def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // Sanity-check the pipeline options, these are relevant for several
     // build systems alike (autotools, ci_build, probably cmake, etc...)
 

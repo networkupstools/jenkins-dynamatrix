@@ -11,7 +11,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
     dynacfgPipeline.buildSystem = 'ci_build'
  */
 
-def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
+def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // Sanity-check the pipeline options for zproject-inspired ci_build.sh
     // stack of scripts tailored specifically for CI builds and managed by
     // value of BUILD_TYPE envvar (and some other BUILD_* can be defined).

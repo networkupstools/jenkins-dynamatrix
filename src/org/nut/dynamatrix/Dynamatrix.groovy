@@ -1,5 +1,6 @@
 package org.nut.dynamatrix;
 
+import com.cloudbees.groovy.cps.NonCPS;
 import hudson.AbortException;
 import hudson.model.Result;
 import hudson.remoting.RequestAbortedException;
@@ -169,7 +170,7 @@ class Dynamatrix implements Cloneable {
      */
     @NonCPS
     public static Result resultFromString(String k) {
-        def r = null
+        Result r = null
         try {
             switch (k) {
                 case ['STARTED', 'RESTARTED', 'COMPLETED']: break;
@@ -202,7 +203,7 @@ class Dynamatrix implements Cloneable {
      */
     @NonCPS
     synchronized public Result setWorstResult(String k) {
-        def r = Dynamatrix.resultFromString(k)
+        Result r = resultFromString(k)
         if (r != null) {
             if (this.dmWorstResult == null) {
                 this.dmWorstResult = r
@@ -233,10 +234,10 @@ class Dynamatrix implements Cloneable {
      */
     @NonCPS
     synchronized public Result setWorstResult(String sn, String k) {
-        def res = this.setWorstResult(k)
+        Result res = this.setWorstResult(k)
 
         if (sn != null) {
-            def r = Dynamatrix.resultFromString(k)
+            Result r = resultFromString(k)
             if (r != null) {
                 if (!this.trackStageResults.containsKey(sn)
                 ||   this.trackStageResults[sn] == null
@@ -245,7 +246,7 @@ class Dynamatrix implements Cloneable {
                     // ("stageName" vs "stageName :: sbName") which is either
                     // a sub-set or super-set of the "sn". We want to keep
                     // the longer version to help troubleshooting.
-                    def trackedSN = null
+                    String trackedSN = null
                     this.trackStageResults.each {String tsk, Result tsr ->
                         if (tsk.startsWith(sn) || sn.startsWith(tsk)) {
                             trackedSN = tsk
@@ -305,7 +306,7 @@ class Dynamatrix implements Cloneable {
             return trackStageLogkeys[s]
         }
 
-        def k = null
+        String k = null
         trackStageLogkeys.each {String sn, String lk ->
             if (Utils.isStringNotEmpty(sn)
             &&  (sn.startsWith(s) || s.startsWith(sn))
@@ -327,10 +328,10 @@ class Dynamatrix implements Cloneable {
      */
     @NonCPS
     synchronized public Map<Result, Set<String>> reportStageResults() {
-        def mapres = [:]
+        Map<Result, Set<String>> mapres = [:]
         this.trackStageResults.each {String sn, Result r ->
             if (!mapres.containsKey(r)) {
-                mapres[r] = []
+                mapres[r] = new HashSet<String>()
             }
             mapres[r] << sn
         }
@@ -406,12 +407,12 @@ class Dynamatrix implements Cloneable {
      */
     // Must be CPS - calls pipeline script steps
     synchronized
-    def createSummary(String txt, String icon = 'info.gif', def objid = null) {
-        def res = null
+    Boolean createSummary(String txt, String icon = 'info.gif', String objId = null) {
+        Boolean res = null
 
         if (this.script && Utils.isStringNotEmpty(txt)) {
             try {
-                this.script.createSummary(icon: icon, text: txt, id: "Build-progress-summary@" + (objid == null ? this.objectID : objid))
+                this.script.createSummary(icon: icon, text: txt, id: "Build-progress-summary@" + (objId == null ? this.objectID : objId))
                 if (res == null) res = true
             } catch (Throwable t) {
                 this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
@@ -448,7 +449,7 @@ class Dynamatrix implements Cloneable {
      */
     // Must be CPS - calls pipeline script steps
     synchronized
-    def updateProgressBadge(Boolean removeOnly = false) {
+    Boolean updateProgressBadge(Boolean removeOnly = false) {
         if (!this.script)
             return null
 
@@ -475,7 +476,7 @@ class Dynamatrix implements Cloneable {
         if (removeOnly) return true
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
-        def txt = this.toStringStageCountNonZero()
+        String txt = this.toStringStageCountNonZero()
         if (!(Utils.isStringNotEmpty(txt))) {
             txt = this.toStringStageCountDumpNonZero()
         }
@@ -487,7 +488,7 @@ class Dynamatrix implements Cloneable {
         }
         txt = "Build in progress: " + txt
 
-        def res = null
+        Boolean res = null
         try {
             // Note: not "addInfoBadge()" which is rolled-up and small (no text except when hovered)
             // Update: although this seems to have same effect, not that of addShortText (that has no "id")
@@ -612,7 +613,7 @@ class Dynamatrix implements Cloneable {
      * key names from {@link #countStages} map).
      */
     public String toStringStageCountDumpNonZero() {
-        def m = [:]
+        Map<String, Integer> m = [:]
         countStages.each {String k, Integer v ->
             if (v > 0) m[k] = v
         }
@@ -620,8 +621,8 @@ class Dynamatrix implements Cloneable {
     }
 
     /** Returns a clone of current {@link #countStages} map contents. */
-    public Map getCountStages() {
-        return countStages.clone()
+    public Map<String, Integer> getCountStages() {
+        return (Map<String, Integer>)(countStages.clone())
     }
 
     /** Returns stringification of current {@link #countStages} map contents. */
@@ -651,12 +652,12 @@ class Dynamatrix implements Cloneable {
 
     @NonCPS
     public boolean shouldDebugTrace() {
-        return ( this.enableDebugTrace && this.script != null)
+        return (this.enableDebugTrace && this.script != null)
     }
 
     @NonCPS
     public boolean shouldDebugTraceFailures() {
-        return ( this.enableDebugTraceFailures && this.script != null)
+        return (this.enableDebugTraceFailures && this.script != null)
     }
 
     @NonCPS
@@ -802,7 +803,7 @@ def parallelStages = prepareDynamatrix(
      * @see #prepareDynamatrix
      */
     static def clearMapNeedsPrepareDynamatrixClone(Map dynacfgOrig = [:]) {
-        def dc = dynacfgOrig.clone()
+        Map dc = dynacfgOrig?.clone()
         if (dc?.commonLabelExpr)
             dc.remove('commonLabelExpr')
         if (dc?.dynamatrixAxesLabels)
@@ -824,7 +825,7 @@ def parallelStages = prepareDynamatrix(
      * @see #prepareDynamatrix
      */
     def clearNeedsPrepareDynamatrixClone(Map dynacfgOrig = [:]) {
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugTrace = this.shouldDebugTrace()
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Clearing certain pre-existing data points from dynacfg object"
         this.dynacfg.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
         this.buildLabelsAgents = [:]
@@ -848,10 +849,10 @@ def parallelStages = prepareDynamatrix(
      * @see #needsPrepareDynamatrixClone
      */
     def prepareDynamatrix(Map dynacfgOrig = [:]) {
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
-        def debugMilestones = this.shouldDebugMilestones()
-        def debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
+        boolean debugMilestones = this.shouldDebugMilestones()
+        boolean debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
         //if (debugErrors) this.script.println "[WARNING] NOT FULLY IMPLEMENTED: Dynamatrix.prepareDynamatrix()"
 
@@ -951,7 +952,7 @@ def parallelStages = prepareDynamatrix(
                 this.effectiveAxes = [this.effectiveAxes]
             } else if (listCount != this.effectiveAxes.size()) {
                 // Turn any non-list/set items into sets of one entry
-                def arr = []
+                Set arr = []
                 for (def i = 0; i < this.effectiveAxes.size(); i++) {
                     if (Utils.isList(this.effectiveAxes[i])) {
                         arr << this.effectiveAxes[i]
@@ -984,11 +985,11 @@ def parallelStages = prepareDynamatrix(
             // Looking at each node separately allows us to be sure that any
             // combo of axis-values (all of which it allegedly provides)
             // can be fulfilled
-            def nodeAxisCombos = []
+            ArrayList nodeAxisCombos = []
             this.effectiveAxes.each() {def axisSet ->
                 // Now looking at one definitive set of axis names that
                 // we would pick supported values for, by current node:
-                def axisCombos = []
+                ArrayList axisCombos = []
                 axisSet.each() {def axis ->
                     if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}'..."
                     //def tmpset = this.nodeCaps.resolveAxisValues(axis, nodeName, true)
@@ -1046,11 +1047,11 @@ def parallelStages = prepareDynamatrix(
                 // supported for one of the original effectiveAxes requirements,
                 // where each of nodeAxisCombos contains a set of axisValues
                 if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
-                def tmp = Utils.cartesianSquared(nodeAxisCombos).sort()
+                List tmp = Utils.cartesianSquared(nodeAxisCombos as Iterable).sort()
                 // Revive combos that had only one hit and were flattened
                 // into single items (strings) instead of Sets (of Sets)
                 if (tmp.size() > 0) {
-                    for (def i = 0; i < tmp.size(); i++) {
+                    for (Integer i = 0; i < tmp.size(); i++) {
                         if (!Utils.isList(tmp[i])) { tmp[i] = [tmp[i]] }
                     }
                 }
@@ -1076,16 +1077,17 @@ def parallelStages = prepareDynamatrix(
         // packages preinstalled for a particular project.
         if (Utils.isStringNotEmpty(dynacfg.commonLabelExpr)) {
             if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): appending '(${dynacfg.commonLabelExpr}) && ' to buildLabelsAgents combos..."
-            def tmp = [:]
+            Map<String, Set> tmp = [:]
             this.buildLabelsAgents.keySet().each() {String ble ->
                 // Note, we only append to the key (node label string for
                 // eventual use in a build), not the value (array of K=V's)
-                tmp["(${ble}) && (${dynacfg.commonLabelExpr})"] = this.buildLabelsAgents[ble]
+                String tmpBle = "(${ble}) && (${dynacfg.commonLabelExpr})"
+                tmp[tmpBle] = this.buildLabelsAgents[ble]
             }
             this.buildLabelsAgents = tmp
         }
 
-        def blaStr = ""
+        String blaStr = ""
         this.buildLabelsAgents.keySet().each() {String ble ->
             blaStr += "\n    '${ble}' => " + this.buildLabelsAgents[ble]
         }
@@ -1102,9 +1104,9 @@ def parallelStages = prepareDynamatrix(
      * </pre>
      * ...and convert into a Map where keys are agent label expression strings.
      */
-    static Map mapBuildLabelExpressions(Set<Set> blcSet) {
+    static Map<String, Set> mapBuildLabelExpressions(Set<Set> blcSet) {
         /** Equivalent to buildLabelsAgents in the class */
-        Map blaMap = [:]
+        Map<String, Set> blaMap = [:]
         blcSet.each() {Set combo ->
             // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
             // ble == build label expression
@@ -1116,11 +1118,11 @@ def parallelStages = prepareDynamatrix(
 
     /** Returns a set of (unique) {@link DynamatrixSingleBuildConfig} items */
 //    @NonCPS
-    def generateBuildConfigSet(Map dynacfgOrig = [:]) {
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
-        def debugMilestones = this.shouldDebugMilestones()
-        def debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+    Set<DynamatrixSingleBuildConfig> generateBuildConfigSet(Map dynacfgOrig = [:]) {
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
+        boolean debugMilestones = this.shouldDebugMilestones()
+        boolean debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
         // Use a separate copy of the configuration for this build
         // since different scenarios may be customized - although
@@ -1150,7 +1152,7 @@ def parallelStages = prepareDynamatrix(
         if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): buildLabelsAgentsBuild: ${buildLabelsAgentsBuild}"
 
         // Here we will collect axes that come from optional dynacfg fields
-        Set virtualAxes = []
+        Set<Set> virtualAxes = []
 
         // Process the map of "virtual axes": dynamatrixAxesVirtualLabelsMap
         if (dynacfgBuild.dynamatrixAxesVirtualLabelsMap.size() > 0) {
@@ -1188,7 +1190,7 @@ def parallelStages = prepareDynamatrix(
                 }
 
                 if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}\n    with keyvalues: ${keyvalues}"
-                dynamatrixAxesVirtualLabelsCombos = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, keyvalues)
+                dynamatrixAxesVirtualLabelsCombos = new HashSet(Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, keyvalues) as Collection)
             }
 
             if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): " +
@@ -1199,7 +1201,7 @@ def parallelStages = prepareDynamatrix(
                 "dynamatrixAxesVirtualLabelsCombos.size()=${dynamatrixAxesVirtualLabelsCombos.size()}"
 
             // TODO: Will we have more virtualAxes inputs, or might just use assignment here?
-            virtualAxes = Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, virtualAxes)
+            virtualAxes = new HashSet<Set>(Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, virtualAxes) as Collection)
 
             if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): ended up with virtualAxes: ${virtualAxes}"
         }
@@ -1365,8 +1367,8 @@ def parallelStages = prepareDynamatrix(
         //debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
         // Finally, combine all we have (and remove what we do not want to have)
-        def removedTotal = 0
-        def allowedToFailTotal = 0
+        Integer removedTotal = 0
+        Integer allowedToFailTotal = 0
         Set<DynamatrixSingleBuildConfig> dsbcSet = []
         buildLabelsAgentsBuild.keySet().each() {String ble ->
             // We can generate numerous build configs below that
@@ -1374,8 +1376,8 @@ def parallelStages = prepareDynamatrix(
             // build label expression, so prepare the shared part:
             DynamatrixSingleBuildConfig dsbcBle = new DynamatrixSingleBuildConfig(this.script)
             Set<DynamatrixSingleBuildConfig> dsbcBleSet = []
-            def removedBle = 0
-            def allowedToFailBle = 0
+            Integer removedBle = 0
+            Integer allowedToFailBle = 0
 
             // One of (several possible) combinations of node labels:
             dsbcBle.buildLabelExpression = ble
@@ -1502,13 +1504,13 @@ def parallelStages = prepareDynamatrix(
             def removedCNL = 0
 
             // Avoid deleting from the Set instance that we are iterating
-            def tmp = []
+            Set<DynamatrixSingleBuildConfig> tmp = []
             // Avoid spamming the log about same label constraints
             // (several single-build configs can share those strings)
-            def nodeListCache = [:]
+            Map<String, List> nodeListCache = [:]
             dsbcSet.each() {DynamatrixSingleBuildConfig dsbc ->
-                def blec = (dsbc.buildLabelExpression + constraintsNodelabels).trim().replaceFirst(/^null/, '').replaceFirst(/^ *\&\& */, '').trim()
-                def nodeList
+                String blec = (dsbc.buildLabelExpression + constraintsNodelabels).trim().replaceFirst(/^null/, '').replaceFirst(/^ *\&\& */, '').trim()
+                List nodeList
                 if (nodeListCache.containsKey(blec)) {
                     nodeList = nodeListCache[blec]
                 } else {
@@ -1546,7 +1548,7 @@ def parallelStages = prepareDynamatrix(
         //debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
         if (true) { // debugMilestonesDetails) {
-            def msg = "generateBuildConfigSet(): collected ${dsbcSet.size()} combos for individual builds"
+            String msg = "generateBuildConfigSet(): collected ${dsbcSet.size()} combos for individual builds"
             if (removedTotal > 0) {
                 msg += " with ${removedTotal} hits removed from candidate builds matrix"
             }
@@ -1572,7 +1574,7 @@ def parallelStages = prepareDynamatrix(
      */
     private Closure generatedBuildWrapperLayer2 (String stageName, DynamatrixSingleBuildConfig dsbc, Closure body = null) {
     //private Closure generatedBuildWrapperLayer2 (stageName, dsbc, body = null) {
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugTrace = this.shouldDebugTrace()
 
         // For delegation to closure and beyond
         def script = this.script
@@ -1661,14 +1663,14 @@ def parallelStages = prepareDynamatrix(
                         buildResult: 'SUCCESS', stageResult: 'FAILURE'
                     ) {
                         script.withEnv(['CI_ALLOWED_FAILURE=true']) {
-                            def payloadLayer2 = dsbc.thisDynamatrix.
+                            Closure payloadLayer2 = dsbc.thisDynamatrix.
                                 generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
                             return payloadLayer2()
                             //return payloadLayer2
                         }
                     } // catchError
                 } else {
-                    def payloadLayer2 = dsbc.thisDynamatrix.
+                    Closure payloadLayer2 = dsbc.thisDynamatrix.
                         generatedBuildWrapperLayer2(stageName, dsbc, body)//CLS//.call()
                     return payloadLayer2()
                     //return payloadLayer2
@@ -1699,7 +1701,7 @@ def parallelStages = prepareDynamatrix(
      * Helper which returns a Closure for optional build-log trace and
      * execution of the payload without a dedicated build agent.
      */
-    def generateParstageWithoutAgent (def script, DynamatrixSingleBuildConfig dsbc, String stageName, String sbName, Closure payload) {
+    Closure generateParstageWithoutAgent (def script, DynamatrixSingleBuildConfig dsbc, String stageName, String sbName, Closure payload) {
     // def generateParstageWithoutAgent(script, dsbc, stageName, sbName, payload) {
         return { ->
             if (dsbc.enableDebugTrace) script.echo "Not requesting any node for stage '${stageName}'" + sbName
@@ -1712,7 +1714,7 @@ def parallelStages = prepareDynamatrix(
      * execution of the payload on a dedicated build agent selected by
      * the {@code dsbc.buildLabelExpression}.
      */
-    def generateParstageWithAgentBLE(def script, DynamatrixSingleBuildConfig dsbc, String stageName, String sbName, Closure payload) {
+    Closure generateParstageWithAgentBLE(def script, DynamatrixSingleBuildConfig dsbc, String stageName, String sbName, Closure payload) {
     // def generateParstageWithAgentBLE(script, dsbc, stageName, sbName, payload) {
         return { ->
             if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
@@ -1728,7 +1730,7 @@ def parallelStages = prepareDynamatrix(
      * execution of the payload on a dedicated build agent selected as
      * "any" currently available one.
      */
-    def generateParstageWithAgentAnon(script, DynamatrixSingleBuildConfigdsbc, String stageName, String sbName, Closure payload) {
+    Closure generateParstageWithAgentAnon(def script, DynamatrixSingleBuildConfig dsbc, String stageName, String sbName, Closure payload) {
     // def generateParstageWithAgentAnon(script, dsbc, stageName, sbName, payload) {
         return { ->
             if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'" + sbName
@@ -1751,10 +1753,10 @@ def parallelStages = prepareDynamatrix(
      */
 //    @NonCPS
     def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Closure bodyOrig = null) {
-        //def debugErrors = this.shouldDebugErrors()
-        //def debugTrace = this.shouldDebugTrace()
-        //def debugMilestones = this.shouldDebugMilestones()
-        def debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+        //boolean debugErrors = this.shouldDebugErrors()
+        //boolean debugTrace = this.shouldDebugTrace()
+        //boolean debugMilestones = this.shouldDebugMilestones()
+        boolean debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
         if (needsPrepareDynamatrixClone(dynacfgOrig)) {
             if (debugMilestonesDetails
@@ -1765,7 +1767,7 @@ def parallelStages = prepareDynamatrix(
                 this.script.println "[DEBUG] generateBuild(): running a configuration that needs a new dynamatrix in a clone"
             }
 
-            def dmClone = this.clone()
+            Dynamatrix dmClone = this.clone()
             dmClone.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
             dmClone.prepareDynamatrix(dynacfgOrig)
             // Don't forget to clear the config, to not loop on this
@@ -1774,13 +1776,14 @@ def parallelStages = prepareDynamatrix(
                 returnSet, bodyOrig)
         }
 
-        def dsbcSet = generateBuildConfigSet(dynacfgOrig)
+        Set<DynamatrixSingleBuildConfig> dsbcSet = generateBuildConfigSet(dynacfgOrig)
         Dynamatrix thisDynamatrix = this
         this.script.println "[DEBUG] generateBuild(): current thisDynamatrix.failFast setting when generating parallelStages: ${thisDynamatrix.failFast}"
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
-        Set parallelStages = []
+        /** `parallelStages` actually contains tuples for mapping <String, Closure> */
+        Set<List> parallelStages = []
         dsbcSet.each() {DynamatrixSingleBuildConfig dsbcTmp ->
             // copy a unique object ASAP, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()
@@ -1799,8 +1802,8 @@ def parallelStages = prepareDynamatrix(
 
             Closure body = null
             if (bodyOrig != null) {
-                def sn = "${stageName}" // ensure a copy
-                def bodyData = [ dsbc: dsbc.clone(), stageName: sn ]
+                String sn = "${stageName}" // ensure a copy
+                Map bodyData = [ dsbc: dsbc.clone(), stageName: sn ]
                 body = bodyOrig.clone().rehydrate(bodyData, this.script, body)
                 body.resolveStrategy = Closure.DELEGATE_FIRST
                 if (!Utils.isMapNotEmpty(body.delegate))
@@ -1826,20 +1829,20 @@ def parallelStages = prepareDynamatrix(
             }
 
             // Named closure to call below
-            def payload = //NONCLS//{
+            Closure payload = //NONCLS//{
                 generatedBuildWrapperLayer1(stageName, dsbc, body)//CLS//.call()
             //NONCLS//}
 
             // Pattern for code change on the fly:
             if (matrixTag != null) {
-                def payloadTmp = payload
+                Closure payloadTmp = payload
                 payload = { script.withEnv([matrixTag]) { payloadTmp() } }
             }
 
-            def sbName = ""
+            String sbName = ""
             if (script?.env?.CI_SLOW_BUILD_FILTERNAME) {
-                def payloadTmp = payload
-                def weStr = "CI_SLOW_BUILD_FILTERNAME=${script.env.CI_SLOW_BUILD_FILTERNAME}"
+                Closure payloadTmp = payload
+                String weStr = "CI_SLOW_BUILD_FILTERNAME=${script.env.CI_SLOW_BUILD_FILTERNAME}"
                 payload = { script.withEnv([weStr]) { payloadTmp() } }
                 sbName = " :: as part of slowBuild filter: ${script.env.CI_SLOW_BUILD_FILTERNAME}"
             }
@@ -1857,7 +1860,7 @@ def parallelStages = prepareDynamatrix(
                 // TODO: If it is possible to cancel them from the queue and
                 // not block on waiting, like parallel step "failFast:true"
                 // option does, that would be better (cheaper, faster).
-                def payloadTmp = payload
+                Closure payloadTmp = payload
 
                 payload = {
                     // We allow the setting change to take effect at run-time,
@@ -1902,7 +1905,7 @@ def parallelStages = prepareDynamatrix(
                 // time a stage may run - primarily to retry if an agent node
                 // itself gets stuck/disconnected, but Jenkins won't notice:
                 //     dsbc.stageTimeoutSettings = {time: 12, unit: "HOURS"}
-                def payloadTmp = payload
+                Closure payloadTmp = payload
 
                 payload = {
                     Throwable caught = null
@@ -1923,7 +1926,7 @@ def parallelStages = prepareDynamatrix(
 
             // Support accounting of slowBuild scenario outcomes
             if (true) { // scoping
-                def payloadTmp = payload
+                Closure payloadTmp = payload
 
                 payload = {
                     def printStackTraceStderrOptional = { Throwable t ->
@@ -1944,7 +1947,7 @@ def parallelStages = prepareDynamatrix(
                     if (dsbc.dsbcResultInterim == null) {
                         dsbc.thisDynamatrix?.countStagesIncrement('STARTED', stageName + sbName)
                     } else {
-                        def msgRestart = "[WARNING] Re-starting " +
+                        String msgRestart = "[WARNING] Re-starting " +
                             "DSBC requested for stage '" + stageName + sbName +
                             "' which ended with '${dsbc.dsbcResultInterim}' " +
                             "on a previous attempt"
@@ -1962,7 +1965,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
                             dsbc.dsbcResultInterim = dsbcResult.toString()
                         } else {
-                            if (dsbc.thisDynamatrix?.trackStageResults.containsKey(stageName)
+                            if (dsbc.thisDynamatrix?.trackStageResults?.containsKey(stageName)
                             &&  dsbc.thisDynamatrix?.trackStageResults[stageName] != null
                             ) {
                                 dsbc.dsbcResultInterim = dsbc.thisDynamatrix?.trackStageResults[stageName]
@@ -2302,8 +2305,8 @@ def parallelStages = prepareDynamatrix(
             // build agent, usually a specific one, to run some programs in that
             // OS. For generality there is a case for no-node mode, but that may
             // only call pipeline steps (schedule a build, maybe analyze, etc.)
-            def parstageName = null
-            def parstageCode = null
+            String parstageName = null
+            Closure parstageCode = null
             if (dsbc.requiresBuildNode) {
                 if (Utils.isStringNotEmpty(dsbc.buildLabelExpression)) {
                     parstageName = "WITHAGENT: " + stageName + sbName
@@ -2454,8 +2457,8 @@ def parallelStages = prepareDynamatrix(
             return parallelStages
         } else {
             // Scope the Map for sake of CPS conversions where we don't want them
-            def parallelStages_map = [:]
-            parallelStages.each {def tup -> parallelStages_map[tup[0]] = tup[1] }
+            Map<String, Closure> parallelStages_map = [:]
+            parallelStages.each { List tup -> parallelStages_map[(String)(tup[0])] = (Closure)(tup[1]) }
             return parallelStages_map
         }
     } // generateBuild()

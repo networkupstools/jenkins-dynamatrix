@@ -75,11 +75,11 @@ prepareDynamatrix([
 /* Returns a map of stages
  * Or a Set, if called from inside a pipeline stage (CPS code).
  */
-def call(dynacfgOrig = [:], Closure body = null) {
+def call(Map dynacfgOrig = [:], Closure body = null) {
     return call(dynacfgOrig, false, body)
 }
 
-def call(dynacfgOrig = [:], Boolean returnSet, Closure body = null) {
+def call(Map dynacfgOrig = [:], Boolean returnSet, Closure body = null) {
     //if (dynamatrixGlobalState.enableDebugErrors) println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy step"
 
     // Have some defaults, if only to have all expected fields defined

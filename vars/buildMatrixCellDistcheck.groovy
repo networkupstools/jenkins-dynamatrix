@@ -11,7 +11,7 @@ void call(String BUILD_TYPE, String PLATFORM) {
         sh """ BUILD_TYPE="${BUILD_TYPE}" ./ci_build.sh """
     }
     script {
-        def id = "Distcheck:${BUILD_TYPE}@${PLATFORM}"
+        String id = "Distcheck:${BUILD_TYPE}@${PLATFORM}"
         def i = scanForIssues tool: gcc(name: id)
         //def i = scanForIssues tool: clang(name: id)
         //dynamatrixGlobalState.issueAnalysis << i

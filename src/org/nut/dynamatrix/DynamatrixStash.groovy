@@ -70,10 +70,13 @@ import hudson.plugins.git.extensions.GitSCMExtension;
 
 class DynamatrixStash {
     /** If closures were used to check out a stashName, track it here */
-    private static def stashCode = [:]
+    private static Map<String, Closure> stashCode = [:]
 
-    /** Track info about whatever we checked out with helpers here */
-    private static def stashSCMVars = [:]
+    /**
+     * Track info about whatever we checked out with helpers here;
+     * keys may be Map(scmParams) or a String(stashName)
+     */
+    private static Map stashSCMVars = [:]
 
     static void deleteWS(def script) {
         /* clean up our workspace (current directory) */
@@ -372,9 +375,9 @@ class DynamatrixStash {
             script.echo "checkoutCleanSrc: scm = ${Utils.castString(scm)}"
             if (Utils.isMap(scm)
                 && scm.containsKey('$class')
-                && scm['$class'] in ['GitSCM']
+                && scm['$class'].toString() in ['GitSCM']
             ) {
-                res = checkoutGit(script, scm)
+                res = checkoutGit(script, (Map)scm)
             } else {
                 res = checkoutSCM(script, scm)
                 //res = script.checkout (scm)
@@ -520,7 +523,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
         if (!(Utils.isMap(scm)
               && scm.containsKey('$class')
-              && scm['$class'] in ['GitSCM']
+              && scm['$class'].toString() in ['GitSCM']
              )
         && !(scm instanceof hudson.plugins.git.GitSCM)
         ) {
@@ -540,7 +543,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         // NOTE: For the first shot, PoCing mostly with shell; groovy later
         // and per above, our "scm" is a Map, not directly a GitSCM object
         //   https://javadoc.jenkins.io/plugin/git/hudson/plugins/git/GitSCM.html
-        def ret = null
+        def ret = null  // Boolean, return of sh(), etc...
         try {
             String scmCommit = null
             String scmURL = null
@@ -556,7 +559,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
             if (scm instanceof hudson.plugins.git.GitSCM) {
                 // GitSCM object
 
-                for (extset in scm?.extensions) {
+                for (def extset in scm?.extensions) {
                     if (Utils.isMapNotEmpty(extset)) {
                         if (extset.containsKey('$class')) {
                             switch (extset['$class']) {
@@ -626,8 +629,8 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 if (script?.env?.NODE_LABELS) {
                     script.env.NODE_LABELS.split('[ \r\n\t]+').each() {String KV ->
                         if (KV =~ /^DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME=.*$/) {
-                            def key = null
-                            def val = null
+                            String key = null
+                            String val = null
                             (key, val) = KV.split('=')
                             lockName = val
                         }
@@ -660,7 +663,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 }
                 if (!refrepoName) {
                     refrepoName = scmURL.replaceLast(/\\.git$/, '')
-                    def rOld = null
+                    String rOld = null
                     while (rOld != refrepoName) {
                         rOld = refrepoName
                         refrepoName = refrepoName - ~/^.*\\//
@@ -778,12 +781,12 @@ exit \$RET
     static def unstashCleanSrc(def script, String stashName) {
         deleteWS(script)
         if (script?.env?.NODE_LABELS) {
-            def useMethod = null
+            String  useMethod = null
             script.env.NODE_LABELS.split('[ \r\n\t]+').each() {String KV ->
                 //script.echo "[D] unstashCleanSrc(): Checking node label '${KV}'"
                 if (KV =~ /^DYNAMATRIX_UNSTASH_PREFERENCE=.*$/) {
-                    def key = null
-                    def val = null
+                    String key = null
+                    String val = null
                     (key, val) = KV.split('=')
                     //script.echo "[D] unstashCleanSrc(): Checking node label deeper: '${key}'='${val}' (stashName='${stashName}')"
                     if (val == "scm:${stashName}") {

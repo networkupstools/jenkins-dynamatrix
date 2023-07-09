@@ -1,5 +1,6 @@
 package org.nut.dynamatrix;
 
+import com.cloudbees.groovy.cps.NonCPS;
 import hudson.model.Result;
 
 import org.nut.dynamatrix.Utils;
@@ -172,7 +173,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     @NonCPS
     synchronized public Result setWorstResult(String k) {
-        def r = null
+        Result r = null
         // NOTE: This might throw if not a valid string from enum,
         // we propagate that exception
         r = Result.fromString(k)
@@ -270,7 +271,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      * labels, and envvars (but not the CLI options). Any composite
      * labels are split into separate entries. Resulting set is not
      * "guaranteed" to only contain key=value strings, but is expected
-     * to for practical purposes (consumer should check it if important)
+     * to for practical purposes (consumer should check it if important;
+     * may contain sets of further strings, keys may theoretically be
+     * not-strings, etc.)
      */
     @NonCPS
     public Set getKVSet() {
@@ -279,11 +282,11 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         labelSet1.remove(null)
         labelSet1.remove("")
         Set labelSet = []
-        labelSet1.each() {String label ->
+        labelSet1.each() {def label ->
             // Split composite labels like "COMPILER=CLANG CLANGVER=9", if any
             // and avoid removing from inside the loop over same Set
-            if (label =~ /\s+/ && !(label =~ /^[^=\s]+=["']/)) { // do not split intentional multi-token values like CFLAGS="-Wall -Werror...'
-                Set tmpSet = label.split(/\s/)
+            if (Utils.isStringNotEmpty(label) && label =~ /\s+/ && !(label =~ /^[^=\s]+=["']/)) { // do not split intentional multi-token values like CFLAGS="-Wall -Werror...'
+                Set<String> tmpSet = ((String)label).split(/\s/)
                 tmpSet.remove(null)
                 tmpSet.remove("")
                 labelSet += tmpSet
@@ -296,6 +299,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
         return labelSet
     }
+
+    @NonCPS
+    public String getObjectID() { return this.@objectID }
 
     /**
      * Return the map with (not-null and unique) key=values represented
@@ -312,37 +318,38 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      * assigned a (different) value to the same label key.
      */
     @NonCPS
-    public Map getKVMap(boolean storeNulls = false) {
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+    public Map<String, String> getKVMap(boolean storeNulls = false) {
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         // TODO: Refactor with original label mapping, moving to Utils?
         // Probably not: mapping in NodeData is tailored for nested
         // multi-value hits, while mapping here is about unique keys
         // each with one value (representing one selected build combo).
 
-        def labelSet = getKVSet()
-        def labelMap = [:]
-        labelSet.each() {String label ->
-            if (!Utils.isStringNotEmpty(label)) return
+        Set labelSet = getKVSet()
+        Map<String, String> labelMap = [:]
+        labelSet.each() {def label ->
+            // TODO: Handle a Set<String> or other potentially possible values? At least log them?
+            if (!Utils.isStringNotEmpty(label)) return  // continue
             label = label.trim()
             try {
-                if ("".equals(label)) return
+                if ("".equals(label)) return  // continue
             } catch (Exception e) {
-                def emsg = "Expected key-value string, got label=${Utils.castString(label)}: " + e.toString()
+                String emsg = "Expected key-value string, got label=${Utils.castString(label)}: " + e.toString()
                 if (debugErrors) {
                     script.println "[ERROR] Skipped item: ${emsg}"
-                    return
+                    return  // continue
                 } else {
                     throw new Exception(emsg)
                 }
             }
             def matcher = label =~ ~/^([^=]+)=(.*)$/
             if (matcher.find()) {
-                labelMap[matcher[0][1]] = matcher[0][2]
+                labelMap[(String)(matcher[0][1])] = (String)(matcher[0][2])
             }
             if (storeNulls)
-                labelMap[label] = null
+                labelMap[(String)(label)] = null
         }
 
         if (debugTrace) {
@@ -388,7 +395,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      */
     @NonCPS
     public static String C_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
-        def labelMap = dsbc.getKVMap(false)
+        Map<String, String> labelMap = dsbc.getKVMap(false)
 
         String sn = ""
         if (labelMap.containsKey("CSTDVARIANT")) {
@@ -426,7 +433,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             sn += labelMap["OS_FAMILY"]
         }
 
-        def BITS = null
+        String BITS = null
         if (labelMap.containsKey("ARCH_BITS")) {
             BITS = labelMap["ARCH_BITS"]
             if (!BITS.isInteger()) BITS=null
@@ -436,7 +443,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             if (!BITS.isInteger()) BITS=null
         }
 
-        def ARCH = null
+        String ARCH = null
         if (BITS != null && labelMap.containsKey("ARCH" + BITS)) {
             ARCH = labelMap["ARCH" + BITS] // ex. ARCH64=amd64
         } else if (labelMap.containsKey("ARCH")) {
@@ -484,7 +491,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     @NonCPS
     public static String ShellcheckPlatform_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
-        def labelMap = dsbc.getKVMap(false)
+        Map<String, String> labelMap = dsbc.getKVMap(false)
         String sn = ""
         if (labelMap.containsKey("OS_FAMILY"))
             sn += labelMap.OS_FAMILY + "-"
@@ -505,7 +512,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     @NonCPS
     public static String Shellcheck_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
-        def labelMap = dsbc.getKVMap(false)
+        Map<String, String> labelMap = dsbc.getKVMap(false)
         String sn = ""
         if (labelMap.containsKey("OS_FAMILY"))
             sn += labelMap.OS_FAMILY + "-"
@@ -538,8 +545,8 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      * to be faster.
      */
     public boolean matchesConstraintsCombo (Set combo) {
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         // No combo - no hit
         if (!Utils.isListNotEmpty(combo)) {
@@ -631,8 +638,8 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      * {@link DynamatrixConfig}) to see if the current object hits any.
      */
     public boolean matchesConstraints (Set combos) {
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         // No combo - no hit
         if (!Utils.isListNotEmpty(combos)) {
