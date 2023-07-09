@@ -338,7 +338,7 @@ class Dynamatrix implements Cloneable {
     }
 
     /** @see #countStagesIncrement(String, String) */
-    @NonCPS
+    //@NonCPS
     synchronized public Integer countStagesIncrement(Result r, String sn = null) {
         return this.countStagesIncrement(r?.toString(), sn)
     }
@@ -354,8 +354,9 @@ class Dynamatrix implements Cloneable {
      * @see #setWorstResult(String, String)
      * @see #countStages
      */
-    @NonCPS
+    //@NonCPS
     synchronized public Integer countStagesIncrement(String k, String sn = null) {
+        this.script?.echo "countStagesIncrement(" + (k == null ? "<null>" : "'${k}'") + ", '${sn}')"
         if (k == null)
             k = 'UNKNOWN'
         this.setWorstResult(sn, k)
@@ -1868,6 +1869,7 @@ def parallelStages = prepareDynamatrix(
                     if (dsbc.thisDynamatrix?.failFast) {
                         if (dsbc.thisDynamatrix?.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
                             script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
+                            this.script?.echo "countStagesIncrement(): ABORTED_SAFE: failFast + mustAbort"
                             dsbc.thisDynamatrix?.countStagesIncrement('ABORTED_SAFE', stageName + sbName)
                             dsbc.dsbcResultInterim = 'ABORTED_SAFE'
                             throw new FlowInterruptedException(Result.NOT_BUILT)
@@ -1955,6 +1957,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.thisDynamatrix?.updateProgressBadge()
                     try {
                         def res = payloadTmp()
+                        this.script?.echo "countStagesIncrement(): some verdict after payload, no exception"
                         if (dsbc.dsbcResult != null) {
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
                             dsbc.dsbcResultInterim = dsbcResult.toString()
@@ -1983,6 +1986,7 @@ def parallelStages = prepareDynamatrix(
                         ) {
                             // Can be our stageTimeoutSettings handler, not an abortion
                             if (!(dsbc.thisDynamatrix?.trackStageResults[stageName] == 'ABORTED_SAFE' && dsbc.dsbcResultInterim == 'ABORTED_SAFE')) {
+                                this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: fex#1"
                                 dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResultInterim, stageName + sbName)
                             }
                         } else {
@@ -2002,6 +2006,7 @@ def parallelStages = prepareDynamatrix(
                                     }
                                 }
 
+                                this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: fex#2"
                                 dsbc.thisDynamatrix?.countStagesIncrement(fexres, stageName + sbName)
                                 dsbc.dsbcResultInterim = fexres
                             }
@@ -2012,6 +2017,7 @@ def parallelStages = prepareDynamatrix(
                     } catch (AbortException hexA) {
                         // This is thrown by steps like "error" and "unstable" (both)
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
+                        this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: hexA"
                         if (dsbc.dsbcResult != null) {
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
                             dsbc.dsbcResultInterim = dsbc.dsbcResult.toString()
