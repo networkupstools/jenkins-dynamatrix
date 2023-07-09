@@ -511,13 +511,19 @@ done
             // so developers can quickly find the faults
             try {
                 def sumtxt = null
+
+                // Used to be '/images/48x48/(error|warning).png'
+                // after the logic below, an arg for createSummary()
+                // Maybe sourced from https://github.com/jenkinsci/jenkins/blob/master/war/src/main/webapp/images/48x48 :
                 def sumimg = null
+                def suming_prefix = '/images/48x48/'
+                def suming_suffix = '.png'
                 if (dsbc?.isAllowedFailure) {
                     sumtxt = "[UNSTABLE (non-success is expected)] "
-                    sumimg = 'warning'
+                    sumimg = 'yellow'	// 'warning'
                 } else {
                     sumtxt = "[FAILURE (not anticipated)] "
-                    sumimg = 'error'
+                    sumimg = 'red'		// 'error'
                 }
 
                 if (Utils.isStringNotEmpty(msg))
@@ -539,7 +545,7 @@ done
                 } catch (Throwable tF) {} // no-op, possibly some iteration/fileExists problem
                 sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
 
-                createSummary(text: sumtxt, icon: sumimg + '.gif')
+                createSummary(text: sumtxt, icon: suming_prefix + sumimg + suming_suffix)
             } catch (Throwable t) {} // no-op, possibly missing badge plugin
         }
 
