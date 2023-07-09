@@ -591,7 +591,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                                 )
                                         } catch (Throwable ts) {
                                             echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
-                                            if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                                            if (dynamatrixGlobalState.enableDebugTrace) echo ts.toString()
                                         }
 
                                     } catch (Throwable t) {
