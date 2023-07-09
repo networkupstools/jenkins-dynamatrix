@@ -1,7 +1,7 @@
-import org.nut.dynamatrix.dynamatrixGlobalState
-import org.nut.dynamatrix.*
+import org.nut.dynamatrix.dynamatrixGlobalState;
+import org.nut.dynamatrix.*;
 
-import java.security.MessageDigest // md5
+import java.security.MessageDigest; // md5
 
 /*
  * Run one combination of settings in the matrix for chosen compiler, etc.

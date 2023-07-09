@@ -1,12 +1,12 @@
 package org.nut.dynamatrix;
 
-import jenkins.model.Jenkins;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.*;
 
+import com.cloudbees.groovy.cps.NonCPS;
 import hudson.model.Node;
+import jenkins.model.Jenkins;
 
 import org.nut.dynamatrix.Utils;
 

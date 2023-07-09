@@ -1,13 +1,13 @@
-package org.nut.dynamatrix
+package org.nut.dynamatrix;
 
 // Inspired by https://github.com/mkobit/jenkins-pipeline-shared-library-example/blob/master/test/integration/groovy/com/mkobit/libraryexample/VarsExampleJunitTest.groovy
-import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
-import org.jenkinsci.plugins.workflow.job.WorkflowJob
-import org.jenkinsci.plugins.workflow.job.WorkflowRun
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.jvnet.hudson.test.JenkinsRule
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
 
 class genericPipelineTest {
 
@@ -29,7 +29,7 @@ class genericPipelineTest {
                 echo "The build number is odd"
             }
         }
-        
+
         evenOrOdd(env.BUILD_NUMBER as int)
     '''.stripIndent(), true)
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')

@@ -9,6 +9,7 @@
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
+import com.cloudbees.groovy.cps.NonCPS;
 import hudson.model.Result;
 
 import java.text.SimpleDateFormat;

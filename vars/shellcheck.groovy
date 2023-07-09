@@ -1,7 +1,9 @@
-import org.nut.dynamatrix.*
+import org.nut.dynamatrix.*;
 
-import org.nut.dynamatrix.DynamatrixSingleBuildConfig
-import org.nut.dynamatrix.Utils
+import com.cloudbees.groovy.cps.NonCPS;
+
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
+import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 // TODO: make dynacfgPipeline a class?

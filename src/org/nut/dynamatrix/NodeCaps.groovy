@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.*;
 
+import com.cloudbees.groovy.cps.NonCPS;
 import hudson.model.Node;
 import hudson.model.Label;
 

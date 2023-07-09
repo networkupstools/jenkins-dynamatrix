@@ -1,5 +1,7 @@
 package org.nut.dynamatrix;
 
+import com.cloudbees.groovy.cps.NonCPS;
+
 /**
  * Various generic helpers to check or process our data.
  */
