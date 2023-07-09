@@ -461,11 +461,11 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                             try {
                                                 // May be not defined
                                                 _CHANGE_TARGET = CHANGE_TARGET
-                                            } catch (Throwable t) {
+                                            } catch (Throwable ignored) {
                                                 try {
                                                     // May be not defined
                                                     _CHANGE_TARGET = env.CHANGE_TARGET
-                                                } catch (Throwable tt) {}
+                                                } catch (Throwable ignore) {}
                                             }
 
                                             if (Utils.isStringNotEmpty(_CHANGE_TARGET)
@@ -748,12 +748,12 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 try { // no idea why, but we can get a nullptr exception here :\
                     if (tmpRes != null)
                         currentBuild.result = currentBuild.result.combine(tmpRes)
-                } catch (Throwable t) {}
+                } catch (Throwable ignored) {}
                 try { // we try to track results based on each stage outcome
                     Result wr = dynamatrix.getWorstResult()
                     if (wr != null)
                         currentBuild.result = currentBuild.result.combine(wr)
-                } catch (Throwable t) {}
+                } catch (Throwable ignored) {}
 
                 // Beside the standard currentBuild.result we may have tracked
                 // a more extensive source of info in the stage count (such as
@@ -812,7 +812,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         text: "Build seems not finished: " + txt,
                                         icon: '/images/svgs/error.svg'	// '/images/48x48/error.png'
                                         )
-                                } catch (Throwable t) {} // no-op
+                                } catch (Throwable ignored) {} // no-op
                                 error txt
                             }
                         } else {

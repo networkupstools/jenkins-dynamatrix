@@ -46,7 +46,7 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
                             if (env?.GCCVER?.replaceAll(/\..*$/, '')?.toInteger() < 4) {
                                 compilerTool = 'gcc3'
                             }
-                        } catch (Throwable n) {}
+                        } catch (Throwable ignored) {}
                     }
                     break
                 case ['clang', 'CLANG']:
@@ -58,7 +58,7 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
                         if (env["${env.COMPILER}VER"]) {
                             id += "-" + env["${env.COMPILER}VER"]
                         }
-                    } catch (Throwable t) {} // ignore
+                    } catch (Throwable ignored) {} // ignore
                     break
             }
         } else {
@@ -69,7 +69,7 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
                     if (env?.GCCVER?.replaceAll(/\..*$/, '')?.toInteger() < 4) {
                         compilerTool = 'gcc3'
                     }
-                } catch (Throwable n) {}
+                } catch (Throwable ignored) {}
             } else if (env?.CLANGVER) {
                 id = "CLANG-${env.CLANGVER}"
                 compilerTool = 'clang'
@@ -544,11 +544,11 @@ done
                             sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${FF.name}'>${FF.name}</a></li>"
                         }
                     }
-                } catch (Throwable tF) {} // no-op, possibly some iteration/fileExists problem
+                } catch (Throwable ignored) {} // no-op, possibly some iteration/fileExists problem
                 sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
 
                 createSummary(text: sumtxt, icon: suming_prefix + sumimg + suming_suffix)
-            } catch (Throwable t) {} // no-op, possibly missing badge plugin
+            } catch (Throwable ignored) {} // no-op, possibly missing badge plugin
         }
 
         if (!(dsbc?.keepWs)) {
@@ -556,7 +556,7 @@ done
             // well suited for inspecting the builds post-mortem reliably
             try {
                 cleanWs()
-            } catch (Throwable t) {
+            } catch (Throwable ignored) {
                 deleteDir()
             }
         }

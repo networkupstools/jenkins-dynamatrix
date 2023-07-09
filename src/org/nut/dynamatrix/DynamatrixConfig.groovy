@@ -619,7 +619,7 @@ def parallelStages = prepareDynamatrix(
                         // Expected optional value "replace" or "merge"
                         mergeMode = (((Map)(dynacfgOrig['mergeMode']))[k]).toString().trim()
                         (Map)(dynacfgOrig['mergeMode']).remove(k)
-                    } catch (Throwable t) {} // keep default setting if no action requested
+                    } catch (Throwable ignored) {} // keep default setting if no action requested
 
                     if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): mergeMode for k='${k}' is '${mergeMode}'")
                     switch ("${mergeMode}") {

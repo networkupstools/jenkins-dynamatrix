@@ -34,11 +34,11 @@ void call(def issueAnalysisArr, String id, String name) {
         // Can fail if not set by pipeline (not a PR build)
         if (CHANGE_TARGET != null && CHANGE_TARGET != "")
             sCHANGE_TARGET = "${CHANGE_TARGET}"
-    } catch (Throwable t1) {
+    } catch (Throwable ignored) {
         try {
             if (env.CHANGE_TARGET != null && env.CHANGE_TARGET != "")
                 sCHANGE_TARGET = "${env.CHANGE_TARGET}"
-        } catch (Throwable t2) {}
+        } catch (Throwable ignore) {}
     }
 
     doSummarizeIssues(issueAnalysisArr, id, name, "${JOB_NAME}", "${BRANCH_NAME}", sCHANGE_TARGET)

@@ -181,7 +181,7 @@ class Dynamatrix implements Cloneable {
                     r = Result.fromString(k)
                     break
             }
-        } catch (Throwable t) {
+        } catch (Throwable ignored) {
             r = null
         }
         return r
@@ -458,7 +458,7 @@ class Dynamatrix implements Cloneable {
         } catch (Throwable tOK) { // ok if missing
             this.script.echo "WARNING: Tried to removeBadges() for 'Build-progress-badge@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
             if (this.shouldDebugTrace()) {
-                this.script.echo (t.toString())
+                this.script.echo (tOK.toString())
             }
         }
 
