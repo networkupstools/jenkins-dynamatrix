@@ -400,7 +400,7 @@ class DynamatrixStash {
             // Not desired for subsequent checkouts on build agents
             untieRefrepo(script)
         } else {
-            script.echo "checkoutCleanSrc: NOT calling untieRefrepo() - benefitting from refrepo and risking if it is garbage-collected, removed, etc."
+            script.echo "checkoutCleanSrc: NOT calling untieRefrepo() - benefiting from refrepo and risking if it is garbage-collected, removed, etc."
         }
 
         return res

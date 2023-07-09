@@ -22,8 +22,9 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // internally, but values placed into it are fed from standard envvars
     // like CC, CFLAGS and others.
 
-    if (dynacfgPipeline.containsKey('buildSystem') &&
-        (dynacfgPipeline.buildSystem in ['ci_build', 'ci_build.sh', 'zproject'] )
+    if (dynacfgPipeline.containsKey('buildSystem')
+    &&  Utils.isStringNotEmpty(dynacfgPipeline.buildSystem)
+    &&  ((String)(dynacfgPipeline.buildSystem) in ['ci_build', 'ci_build.sh', 'zproject'])
     ) {
         // Not using closures to make sure envvars are expanded during real
         // shell execution and not at an earlier processing stage by Groovy -

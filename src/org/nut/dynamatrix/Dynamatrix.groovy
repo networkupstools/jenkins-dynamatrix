@@ -370,7 +370,7 @@ class Dynamatrix implements Cloneable {
     }
 
     /** Helper to treat {@code null} {@link Integer} values as zeroes for counting */
-    private Integer intNullZero(Integer i) { if (i == null) { return 0 } else { return i } }
+    private static Integer intNullZero(Integer i) { if (i == null) { return 0 } else { return i } }
 
     /** Reporting the accounted values:
      * We started the stage (maybe more than once) */

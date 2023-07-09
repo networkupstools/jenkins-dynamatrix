@@ -89,7 +89,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                     // Let BO render all this work somehow at least
                     // It also tends to say "QueuedWaiting for run to start"
                     // until everything is done... Classic UI flowGraphTable
-                    // fares a lot better but less user-friently to glance.
+                    // fares a lot better but less user-friendly to glance.
                     stage("shellcheck for ${MATRIX_TAG}") {
                         // On current node/workspace, prepare source once for
                         // tests that are not expected to impact each other

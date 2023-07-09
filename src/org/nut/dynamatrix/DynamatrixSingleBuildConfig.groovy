@@ -173,10 +173,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     @NonCPS
     synchronized public Result setWorstResult(String k) {
-        Result r = null
         // NOTE: This might throw if not a valid string from enum,
         // we propagate that exception
-        r = Result.fromString(k)
+        Result r = Result.fromString(k)
 
         if (this.shouldDebugTrace()) {
             script.println (
@@ -262,7 +261,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      */
     @NonCPS
     public static String C_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
-        return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.C_StageNameTagValue(dsbc) + "\" && " + dsbc.defaultStageName()
+        return 'MATRIX_TAG="' + C_StageNameTagValue(dsbc) + "\" && " + dsbc.defaultStageName()
     }
 
     /**

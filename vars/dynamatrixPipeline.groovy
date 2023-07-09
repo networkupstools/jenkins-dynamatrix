@@ -256,7 +256,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     // VMs, etc.) as dead build agents that in fact keep processing their
     // workload properly. Another symptomatically related issue may be
     // true loss of Remoting Channel (OOM of agent, network break) that
-    // is harder to reliably diagnoze or fix, beside reducing load on the
+    // is harder to reliably diagnose or fix, beside reducing load on the
     // farm to make it less probable...
     System.setProperty("org.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL", "86400");
 
@@ -492,7 +492,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         // By default we run all otherwise not disabled
                                         // scenarios... but really, some test cases do
                                         // not make sense for certain changes and are a
-                                        // waste of roud-trip time and compute resources.
+                                        // waste of round-trip time and compute resources.
                                         if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
                                             if (dynamatrixGlobalState.enableDebugTrace)
                                                 echo "[DEBUG] Analysing the changedFiles=${changedFiles.toString()} list against the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' ..."
@@ -543,12 +543,12 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                             dynamatrix.restoreDynacfg()
                                             if (Utils.isClosure(sb?.bodyParStages)) {
                                                 // body may be empty {}, if user wants so
-                                                sb.mapParStages = sb.getParStages(dynamatrix, sb.bodyParStages)
+                                                sb.mapParStages = sb.getParStages.call(dynamatrix, sb.bodyParStages)
                                             } else {
                                                 if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                                                    sb.mapParStages = sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                                                    sb.mapParStages = sb.getParStages.call(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
                                                 } else {
-                                                    sb.mapParStages = sb.getParStages(dynamatrix, null)
+                                                    sb.mapParStages = sb.getParStages.call(dynamatrix, null)
                                                 }
                                             }
                                             stagesBinBuild += sb.mapParStages
@@ -874,7 +874,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 // definitive?
 
                                 // Remove Jenkins-defined results; and also the
-                                // data Dynamatix.groovy classifies; do any remain?
+                                // data Dynamatrix.groovy classifies; do any remain?
                                 Map<String, Integer> mapresOther = (Map<String, Integer>)(mapCountStages.clone())
                                 for (String r in [
                                     'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',

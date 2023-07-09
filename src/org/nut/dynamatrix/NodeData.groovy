@@ -111,7 +111,7 @@ class NodeData {
     @NonCPS
     static String getNodeLabelsStringByName(String name) {
         if (Utils.isStringNotEmpty(name)) {
-            def node = NodeData.getNodeByName(name)
+            def node = getNodeByName(name)
             if (node != null) {
                 return node.labelString
             }

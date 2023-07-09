@@ -43,7 +43,7 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
                     if (env?.GCCVER) {
                         id += "-${env.GCCVER}"
                         try {
-                            if (env?.GCCVER.replaceAll(/\..*$/, '').toInteger() < 4) {
+                            if (env?.GCCVER?.replaceAll(/\..*$/, '')?.toInteger() < 4) {
                                 compilerTool = 'gcc3'
                             }
                         } catch (Throwable n) {}
@@ -66,7 +66,7 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
                 id = "GCC-${env.GCCVER}"
                 compilerTool = 'gcc'
                 try {
-                    if (env?.GCCVER.replaceAll(/\..*$/, '').toInteger() < 4) {
+                    if (env?.GCCVER?.replaceAll(/\..*$/, '')?.toInteger() < 4) {
                         compilerTool = 'gcc3'
                     }
                 } catch (Throwable n) {}
@@ -209,7 +209,7 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
         if (dynacfgPipeline?.configureEnvvars) {
             // Might be better to evict into cmdPrep alone, but for e.g.
             // the ci_build.sh tooling defaults, we only call "check"
-            // and that handles everything for the BIUILD_TYPE requested
+            // and that handles everything for the BUILD_TYPE requested
             cmdCommon += """ ${dynacfgPipeline?.configureEnvvars}
 """
             cmdCommonLabel += "configureEnvvars "
@@ -517,7 +517,7 @@ done
                 // Used to be '/images/48x48/(error|warning).png'
                 // after the logic below, an arg for createSummary()
                 // Maybe sourced from https://github.com/jenkinsci/jenkins/blob/master/war/src/main/webapp/images/48x48 :
-                String sumimg = null
+                String sumimg
                 String suming_prefix = '/images/svgs/'
                 String suming_suffix = '.svg'
                 if (dsbc?.isAllowedFailure) {
@@ -570,7 +570,7 @@ done
                 echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected in stage '${stageName}': executed shell steps failed"
                 dsbc.thisDynamatrix.mustAbort = true
             } else {
-                echo "Not raising mustAbort flag, because " + (dsbc?.thisDynamatrix ? (dsbc?.thisDynamatrix.failFast ? "dsbc?.thisDynamatrix.failFast==true (so not sure why not raising the flag...)" : "dsbc?.thisDynamatrix.failFast==false") : "dsbc?.thisDynamatrix is not tracked in this run")
+                echo "Not raising mustAbort flag, because " + (dsbc?.thisDynamatrix ? (dsbc?.thisDynamatrix?.failFast ? "dsbc?.thisDynamatrix.failFast==true (so not sure why not raising the flag...)" : "dsbc?.thisDynamatrix.failFast==false") : "dsbc?.thisDynamatrix is not tracked in this run")
             }
 
             if (dsbc?.isAllowedFailure) {

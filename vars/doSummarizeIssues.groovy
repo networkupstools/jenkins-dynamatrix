@@ -21,7 +21,7 @@ void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String
             ]
 
         if (id ==~ /aggregate/) {
-            piMap['aggregatingResults'] = true
+            piMap.aggregatingResults = true
         }
 
         publishIssues (piMap)
