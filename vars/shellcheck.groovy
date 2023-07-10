@@ -60,6 +60,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
     // Set of Map'able tuples of <String, Closure>
     Set<List> stagesShellcheck_arr = []
 
+    Boolean debugTrace = (dynacfgPipeline?.enableDebugTrace || dynacfgPipeline?.shellcheck?.enableDebugTrace)
+
     // In outer layer, select all suitable builders;
     // In inner layer, unpack+config the source on
     // that chosen host once, and use that workspace
