@@ -38,7 +38,7 @@ class Dynamatrix implements Cloneable {
     private DynamatrixConfig dynacfgSaved = null
     /** Have some defaults, if only to have all expected fields defined */
     private def script
-    /** Have some defaults, if only to have all expected fields defined */
+    /** Prepared String with identifier of this object */
     private final String objectID = Integer.toHexString(hashCode())
     /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
@@ -357,7 +357,11 @@ class Dynamatrix implements Cloneable {
      */
     //@NonCPS
     synchronized public Integer countStagesIncrement(String k, String sn = null) {
-        this.script?.echo "countStagesIncrement(" + (k == null ? "<null>" : "'${k}'") + ", '${sn}')"
+        this.script?.echo "countStagesIncrement(" + (k == null ? "<null>" : "'${k}'") + ", '${sn}') " +
+                "in Dynamatrix instance " +
+                getClass().getName() + '@' + Integer.toHexString(hashCode()) +
+                " aka " + this.objectID
+
         if (k == null)
             k = 'UNKNOWN'
         this.setWorstResult(sn, k)
@@ -489,7 +493,10 @@ class Dynamatrix implements Cloneable {
         if (!(Utils.isStringNotEmpty(txt))) {
             txt = this.toStringStageCount()
         }
-        txt = "Build in progress: " + txt
+        txt = "Build in progress: " + txt +
+                "in Dynamatrix instance " +
+                getClass().getName() + '@' + Integer.toHexString(hashCode()) +
+                " aka " + this.objectID
 
         Boolean res = null
         try {
