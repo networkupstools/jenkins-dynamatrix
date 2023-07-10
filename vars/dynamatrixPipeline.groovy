@@ -992,7 +992,8 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         txt = "Not all went well: " + txt +
                                 " in Dynamatrix instance " +
                                 dynamatrix.getClass().getName() + '@' + Integer.toHexString(dynamatrix.hashCode()) +
-                                " aka " + dynamatrix.objectID
+                                " aka " + dynamatrix.objectID +
+                                (dynamatrix.dynamatrixComment == null ? "" : " with comment: ${dynamatrix.dynamatrixComment}")
                         manager.addShortText(txt)
                         createSummary(
                             text: txt,

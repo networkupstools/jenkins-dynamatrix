@@ -362,7 +362,8 @@ class Dynamatrix implements Cloneable {
         this.script?.echo "countStagesIncrement(" + (k == null ? "<null>" : "'${k}'") + ", '${sn}')" +
                 " in Dynamatrix instance " +
                 getClass().getName() + '@' + Integer.toHexString(hashCode()) +
-                " aka " + this.objectID
+                " aka " + this.objectID +
+                (this.dynamatrixComment == null ? "" : " with comment: ${this.dynamatrixComment}")
 
         if (k == null)
             k = 'UNKNOWN'
@@ -500,7 +501,8 @@ class Dynamatrix implements Cloneable {
         txt = "Build in progress: " + txt +
                 " in Dynamatrix instance " +
                 getClass().getName() + '@' + Integer.toHexString(hashCode()) +
-                " aka " + this.objectID
+                " aka " + this.objectID +
+                (this.dynamatrixComment == null ? "" : " with comment: ${this.dynamatrixComment}")
 
         Boolean res = null
         try {
@@ -538,9 +540,9 @@ class Dynamatrix implements Cloneable {
 
         StringWriter stackTrace = new StringWriter()
         (new Exception()).printStackTrace(new PrintWriter(stackTrace))
-        script.echo "Creating new Dynamatrix@${this.objectID} at:\n" +
-                stackTrace.toString()
-
+        script.echo "Creating new Dynamatrix@${this.objectID}" +
+                (this.dynamatrixComment == null ? "" : ": ${this.dynamatrixComment}") +
+                " at: " + stackTrace.toString()
     }
 
     public boolean canEqual(Object other) {
