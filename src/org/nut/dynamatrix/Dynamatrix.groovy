@@ -2512,6 +2512,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(jlie)
                         throw jlie
+                    // TODO // } catch (hudson.plugins.git.GitException gex) { // see https://github.com/networkupstools/jenkins-dynamatrix/issues/19 about evil force-pushes
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + Utils.castString(t), stageName + sbName)
                         dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
