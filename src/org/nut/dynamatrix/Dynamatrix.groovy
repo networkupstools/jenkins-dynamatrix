@@ -123,6 +123,9 @@ class Dynamatrix implements Cloneable {
 
     /**
      * Report the worst result of all executed dynamatrix stages.
+     * If recursing, {@code null} results of known clones are
+     * ignored. A non-recursive value found from the current
+     * {@link Dynamatrix} object may be {@code null}, however.
      *
      * @see #setWorstResult(String)
      * @see #setWorstResult(String, String)
@@ -132,10 +135,13 @@ class Dynamatrix implements Cloneable {
         Result r = this.@dmWorstResult
         if (recurse && this.knownClones.size() > 0) {
             this.knownClones.each {
-                if (r == null) {
-                    r = it.dmWorstResult
-                } else {
-                    r = r.combine(it.dmWorstResult)
+                Result rIt = it?.getWorstResult(recurse)
+                if (r != null) {
+                    if (r == null) {
+                        r = rIt
+                    } else {
+                        r = r.combine(rIt)
+                    }
                 }
             }
         }
