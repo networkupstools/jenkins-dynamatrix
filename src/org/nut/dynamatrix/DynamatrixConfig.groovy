@@ -613,7 +613,13 @@ def parallelStages = prepareDynamatrix(
 
             if (dynacfgOrig.containsKey('dsbcStageTimeoutSettings')) {
                 // Should be a Map or null; raise an error otherwise
-                this.dsbcStageTimeoutSettings = dynacfgOrig.dsbcStageTimeoutSettings
+                if (dynacfgOrig.dsbcStageTimeoutSettings == null
+                ||  Utils.isMap(dynacfgOrig.dsbcStageTimeoutSettings)
+                ) {
+                    this.dsbcStageTimeoutSettings = (Map)(dynacfgOrig.dsbcStageTimeoutSettings)
+                } else {
+                    throw new InvalidClassException("dsbcStageTimeoutSettings is not a Map")
+                }
                 dynacfgOrig.remove('dsbcStageTimeoutSettings')
             }
 
