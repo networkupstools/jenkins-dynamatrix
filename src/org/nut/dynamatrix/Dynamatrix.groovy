@@ -368,8 +368,8 @@ class Dynamatrix implements Cloneable {
         if (k == null)
             k = 'UNKNOWN'
         this.setWorstResult(sn, k)
-        if (this.countStages.containsKey(k)) {
-            this.countStages[k] += 1
+        if (this.countStages.containsKey(k) && this.countStages[k] >= 0) {
+            this.countStages[k] = this.countStages[k] + 1
         } else {
             this.countStages[k] = 1
         }
