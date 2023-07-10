@@ -477,11 +477,14 @@ class Dynamatrix implements Cloneable {
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
         String txt = this.toStringStageCountNonZero()
+        if ("[:]".equals(txt)) txt = null
         if (!(Utils.isStringNotEmpty(txt))) {
             txt = this.toStringStageCountDumpNonZero()
+            if ("[:]".equals(txt)) txt = null
         }
         if (!(Utils.isStringNotEmpty(txt))) {
             txt = this.toStringStageCountDump()
+            if ("[:]".equals(txt)) txt = null
         }
         if (!(Utils.isStringNotEmpty(txt))) {
             txt = this.toStringStageCount()
