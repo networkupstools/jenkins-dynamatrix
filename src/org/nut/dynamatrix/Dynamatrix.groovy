@@ -2515,6 +2515,12 @@ def parallelStages = prepareDynamatrix(
                     // TODO // } catch (hudson.plugins.git.GitException gex) { // see https://github.com/networkupstools/jenkins-dynamatrix/issues/19 about evil force-pushes
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + Utils.castString(t), stageName + sbName)
+
+                        // No idea what happened (that's for devops to research), but this
+                        // stage has definitely completed, and not in a successful fashion....
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
+                        dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName)
+
                         dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         dsbc.dsbcResultInterim = 'Throwable'
 
