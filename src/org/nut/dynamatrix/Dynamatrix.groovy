@@ -1931,7 +1931,7 @@ def parallelStages = prepareDynamatrix(
                     Throwable caught = null
                     try {
                         script.timeout (dsbc.stageTimeoutSettings) {
-                            payloadTmp
+                            payloadTmp()
                         }
                     } catch (FlowInterruptedException fie) {
                         dsbc.dsbcResultInterim = 'AGENT_TIMEOUT'
@@ -1979,11 +1979,11 @@ def parallelStages = prepareDynamatrix(
                     }
                     dsbc.thisDynamatrix?.updateProgressBadge()
                     try {
-                        def res = payloadTmp()
+                        def payloadRes = payloadTmp()
                         this.script?.echo "countStagesIncrement(): some verdict after payload, no exception"
                         if (dsbc.dsbcResult != null) {
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
-                            dsbc.dsbcResultInterim = dsbcResult.toString()
+                            dsbc.dsbcResultInterim = dsbc.dsbcResult.toString()
                         } else {
                             if (dsbc.thisDynamatrix?.trackStageResults?.containsKey(stageName)
                             &&  dsbc.thisDynamatrix?.trackStageResults[stageName] != null
@@ -1997,7 +1997,7 @@ def parallelStages = prepareDynamatrix(
                         }
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         dsbc.thisDynamatrix?.updateProgressBadge()
-                        return res
+                        return payloadRes
                     } catch (FlowInterruptedException fex) {
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (Utils.isStringNotEmpty(dsbc.dsbcResultInterim)
