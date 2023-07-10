@@ -758,9 +758,11 @@ class Dynamatrix implements Cloneable {
      */
     @NonCPS
     synchronized public Map<String, Integer> getCountStages(Boolean recurse = true) {
-        Map<String, Integer> mapres = (Map<String, Integer>)(this.@countStages?.clone())
-        if (mapres == null)
-            mapres = new ConcurrentHashMap<String, Integer>()
+        // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
+        // Groovy and Java should support it, but...
+        Map<String, Integer> mapres = new ConcurrentHashMap<String, Integer>()
+        if (Utils.isMapNotEmpty(this.@countStages))
+            mapres.putAll(this.@countStages)
 
         if (recurse && this.knownClones.size() > 0) {
             this.knownClones.each {
@@ -784,9 +786,11 @@ class Dynamatrix implements Cloneable {
      */
     @NonCPS
     synchronized public Map<String, String> getTrackStageLogkeys(Boolean recurse = true) {
-        Map<String, String> mapres = (Map<String, String>)(this.@trackStageLogkeys?.clone())
-        if (mapres == null)
-            mapres = new ConcurrentHashMap<String, String>()
+        // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
+        // Groovy and Java should support it, but...
+        Map<String, String> mapres = new ConcurrentHashMap<String, String>()
+        if (Utils.isMapNotEmpty(this.@trackStageLogkeys))
+            mapres.putAll(this.@trackStageLogkeys)
 
         if (recurse && this.knownClones.size() > 0) {
             this.knownClones.each {
@@ -810,9 +814,11 @@ class Dynamatrix implements Cloneable {
      */
     @NonCPS
     synchronized public Map<String, Result> getTrackStageResults(Boolean recurse = true) {
-        Map<String, Result> mapres = (Map<String, Result>)(this.@trackStageResults?.clone())
-        if (mapres == null)
-            mapres = new ConcurrentHashMap<String, Result>()
+        // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
+        // Groovy and Java should support it, but...
+        Map<String, Result> mapres = new ConcurrentHashMap<String, Result>()
+        if (Utils.isMapNotEmpty(this.@trackStageResults))
+            mapres.putAll(this.@trackStageResults)
 
         if (recurse && this.knownClones.size() > 0) {
             this.knownClones.each {
