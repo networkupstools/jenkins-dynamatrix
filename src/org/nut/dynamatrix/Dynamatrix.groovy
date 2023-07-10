@@ -397,17 +397,25 @@ class Dynamatrix implements Cloneable {
                 " aka " + this.objectID +
                 (this.dynamatrixComment == null ? "" : " with comment: ${this.dynamatrixComment}")
 
-        if (k == null)
-            k = 'UNKNOWN'
-        this.setWorstResult(sn, k)
-        synchronized(this) {
+        Integer res = this.countStagesIncrementSync(k, sn)
+
+        this.script?.echo "countStagesIncrement(${k}, ...) in Dynamatrix@${this.objectID} " +
+                "got up to: ${this.@countStages[k]}; current worst result is: ${this.getWorstResult(false)?.toString()}"
+        return res
+    }
+
+    /** @see #countStagesIncrement */
+    @NonCPS
+    private Integer countStagesIncrementSync(String k, String sn = null) {
+        synchronized(Dynamatrix.class) {
+            if (k == null)
+                k = 'UNKNOWN'
+            this.setWorstResult(sn, k)
             if (this.@countStages.containsKey(k) && this.@countStages[k] >= 0) {
                 this.@countStages[k] += 1
             } else {
                 this.@countStages[k] = 1
             }
-            this.script?.echo "countStagesIncrement(${k}, ...) in Dynamatrix@${this.objectID} " +
-                    "got up to: ${this.@countStages[k]}; current worst result is: ${this.getWorstResult(false)?.toString()}"
             return this.@countStages[k]
         }
     }
