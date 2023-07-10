@@ -557,12 +557,25 @@ class Dynamatrix implements Cloneable {
         Dynamatrix ret = (Dynamatrix) super.clone()
         ret.dynamatrixComment = "Clone of Dynamatrix@${this.objectID}" +
                 (ret.dynamatrixComment == null ? "" : ": ${ret.dynamatrixComment}")
+
+        StringWriter stackTrace = new StringWriter()
+        (new Exception()).printStackTrace(new PrintWriter(stackTrace))
+        script.echo "Creating new Dynamatrix@${this.objectID} CLONE: ${this.dynamatrixComment}" +
+                " at: " + stackTrace.toString()
+
         return ret
     }
 
     public Dynamatrix clone(String dynamatrixComment) throws CloneNotSupportedException {
         Dynamatrix ret = (Dynamatrix) super.clone()
         ret.dynamatrixComment = dynamatrixComment
+
+        StringWriter stackTrace = new StringWriter()
+        (new Exception()).printStackTrace(new PrintWriter(stackTrace))
+        script.echo "Creating new Dynamatrix@${this.objectID} CLONE" +
+                (this.dynamatrixComment == null ? "" : ": ${this.dynamatrixComment}") +
+                " at: " + stackTrace.toString()
+
         return ret
     }
 
