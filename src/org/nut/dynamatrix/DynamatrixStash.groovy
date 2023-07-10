@@ -1,5 +1,8 @@
 package org.nut.dynamatrix;
 
+import hudson.plugins.git.BranchSpec;
+import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.extensions.impl.CloneOption;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
@@ -70,10 +73,13 @@ import hudson.plugins.git.extensions.GitSCMExtension;
 
 class DynamatrixStash {
     /** If closures were used to check out a stashName, track it here */
-    private static def stashCode = [:]
+    private static Map<String, Closure> stashCode = [:]
 
-    /** Track info about whatever we checked out with helpers here */
-    private static def stashSCMVars = [:]
+    /**
+     * Track info about whatever we checked out with helpers here;
+     * keys may be Map(scmParams) or a String(stashName)
+     */
+    private static Map stashSCMVars = [:]
 
     static void deleteWS(def script) {
         /* clean up our workspace (current directory) */
@@ -225,7 +231,7 @@ class DynamatrixStash {
     static def checkoutSCM(def script, def scmParams, String coRef = null) {
         Field field = null
 
-        if (scmParams instanceof hudson.plugins.git.GitSCM) {
+        if (scmParams instanceof GitSCM) {
             if (coRef != null) {
                 if (scmParams.hasProperty('branches')) {
                     if (scmParams.branches) {
@@ -239,7 +245,7 @@ class DynamatrixStash {
 
                         // Changes type to java.util.List and seems ignored in practice,
                         // maybe some other fields also set what is checked out?..
-                        scmParams.branches = [new hudson.plugins.git.BranchSpec(coRef)]
+                        scmParams.branches = [new BranchSpec(coRef)]
                         //scmParams.branches[0] = new hudson.plugins.git.BranchSpec(coRef)
 
 /*
@@ -329,14 +335,14 @@ class DynamatrixStash {
         def clonedScm = null
         if (scm == null) scm = script.scm
 
-        if (scm instanceof hudson.plugins.git.GitSCM) {
+        if (scm instanceof GitSCM) {
             // GitSCM has no clone(); using constructor per
             // https://javadoc.jenkins.io/plugin/git/hudson/plugins/git/GitSCM.html
             // Deprecated: GitSCM(List<UserRemoteConfig> userRemoteConfigs, List<BranchSpec> branches, Boolean doGenerateSubmoduleConfigurations, Collection<SubmoduleConfig> submoduleCfg, GitRepositoryBrowser browser, String gitTool, List<GitSCMExtension> extensions)
             // GitSCM(List<UserRemoteConfig> userRemoteConfigs, List<BranchSpec> branches, GitRepositoryBrowser browser, String gitTool, List<GitSCMExtension> extensions)
             //List<GitSCMExtension> scmExts = new ArrayList<GitSCMExtension>()
             //scmExts.addAll(scm.getExtensions().toMap().keySet())
-            clonedScm = new hudson.plugins.git.GitSCM(
+            clonedScm = new GitSCM(
                 scm.getUserRemoteConfigs(),
                 scm.getBranches(),
                 scm.getBrowser(),
@@ -348,7 +354,7 @@ class DynamatrixStash {
             // Map ok, others unhandled => exception?..
             try {
                 clonedScm = scm.clone()
-            } catch (java.lang.CloneNotSupportedException e) {
+            } catch (CloneNotSupportedException e) {
                 script.echo "[WARNING] java.lang.CloneNotSupportedException, using reference to original: " + e.toString()
                 clonedScm = scm
             }
@@ -372,9 +378,9 @@ class DynamatrixStash {
             script.echo "checkoutCleanSrc: scm = ${Utils.castString(scm)}"
             if (Utils.isMap(scm)
                 && scm.containsKey('$class')
-                && scm['$class'] in ['GitSCM']
+                && scm['$class'].toString() in ['GitSCM']
             ) {
-                res = checkoutGit(script, scm)
+                res = checkoutGit(script, (Map)scm)
             } else {
                 res = checkoutSCM(script, scm)
                 //res = script.checkout (scm)
@@ -397,7 +403,7 @@ class DynamatrixStash {
             // Not desired for subsequent checkouts on build agents
             untieRefrepo(script)
         } else {
-            script.echo "checkoutCleanSrc: NOT calling untieRefrepo() - benefitting from refrepo and risking if it is garbage-collected, removed, etc."
+            script.echo "checkoutCleanSrc: NOT calling untieRefrepo() - benefiting from refrepo and risking if it is garbage-collected, removed, etc."
         }
 
         return res
@@ -520,9 +526,9 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
         if (!(Utils.isMap(scm)
               && scm.containsKey('$class')
-              && scm['$class'] in ['GitSCM']
+              && scm['$class'].toString() in ['GitSCM']
              )
-        && !(scm instanceof hudson.plugins.git.GitSCM)
+        && !(scm instanceof GitSCM)
         ) {
             script.echo "checkoutCleanSrcRefrepoWS: scm = ${Utils.castString(scm)} is not git, falling back"
             // Here and below, caller should catch "false" to try e.g.
@@ -540,7 +546,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         // NOTE: For the first shot, PoCing mostly with shell; groovy later
         // and per above, our "scm" is a Map, not directly a GitSCM object
         //   https://javadoc.jenkins.io/plugin/git/hudson/plugins/git/GitSCM.html
-        def ret = null
+        def ret = null  // Boolean, return of sh(), etc...
         try {
             String scmCommit = null
             String scmURL = null
@@ -553,10 +559,10 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
             script.echo "checkoutCleanSrcRefrepoWS: on node '${script?.env?.NODE_NAME}' checking refrepo for '${stashName}'"
             //script.sh "hostname; set | sort -n"
-            if (scm instanceof hudson.plugins.git.GitSCM) {
+            if (scm instanceof GitSCM) {
                 // GitSCM object
 
-                for (extset in scm?.extensions) {
+                for (def extset in scm?.extensions) {
                     if (Utils.isMapNotEmpty(extset)) {
                         if (extset.containsKey('$class')) {
                             switch (extset['$class']) {
@@ -571,7 +577,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                                     break
                             } // switch
                         } // if Map with $class
-                    } else if (extset instanceof hudson.plugins.git.extensions.impl.CloneOption) {
+                    } else if (extset instanceof CloneOption) {
                         // no-op for now
                     } // if CloneOption
                 } // for extset
@@ -626,9 +632,9 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 if (script?.env?.NODE_LABELS) {
                     script.env.NODE_LABELS.split('[ \r\n\t]+').each() {String KV ->
                         if (KV =~ /^DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME=.*$/) {
-                            def key = null
-                            def val = null
-                            (key, val) = KV.split('=')
+                            String key = null
+                            String val = null
+                            (key, val) = KV.split('=', 2)
                             lockName = val
                         }
                     }
@@ -660,7 +666,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 }
                 if (!refrepoName) {
                     refrepoName = scmURL.replaceLast(/\\.git$/, '')
-                    def rOld = null
+                    String rOld = null
                     while (rOld != refrepoName) {
                         rOld = refrepoName
                         refrepoName = refrepoName - ~/^.*\\//
@@ -778,13 +784,13 @@ exit \$RET
     static def unstashCleanSrc(def script, String stashName) {
         deleteWS(script)
         if (script?.env?.NODE_LABELS) {
-            def useMethod = null
+            String  useMethod = null
             script.env.NODE_LABELS.split('[ \r\n\t]+').each() {String KV ->
                 //script.echo "[D] unstashCleanSrc(): Checking node label '${KV}'"
                 if (KV =~ /^DYNAMATRIX_UNSTASH_PREFERENCE=.*$/) {
-                    def key = null
-                    def val = null
-                    (key, val) = KV.split('=')
+                    String key = null
+                    String val = null
+                    (key, val) = KV.split('=', 2)
                     //script.echo "[D] unstashCleanSrc(): Checking node label deeper: '${key}'='${val}' (stashName='${stashName}')"
                     if (val == "scm:${stashName}") {
                         useMethod = 'scm'

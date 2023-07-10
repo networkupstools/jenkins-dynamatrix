@@ -1,3 +1,6 @@
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
+
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.Utils;
 
@@ -7,7 +10,7 @@ import org.nut.dynamatrix.Utils;
  * Unlike the other agents, this worker should have appropriate
  * internet access, possibly reference git repository cache, etc.
  */
-def labelDefaultWorker() {
+String labelDefaultWorker() {
     // Global/modifiable config point:
     if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelDefaultWorker)) {
         return dynamatrixGlobalState.labelDefaultWorker
@@ -21,7 +24,7 @@ def labelDefaultWorker() {
  * @see infra#labelDefaultWorker
  * @see dynamatrixGlobalState#labelCheckoutWorker
  */
-def labelCheckoutWorker() {
+String labelCheckoutWorker() {
     // Global/modifiable config point:
     if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelCheckoutWorker)) {
         return dynamatrixGlobalState.labelCheckoutWorker
@@ -41,7 +44,7 @@ def labelCheckoutWorker() {
  * @see infra#labelDefaultWorker
  * @see dynamatrixGlobalState#labelDocumentationWorker
  */
-def labelDocumentationWorker() {
+String labelDocumentationWorker() {
     // Global/modifiable config point:
     if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelDocumentationWorker)) {
         return dynamatrixGlobalState.labelDocumentationWorker
@@ -61,7 +64,7 @@ def labelDocumentationWorker() {
  * settings or a hard-coded default.
  * @see dynamatrixGlobalState#branchDefaultStable
  */
-def branchDefaultStable() {
+String branchDefaultStable() {
     if (Utils.isStringNotEmpty(dynamatrixGlobalState.branchDefaultStable)) {
         return dynamatrixGlobalState.branchDefaultStable
     }
@@ -78,8 +81,8 @@ def branchDefaultStable() {
  *
  * @see #listChangedFilesJenkinsData
  */
-Set listChangedFilesGitWorkspace() {
-    Set changedFiles = []
+Set<String> listChangedFilesGitWorkspace() {
+    Set<String> changedFiles = []
 
     // Is this a Git-driven build? And a PR at that?
     if (env?.CHANGE_TARGET) {
@@ -121,18 +124,20 @@ Set listChangedFilesGitWorkspace() {
  *
  * @see #listChangedFilesGitWorkspace
  */
-Set listChangedFilesJenkinsData() {
+Set<String> listChangedFilesJenkinsData() {
     // https://stackoverflow.com/a/59462020/4715872
-    Set changedFiles = []
+    Set<String> changedFiles = []
     def changeLogSets = currentBuild.changeSets
     // Not sure how well this works for PR changesets vs.
     // change from last build in the branch only
     // (and reportedly empty for new builds in a branch...)
-    for (entries in changeLogSets) {
-        for (entry in entries) {
-            for (file in entry.affectedFiles) {
-                //echo "Found changed file: ${file.path}"
-                changedFiles += "${file.path}".trim()
+    for (def entries in changeLogSets) {
+        for (def entry in entries) {
+            for (def file in entry.affectedFiles) {
+                try {
+                    //echo "Found changed file: ${file.path}"
+                    changedFiles += "${file.path}".trim()
+                } catch (Throwable ignored) {} // no-op
             }
         }
     }
@@ -147,8 +152,8 @@ Set listChangedFilesJenkinsData() {
  * @see #listChangedFilesJenkinsData
  * @see #listChangedFilesGitWorkspace
  */
-Set listChangedFiles() {
-    Set changedFiles = listChangedFilesGitWorkspace()
+Set<String> listChangedFiles() {
+    Set<String> changedFiles = listChangedFilesGitWorkspace()
     changedFiles += listChangedFilesJenkinsData()
-    return changedFiles.flatten()
+    return (Set<String>)(changedFiles.flatten())
 }

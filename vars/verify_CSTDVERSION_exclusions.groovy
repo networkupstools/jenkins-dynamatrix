@@ -1,3 +1,6 @@
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
+
 /* A little PoC to test the excludeCombos in-vivo with Jenkins console */
 def call(Boolean debug = false) {
     def CSTDVERSION = ['89', '99', '03', '11', '14', '17', '2x']
@@ -58,12 +61,12 @@ def call(Boolean debug = false) {
     ]
 
     println "start:"
-    def v1, v2, v3
-    for (COMPILER in ['GCC', 'CLANG']) {
+    int v1, v2, v3
+    for (String COMPILER in ['GCC', 'CLANG']) {
         for (v1 = 3; v1 < 12; v1++) {
             for (v2 = -1; v2 < 10; v2++) {
                 for (v3 = -1; v3 < 3; v3++) {
-                    def label = "${COMPILER}VER=${v1}"
+                    String label = "${COMPILER}VER=${v1}"
                     if (v2 >= 0) {
                         label += ".${v2}"
                         if (v3 >= 0) label += ".${v3}"
@@ -74,7 +77,7 @@ def call(Boolean debug = false) {
                     // Track variants which had a hit in the exclusion array:
                     Set notSupports = []
                     for (stdverNum in CSTDVERSION) {
-                        def STDVER = "CSTDVERSION=${stdverNum}"
+                        String STDVER = "CSTDVERSION=${stdverNum}"
                         for (ecArr in excludeCombos) {
                             def crit = 0
                             def hits = 0
@@ -106,4 +109,3 @@ def call(Boolean debug = false) {
 } // call
 
 //call()
-

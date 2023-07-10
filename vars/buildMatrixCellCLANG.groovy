@@ -1,3 +1,6 @@
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
+
 import org.nut.dynamatrix.*;
 
 /*
@@ -30,7 +33,7 @@ CC=clang-${CLANGVER} CXX=clang++-${CLANGVER} CPP=clang-cpp \
     } // warnError + sh
 
     script {
-        def id = "CLANG-${CLANGVER}:STD=${STD}${STDVER}:WARN=${BUILD_WARNOPT}@${PLATFORM}"
+        String id = "CLANG-${CLANGVER}:STD=${STD}${STDVER}:WARN=${BUILD_WARNOPT}@${PLATFORM}"
         def i = scanForIssues tool: clang(name: id)
 //        dynamatrixGlobalState.issueAnalysis << i
         publishIssues issues: [i], filters: [includePackage('io.jenkins.plugins.analysis.*')]

@@ -1,12 +1,12 @@
 package org.nut.dynamatrix;
 
-import jenkins.model.Jenkins;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.*;
 
+import com.cloudbees.groovy.cps.NonCPS;
 import hudson.model.Node;
+import jenkins.model.Jenkins;
 
 import org.nut.dynamatrix.Utils;
 
@@ -30,7 +30,7 @@ class NodeData {
      * sign are converted into key=[valueSet] (since our use-case can have
      * many values with same key, like compiler versions); those without
      * the sign become key=null; also the original unique key=value strings
-     * are saved as keys similarly mapped to null:
+     * are saved as keys similarly mapped to null.
      */
     public final Map<String, Object> labelMap
 
@@ -39,11 +39,11 @@ class NodeData {
 
         Node node = null
         if (Utils.isNode(nodeOrig)) {
-            node = nodeOrig
+            node = (Node)nodeOrig
         } else if (Utils.isString(nodeOrig)) {
             def jenkins = Jenkins.getInstanceOrNull()
             if (jenkins != null) {
-                node = jenkins.getNode(nodeOrig)
+                node = jenkins.getNode((String)nodeOrig)
             }
             if (node == null) {
                 throw new Exception("NodeData: bad argument to constructor: node was not found by name: ${Utils.castString(nodeOrig)}")
@@ -65,7 +65,7 @@ class NodeData {
         // There may be several hits e.g. "GCCVER=8 GCCVER=10" so we save keys
         // mapped to Sets of one or more values right away. We also save the
         // original unique "key-value" strings mapped to "null".
-        def labelMap = [:]
+        Map<String, Object> labelMap = [:]
         labelSet.each() {String label ->
             if (label == null) return
             label = label.trim()
@@ -104,14 +104,14 @@ class NodeData {
         return getNodeByName(this.name);
     }
 
-    Node getNodeName() {
+    String getNodeName() {
         return this.name;
     }
 
     @NonCPS
     static String getNodeLabelsStringByName(String name) {
         if (Utils.isStringNotEmpty(name)) {
-            def node = NodeData.getNodeByName(name)
+            def node = getNodeByName(name)
             if (node != null) {
                 return node.labelString
             }

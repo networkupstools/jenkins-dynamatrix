@@ -1,3 +1,7 @@
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
+
+import org.joda.time.Instant;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.NodeData;
 import org.nut.dynamatrix.Utils;
@@ -11,10 +15,10 @@ def call(String VAR, String DEFVAL, Closure body) {
         return body()
     }
 
-    def hits = 0
+    Integer hits = 0
     def VAL = null
     if (Utils.isStringNotEmpty(env['NODE_NAME'])) {
-        NodeData.getNodeLabelsByName(env.NODE_NAME).each() { label ->
+        NodeData.getNodeLabelsByName(env.NODE_NAME).each() { String label ->
             if (label.startsWith("${VAR}=")) {
                 String[] keyValue = label.split("=", 2)
                 if (VAL == null) VAL=keyValue[1]
@@ -42,19 +46,19 @@ def call(Map VARVAL, Closure body) {
         return body()
     }
 
-    def envmap = [:]
-    def arrLabels = NodeData.getNodeLabelsByName(env.NODE_NAME)
+    Map envmap = [:]
+    Set<String> arrLabels = NodeData.getNodeLabelsByName(env.NODE_NAME)
 
-    VARVAL.keySet().each() {VAR ->
+    VARVAL.keySet().each() { def VAR ->
         def DEFVAL = VARVAL[VAR]
-        if (Utils.isStringNotEmpty(env[VAR]) || envmap.containsKey(VAR)) {
+        if (Utils.isStringNotEmpty(env.VAR) || envmap.containsKey(VAR)) {
             return // continue
         }
 
         def hits = 0
         def VAL = null
         if (arrLabels.size() > 0) {
-            arrLabels.each() {label ->
+            arrLabels.each() { String label ->
                 if (label.startsWith("${VAR}=")) {
                     String[] keyValue = label.split("=", 2)
                     if (VAL == null) VAL=keyValue[1]
@@ -74,8 +78,8 @@ def call(Map VARVAL, Closure body) {
     }
 
     if (envmap.size() > 0) {
-        def envarr = []
-        envmap.keySet().each() {k ->
+        List envarr = []
+        envmap.keySet().each() { def k ->
             envarr << "${k}=${envmap[k]}"
         }
         //return withEnv(envmap, body)

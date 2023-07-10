@@ -1,7 +1,10 @@
-import org.nut.dynamatrix.*
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
 
-import org.nut.dynamatrix.DynamatrixSingleBuildConfig
-import org.nut.dynamatrix.Utils
+import org.nut.dynamatrix.*;
+
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
+import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 // TODO: make dynacfgPipeline a class?
@@ -11,7 +14,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 
  */
 
-def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
+def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // Sanity-check the pipeline options, these are relevant for several
     // build systems alike (autotools, ci_build, probably cmake, etc...)
 

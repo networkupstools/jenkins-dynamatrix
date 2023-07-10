@@ -1,10 +1,11 @@
 package org.nut.dynamatrix;
 
+import com.cloudbees.groovy.cps.NonCPS;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 /**
- * This class intends to represent one build request configuration
+ * This class intends to represent one build request configuration.
  * An instance of it can be passed as the set of arguments for the
  * customized run Dynamatrix routines, while some defaults can be
  * applied so needed fields are all "defined" when we look at them.
@@ -46,8 +47,10 @@ class DynamatrixConfig implements Cloneable {
     /** Each of these labels can be String, GString or Pattern object
      * to match labels (named as key=value pairs) of build agents:
      *    <pre>dynamatrixAxesLabels: ['OS', '${COMPILER}VER', 'ARCH'],</pre>
+     * Normally this object is a Set, but may be initialized as
+     * a String, List, etc. so a getter is provided.
      */
-    public Set dynamatrixAxesLabels = []
+    public def dynamatrixAxesLabels = []
 
     // TODO: Need a way to specify that we only want some extreme value
     //  but not the whole range, somehow specifiable per-system (e.g. to
@@ -260,9 +263,9 @@ class DynamatrixConfig implements Cloneable {
      *
      * @see #excludedNodelabels
      */
-    public Set requiredNodelabels = []
+    public Set<String> requiredNodelabels = []
     /** @see #requiredNodelabels */
-    public Set excludedNodelabels = []
+    public Set<String> excludedNodelabels = []
 
     /**
      * Same values as for {@code timeout()} step, e.g.
@@ -371,8 +374,16 @@ def parallelStages = prepareDynamatrix(
         return (DynamatrixConfig) super.clone();
     }
 
+    /**
+     * Prepares the class instance settings for one of pre-defined
+     * default configurations:
+     *   ['C', 'C-all', 'CXX', 'CXX-all', 'C+CXX', 'C+CXX-all']
+     *<br/>
+     * Returns a boolean status (true if OK), or a string with error details.
+     * @see #initDefault(Map)
+     */
     public def initDefault(String defaultCfg) {
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugTrace = this.shouldDebugTrace()
 
         if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(String): called with defaultCfg = ${Utils.castString(defaultCfg)}")
 
@@ -567,9 +578,13 @@ def parallelStages = prepareDynamatrix(
         this.initDefault(dynacfgOrig)
     }
 
+    /**
+     * Returns a boolean status (true if OK), or a string with error details
+     * @see #initDefault(String)
+     */
     public def initDefault(Map dynacfgOrig) {
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): called with dynacfgOrig = ${Utils.castString(dynacfgOrig)}")
 
@@ -579,13 +594,13 @@ def parallelStages = prepareDynamatrix(
         // Combine a config with defaults from a Set passed to a groovy call()
         if (dynacfgOrig.size() > 0) {
             // Be sure to only mutilate a copy below, not the original object
-            dynacfgOrig = dynacfgOrig.clone()
+            dynacfgOrig = (Map)(dynacfgOrig.clone())
 
             // Note: in addition to standard contents of class DynamatrixConfig,
             // the Map passed by caller may contain "defaultDynamatrixConfig" as
             // a key for a String value to specify default pre-sets, e.g. "C".
             if (dynacfgOrig.containsKey('defaultDynamatrixConfig')) {
-                def str = dynacfgOrig['defaultDynamatrixConfig'].toString()
+                String str = dynacfgOrig['defaultDynamatrixConfig'].toString()
                 if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): calling initDefault(${str}) first")
                 this.initDefault(str)
                 dynacfgOrig.remove('defaultDynamatrixConfig')
@@ -598,7 +613,13 @@ def parallelStages = prepareDynamatrix(
 
             if (dynacfgOrig.containsKey('dsbcStageTimeoutSettings')) {
                 // Should be a Map or null; raise an error otherwise
-                this.dsbcStageTimeoutSettings = dynacfgOrig.dsbcStageTimeoutSettings
+                if (dynacfgOrig.dsbcStageTimeoutSettings == null
+                ||  Utils.isMap(dynacfgOrig.dsbcStageTimeoutSettings)
+                ) {
+                    this.dsbcStageTimeoutSettings = (Map)(dynacfgOrig.dsbcStageTimeoutSettings)
+                } else {
+                    throw new InvalidClassException("dsbcStageTimeoutSettings is not a Map")
+                }
                 dynacfgOrig.remove('dsbcStageTimeoutSettings')
             }
 
@@ -611,36 +632,36 @@ def parallelStages = prepareDynamatrix(
 
                 if (k.equals("mergeMode")) return // continue
                 try {
-                    def mergeMode = "replace"
+                    String mergeMode = "replace"
                     try {
                         // Expected optional value "replace" or "merge"
-                        mergeMode = dynacfgOrig.mergeMode[k].trim()
-                        dynacfgOrig.mergeMode.remove(k)
-                    } catch (Throwable t) {} // keep default setting if no action requested
+                        mergeMode = (((Map)(dynacfgOrig['mergeMode']))[k]).toString().trim()
+                        (Map)(dynacfgOrig['mergeMode']).remove(k)
+                    } catch (Throwable ignored) {} // keep default setting if no action requested
 
                     if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): mergeMode for k='${k}' is '${mergeMode}'")
                     switch ("${mergeMode}") {
                         case "merge":
-                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): merging: ${this[k]}\n    with: ${dynacfgOrig[k]}")
-                            this[k] = Utils.mergeMapSet(this[k], dynacfgOrig[k])
-                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of merge: ${this[k]}")
+                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): merging: ${this[k.toString()]}\n    with: ${dynacfgOrig[k]}")
+                            this[k.toString()] = Utils.mergeMapSet(this[k.toString()], dynacfgOrig[k])
+                            if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of merge: ${this[k.toString()]}")
                             break
 
                         case "replace":
                             if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): replacing with: ${dynacfgOrig[k]}")
-                            this[k] = dynacfgOrig[k]
+                            this[k.toString()] = dynacfgOrig[k]
                             //if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of replacement: ${this[k]}")
                             break
 
                         default:
                             if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): defaulting to replace with: ${dynacfgOrig[k]}")
-                            this[k] = dynacfgOrig[k]
+                            this[k.toString()] = dynacfgOrig[k]
                             //if (debugTrace) this.script.println("[DEBUG] DynamatrixConfig(Map): result of replacement: ${this[k]}")
                             break
                     }
                 } catch(Exception e) {
                     if (!errs.equals("")) errs += "\n"
-                    def str = "[DEBUG] DynamatrixConfig(Map): ignoring unsupported config key from request: '${k}' => " + dynacfgOrig[k] + " : " + e.toString()
+                    String str = "[DEBUG] DynamatrixConfig(Map): ignoring unsupported config key from request: '${k}' => " + dynacfgOrig[k] + " : " + e.toString()
                     errs += str
                     if (debugTrace) this.script.println str
                 }
@@ -673,37 +694,47 @@ def parallelStages = prepareDynamatrix(
         return this
     }
 
-    /*
+    public Set getDynamatrixAxesLabels() {
+        if (this.@dynamatrixAxesLabels != null
+        &&  !Utils.isList(this.@dynamatrixAxesLabels)
+        ) {
+            this.sanitycheckDynamatrixAxesLabels()
+        }
+
+        return (Set)(this.@dynamatrixAxesLabels)
+    }
+
+    /**
      * Our callers expect a few specific data constructs here:
      * either a single string or pattern (that will be remade into
      * a single-element array), or an array/list/set/... of such types
      */
     public def sanitycheckDynamatrixAxesLabels() {
         String errs = ""
-        if (this.dynamatrixAxesLabels != null) {
-            if (Utils.isList(this.dynamatrixAxesLabels)) {
+        if (this.@dynamatrixAxesLabels != null) {
+            if (Utils.isList(this.@dynamatrixAxesLabels)) {
                 // TODO: Match superclass to not list all children of Set etc?
                 // TODO: Check entries if this object that they are strings/patterns
-                if (this.dynamatrixAxesLabels.size() > 0)
+                if (this.@dynamatrixAxesLabels.size() > 0)
                     return true
                 // Else no automagic... but maybe got strict requirements?
                 if (this.dynamatrixRequiredLabelCombos.size() > 0)
                     return true
                 errs += "Initially requested dynamatrixAxesLabels and dynamatrixRequiredLabelCombos are both empty"
-            } else if (Utils.isString(this.dynamatrixAxesLabels)) {
-                if (this.dynamatrixAxesLabels.equals("")) {
-                    this.dynamatrixAxesLabels = null
+            } else if (Utils.isString(this.@dynamatrixAxesLabels)) {
+                if ("" == this.@dynamatrixAxesLabels?.toString()) {
+                    this.@dynamatrixAxesLabels = null
                 } else {
-                    this.dynamatrixAxesLabels = [this.dynamatrixAxesLabels]
+                    this.@dynamatrixAxesLabels = [this.@dynamatrixAxesLabels]
                 }
                 return true
-            } else if (Utils.isRegex(this.dynamatrixAxesLabels)) {
-                this.dynamatrixAxesLabels = [this.dynamatrixAxesLabels]
+            } else if (Utils.isRegex(this.@dynamatrixAxesLabels)) {
+                this.@dynamatrixAxesLabels = [this.@dynamatrixAxesLabels]
                 return true
             } else {
                 //if (!errs.equals("")) errs += "\n"
-                errs += "Not sure what type 'dynamatrixAxesLabels' is: ${Utils.castString(this.dynamatrixAxesLabels)}"
-                //this.dynamatrixAxesLabels = null
+                errs += "Not sure what type 'dynamatrixAxesLabels' is: ${Utils.castString(this.@dynamatrixAxesLabels)}"
+                //this.@dynamatrixAxesLabels = null
             }
         }
 
@@ -720,8 +751,8 @@ def parallelStages = prepareDynamatrix(
         // deliberately does not include this.commonLabelExpr in the return
         String commonLabelExpr = ""
 
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         // TODO: Use StringBuilder
         if (Utils.isListNotEmpty(this.requiredNodelabels)) {
@@ -756,7 +787,9 @@ def parallelStages = prepareDynamatrix(
 
 } // end of class DynamatrixConfig
 
+/** Used in {@link DynamatrixConfig#initDefault}() to pre-select tools and dynamatrix axes */
 enum CompilerTypes {
 //    null,
+    /** C/C++ compiler type */
     C
 }

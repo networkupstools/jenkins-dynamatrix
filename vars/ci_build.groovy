@@ -1,7 +1,10 @@
-import org.nut.dynamatrix.*
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
 
-import org.nut.dynamatrix.DynamatrixSingleBuildConfig
-import org.nut.dynamatrix.Utils
+import org.nut.dynamatrix.*;
+
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
+import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 // TODO: make dynacfgPipeline a class?
@@ -11,7 +14,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
     dynacfgPipeline.buildSystem = 'ci_build'
  */
 
-def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
+def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // Sanity-check the pipeline options for zproject-inspired ci_build.sh
     // stack of scripts tailored specifically for CI builds and managed by
     // value of BUILD_TYPE envvar (and some other BUILD_* can be defined).
@@ -20,8 +23,9 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
     // internally, but values placed into it are fed from standard envvars
     // like CC, CFLAGS and others.
 
-    if (dynacfgPipeline.containsKey('buildSystem') &&
-        (dynacfgPipeline.buildSystem in ['ci_build', 'ci_build.sh', 'zproject'] )
+    if (dynacfgPipeline.containsKey('buildSystem')
+    &&  Utils.isStringNotEmpty(dynacfgPipeline.buildSystem)
+    &&  ((String)(dynacfgPipeline.buildSystem) in ['ci_build', 'ci_build.sh', 'zproject'])
     ) {
         // Not using closures to make sure envvars are expanded during real
         // shell execution and not at an earlier processing stage by Groovy -

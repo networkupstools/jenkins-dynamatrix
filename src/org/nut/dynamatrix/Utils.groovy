@@ -1,5 +1,7 @@
 package org.nut.dynamatrix;
 
+import com.cloudbees.groovy.cps.NonCPS;
+
 /**
  * Various generic helpers to check or process our data.
  */
@@ -139,7 +141,7 @@ class Utils {
         if (b.size() == 0) return a
         assert [a,b].every { it != null }
         def (m,n) = [a.size(),b.size()]
-        return ( (0..<(m*n)).inject([]) { prod, i -> prod << [a[i.intdiv(n)], b[i%n]].flatten().sort() } )
+        return ( (0..<(m*n)).inject([]) { List prod, Integer i -> prod << [a[i.intdiv(n)], b[i%n]].flatten().sort() } )
     }
 
     /**
@@ -151,7 +153,7 @@ class Utils {
      */
     static Iterable cartesianSquared(Iterable arr) {
         Iterable res = []
-        arr.each() {a ->
+        arr.each() {def a ->
             // Be more forgiving of parameters that are just arrays of strings, etc.
             if (!(a instanceof java.lang.Iterable)) a = [a]
             if (res.size() == 0) {
@@ -198,7 +200,7 @@ class Utils {
         if (isMap(orig)) {
             if (isMap(addon)) {
                 if (debug) println "Both orig and addon are Maps, concatenate recursively:\n  ${orig}\n+ ${addon}\n"
-                addon.keySet().each() {k ->
+                addon.keySet().each() {def k ->
                     if (orig.containsKey(k)) {
                         if (debug) println "+ Merging orig[${k}]=${orig[k]} with addon[${k}]=${addon[k]}"
                         orig[k] = mergeMapSet(orig[k], addon[k])

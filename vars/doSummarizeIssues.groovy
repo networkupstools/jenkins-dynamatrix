@@ -1,3 +1,6 @@
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
+
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
@@ -7,10 +10,10 @@ void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String
         // ReferenceJob(Name) is handled according to current version (at this time) of
         //   https://github.com/jenkinsci/warnings-ng-plugin/blob/master/doc/Documentation.md#configure-the-selection-of-the-reference-build-baseline
         // Note: this solution below assumes Git SCM for the project
-        def reference = sJOB_NAME.replace(sBRANCH_NAME, sCHANGE_TARGET)
+        String reference = sJOB_NAME.replace(sBRANCH_NAME, sCHANGE_TARGET)
         discoverGitReferenceBuild referenceJob: reference
 
-        def piMap = [
+        Map piMap = [
             id: id,
             name: name,
             //referenceJobName: reference,
@@ -19,7 +22,7 @@ void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String
             ]
 
         if (id ==~ /aggregate/) {
-            piMap['aggregatingResults'] = true
+            piMap.aggregatingResults = true
         }
 
         publishIssues (piMap)
@@ -27,16 +30,16 @@ void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String
 } // doSummarizeIssues(args)
 
 void call(def issueAnalysisArr, String id, String name) {
-    def sCHANGE_TARGET = infra.branchDefaultStable()
+    String sCHANGE_TARGET = infra.branchDefaultStable()
     try {
         // Can fail if not set by pipeline (not a PR build)
         if (CHANGE_TARGET != null && CHANGE_TARGET != "")
             sCHANGE_TARGET = "${CHANGE_TARGET}"
-    } catch (Throwable t1) {
+    } catch (Throwable ignored) {
         try {
             if (env.CHANGE_TARGET != null && env.CHANGE_TARGET != "")
                 sCHANGE_TARGET = "${env.CHANGE_TARGET}"
-        } catch (Throwable t2) {}
+        } catch (Throwable ignore) {}
     }
 
     doSummarizeIssues(issueAnalysisArr, id, name, "${JOB_NAME}", "${BRANCH_NAME}", sCHANGE_TARGET)

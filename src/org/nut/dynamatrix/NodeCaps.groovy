@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.*;
 
+import com.cloudbees.groovy.cps.NonCPS;
 import hudson.model.Node;
 import hudson.model.Label;
 
@@ -43,7 +44,7 @@ class NodeCaps implements Cloneable {
      * mapped to the Map of nodes' selected metadata including capabilities
      * they declared with further labels mapped as KEY=VALUE entries.
      */
-    public NodeCaps(script, String nodeLabelExpr = null, boolean debugTrace = null, boolean debugErrors = null) {
+    public NodeCaps(script, String nodeLabelExpr = null, Boolean debugTrace = null, Boolean debugErrors = null) {
         this.script = script
         if (debugTrace != null) {
             this.enableDebugTrace = debugTrace
@@ -55,10 +56,10 @@ class NodeCaps implements Cloneable {
         // Track the original expression, matched or not, in the returned value
         // TODO: Maybe track something else like timestamps?
         this.labelExpr = nodeLabelExpr
-        def tmpNodeData = [:]
+        Map<String, NodeData> tmpNodeData = [:]
 
         // Have it sorted just in case:
-        def builders = null
+        Set<Node> builders = null
         if (this.labelExpr == null || "".equals(this.labelExpr.trim())) {
             def jenkins = Jenkins.getInstanceOrNull()
             if (jenkins != null) {
@@ -144,8 +145,8 @@ class NodeCaps implements Cloneable {
      */
     def resolveAxisName(Object axis) {
         Set res = []
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         if (!this.isInitialized) {
             if (debugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
@@ -267,8 +268,8 @@ class NodeCaps implements Cloneable {
     def resolveAxisValues(Object axis,  String node, boolean returnAssignments = false) {
         /* Look into a single node */
         Set res = []
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): called to look for: ${Utils.castString(axis)}"
 
@@ -280,7 +281,7 @@ class NodeCaps implements Cloneable {
             return res
         }
 
-        def labelFixed = ""
+        String labelFixed = ""
         if (Utils.isString(axis)) {
             axis = axis.trim()
             // We support complex labels like "COMPILER=GCC GCCVER" which
@@ -388,8 +389,8 @@ class NodeCaps implements Cloneable {
      */
     def resolveAxisValues(Object axis, boolean returnAssignments = false) {
         Set res = []
-        def debugErrors = this.shouldDebugErrors()
-        def debugTrace = this.shouldDebugTrace()
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
 
         if (!this.isInitialized) {
             if (debugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
@@ -409,7 +410,7 @@ class NodeCaps implements Cloneable {
 
         this.nodeData.keySet().each() {String nodeName ->
             if (nodeName == null) return // continue
-            def nres = resolveAxisValues(axis, nodeName, returnAssignments)
+            Set nres = resolveAxisValues(axis, nodeName, returnAssignments)
             if (nres != null && nres.size() > 0)
                 res << nres
         }

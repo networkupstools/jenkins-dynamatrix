@@ -1,7 +1,10 @@
-import org.nut.dynamatrix.*
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
 
-import org.nut.dynamatrix.DynamatrixSingleBuildConfig
-import org.nut.dynamatrix.Utils
+import org.nut.dynamatrix.*;
+
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
+import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 // TODO: make dynacfgPipeline a class?
@@ -18,7 +21,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 // Note that this code relies on more data points than just
 // dynacfgPipeline.spellcheck.*
 
-def call(dynacfgPipeline = [:]) {
+def call(Map dynacfgPipeline = [:]) {
     if (dynacfgPipeline?.spellcheck) {
         node(infra.labelDocumentationWorker()) {
             withEnvOptional(dynacfgPipeline.defaultTools) {
@@ -50,8 +53,12 @@ def call(dynacfgPipeline = [:]) {
     }
 }
 
-def makeMap(dynacfgPipeline = [:]) {
-    def par = [:]
+/**
+ * Provide a Map using {@link spellcheck#call} as needed for `parallel` step.
+ * Note it is not constrained as Map<String, Closure>!
+ */
+Map makeMap(Map dynacfgPipeline = [:]) {
+    Map par = [:]
     if (dynacfgPipeline?.spellcheck != null) {
         par["spellcheck"] = {
             spellcheck(dynacfgPipeline)
@@ -60,7 +67,14 @@ def makeMap(dynacfgPipeline = [:]) {
     return par
 }
 
-def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
+Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
+
     if (dynacfgPipeline.containsKey('spellcheck')) {
         if ("${dynacfgPipeline['spellcheck']}".trim().equals("true")) {
             dynacfgPipeline['spellcheck'] = '( \${MAKE} spellcheck )'

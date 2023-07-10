@@ -1,12 +1,15 @@
-import org.nut.dynamatrix.dynamatrixGlobalState
-import org.nut.dynamatrix.*
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
 
-import java.security.MessageDigest // md5
+import org.nut.dynamatrix.dynamatrixGlobalState;
+import org.nut.dynamatrix.*;
+
+import java.security.MessageDigest; // md5
 
 /*
  * Run one combination of settings in the matrix for chosen compiler, etc.
  */
-void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String stageName = null) {
+void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String stageName = null) {
     // Values in env.* inspected below come from the anticipated build
     // matrix settings (agent labels, etc.), configureEnvvars.groovy and
     // tool configuration like autotools.groovy or ci_build.groovy
@@ -21,12 +24,12 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
     // (e.g. configure script takes some opts, ci_build normally does not)
 
     // for analysis part after the build
-    def compilerTool = null
+    String compilerTool = null
     // Allowed elements are characters, digits, dashes and underscores
     // (more precisely, the ID must match the regular expression `\p{Alnum}[\p{Alnum}-_]*`
-    def id = ""
+    String id = ""
 
-        def msg = "Building with "
+        String msg = "Building with "
         if (env?.COMPILER) {
             id = env.COMPILER.toUpperCase().trim()
             switch (env.COMPILER) {
@@ -41,10 +44,10 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
                     if (env?.GCCVER) {
                         id += "-${env.GCCVER}"
                         try {
-                            if (env?.GCCVER.replaceAll(/\..*$/, '').toInteger() < 4) {
+                            if (env?.GCCVER?.replaceAll(/\..*$/, '')?.toInteger() < 4) {
                                 compilerTool = 'gcc3'
                             }
-                        } catch (Throwable n) {}
+                        } catch (Throwable ignored) {}
                     }
                     break
                 case ['clang', 'CLANG']:
@@ -56,7 +59,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
                         if (env["${env.COMPILER}VER"]) {
                             id += "-" + env["${env.COMPILER}VER"]
                         }
-                    } catch (Throwable t) {} // ignore
+                    } catch (Throwable ignored) {} // ignore
                     break
             }
         } else {
@@ -64,10 +67,10 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
                 id = "GCC-${env.GCCVER}"
                 compilerTool = 'gcc'
                 try {
-                    if (env?.GCCVER.replaceAll(/\..*$/, '').toInteger() < 4) {
+                    if (env?.GCCVER?.replaceAll(/\..*$/, '')?.toInteger() < 4) {
                         compilerTool = 'gcc3'
                     }
-                } catch (Throwable n) {}
+                } catch (Throwable ignored) {}
             } else if (env?.CLANGVER) {
                 id = "CLANG-${env.CLANGVER}"
                 compilerTool = 'clang'
@@ -160,12 +163,12 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
             msg = msg.trim() + " :: as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}"
 
         // Strive for unique name prefix across many similar builds executed
-        def archPrefix = id
+        String archPrefix = id
         if (stageName)
             archPrefix += "--" + stageName
         archPrefix = archPrefix.trim().replaceAll(/\s+/, '').replaceAll(/[^\p{Alnum}-_=+.]+/, '-')
         if (archPrefix.length() > 100) { // Help filesystems that limit filename or path size
-            def hash = "MD5_" + MessageDigest.getInstance("MD5").digest(archPrefix.bytes).encodeHex().toString().trim()
+            String hash = "MD5_" + MessageDigest.getInstance("MD5").digest(archPrefix.bytes).encodeHex().toString().trim()
             //groovy-2.5//archPrefix = "MD5_" + archPrefix.md5().trim()
             echo "Archived log prefix for this build '${archPrefix}' was too long, so truncating it to ${hash}"
             sh """ echo '${hash} => ${archPrefix}' > '.ci.${hash}.hashed.log' """
@@ -176,22 +179,22 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         // Split that into many shell steps (each with configureEnvvars
         // re-run or some re-import of the first generated value, if needed),
         // and/or sequential stages to visualize in BO UI build progress
-        def cmdCommonLabel = ""
-        def cmdPrepLabel = ""
-        def cmdBuildLabel = ""
-        def cmdTest1Label = ""
-        def cmdTest2Label = ""
+        String cmdCommonLabel = ""
+        String cmdPrepLabel = ""
+        String cmdBuildLabel = ""
+        String cmdTest1Label = ""
+        String cmdTest2Label = ""
 
-        def cmdPrepLog = ""
-        def cmdBuildLog = ""
-        def cmdTest1Log = ""
-        def cmdTest2Log = ""
+        String cmdPrepLog = ""
+        String cmdBuildLog = ""
+        String cmdTest1Log = ""
+        String cmdTest2Log = ""
 
-        def cmdCommon = """ """
-        def cmdPrep = ""
-        def cmdBuild = ""
-        def cmdTest1 = ""
-        def cmdTest2 = ""
+        String cmdCommon = """ """
+        String cmdPrep = ""
+        String cmdBuild = ""
+        String cmdTest1 = ""
+        String cmdTest2 = ""
         if (dynacfgPipeline?.traceBuildShell_configureEnvvars) {
             cmdCommon = """ set -x
 """
@@ -207,7 +210,7 @@ void call(dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, String
         if (dynacfgPipeline?.configureEnvvars) {
             // Might be better to evict into cmdPrep alone, but for e.g.
             // the ci_build.sh tooling defaults, we only call "check"
-            // and that handles everything for the BIUILD_TYPE requested
+            // and that handles everything for the BUILD_TYPE requested
             cmdCommon += """ ${dynacfgPipeline?.configureEnvvars}
 """
             cmdCommonLabel += "configureEnvvars "
@@ -278,10 +281,10 @@ set +x
         }
 
         def shRes = 0
-        def strMayFail = ""
+        String strMayFail = ""
         if (dsbc?.isAllowedFailure) strMayFail += " (may fail)"
-        def lastLog = ""
-        def lastErr = ""
+        String lastLog = ""
+        String lastErr = ""
 
         stage('Prep' + strMayFail) {
             echo msg
@@ -330,8 +333,8 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
             }
         }
 
-        def nameTest1 = "Test1"
-        def nameTest2 = "Test2"
+        String nameTest1 = "Test1"
+        String nameTest2 = "Test2"
 
         if ( (cmdTest1 != "" && cmdTest2 == "")
         ||   (cmdTest1 == "" && cmdTest2 != "")
@@ -379,7 +382,7 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
 
     // This name might go to e.g. notifications (of success/fail)
     // so the string better be unique and meaningful
-    def resName = "Collect results"
+    String resName = "Collect results"
     if (stageName != null && stageName != "")
         resName = "Results for ${stageName}"
     if (env?.CI_SLOW_BUILD_FILTERNAME)
@@ -420,8 +423,8 @@ done
 
         // Log scan analyses, once finely grained per tool/config,
         // and another clumping all tools together to deduplicate
-        def i = null
-        def ia = null
+        def i = null    // retval of scanForIssues()
+        def ia = null   // retval of scanForIssues() for aggregated results
         def cppcheck = null
         def cppcheckAggregated = null
         // "filters" below help ignore problems in system headers
@@ -430,9 +433,9 @@ done
         // to avoid duplicates? Or on the contrary, would we want to see
         // some bugs in generated dist'ed code even if original does not
         // have them?
-        def filterSysHeaders = ".*[/\\\\]usr[/\\\\].*\\.(h|hpp)\$"
+        String filterSysHeaders = ".*[/\\\\]usr[/\\\\].*\\.(h|hpp)\$"
         // Scanner has a limitation regex for "URL" of the analysis:
-        def warningsNgId = (id + "-" + archPrefix) //.toLowerCase()
+        String warningsNgId = (id + "-" + archPrefix) //.toLowerCase()
         switch (compilerTool) {
             case 'gcc':
                 i = scanForIssues tool: gcc(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
@@ -510,14 +513,14 @@ done
             // Add a summary page entry as we go through the build,
             // so developers can quickly find the faults
             try {
-                def sumtxt = null
+                String sumtxt = null
 
                 // Used to be '/images/48x48/(error|warning).png'
                 // after the logic below, an arg for createSummary()
                 // Maybe sourced from https://github.com/jenkinsci/jenkins/blob/master/war/src/main/webapp/images/48x48 :
-                def sumimg = null
-                def suming_prefix = '/images/svgs/'
-                def suming_suffix = '.svg'
+                String sumimg
+                String suming_prefix = '/images/svgs/'
+                String suming_suffix = '.svg'
                 if (dsbc?.isAllowedFailure) {
                     sumtxt = "[UNSTABLE (non-success is expected)] "
                     sumimg = 'warning'
@@ -531,7 +534,7 @@ done
                 sumtxt += lastErr.replaceFirst(/ for .*$/, '')
                 sumtxt += "<ul>"
                 try {
-                    for (F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config"]) {
+                    for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config"]) {
                         if (fileExists(".ci.${archPrefix}.${F}.log.gz")) {
                             sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
                         }
@@ -542,11 +545,11 @@ done
                             sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${FF.name}'>${FF.name}</a></li>"
                         }
                     }
-                } catch (Throwable tF) {} // no-op, possibly some iteration/fileExists problem
+                } catch (Throwable ignored) {} // no-op, possibly some iteration/fileExists problem
                 sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
 
                 createSummary(text: sumtxt, icon: suming_prefix + sumimg + suming_suffix)
-            } catch (Throwable t) {} // no-op, possibly missing badge plugin
+            } catch (Throwable ignored) {} // no-op, possibly missing badge plugin
         }
 
         if (!(dsbc?.keepWs)) {
@@ -554,7 +557,7 @@ done
             // well suited for inspecting the builds post-mortem reliably
             try {
                 cleanWs()
-            } catch (Throwable t) {
+            } catch (Throwable ignored) {
                 deleteDir()
             }
         }
@@ -568,7 +571,7 @@ done
                 echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected in stage '${stageName}': executed shell steps failed"
                 dsbc.thisDynamatrix.mustAbort = true
             } else {
-                echo "Not raising mustAbort flag, because " + (dsbc?.thisDynamatrix ? (dsbc?.thisDynamatrix.failFast ? "dsbc?.thisDynamatrix.failFast==true (so not sure why not raising the flag...)" : "dsbc?.thisDynamatrix.failFast==false") : "dsbc?.thisDynamatrix is not tracked in this run")
+                echo "Not raising mustAbort flag, because " + (dsbc?.thisDynamatrix ? (dsbc?.thisDynamatrix?.failFast ? "dsbc?.thisDynamatrix.failFast==true (so not sure why not raising the flag...)" : "dsbc?.thisDynamatrix.failFast==false") : "dsbc?.thisDynamatrix is not tracked in this run")
             }
 
             if (dsbc?.isAllowedFailure) {
@@ -585,7 +588,7 @@ done
 
 } // buildMatrixCellCI()
 
-def cmdlineBuildLogged(def cmd, def logfile, def stageName, def CI_SLOW_BUILD_FILTERNAME = null, def archPrefix = null) {
+def cmdlineBuildLogged(String cmd, String logfile, String stageName, String CI_SLOW_BUILD_FILTERNAME = null, String archPrefix = null) {
     // A little sleep allows "tail" to show the last lines of that build log
     return """ RES=0; touch '${logfile}'
 tail -f '${logfile}' &

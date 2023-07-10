@@ -1,3 +1,6 @@
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.*;
@@ -75,18 +78,26 @@ prepareDynamatrix([
 /* Returns a map of stages
  * Or a Set, if called from inside a pipeline stage (CPS code).
  */
-def call(dynacfgOrig = [:], Closure body = null) {
-    return call(dynacfgOrig, false, body)
+def call(Map dynacfgOrig = [:], Closure body = null) {
+    return call(dynacfgOrig, false, false, body)
 }
 
-def call(dynacfgOrig = [:], Boolean returnSet, Closure body = null) {
+def call(Map dynacfgOrig = [:], boolean returnSet, Closure body = null) {
+    return call(dynacfgOrig, returnSet, false, body)
+}
+
+def call(Map dynacfgOrig = [:], boolean returnSet, Boolean rememberClones, Closure body = null) {
     //if (dynamatrixGlobalState.enableDebugErrors) println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy step"
 
     // Have some defaults, if only to have all expected fields defined
-    Dynamatrix dynamatrix = new Dynamatrix(this)
+    String dynamatrixComment = "prepareDynamatrix() step"
+    Dynamatrix dynamatrix = new Dynamatrix(this, dynamatrixComment +
+            (dynamatrixGlobalState.enableDebugTrace ? " for ${dynacfgOrig}" : ""))
+    if (dynamatrixGlobalState.enableDebugTrace)
+        dynamatrix.dynamatrixComment = dynamatrixComment
     dynamatrix.prepareDynamatrix(dynacfgOrig)
 
     // We use a custom "dynamatrix" instance here, so no further
     // customizations for generateBuild are needed => passing null
-    return dynamatrix.generateBuild(null, returnSet, body)
+    return dynamatrix.generateBuild(null, returnSet, rememberClones, body)
 }

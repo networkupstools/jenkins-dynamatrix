@@ -1,3 +1,6 @@
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
+
 import org.nut.dynamatrix.*;
 
 /*
@@ -30,7 +33,7 @@ CC=gcc-${GCCVER} CXX=g++-${GCCVER} \
     } // warnError + sh
 
     script {
-        def id = "GCC-${GCCVER}:STD=${STD}${STDVER}:WARN=${BUILD_WARNOPT}@${PLATFORM}"
+        String id = "GCC-${GCCVER}:STD=${STD}${STDVER}:WARN=${BUILD_WARNOPT}@${PLATFORM}"
         def i = scanForIssues tool: gcc(name: id)
 //        dynamatrixGlobalState.issueAnalysis << i
         publishIssues issues: [i], filters: [includePackage('io.jenkins.plugins.analysis.*')]

@@ -1,7 +1,10 @@
-import org.nut.dynamatrix.*
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
 
-import org.nut.dynamatrix.DynamatrixSingleBuildConfig
-import org.nut.dynamatrix.Utils
+import org.nut.dynamatrix.*;
+
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
+import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 // TODO: make dynacfgPipeline a class?
@@ -18,7 +21,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 // Note that this code relies on more data points than just
 // dynacfgPipeline.stylecheck.*
 
-def call(dynacfgPipeline = [:]) {
+def call(Map dynacfgPipeline = [:]) {
     if (dynacfgPipeline?.stylecheck) {
         node(infra.labelDocumentationWorker()) {
             withEnvOptional(dynacfgPipeline?.defaultTools) {
@@ -50,8 +53,12 @@ def call(dynacfgPipeline = [:]) {
     }
 }
 
-def makeMap(dynacfgPipeline = [:]) {
-    def par = [:]
+/**
+ * Provide a Map using {@link stylecheck#call} as needed for `parallel` step.
+ * Note it is not constrained as Map<String, Closure>!
+ */
+Map makeMap(Map dynacfgPipeline = [:]) {
+    Map par = [:]
     if (dynacfgPipeline?.stylecheck != null) {
         par["stylecheck"] = {
             stylecheck(dynacfgPipeline)
@@ -60,7 +67,14 @@ def makeMap(dynacfgPipeline = [:]) {
     return par
 }
 
-def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
+Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
+
     if (dynacfgPipeline.containsKey('stylecheck')) {
         if ("${dynacfgPipeline['stylecheck']}".trim().equals("true")) {
             dynacfgPipeline['stylecheck'] = '( \${MAKE} stylecheck )'

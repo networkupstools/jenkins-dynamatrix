@@ -1,7 +1,12 @@
-import org.nut.dynamatrix.*
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
 
-import org.nut.dynamatrix.DynamatrixSingleBuildConfig
-import org.nut.dynamatrix.Utils
+import org.nut.dynamatrix.*;
+
+import com.cloudbees.groovy.cps.NonCPS;
+
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
+import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 // TODO: make dynacfgPipeline a class?
@@ -38,12 +43,24 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
 // or maybe do it from the routine here?
 // Note that this code relies on mode data points than just dynacfgPipeline.shellcheck.*
 
-def call(dynacfgPipeline = [:], Boolean returnSet = true) {
-    // Returns a Set of tuples that a later stage can convert
-    // into a Map for `parallel` test running (avoid having a
-    // long-lived Map object which can upset CPS and pipeline
-    // serialization).
-    def stagesShellcheck_arr = []
+/**
+ * Returns a Set of tuples that a later stage can convert
+ * into a Map for `parallel` test running with {@link #makeMap}
+ * (avoid having a long-lived Map object which can upset CPS
+ * and pipeline serialization).
+ */
+Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
+
+    // Set of Map'able tuples of <String, Closure>
+    Set<List> stagesShellcheck_arr = []
+
+    Boolean debugTrace = (dynacfgPipeline?.enableDebugTrace || dynacfgPipeline?.shellcheck?.enableDebugTrace)
 
     // In outer layer, select all suitable builders;
     // In inner layer, unpack+config the source on
@@ -58,24 +75,25 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
         // Note: Different label set, different dynamatrix
         // instance (inside step), though hopefully same
         // cached NodeCaps array reused
+        if (debugTrace) this.script.println "[DEBUG] Discovering stagesShellcheck: calling prepareDynamatrix() step..."
         stagesShellcheck_arr = prepareDynamatrix([
             dynamatrixAxesLabels: dynacfgPipeline.shellcheck.dynamatrixAxesLabels,
             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
             stageNameFunc: dynacfgPipeline.shellcheck.stageNameFunc
             ],
-            returnSet) { delegate -> setDelegate(delegate)
-                    def MATRIX_TAG = delegate.stageName.trim() - ~/^MATRIX_TAG="*/ - ~/"*$/
+            returnSet) { def delegate -> setDelegate(delegate)
+                    String MATRIX_TAG = delegate.stageName.trim() - ~/^MATRIX_TAG="*/ - ~/"*$/
 
                     // Cache faults of sub-tests as a fault of this big stage,
                     // but let them all pass first so we know all shells which
                     // complain and not just the first one per host
                     // See also https://stackoverflow.com/a/58737417/4715872
-                    def bigStageResult = 'SUCCESS'
+                    String bigStageResult = 'SUCCESS'
 
                     // Let BO render all this work somehow at least
                     // It also tends to say "QueuedWaiting for run to start"
                     // until everything is done... Classic UI flowGraphTable
-                    // fares a lot better but less user-friently to glance.
+                    // fares a lot better but less user-friendly to glance.
                     stage("shellcheck for ${MATRIX_TAG}") {
                         // On current node/workspace, prepare source once for
                         // tests that are not expected to impact each other
@@ -113,13 +131,13 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                         // Instead we will keep an array of tuples and use
                         // that below to launch the generated substages.
                         // Loosely inspired by ideas from https://stackoverflow.com/a/40166064/4715872
-                        def stagesShellcheckNode = []
+                        List<List> stagesShellcheckNode = []    // Map'able tuples of <String, Closure>
                         // Iterate with separate verdicts when/if `make shellcheck`
                         // (or equivalent) actually supports various $SHELL tests
                         if (dynacfgPipeline.shellcheck.multi != null) {
                             if (dynacfgPipeline.shellcheck.multiLabel != null) {
                                 if (env.NODE_LABELS && env.NODE_NAME) {
-                                    NodeData.getNodeLabelsByName(env.NODE_NAME).each { label ->
+                                    NodeData.getNodeLabelsByName(env.NODE_NAME).each { String label ->
                                         if (label.startsWith("${dynacfgPipeline.shellcheck.multiLabel}=")) {
                                             String[] keyValue = label.split("=", 2)
                                             String SHELL_PROGS=keyValue[1]
@@ -130,10 +148,10 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                                                     return
                                                 }
                                             }
-                                            def stagesShellcheckNode_key = "Test with ${SHELL_PROGS} for ${MATRIX_TAG}"
-                                            def stagesShellcheckNode_val = {
-                                                def msgFail = "Failed stage: ${stageName} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(dsbc)}"
-                                                def didFail = true
+                                            String stagesShellcheckNode_key = "Test with ${SHELL_PROGS} for ${MATRIX_TAG}"
+                                            Closure stagesShellcheckNode_val = {
+                                                String msgFail = "Failed stage: ${stageName} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(dsbc)}"
+                                                Boolean didFail = true
                                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
                                                     withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
                                                         withEnvOptional(dynacfgPipeline.defaultTools) {
@@ -161,7 +179,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                                                 }
                                                 return didFail
                                             } // added stage
-                                            def stagesShellcheckNode_tuple = [stagesShellcheckNode_key, stagesShellcheckNode_val]
+                                            List stagesShellcheckNode_tuple = [stagesShellcheckNode_key, stagesShellcheckNode_val]
                                             stagesShellcheckNode << stagesShellcheckNode_tuple
                                         }
                                     }
@@ -170,7 +188,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
 
                             // TOTHINK: Skip agent that does not declare any shell labels?..
                             if (stagesShellcheckNode.size() == 0) {
-                                def stagesShellcheckNode_tuple = ["Test with default shell(s) for ${MATRIX_TAG}", {
+                                List stagesShellcheckNode_tuple = ["Test with default shell(s) for ${MATRIX_TAG}", {
                                     withEnvOptional(dynacfgPipeline.defaultTools) {
                                         sh """ set +x
                                         echo "Shell-dependent testing with default shell on `uname -a || hostname || true` system"
@@ -184,7 +202,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                         }
 
                         if (dynacfgPipeline.shellcheck.single != null) {
-                            def stagesShellcheckNode_tuple = ["Generic-shell test for ${MATRIX_TAG}", {
+                            List stagesShellcheckNode_tuple = ["Generic-shell test for ${MATRIX_TAG}", {
                                 withEnvOptional(dynacfgPipeline.defaultTools) {
                                     sh """ set +x
                                     echo "Generic-shell test (with recipe defaults) on `uname -a || hostname || true` system"
@@ -199,7 +217,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                         println "Discovered ${stagesShellcheckNode.size()} stagesShellcheckNode sub-stages for ${MATRIX_TAG}"
 
 /*
-                        stagesShellcheckNode.each { stagesShellcheckNode_tuple ->
+                        stagesShellcheckNode.each { List stagesShellcheckNode_tuple ->
                             def name = stagesShellcheckNode_tuple[0] // stagesShellcheckNode_key
                             def closure = stagesShellcheckNode_tuple[1] // stagesShellcheckNode_val
                             stage(name) {
@@ -208,10 +226,10 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                         }
 */
                         if (true) {
-                            def stagesPar = [:]
-                            stagesShellcheckNode.each { stagesShellcheckNode_tuple ->
-                                def name = stagesShellcheckNode_tuple[0] // stagesShellcheckNode_key
-                                def closure = stagesShellcheckNode_tuple[1] // stagesShellcheckNode_val
+                            Map stagesPar = [:]
+                            stagesShellcheckNode.each { List stagesShellcheckNode_tuple ->
+                                String name = (String)stagesShellcheckNode_tuple[0] // stagesShellcheckNode_key
+                                Closure closure = (Closure)stagesShellcheckNode_tuple[1] // stagesShellcheckNode_val
                                 stagesPar[name] = closure
                             }
                             parallel stagesPar
@@ -224,7 +242,7 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
                     // it can not get any better. So we can just assign.
                     currentBuild.result = bigStageResult
                     if (bigStageResult == 'FAILURE') {
-                        def msg = "FATAL: shellcheck for ${MATRIX_TAG} failed in at least one sub-test above"
+                        String msg = "FATAL: shellcheck for ${MATRIX_TAG} failed in at least one sub-test above"
                         //echo msg
                         manager.buildFailure()
                         //error msg
@@ -238,19 +256,30 @@ def call(dynacfgPipeline = [:], Boolean returnSet = true) {
     return stagesShellcheck_arr
 }
 
-def makeMap(stagesShellcheck_arr = []) {
-    // Restore Map from Set, as needed for `parallel`
+/**
+ * Restore Map made by {@link shellcheck#call} from Set of Lists (actually tuples),
+ * as needed for `parallel` step. Note it is not constrained as Map<String, Closure>!
+ */
+Map makeMap(Set<List> stagesShellcheck_arr = []) {
     println "Restoring discovered stagesShellcheck platform builds from Set to Map..."
-    def stagesShellcheck = [:]
-    stagesShellcheck_arr.each {tup ->
+    Map stagesShellcheck = [:]
+    stagesShellcheck_arr.each { List tup ->
         println "Restoring stagesShellcheck platform build: ${Utils.castString(tup)}"
-        stagesShellcheck[tup[0]] = tup[1]
+        if (Utils.isStringNotEmpty(tup[0]) && Utils.isClosure(tup[1]))
+            stagesShellcheck[(String)(tup[0])] = (Closure)(tup[1])
     }
     println "Discovered ${stagesShellcheck.size()} stagesShellcheck platform builds: ${Utils.castString(stagesShellcheck)}"
     return stagesShellcheck
 }
 
-def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
+Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
+
     if (dynacfgPipeline.containsKey('shellcheck')) {
         if (Utils.isMap(dynacfgPipeline['shellcheck'])) {
             if (!dynacfgPipeline['shellcheck'].containsKey('dynamatrixAxesLabels') || "".equals(dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'])) {

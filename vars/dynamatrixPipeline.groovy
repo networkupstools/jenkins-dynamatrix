@@ -5,8 +5,15 @@
  * OS_FAMILY, OS_DISTRO, COMPILER, ${COMPILER}VER (e.g. GCCVER),
  * SHELL_PROGS, MAKE, ARCH_BITS, ARCH${ARCH_BITS} (e.g. ARCH32)
  */
+
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
+
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
+
+import com.cloudbees.groovy.cps.NonCPS;
+import hudson.model.Result;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -110,8 +117,14 @@ def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
 //dynacfgPipeline.shellcheck.stageNameFunc = this.&stageNameFunc_ShellcheckCustom
 */
 
-def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
-    // Base defaults not too specific for any particular toolchain we would use
+/** Revise base defaults not too specific for any particular toolchain we would use */
+Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
 
     if (!dynacfgPipeline.containsKey('buildSystem')) {
         dynacfgPipeline.buildSystem = 'autotools'
@@ -168,12 +181,29 @@ def sanityCheckDynacfgPipeline(dynacfgPipeline = [:]) {
         dynacfgPipeline.useMilestones = true
     }
 
+    if (!dynacfgPipeline.containsKey('recurseIntoDynamatrixCloneStats')) {
+        dynacfgPipeline.recurseIntoDynamatrixCloneStats = true
+    }
+
     return dynacfgPipeline
 }
 
-def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
+def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     // dynacfgBase = Base configuration for Dynamatrix for this pipeline
     // dynacfgPipeline = Step-dependent setup in sub-maps
+
+    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    if (dynacfgPipeline == null) {
+        dynacfgPipeline = [:]
+    } else {
+        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+    }
+
+    if (dynacfgBase == null) {
+        dynacfgBase = [:]
+    } else {
+        dynacfgBase = (Map)(dynacfgBase.clone())
+    }
 
     // Hacky big switch for a max debug option
     if (true)
@@ -192,7 +222,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     DynamatrixConfig dynacfg = new DynamatrixConfig(this)
     dynacfg.initDefault(dynacfgBase)
 
-    if (dynacfg.compilerType in ['C']) {
+    if (dynacfg.compilerType in [CompilerTypes.C]) {
         // Set global default
         dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc
     }
@@ -208,18 +238,24 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     dynacfgPipeline = spellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = shellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
 
-    Dynamatrix dynamatrix = new Dynamatrix(this)
+    String dynamatrixComment = "dynamatrixPipeline() step"
+    Dynamatrix dynamatrix = new Dynamatrix(this, dynamatrixComment +
+            (dynamatrixGlobalState.enableDebugTrace ? " for ${dynacfgBase} + ${dynacfgPipeline}" : ""))
+    if (dynamatrixGlobalState.enableDebugTrace)
+        dynamatrix.dynamatrixComment = dynamatrixComment
 
     // To hop over CPS limitations, we first store our stages
     // (generated inside CPS code) as a Set of tuples, then
     // convert into a Map just for `parallel`. Go figure...
-    def stagesShellcheck_arr = []
+    Set<List> stagesShellcheck_arr = []
 
-    // This is hopefully safer, called not from CPS constraints
-    def stagesBinBuild = [:]
+    // This is passed into `parallel` step, and is hopefully
+    // safer than initially passing a Map when called *not*
+    // from CPS constraints
+    Map stagesBinBuild = [:]
 
     // Lists unique files changed in the Git checkout, just after stashCleanSrc()
-    Set changedFiles = []
+    Set<String> changedFiles = []
 
     // This may be a big hammer (possibly causing this pipeline to change
     // the settings for Jenkins controller), but anyhow the other option
@@ -229,7 +265,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
     // VMs, etc.) as dead build agents that in fact keep processing their
     // workload properly. Another symptomatically related issue may be
     // true loss of Remoting Channel (OOM of agent, network break) that
-    // is harder to reliably diagnoze or fix, beside reducing load on the
+    // is harder to reliably diagnose or fix, beside reducing load on the
     // farm to make it less probable...
     System.setProperty("org.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL", "86400");
 
@@ -264,7 +300,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         // Also enable other "options" (in Declarative parlance).
         disableResume()
 
-        def pipelineProps = [
+        List pipelineProps = [
             durabilityHint('PERFORMANCE_OPTIMIZED'),
             [$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false],
             throttleJobProperty(categories: [], limitOneJobWithMatchingParams: false, maxConcurrentPerNode: 0, maxConcurrentTotal: 0, paramsToUseForLimit: '', throttleEnabled: false, throttleOption: 'project')
@@ -277,7 +313,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         if (Utils.isClosure(dynacfgPipeline?.paramsHandler)) {
             // Optional sanity-checks, assignment of dynacfgPipeline.* fields, etc.
             stage("Handle build parameters") {
-                dynacfgPipeline.paramsHandler()
+                dynacfgPipeline.paramsHandler.call()
             }
         }
 
@@ -286,7 +322,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             // generated for PR builds (PR source + target branches)
             // would have same hashes and check out more efficiently
             // via DynamatrixStash support.
-            def sdf = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss +00:00")
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss +00:00")
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"))
             String now = sdf.format(new Date()).toString()
 
@@ -360,7 +396,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                         // Convert back from the Set of tuples we used to
                         // avoid storing a Map for too long - and making CPS sad
-                        def par1 = shellcheck.makeMap(stagesShellcheck_arr)
+                        // This Map has contents needed for `parallel` step.
+                        // Note it is not constrained as Map<String, Closure>
+                        // (may have "failFast" and possibly other data)!
+                        Map par1 = shellcheck.makeMap(stagesShellcheck_arr)
 
                         // Nothing gets added (empty [:] ignored) if not enabled:
                         par1 += spellcheck.makeMap(dynacfgPipeline)
@@ -373,8 +412,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                         if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
                             par1["Discover slow build matrix"] = {
-                                def countFiltersSeen = 0
-                                def countFiltersSkipped = 0
+                                Integer countFiltersSeen = 0
+                                Integer countFiltersSkipped = 0
                                 // The "slowBuild" is a set of Maps, each of them describes
                                 // a dynamatrix selection filter. Having a series of those
                                 // with conditions known to developer of the pipeline (and
@@ -388,7 +427,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 }
 
                                 dynamatrix.saveDynacfg()
-                                dynacfgPipeline.slowBuild.each { def sb ->
+                                dynacfgPipeline.slowBuild.each { Map sb ->
                                     if (dynamatrixGlobalState.enableDebugTrace) {
                                         echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
                                     } else if (sb?.name) {
@@ -427,15 +466,15 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                             } // else: CHANGE_TARGET is empty (probably not
                                               // building a PR), or regex matches, so go on
 
-                                            def _CHANGE_TARGET = null
+                                            String _CHANGE_TARGET = null
                                             try {
                                                 // May be not defined
                                                 _CHANGE_TARGET = CHANGE_TARGET
-                                            } catch (Throwable t) {
+                                            } catch (Throwable ignored) {
                                                 try {
                                                     // May be not defined
                                                     _CHANGE_TARGET = env.CHANGE_TARGET
-                                                } catch (Throwable tt) {}
+                                                } catch (Throwable ignore) {}
                                             }
 
                                             if (Utils.isStringNotEmpty(_CHANGE_TARGET)
@@ -462,14 +501,14 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                         // By default we run all otherwise not disabled
                                         // scenarios... but really, some test cases do
                                         // not make sense for certain changes and are a
-                                        // waste of roud-trip time and compute resources.
+                                        // waste of round-trip time and compute resources.
                                         if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
                                             if (dynamatrixGlobalState.enableDebugTrace)
                                                 echo "[DEBUG] Analysing the changedFiles=${changedFiles.toString()} list against the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' ..."
                                             if (changedFiles.size() > 0) {
-                                                def skip = true
+                                                Boolean skip = true
 
-                                                for (cf in changedFiles) {
+                                                for (String cf in changedFiles) {
                                                     if (cf ==~ sb.appliesToChangedFilesRegex) {
                                                         // A changed file name did match
                                                         // the regex for files covered by a
@@ -513,12 +552,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                             dynamatrix.restoreDynacfg()
                                             if (Utils.isClosure(sb?.bodyParStages)) {
                                                 // body may be empty {}, if user wants so
-                                                sb.mapParStages = sb.getParStages(dynamatrix, sb.bodyParStages)
+                                                sb.mapParStages = sb.getParStages.call(dynamatrix, sb.bodyParStages)
                                             } else {
                                                 if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                                                    sb.mapParStages = sb.getParStages(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                                                    sb.mapParStages = sb.getParStages.call(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
                                                 } else {
-                                                    sb.mapParStages = sb.getParStages(dynamatrix, null)
+                                                    sb.mapParStages = sb.getParStages.call(dynamatrix, null)
                                                 }
                                             }
                                             stagesBinBuild += sb.mapParStages
@@ -539,7 +578,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     sbSummary = "Did not discover any ${sbSummarySuffix}"
                                 } else {
                                     sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
-                                    dynacfgPipeline.slowBuild.each { def sb ->
+                                    dynacfgPipeline.slowBuild.each { Map sb ->
                                         if (sb?.mapParStages) {
                                             // Note: Char sequence at start of string is parsed for badge markup below
                                             sbSummaryCount += "\n\t* ${sb.mapParStages.size()} hits for: " +
@@ -550,7 +589,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                     try {
                                         // TODO: Something similar but with each stage's
                                         // own buildResult verdicts after the build...
-                                        def txt = "${sbSummary}\nfor this run ${env?.BUILD_URL}:\n\n"
+                                        String txt = "${sbSummary}\nfor this run ${env?.BUILD_URL}:\n\n"
                                         stagesBinBuild.keySet().sort().each { txt += "${it}\n\n" }
                                         txt += sbSummaryCount
                                         writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
@@ -563,7 +602,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                                 )
                                         } catch (Throwable ts) {
                                             echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
-                                            if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                                            if (dynamatrixGlobalState.enableDebugTrace) echo ts.toString()
                                         }
 
                                     } catch (Throwable t) {
@@ -639,7 +678,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     try {
                         // Can depend on plugins not available at this Jenkins
                         // instance, e.g. instant-messaging and IRC plugins
-                        dynacfgPipeline.notifyHandler()
+                        dynacfgPipeline.notifyHandler.call()
                     } catch (Throwable t) {
                         echo "WARNING: Tried to notify about build result (${currentBuild.result}) by user-provided method, and failed to"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -652,7 +691,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
         if (stagesBinBuild.size() < 1) {
             try {
-                def txt = "No 'slow build' dynamatrix stages discovered"
+                String txt = "No 'slow build' dynamatrix stages discovered"
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
                 manager.addShortText(txt)
@@ -667,7 +706,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
         } else {
             echo "Scheduling ${stagesBinBuild.size() - 1} stages for the 'slow build' dynamatrix, running this can take a long while..."
             try {
-                def txt = "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
+                String txt = "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; " +
+                        "failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
                 manager.addShortText(txt)
@@ -700,13 +740,13 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             }
             echo "Completed the 'slow build' dynamatrix"
 
-            def analyzeStageName = "Analyze the bigger dynamatrix"
+            String analyzeStageName = "Analyze the bigger dynamatrix"
             if (dynamatrix.mustAbort) {
                 analyzeStageName += " after fastFailSafe aborted it"
             }
             stage(analyzeStageName) { // TOTHINK: post{always{...}} to the above? Is there one in scripted pipeline?
                 doSummarizeIssues()
-                def mustAbortMsg = null
+                String mustAbortMsg = null
                 if (dynamatrix.mustAbort) {
                     mustAbortMsg = "'Must Abort' flag was raised by at least one slowBuild stage"
                     echo mustAbortMsg
@@ -717,12 +757,12 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 try { // no idea why, but we can get a nullptr exception here :\
                     if (tmpRes != null)
                         currentBuild.result = currentBuild.result.combine(tmpRes)
-                } catch (Throwable t) {}
+                } catch (Throwable ignored) {}
                 try { // we try to track results based on each stage outcome
-                    def wr = dynamatrix.getWorstResult()
+                    Result wr = dynamatrix.getWorstResult(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                     if (wr != null)
                         currentBuild.result = currentBuild.result.combine(wr)
-                } catch (Throwable t) {}
+                } catch (Throwable ignored) {}
 
                 // Beside the standard currentBuild.result we may have tracked
                 // a more extensive source of info in the stage count (such as
@@ -732,7 +772,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                 // not "persistent" due to NonCPS limitations). In such cases,
                 // the latest known Jenkins Result is "SUCCESS" but really we
                 // do not know if the code is good across the whole matrix.
-                def reportedNonSuccess = false
+                Boolean reportedNonSuccess = false
                 switch (currentBuild.result) {
                     // Handle explicitly known faulty verdicts:
                     case 'FAILURE':
@@ -756,10 +796,10 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     // ResultDescription may be a String representation
                     // of the Result class, or one of our tags, or an
                     // exception text vs. count of hits to that value.
-                    def mapCountStages = dynamatrix.getCountStages()
+                    Map<String, Integer> mapCountStages = dynamatrix.getCountStages(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                     // returns Map<Result, Set<String>>
-                    def mapres = dynamatrix.reportStageResults()
+                    Map<Result, Set<String>> mapres = dynamatrix.reportStageResults(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                     if (mapres == null || mapCountStages == null) {
                         reportedNonSuccess = true
                         catchError(message: 'Marking a hard FAILURE') {
@@ -773,13 +813,15 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                             reportedNonSuccess = true
                             warnError(message: 'Marking a soft abort') {
                                 currentBuild.result = 'ABORTED'
-                                def txt = "Only started ${mapCountStages.STARTED} (restarted ${mapCountStages.RESTARTED}) and completed ${mapCountStages.COMPLETED} dynamatrix 'slowBuild' stages, while we should have had ${stagesBinBuild.size() - 1} builds"
+                                String txt = "Only started ${mapCountStages.STARTED} (restarted ${mapCountStages.RESTARTED}) " +
+                                        "and completed ${mapCountStages.COMPLETED} dynamatrix 'slowBuild' stages, " +
+                                        "while we should have had ${stagesBinBuild.size() - 1} builds"
                                 try {
                                     createSummary(
                                         text: "Build seems not finished: " + txt,
                                         icon: '/images/svgs/error.svg'	// '/images/48x48/error.png'
                                         )
-                                } catch (Throwable t) {} // no-op
+                                } catch (Throwable ignored) {} // no-op
                                 error txt
                             }
                         } else {
@@ -825,8 +867,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 error "Did not find any recorded dynamatrix stage results while we should have had some builds"
                             }
                         } else {
-                            def count = 0
-                            mapres.each { k, v ->
+                            Integer count = 0
+                            mapres.each { Result k, Set<String> v ->
                                 if (Utils.isList(v))
                                     count += v.size()
                             }
@@ -841,9 +883,9 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                                 // definitive?
 
                                 // Remove Jenkins-defined results; and also the
-                                // data Dynamatix.groovy classifies; do any remain?
-                                def mapresOther = mapCountStages.clone()
-                                for (def r in [
+                                // data Dynamatrix.groovy classifies; do any remain?
+                                Map<String, Integer> mapresOther = (Map<String, Integer>)(mapCountStages.clone())
+                                for (String r in [
                                     'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
                                     'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE',
                                     'AGENT_DISCONNECTED', 'AGENT_TIMEOUT'
@@ -885,8 +927,8 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                                 if (mapresOther.size() > 0) {
                                     // Some categories (key names) remain:
-                                    def countOther = 0
-                                    mapresOther.each { k, v ->
+                                    Integer countOther = 0
+                                    mapresOther.each { String k, Integer v ->
                                         countOther += v
                                     }
 
@@ -907,30 +949,33 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
 
                 echo "OVERALL: Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} " +
                     "'slow build' combos to run; ended up with following counts: " +
-                    dynamatrix.toStringStageCount()
+                    dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                 if (dynamatrixGlobalState.enableDebugTrace)
-                    echo dynamatrix.toStringStageCountDump()
+                    echo dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                 // Build finished, remove the rolling progress via GPBP steps (with id)
-                dynamatrix.updateProgressBadge(true)
+                dynamatrix.updateProgressBadge(true, dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                 if (!reportedNonSuccess && currentBuild.result in [null, 'SUCCESS']) {
                     // Report success as a badge too, so interrupted incomplete
                     // builds (Jenkins/server restart etc.) are more visible
                     try {
-                        def txt = dynamatrix.toStringStageCountNonZero()
+                        String txt = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                        if ("[:]".equals(txt)) txt = null
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDumpNonZero()
+                            txt = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                            if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDump()
+                            txt = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                            if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCount()
+                            txt = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                         }
 
-                        def txtOK = "Build completed successfully"
+                        String txtOK = "Build completed successfully"
                         manager.addShortText(txtOK)
                         createSummary(
                             text: txtOK + ": " + txt,
@@ -942,17 +987,24 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                     }
                 } else {
                     try {
-                        def txt = dynamatrix.toStringStageCountNonZero()
+                        String txt = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                        if ("[:]".equals(txt)) txt = null
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDumpNonZero()
+                            txt = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                            if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDump()
+                            txt = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                            if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCount()
+                            txt = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                         }
                         txt = "Not all went well: " + txt
+                        if (dynamatrix.shouldDebugTrace())
+                            txt +=
+                                " in Dynamatrix@${dynamatrix.objectID}" +
+                                (dynamatrix.dynamatrixComment == null ? "" : " with comment: ${dynamatrix.dynamatrixComment}")
                         manager.addShortText(txt)
                         createSummary(
                             text: txt,
@@ -960,20 +1012,20 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
                         )
 
                         // returns Map<Result, Set<String>>
-                        def mapres = dynamatrix.reportStageResults()
+                        Map<Result, Set<String>> mapres = dynamatrix.reportStageResults(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                         if (mapres.containsKey(Result.SUCCESS))
                             mapres.remove(Result.SUCCESS)
 
                         if (mapres.size() > 0) {
-                            mapres.each { r, sns ->
+                            mapres.each { Result r, Set<String> sns ->
                                 txt = "<nl>Result: ${r.toString()} (${sns.size()}):\n"
-                                sns.each { sn ->
-                                    def archPrefix = dynamatrix.getLogKey(sn)
+                                sns.each { String sn ->
+                                    String archPrefix = dynamatrix.getLogKey(sn, dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                                     txt += "<li>${sn}"
                                     if (archPrefix) {
                                         // File naming as defined in vars/buildMatrixCellCI.groovy
                                         txt += "\n<p>See build artifacts keyed with: '${archPrefix}' e.g. similar to:<ul>\n"
-                                        for (url in [
+                                        for (String url in [
                                             "${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz",
                                             "${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.nut_report_feature.log.gz",
                                             "${env.BUILD_URL}/artifact/.ci.${archPrefix}.build.log.gz",
@@ -1004,7 +1056,7 @@ def call(dynacfgBase = [:], dynacfgPipeline = [:]) {
             try {
                 // Can depend on plugins not available at this Jenkins
                 // instance, e.g. instant-messaging and IRC plugins
-                dynacfgPipeline.notifyHandler()
+                dynacfgPipeline.notifyHandler.call()
             } catch (Throwable t) {
                 echo "WARNING: Tried to notify about build result (${currentBuild.result}) by user-provided method, and failed to"
                 if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
