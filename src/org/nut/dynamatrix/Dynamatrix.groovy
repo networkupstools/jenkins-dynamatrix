@@ -1813,7 +1813,7 @@ def parallelStages = prepareDynamatrix(
             Closure body = null
             if (bodyOrig != null) {
                 String sn = "${stageName}" // ensure a copy
-                Map bodyData = [ dsbc: dsbc.clone(), stageName: sn ]
+                Map bodyData = [ dsbc: dsbc /*.clone()*/, stageName: sn ]
                 body = bodyOrig.clone().rehydrate(bodyData, this.script, body)
                 body.resolveStrategy = Closure.DELEGATE_FIRST
                 if (!Utils.isMapNotEmpty(body.delegate))
