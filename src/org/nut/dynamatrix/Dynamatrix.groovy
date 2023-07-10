@@ -370,14 +370,14 @@ class Dynamatrix implements Cloneable {
             k = 'UNKNOWN'
         this.setWorstResult(sn, k)
         synchronized(this) {
-            if (this.countStages.containsKey(k) && this.countStages[k] >= 0) {
-                this.countStages[k] = this.countStages[k] + 1
+            if (this.@countStages.containsKey(k) && this.@countStages[k] >= 0) {
+                this.@countStages[k] += 1
             } else {
-                this.countStages[k] = 1
+                this.@countStages[k] = 1
             }
             this.script?.echo "countStagesIncrement(${k}, ...) in Dynamatrix@${this.objectID} " +
-                    "got up to: ${this.countStages[k]}; current worst result is: ${this.getWorstResult()?.toString()}"
-            return this.countStages[k]
+                    "got up to: ${this.@countStages[k]}; current worst result is: ${this.getWorstResult()?.toString()}"
+            return this.@countStages[k]
         }
     }
 
