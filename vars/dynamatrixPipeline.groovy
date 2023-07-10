@@ -238,8 +238,11 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     dynacfgPipeline = spellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = shellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
 
-    Dynamatrix dynamatrix = new Dynamatrix(this, "dynamatrixPipeline() step for ${dynacfgBase} + ${dynacfgPipeline}")
-    dynamatrix.dynamatrixComment = "dynamatrixPipeline() step"
+    String dynamatrixComment = "dynamatrixPipeline() step"
+    Dynamatrix dynamatrix = new Dynamatrix(this, dynamatrixComment +
+            (dynamatrixGlobalState.enableDebugTrace ? " for ${dynacfgBase} + ${dynacfgPipeline}" : ""))
+    if (dynamatrixGlobalState.enableDebugTrace)
+        dynamatrix.dynamatrixComment = dynamatrixComment
 
     // To hop over CPS limitations, we first store our stages
     // (generated inside CPS code) as a Set of tuples, then
@@ -997,10 +1000,10 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         if (!(Utils.isStringNotEmpty(txt))) {
                             txt = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                         }
-                        txt = "Not all went well: " + txt +
-                                " in Dynamatrix instance " +
-                                dynamatrix.getClass().getName() + '@' + Integer.toHexString(dynamatrix.hashCode()) +
-                                " aka " + dynamatrix.objectID +
+                        txt = "Not all went well: " + txt
+                        if (dynamatrix.shouldDebugTrace())
+                            txt +=
+                                " in Dynamatrix@${dynamatrix.objectID}" +
                                 (dynamatrix.dynamatrixComment == null ? "" : " with comment: ${dynamatrix.dynamatrixComment}")
                         manager.addShortText(txt)
                         createSummary(

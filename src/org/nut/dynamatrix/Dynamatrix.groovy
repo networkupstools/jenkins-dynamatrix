@@ -391,15 +391,15 @@ class Dynamatrix implements Cloneable {
      */
     //@NonCPS
     synchronized public Integer countStagesIncrement(String k, String sn = null) {
-        this.script?.echo "countStagesIncrement(" + (k == null ? "<null>" : "'${k}'") + ", '${sn}')" +
-                " in Dynamatrix instance " +
-                getClass().getName() + '@' + Integer.toHexString(hashCode()) +
-                " aka " + this.objectID +
+        if (this.shouldDebugTrace())
+            this.script?.echo "countStagesIncrement(" + (k == null ? "<null>" : "'${k}'") + ", '${sn}')" +
+                " in Dynamatrix@${this.objectID}" +
                 (this.dynamatrixComment == null ? "" : " with comment: ${this.dynamatrixComment}")
 
         Integer res = this.countStagesIncrementSync(k, sn)
 
-        this.script?.echo "countStagesIncrement(${k}, ...) in Dynamatrix@${this.objectID} " +
+        if (this.shouldDebugTrace())
+            this.script?.echo "countStagesIncrement(${k}, ...) in Dynamatrix@${this.objectID} " +
                 "got up to: ${this.@countStages[k]}; current worst result is: ${this.getWorstResult(false)?.toString()}"
         return res
     }
@@ -569,10 +569,10 @@ class Dynamatrix implements Cloneable {
         if (!(Utils.isStringNotEmpty(txt))) {
             txt = this.toStringStageCount(recurse)
         }
-        txt = "Build in progress: " + txt +
-                " in Dynamatrix instance " +
-                getClass().getName() + '@' + Integer.toHexString(hashCode()) +
-                " aka " + this.objectID +
+        txt = "Build in progress: " + txt
+        if (this.shouldDebugTrace())
+            txt +=
+                " in Dynamatrix@${this.objectID}" +
                 (this.dynamatrixComment == null ? "" : " with comment: ${this.dynamatrixComment}")
 
         Boolean res = null
@@ -609,11 +609,13 @@ class Dynamatrix implements Cloneable {
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
         this.enableDebugSysprint = dynamatrixGlobalState.enableDebugSysprint
 
-        StringWriter stackTrace = new StringWriter()
-        (new Exception()).printStackTrace(new PrintWriter(stackTrace))
-        script.echo "Creating new Dynamatrix@${this.objectID}" +
-                (this.dynamatrixComment == null ? "" : ": ${this.dynamatrixComment}") +
-                " at: " + stackTrace.toString()
+        if (this.shouldDebugTrace()) {
+            StringWriter stackTrace = new StringWriter()
+            (new Exception()).printStackTrace(new PrintWriter(stackTrace))
+            script.echo "Creating new Dynamatrix@${this.objectID}" +
+                    (this.dynamatrixComment == null ? "" : ": ${this.dynamatrixComment}") +
+                    " at: " + stackTrace.toString()
+        }
     }
 
     public boolean canEqual(Object other) {
@@ -627,10 +629,12 @@ class Dynamatrix implements Cloneable {
         ret.dynamatrixComment = "Clone of Dynamatrix@${this.objectID}" +
                 (ret.dynamatrixComment == null ? "" : ": ${ret.dynamatrixComment}")
 
-        StringWriter stackTrace = new StringWriter()
-        (new Exception()).printStackTrace(new PrintWriter(stackTrace))
-        script.echo "Creating new Dynamatrix@${this.objectID} CLONE: ${this.dynamatrixComment}" +
-                " at: " + stackTrace.toString()
+        if (this.shouldDebugTrace()) {
+            StringWriter stackTrace = new StringWriter()
+            (new Exception()).printStackTrace(new PrintWriter(stackTrace))
+            script.echo "Creating new Dynamatrix@${this.objectID} CLONE: ${this.dynamatrixComment}" +
+                    " at: " + stackTrace.toString()
+        }
 
         return ret
     }
@@ -641,11 +645,13 @@ class Dynamatrix implements Cloneable {
             this.knownClones << ret
         ret.dynamatrixComment = dynamatrixComment
 
-        StringWriter stackTrace = new StringWriter()
-        (new Exception()).printStackTrace(new PrintWriter(stackTrace))
-        script.echo "Creating new Dynamatrix@${this.objectID} CLONE" +
-                (this.dynamatrixComment == null ? "" : ": ${this.dynamatrixComment}") +
-                " at: " + stackTrace.toString()
+        if (this.shouldDebugTrace()) {
+            StringWriter stackTrace = new StringWriter()
+            (new Exception()).printStackTrace(new PrintWriter(stackTrace))
+            script.echo "Creating new Dynamatrix@${this.objectID} CLONE" +
+                    (this.dynamatrixComment == null ? "" : ": ${this.dynamatrixComment}") +
+                    " at: " + stackTrace.toString()
+        }
 
         return ret
     }
@@ -1975,8 +1981,12 @@ def parallelStages = prepareDynamatrix(
                 this.script.println "[DEBUG] generateBuild(): running a configuration that needs a new dynamatrix in a clone"
             }
 
-            Dynamatrix dmClone = this.clone("Clone of ${this.objectID} made in Dynamatrix.generateBuild() because needsPrepareDynamatrixClone() for ${dynacfgOrig}", rememberClones)
-            dmClone.dynamatrixComment = "Clone of ${this.objectID} made in Dynamatrix.generateBuild() because needsPrepareDynamatrixClone()"
+            String dynamatrixComment = "Clone of ${this.objectID} made in Dynamatrix.generateBuild() because needsPrepareDynamatrixClone()"
+            Dynamatrix dmClone = this.clone(dynamatrixComment +
+                    (this.shouldDebugTrace() ? " for ${dynacfgOrig}" : ""),
+                    rememberClones)
+            if (this.shouldDebugTrace())
+                dmClone.dynamatrixComment = dynamatrixComment
 
             dmClone.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
             dmClone.prepareDynamatrix(dynacfgOrig)
@@ -2085,7 +2095,8 @@ def parallelStages = prepareDynamatrix(
                     if (dsbc.thisDynamatrix?.failFast) {
                         if (dsbc.thisDynamatrix?.mustAbort || !(script?.currentBuild?.result in [null, 'SUCCESS'])) {
                             script.echo "Aborting single build scenario for stage '${stageName}' due to raised mustAbort flag or known build failure elsewhere"
-                            this.script?.echo "countStagesIncrement(): ABORTED_SAFE: failFast + mustAbort"
+                            if (this.shouldDebugTrace())
+                                script.echo "countStagesIncrement(): ABORTED_SAFE: failFast + mustAbort"
                             dsbc.thisDynamatrix?.countStagesIncrement('ABORTED_SAFE', stageName + sbName)
                             dsbc.dsbcResultInterim = 'ABORTED_SAFE'
                             throw new FlowInterruptedException(Result.NOT_BUILT)
@@ -2173,7 +2184,8 @@ def parallelStages = prepareDynamatrix(
                     dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                     try {
                         def payloadRes = payloadTmp()
-                        this.script?.echo "countStagesIncrement(): some verdict after payload, no exception"
+                        if (this.shouldDebugTrace())
+                            this.script?.echo "countStagesIncrement(): some verdict after payload, no exception"
                         if (dsbc.dsbcResult != null) {
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
                             dsbc.dsbcResultInterim = dsbc.dsbcResult.toString()
@@ -2199,7 +2211,8 @@ def parallelStages = prepareDynamatrix(
                         ) {
                             // Can be our stageTimeoutSettings handler, not an abortion
                             if (dsbc.dsbcResultInterim != 'ABORTED_SAFE') {
-                                this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: fex#1"
+                                if (this.shouldDebugTrace())
+                                    this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: fex#1"
                                 dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResultInterim, stageName + sbName)
                             }
                         } else {
@@ -2219,7 +2232,8 @@ def parallelStages = prepareDynamatrix(
                                     }
                                 }
 
-                                this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: fex#2"
+                                if (this.shouldDebugTrace())
+                                    this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: fex#2"
                                 dsbc.thisDynamatrix?.countStagesIncrement(fexres, stageName + sbName)
                                 dsbc.dsbcResultInterim = fexres
                             }
@@ -2230,7 +2244,8 @@ def parallelStages = prepareDynamatrix(
                     } catch (AbortException hexA) {
                         // This is thrown by steps like "error" and "unstable" (both)
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
-                        this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: hexA"
+                        if (this.shouldDebugTrace())
+                            this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: hexA"
                         if (dsbc.dsbcResult != null) {
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
                             dsbc.dsbcResultInterim = dsbc.dsbcResult.toString()
