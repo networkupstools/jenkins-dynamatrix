@@ -530,6 +530,12 @@ class Dynamatrix implements Cloneable {
         this.enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
         this.enableDebugSysprint = dynamatrixGlobalState.enableDebugSysprint
+
+        StringWriter stackTrace = new StringWriter()
+        (new Exception()).printStackTrace(new PrintWriter(stackTrace))
+        script.echo "Creating new Dynamatrix@${this.objectID} at:\n" +
+                stackTrace.toString()
+
     }
 
     public boolean canEqual(Object other) {
