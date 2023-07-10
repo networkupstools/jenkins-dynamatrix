@@ -1975,11 +1975,8 @@ def parallelStages = prepareDynamatrix(
                             if (dsbc.thisDynamatrix?.trackStageResults?.containsKey(stageName)
                             &&  dsbc.thisDynamatrix?.trackStageResults[stageName] != null
                             ) {
+                                dsbc.thisDynamatrix?.countStagesIncrement(dsbc.thisDynamatrix?.trackStageResults[stageName], stageName + sbName)
                                 dsbc.dsbcResultInterim = dsbc.thisDynamatrix?.trackStageResults[stageName]
-                                if (dsbc.dsbcResultInterim != 'ABORTED_SAFE') {
-                                    // 'ABORTED_SAFE' was immediately accounted above
-                                    dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResultInterim, stageName + sbName)
-                                }
                             } else {
                                 dsbc.thisDynamatrix?.countStagesIncrement('SUCCESS', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'SUCCESS'
@@ -1995,7 +1992,7 @@ def parallelStages = prepareDynamatrix(
                              || dsbc.dsbcResultInterim == 'ABORTED_SAFE')
                         ) {
                             // Can be our stageTimeoutSettings handler, not an abortion
-                            if (!(dsbc.thisDynamatrix?.trackStageResults[stageName] == 'ABORTED_SAFE' && dsbc.dsbcResultInterim == 'ABORTED_SAFE')) {
+                            if (dsbc.dsbcResultInterim != 'ABORTED_SAFE') {
                                 this.script?.echo "countStagesIncrement(): some verdict after payload, with exception: fex#1"
                                 dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResultInterim, stageName + sbName)
                             }
