@@ -234,7 +234,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     dynacfgPipeline = spellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = shellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
 
-    Dynamatrix dynamatrix = new Dynamatrix(this, "dynamatrixPipeline() step")
+    Dynamatrix dynamatrix = new Dynamatrix(this, "dynamatrixPipeline() step for ${dynacfgBase} + ${dynacfgPipeline}")
 
     // To hop over CPS limitations, we first store our stages
     // (generated inside CPS code) as a Set of tuples, then
