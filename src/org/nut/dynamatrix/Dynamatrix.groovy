@@ -8,6 +8,7 @@ import hudson.remoting.RemotingSystemException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.*;
 
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
@@ -136,7 +137,7 @@ class Dynamatrix implements Cloneable {
      * @see #toStringStageCountDump
      * @see #toStringStageCountDumpNonZero
      */
-    private Map<String, Integer> countStages = [
+    private ConcurrentHashMap<String, Integer> countStages = [
         'STARTED': 0,
         'RESTARTED': 0,
         'COMPLETED': 0,
@@ -152,9 +153,9 @@ class Dynamatrix implements Cloneable {
      * For each {@code stageName} (map key), track its {@link Result}
      * object value (if set by stage payload)
      */
-    private Map<String, Result> trackStageResults = [:]
+    private ConcurrentHashMap<String, Result> trackStageResults = new ConcurrentHashMap<String, Result>()
     /** Plaintext or shortened-hash names of log files and other data saved for stage */
-    private Map<String, String> trackStageLogkeys = [:]
+    private ConcurrentHashMap<String, String> trackStageLogkeys = new ConcurrentHashMap<String, String>()
 
     /**
      * Convert a {@link String} into a {@link Result} with added
