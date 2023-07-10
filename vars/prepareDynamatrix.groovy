@@ -86,7 +86,7 @@ def call(Map dynacfgOrig = [:], Boolean returnSet, Closure body = null) {
     //if (dynamatrixGlobalState.enableDebugErrors) println "[WARNING] NOT FULLY IMPLEMENTED: prepareDynamatrix.groovy step"
 
     // Have some defaults, if only to have all expected fields defined
-    Dynamatrix dynamatrix = new Dynamatrix(this)
+    Dynamatrix dynamatrix = new Dynamatrix(this, "prepareDynamatrix() step")
     dynamatrix.prepareDynamatrix(dynacfgOrig)
 
     // We use a custom "dynamatrix" instance here, so no further

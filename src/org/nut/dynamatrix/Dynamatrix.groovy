@@ -1806,7 +1806,7 @@ def parallelStages = prepareDynamatrix(
                 this.script.println "[DEBUG] generateBuild(): running a configuration that needs a new dynamatrix in a clone"
             }
 
-            Dynamatrix dmClone = this.clone()
+            Dynamatrix dmClone = this.clone("Clone of ${this.objectID} made in Dynamatrix.generateBuild() because needsPrepareDynamatrixClone()")
             dmClone.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
             dmClone.prepareDynamatrix(dynacfgOrig)
             // Don't forget to clear the config, to not loop on this
