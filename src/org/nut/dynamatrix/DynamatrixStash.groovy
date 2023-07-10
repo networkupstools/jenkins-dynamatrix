@@ -1,5 +1,8 @@
 package org.nut.dynamatrix;
 
+import hudson.plugins.git.BranchSpec;
+import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.extensions.impl.CloneOption;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
@@ -228,7 +231,7 @@ class DynamatrixStash {
     static def checkoutSCM(def script, def scmParams, String coRef = null) {
         Field field = null
 
-        if (scmParams instanceof hudson.plugins.git.GitSCM) {
+        if (scmParams instanceof GitSCM) {
             if (coRef != null) {
                 if (scmParams.hasProperty('branches')) {
                     if (scmParams.branches) {
@@ -242,7 +245,7 @@ class DynamatrixStash {
 
                         // Changes type to java.util.List and seems ignored in practice,
                         // maybe some other fields also set what is checked out?..
-                        scmParams.branches = [new hudson.plugins.git.BranchSpec(coRef)]
+                        scmParams.branches = [new BranchSpec(coRef)]
                         //scmParams.branches[0] = new hudson.plugins.git.BranchSpec(coRef)
 
 /*
@@ -332,14 +335,14 @@ class DynamatrixStash {
         def clonedScm = null
         if (scm == null) scm = script.scm
 
-        if (scm instanceof hudson.plugins.git.GitSCM) {
+        if (scm instanceof GitSCM) {
             // GitSCM has no clone(); using constructor per
             // https://javadoc.jenkins.io/plugin/git/hudson/plugins/git/GitSCM.html
             // Deprecated: GitSCM(List<UserRemoteConfig> userRemoteConfigs, List<BranchSpec> branches, Boolean doGenerateSubmoduleConfigurations, Collection<SubmoduleConfig> submoduleCfg, GitRepositoryBrowser browser, String gitTool, List<GitSCMExtension> extensions)
             // GitSCM(List<UserRemoteConfig> userRemoteConfigs, List<BranchSpec> branches, GitRepositoryBrowser browser, String gitTool, List<GitSCMExtension> extensions)
             //List<GitSCMExtension> scmExts = new ArrayList<GitSCMExtension>()
             //scmExts.addAll(scm.getExtensions().toMap().keySet())
-            clonedScm = new hudson.plugins.git.GitSCM(
+            clonedScm = new GitSCM(
                 scm.getUserRemoteConfigs(),
                 scm.getBranches(),
                 scm.getBrowser(),
@@ -351,7 +354,7 @@ class DynamatrixStash {
             // Map ok, others unhandled => exception?..
             try {
                 clonedScm = scm.clone()
-            } catch (java.lang.CloneNotSupportedException e) {
+            } catch (CloneNotSupportedException e) {
                 script.echo "[WARNING] java.lang.CloneNotSupportedException, using reference to original: " + e.toString()
                 clonedScm = scm
             }
@@ -525,7 +528,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
               && scm.containsKey('$class')
               && scm['$class'].toString() in ['GitSCM']
              )
-        && !(scm instanceof hudson.plugins.git.GitSCM)
+        && !(scm instanceof GitSCM)
         ) {
             script.echo "checkoutCleanSrcRefrepoWS: scm = ${Utils.castString(scm)} is not git, falling back"
             // Here and below, caller should catch "false" to try e.g.
@@ -556,7 +559,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
             script.echo "checkoutCleanSrcRefrepoWS: on node '${script?.env?.NODE_NAME}' checking refrepo for '${stashName}'"
             //script.sh "hostname; set | sort -n"
-            if (scm instanceof hudson.plugins.git.GitSCM) {
+            if (scm instanceof GitSCM) {
                 // GitSCM object
 
                 for (def extset in scm?.extensions) {
@@ -574,7 +577,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                                     break
                             } // switch
                         } // if Map with $class
-                    } else if (extset instanceof hudson.plugins.git.extensions.impl.CloneOption) {
+                    } else if (extset instanceof CloneOption) {
                         // no-op for now
                     } // if CloneOption
                 } // for extset
