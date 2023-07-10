@@ -33,6 +33,9 @@ class Dynamatrix implements Cloneable {
      */
     private static Map<String, NodeCaps> nodeCapsCache = [:]
 
+    /** Track created clones for optionally-recursive summary reporting */
+    private Set<Dynamatrix> knownClones = []
+
     /** Have some defaults, if only to have all expected fields defined */
     private DynamatrixConfig dynacfg
     /** Have some defaults, if only to have all expected fields defined */
@@ -125,7 +128,19 @@ class Dynamatrix implements Cloneable {
      * @see #setWorstResult(String, String)
      * @see #resultFromString
      */
-    public Result getWorstResult() { return dmWorstResult }
+    public Result getWorstResult(Boolean recurse = true) {
+        Result r = this.@dmWorstResult
+        if (recurse && this.knownClones.size() > 0) {
+            this.knownClones.each {
+                if (r == null) {
+                    r = it.dmWorstResult
+                } else {
+                    r = r.combine(it.dmWorstResult)
+                }
+            }
+        }
+        return r
+    }
 
     /**
      * Count each type of verdict.<br/>
@@ -220,8 +235,8 @@ class Dynamatrix implements Cloneable {
 
     /**
      * Similar to {@link #setWorstResult(String)}, but also populates
-     * {@link #trackStageResults} for stage name "sn" with the verdict
-     * from "k".
+     * {@link #trackStageResults} (in this {@link Dynamatrix} object,
+     * not recursively) for stage name "sn" with the verdict from "k".
      *
      * @param k A String key, with either one of Jenkins standard
      *  {@link Result} values, or a dynamatrix state machine value:
@@ -242,15 +257,15 @@ class Dynamatrix implements Cloneable {
         if (sn != null) {
             Result r = resultFromString(k)
             if (r != null) {
-                if (!this.trackStageResults.containsKey(sn)
-                ||   this.trackStageResults[sn] == null
+                if (!this.@trackStageResults.containsKey(sn)
+                ||   this.@trackStageResults[sn] == null
                 ) {
                     // Code might have already saved a result by another key
                     // ("stageName" vs "stageName :: sbName") which is either
                     // a sub-set or super-set of the "sn". We want to keep
                     // the longer version to help troubleshooting.
                     String trackedSN = null
-                    this.trackStageResults.each {String tsk, Result tsr ->
+                    this.@trackStageResults.each {String tsk, Result tsr ->
                         if (tsk.startsWith(sn) || sn.startsWith(tsk)) {
                             trackedSN = tsk
                             return true
@@ -260,24 +275,24 @@ class Dynamatrix implements Cloneable {
 
                     if (trackedSN == null) {
                         // Really a new entry
-                        this.trackStageResults[sn] = r
+                        this.@trackStageResults[sn] = r
                     } else {
                         // Key exists in table by another name we accept...
                         if (trackedSN.startsWith(sn)) {
                             // Table contains the longer key we want to keep - update it
-                            this.trackStageResults[trackedSN] = this.trackStageResults[trackedSN].combine(r)
+                            this.@trackStageResults[trackedSN] = this.@trackStageResults[trackedSN].combine(r)
                         } else { // sn.startsWith(trackedSN)
                             // Table contains the shorter key - use it and forget it
-                            this.trackStageResults[sn] = this.trackStageResults[trackedSN].combine(r)
-                            this.trackStageResults.remove(trackedSN)
+                            this.@trackStageResults[sn] = this.@trackStageResults[trackedSN].combine(r)
+                            this.@trackStageResults.remove(trackedSN)
                         }
                     }
                 } else {
                     // Key exists in table
-                    this.trackStageResults[sn] = this.trackStageResults[sn].combine(r)
+                    this.@trackStageResults[sn] = this.@trackStageResults[sn].combine(r)
                 }
             }
-            res = this.trackStageResults[sn]
+            res = this.@trackStageResults[sn]
         }
 
         return res
@@ -292,7 +307,7 @@ class Dynamatrix implements Cloneable {
      */
     @NonCPS
     synchronized public void setLogKey(String sn, String lk) {
-        trackStageLogkeys[sn] = lk
+        this.@trackStageLogkeys[sn] = lk
     }
 
     /**
@@ -304,13 +319,14 @@ class Dynamatrix implements Cloneable {
      * @see #setLogKey
      */
     @NonCPS
-    synchronized public String getLogKey(String s) {
-        if (trackStageLogkeys.containsKey(s)) {
-            return trackStageLogkeys[s]
+    synchronized public String getLogKey(String s, Boolean recurse = true) {
+        Map<String, String> mapTrackStageLogkeys = this.getTrackStageLogkeys(recurse)
+        if (mapTrackStageLogkeys.containsKey(s)) {
+            return mapTrackStageLogkeys[s]
         }
 
         String k = null
-        trackStageLogkeys.each {String sn, String lk ->
+        mapTrackStageLogkeys.each {String sn, String lk ->
             if (Utils.isStringNotEmpty(sn)
             &&  (sn.startsWith(s) || s.startsWith(sn))
             ) {
@@ -330,14 +346,29 @@ class Dynamatrix implements Cloneable {
      * @return
      */
     @NonCPS
-    synchronized public Map<Result, Set<String>> reportStageResults() {
+    synchronized public Map<Result, Set<String>> reportStageResults(Boolean recurse = true) {
         Map<Result, Set<String>> mapres = [:]
-        this.trackStageResults.each {String sn, Result r ->
+        this.getTrackStageResults(recurse).each { String sn, Result r ->
+//        this.trackStageResults.each { String sn, Result r ->
             if (!mapres.containsKey(r)) {
                 mapres[r] = new HashSet<String>()
             }
             mapres[r] << sn
         }
+
+/*
+        if (recurse && this.knownClones.size() > 0) {
+            this.knownClones.each {
+                it.reportStageResults(true).each { Result r, Set<String> snSet->
+                    if (!mapres.containsKey(r)) {
+                        mapres[r] = new HashSet<String>()
+                    }
+                    mapres[r].addAll(snSet)
+                }
+            }
+        }
+*/
+
         return mapres
     }
 
@@ -376,39 +407,68 @@ class Dynamatrix implements Cloneable {
                 this.@countStages[k] = 1
             }
             this.script?.echo "countStagesIncrement(${k}, ...) in Dynamatrix@${this.objectID} " +
-                    "got up to: ${this.@countStages[k]}; current worst result is: ${this.getWorstResult()?.toString()}"
+                    "got up to: ${this.@countStages[k]}; current worst result is: ${this.getWorstResult(false)?.toString()}"
             return this.@countStages[k]
         }
     }
 
     /** Helper to treat {@code null} {@link Integer} values as zeroes for counting */
-    private static Integer intNullZero(Integer i) { if (i == null) { return 0 } else { return i } }
+    private static Integer intNullZero(Integer i) {
+        if (i == null) { return 0 } else { return i }
+    }
 
     /** Reporting the accounted values:
      * We started the stage (maybe more than once) */
-    public Integer countStagesStarted() { return intNullZero(countStages?.STARTED) + intNullZero(countStages?.RESTARTED) }
+    public Integer countStagesStarted(Boolean recurse = true) {
+        Map<String, Integer> mapCountStages = this.getCountStages(recurse)
+        return intNullZero(mapCountStages?.STARTED) + intNullZero(mapCountStages?.RESTARTED)
+    }
+
     /** Reporting the accounted values:
      * We restarted the stage */
-    public Integer countStagesRestarted() { return intNullZero(countStages?.RESTARTED) }
+    public Integer countStagesRestarted(Boolean recurse = true) {
+        return intNullZero(this.getCountStages(recurse)?.RESTARTED)
+    }
+
     /** Reporting the accounted values:
      * We know we finished the stage, successfully or with "fex" exception caught */
-    public Integer countStagesCompleted() { return intNullZero(countStages?.COMPLETED) }
+    public Integer countStagesCompleted(Boolean recurse = true) {
+        return intNullZero(this.getCountStages(recurse)?.COMPLETED)
+    }
+
     /** Reporting the accounted values:
      * We canceled the stage before start of actual work
      * (due to {@link #mustAbort}, after getting a node
      * to execute our logic on)
      */
-    public Integer countStagesAbortedSafe() { return intNullZero(countStages?.ABORTED_SAFE) }
+    public Integer countStagesAbortedSafe(Boolean recurse = true) {
+        return intNullZero(this.getCountStages(recurse)?.ABORTED_SAFE)
+    }
+
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesFinishedOK() { return intNullZero(countStages?.SUCCESS) }
+    public Integer countStagesFinishedOK(Boolean recurse = true) {
+        return intNullZero(this.getCountStages(recurse)?.SUCCESS)
+    }
+
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesFinishedFailure() { return intNullZero(countStages?.FAILURE) }
+    public Integer countStagesFinishedFailure(Boolean recurse = true) {
+        return intNullZero(this.getCountStages(recurse)?.FAILURE)
+    }
+
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesFinishedFailureAllowed() { return intNullZero(countStages?.UNSTABLE) }
+    public Integer countStagesFinishedFailureAllowed(Boolean recurse = true) {
+        return intNullZero(this.getCountStages(recurse)?.UNSTABLE)
+    }
+
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesAborted() { return intNullZero(countStages?.ABORTED) }
+    public Integer countStagesAborted(Boolean recurse = true) {
+        return intNullZero(this.getCountStages(recurse)?.ABORTED)
+    }
+
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesAbortedNotBuilt() { return intNullZero(countStages?.NOT_BUILT) }
+    public Integer countStagesAbortedNotBuilt(Boolean recurse = true) {
+        return intNullZero(this.getCountStages(recurse)?.NOT_BUILT)
+    }
 
     /**
      * Roll a new text entry in the build overview page.<br/>
@@ -461,7 +521,7 @@ class Dynamatrix implements Cloneable {
      */
     // Must be CPS - calls pipeline script steps
     synchronized
-    Boolean updateProgressBadge(Boolean removeOnly = false) {
+    Boolean updateProgressBadge(Boolean removeOnly = false, Boolean recurse = true) {
         if (!this.script)
             return null
 
@@ -488,18 +548,18 @@ class Dynamatrix implements Cloneable {
         if (removeOnly) return true
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
-        String txt = this.toStringStageCountNonZero()
+        String txt = this.toStringStageCountNonZero(recurse)
         if ("[:]".equals(txt)) txt = null
         if (!(Utils.isStringNotEmpty(txt))) {
-            txt = this.toStringStageCountDumpNonZero()
+            txt = this.toStringStageCountDumpNonZero(recurse)
             if ("[:]".equals(txt)) txt = null
         }
         if (!(Utils.isStringNotEmpty(txt))) {
-            txt = this.toStringStageCountDump()
+            txt = this.toStringStageCountDump(recurse)
             if ("[:]".equals(txt)) txt = null
         }
         if (!(Utils.isStringNotEmpty(txt))) {
-            txt = this.toStringStageCount()
+            txt = this.toStringStageCount(recurse)
         }
         txt = "Build in progress: " + txt +
                 " in Dynamatrix instance " +
@@ -555,6 +615,7 @@ class Dynamatrix implements Cloneable {
     @Override
     public Dynamatrix clone() throws CloneNotSupportedException {
         Dynamatrix ret = (Dynamatrix) super.clone()
+        this.knownClones << ret
         ret.dynamatrixComment = "Clone of Dynamatrix@${this.objectID}" +
                 (ret.dynamatrixComment == null ? "" : ": ${ret.dynamatrixComment}")
 
@@ -566,8 +627,10 @@ class Dynamatrix implements Cloneable {
         return ret
     }
 
-    public Dynamatrix clone(String dynamatrixComment) throws CloneNotSupportedException {
+    public Dynamatrix clone(String dynamatrixComment, Boolean rememberMe = true) throws CloneNotSupportedException {
         Dynamatrix ret = (Dynamatrix) super.clone()
+        if (rememberMe)
+            this.knownClones << ret
         ret.dynamatrixComment = dynamatrixComment
 
         StringWriter stackTrace = new StringWriter()
@@ -605,51 +668,51 @@ class Dynamatrix implements Cloneable {
      * Report amounts of stages which have certain verdicts,
      * zero or not, in layman wording.
      */
-    public String toStringStageCount() {
-        return "countStagesStarted:${countStagesStarted()} " +
-            "(of which countStagesRestarted:${countStagesRestarted()}) " +
-            "countStagesCompleted:${countStagesCompleted()} " +
-            "countStagesAbortedSafe:${countStagesAbortedSafe()} " +
-            "countStagesFinishedOK:${countStagesFinishedOK()} " +
-            "countStagesFinishedFailure:${countStagesFinishedFailure()} " +
-            "countStagesFinishedFailureAllowed:${countStagesFinishedFailureAllowed()} " +
-            "countStagesAborted:${countStagesAborted()} " +
-            "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt()}"
+    public String toStringStageCount(Boolean recurse = true) {
+        return "countStagesStarted:${countStagesStarted(recurse)} " +
+            "(of which countStagesRestarted:${countStagesRestarted(recurse)}) " +
+            "countStagesCompleted:${countStagesCompleted(recurse)} " +
+            "countStagesAbortedSafe:${countStagesAbortedSafe(recurse)} " +
+            "countStagesFinishedOK:${countStagesFinishedOK(recurse)} " +
+            "countStagesFinishedFailure:${countStagesFinishedFailure(recurse)} " +
+            "countStagesFinishedFailureAllowed:${countStagesFinishedFailureAllowed(recurse)} " +
+            "countStagesAborted:${countStagesAborted(recurse)} " +
+            "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt(recurse)}"
     }
 
     /**
      * Report amounts of stages which have certain verdicts,
      * greater than zero, in layman wording.
      */
-    public String toStringStageCountNonZero() {
+    public String toStringStageCountNonZero(Boolean recurse = true) {
         String s = ""
         Integer i
 
-        if ( (i = countStagesStarted()) > 0)
+        if ( (i = countStagesStarted(recurse)) > 0)
             s += "countStagesStarted:${i} "
 
-        if ( (i = countStagesRestarted()) > 0)
+        if ( (i = countStagesRestarted(recurse)) > 0)
             s += "(of which countStagesRestarted:${i}) "
 
-        if ( (i = countStagesCompleted()) > 0)
+        if ( (i = countStagesCompleted(recurse)) > 0)
             s += "countStagesCompleted:${i} "
 
-        if ( (i = countStagesAbortedSafe()) > 0)
+        if ( (i = countStagesAbortedSafe(recurse)) > 0)
             s += "countStagesAbortedSafe:${i} "
 
-        if ( (i = countStagesFinishedOK()) > 0)
+        if ( (i = countStagesFinishedOK(recurse)) > 0)
             s += "countStagesFinishedOK:${i} "
 
-        if ( (i = countStagesFinishedFailure()) > 0)
+        if ( (i = countStagesFinishedFailure(recurse)) > 0)
             s += "countStagesFinishedFailure:${i} "
 
-        if ( (i = countStagesFinishedFailureAllowed()) > 0)
+        if ( (i = countStagesFinishedFailureAllowed(recurse)) > 0)
             s += "countStagesFinishedFailureAllowed:${i} "
 
-        if ( (i = countStagesAborted()) > 0)
+        if ( (i = countStagesAborted(recurse)) > 0)
             s += "countStagesAborted:${i} "
 
-        if ( (i = countStagesAbortedNotBuilt()) > 0)
+        if ( (i = countStagesAbortedNotBuilt(recurse)) > 0)
             s += "countStagesAbortedNotBuilt:${i} "
 
         return s.trim()
@@ -660,22 +723,99 @@ class Dynamatrix implements Cloneable {
      * greater than zero, in debug-friendly wording (using
      * key names from {@link #countStages} map).
      */
-    public String toStringStageCountDumpNonZero() {
+    public String toStringStageCountDumpNonZero(Boolean recurse = true) {
         Map<String, Integer> m = [:]
-        countStages.each {String k, Integer v ->
+        this.getCountStages(recurse).each {String k, Integer v ->
             if (v > 0) m[k] = v
         }
         return m.toString()
     }
 
-    /** Returns a clone of current {@link #countStages} map contents. */
-    public Map<String, Integer> getCountStages() {
-        return (Map<String, Integer>)(countStages.clone())
+    /**
+     * Returns a clone of current {@link #countStages} map contents.
+     * If {@code recursive} mode is enabled, also add info from clones
+     * made from this {@link Dynamatrix} object.
+     */
+    @NonCPS
+    synchronized public Map<String, Integer> getCountStages(Boolean recurse = true) {
+        Map<String, Integer> mapres = (Map<String, Integer>)(this.@countStages?.clone())
+        if (mapres == null)
+            mapres = new ConcurrentHashMap<String, Integer>()
+
+        if (recurse && this.knownClones.size() > 0) {
+            this.knownClones.each {
+                it.getCountStages(true).each { String s, Integer c ->
+                    if (mapres.containsKey(s)) {
+                        mapres[s] += c
+                    } else {
+                        mapres[s] = c
+                    }
+                }
+            }
+        }
+
+        return mapres
+    }
+
+    /**
+     * Returns a clone of current {@link #trackStageLogkeys} map contents.
+     * If {@code recursive} mode is enabled, also add info from clones
+     * made from this {@link Dynamatrix} object.
+     */
+    @NonCPS
+    synchronized public Map<String, String> getTrackStageLogkeys(Boolean recurse = true) {
+        Map<String, String> mapres = (Map<String, String>)(this.@trackStageLogkeys?.clone())
+        if (mapres == null)
+            mapres = new ConcurrentHashMap<String, String>()
+
+        if (recurse && this.knownClones.size() > 0) {
+            this.knownClones.each {
+                it.getTrackStageLogkeys(true).each { String sn, String lk ->
+                    if (mapres.containsKey(sn)) {
+                        mapres[sn + " from clone Dynamatrix@${it.objectID}"] += lk
+                    } else {
+                        mapres[sn] = lk
+                    }
+                }
+            }
+        }
+
+        return mapres
+    }
+
+    /**
+     * Returns a clone of current {@link #trackStageResults} map contents.
+     * If {@code recursive} mode is enabled, also add info from clones
+     * made from this {@link Dynamatrix} object.
+     */
+    @NonCPS
+    synchronized public Map<String, Result> getTrackStageResults(Boolean recurse = true) {
+        Map<String, Result> mapres = (Map<String, Result>)(this.@trackStageResults?.clone())
+        if (mapres == null)
+            mapres = new ConcurrentHashMap<String, Result>()
+
+        if (recurse && this.knownClones.size() > 0) {
+            this.knownClones.each {
+                it.getTrackStageResults(true).each { String s, Result r ->
+                    if (mapres.containsKey(s)) {
+                        mapres[s + " from clone Dynamatrix@${it.objectID}"] = r
+                    } else {
+                        mapres[s] = r
+                    }
+                }
+            }
+        }
+
+        return mapres
     }
 
     /** Returns stringification of current {@link #countStages} map contents. */
-    public String toStringStageCountDump() {
-        return countStages.toString()
+    public String toStringStageCountDump(Boolean recurse = true) {
+        if (recurse) {
+            return this.getCountStages(recurse).toString()
+        } else {
+            return this.@countStages?.toString()
+        }
     }
 
     /**
@@ -1796,9 +1936,14 @@ def parallelStages = prepareDynamatrix(
         }
     }
 
-    /** @see #generateBuild(Map, boolean, Closure) */
+    /** @see #generateBuild(Map, boolean, boolean, Closure) */
     def generateBuild(Map dynacfgOrig = [:], Closure bodyOrig = null) {
-        return generateBuild(dynacfgOrig, false, bodyOrig)
+        return generateBuild(dynacfgOrig, false, true, bodyOrig)
+    }
+
+    /** @see #generateBuild(Map, boolean, boolean, Closure) */
+    def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Closure bodyOrig = null) {
+        return generateBuild(dynacfgOrig, returnSet, true, bodyOrig)
     }
 
     /**
@@ -1807,7 +1952,7 @@ def parallelStages = prepareDynamatrix(
      * see "returnSet" parameter.
      */
 //    @NonCPS
-    def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Closure bodyOrig = null) {
+    def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Boolean rememberClones, Closure bodyOrig = null) {
         //boolean debugErrors = this.shouldDebugErrors()
         //boolean debugTrace = this.shouldDebugTrace()
         //boolean debugMilestones = this.shouldDebugMilestones()
@@ -1822,7 +1967,7 @@ def parallelStages = prepareDynamatrix(
                 this.script.println "[DEBUG] generateBuild(): running a configuration that needs a new dynamatrix in a clone"
             }
 
-            Dynamatrix dmClone = this.clone("Clone of ${this.objectID} made in Dynamatrix.generateBuild() because needsPrepareDynamatrixClone() for ${dynacfgOrig}")
+            Dynamatrix dmClone = this.clone("Clone of ${this.objectID} made in Dynamatrix.generateBuild() because needsPrepareDynamatrixClone() for ${dynacfgOrig}", rememberClones)
             dmClone.dynamatrixComment = "Clone of ${this.objectID} made in Dynamatrix.generateBuild() because needsPrepareDynamatrixClone()"
 
             dmClone.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
@@ -1830,7 +1975,7 @@ def parallelStages = prepareDynamatrix(
             // Don't forget to clear the config, to not loop on this
             return dmClone.generateBuild(
                 clearMapNeedsPrepareDynamatrixClone(dynacfgOrig),
-                returnSet, bodyOrig)
+                returnSet, rememberClones, bodyOrig)
         }
 
         Set<DynamatrixSingleBuildConfig> dsbcSet = generateBuildConfigSet(dynacfgOrig)
@@ -2017,7 +2162,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('RESTARTED', stageName + sbName)
                         dsbc.dsbcResultInterim = null
                     }
-                    dsbc.thisDynamatrix?.updateProgressBadge()
+                    dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                     try {
                         def payloadRes = payloadTmp()
                         this.script?.echo "countStagesIncrement(): some verdict after payload, no exception"
@@ -2025,18 +2170,18 @@ def parallelStages = prepareDynamatrix(
                             dsbc.thisDynamatrix?.countStagesIncrement(dsbc.dsbcResult, stageName + sbName)
                             dsbc.dsbcResultInterim = dsbc.dsbcResult.toString()
                         } else {
-                            if (dsbc.thisDynamatrix?.trackStageResults?.containsKey(stageName)
-                            &&  dsbc.thisDynamatrix?.trackStageResults[stageName] != null
+                            if (dsbc.thisDynamatrix?.@trackStageResults?.containsKey(stageName)
+                            &&  dsbc.thisDynamatrix?.@trackStageResults[stageName] != null
                             ) {
-                                dsbc.thisDynamatrix?.countStagesIncrement(dsbc.thisDynamatrix?.trackStageResults[stageName], stageName + sbName)
-                                dsbc.dsbcResultInterim = dsbc.thisDynamatrix?.trackStageResults[stageName]
+                                dsbc.thisDynamatrix?.countStagesIncrement(dsbc.thisDynamatrix?.@trackStageResults[stageName], stageName + sbName)
+                                dsbc.dsbcResultInterim = dsbc.thisDynamatrix?.@trackStageResults[stageName]
                             } else {
                                 dsbc.thisDynamatrix?.countStagesIncrement('SUCCESS', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'SUCCESS'
                             }
                         }
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
-                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         return payloadRes
                     } catch (FlowInterruptedException fex) {
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
@@ -2071,7 +2216,7 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.dsbcResultInterim = fexres
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(fex)
                         throw fex
                     } catch (AbortException hexA) {
@@ -2135,7 +2280,7 @@ def parallelStages = prepareDynamatrix(
                                 }
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(hexA)
                         throw hexA
                     } catch (RequestAbortedException rae) {
@@ -2182,7 +2327,7 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(rae)
                         throw rae
                     } catch (RemotingSystemException rse) {
@@ -2227,7 +2372,7 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(rse)
                         throw rse
                     } catch (IOException jioe) {
@@ -2277,7 +2422,7 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(jioe)
                         throw jioe
                     } catch (InterruptedException jlie) {
@@ -2320,12 +2465,12 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(jlie)
                         throw jlie
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + Utils.castString(t), stageName + sbName)
-                        dsbc.thisDynamatrix?.updateProgressBadge()
+                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         dsbc.dsbcResultInterim = 'Throwable'
 
                         String tRes = "Got a Throwable not classified specifically: " +

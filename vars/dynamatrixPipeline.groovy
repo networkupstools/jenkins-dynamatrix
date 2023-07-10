@@ -181,6 +181,10 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         dynacfgPipeline.useMilestones = true
     }
 
+    if (!dynacfgPipeline.containsKey('recurseIntoDynamatrixCloneStats')) {
+        dynacfgPipeline.recurseIntoDynamatrixCloneStats = true
+    }
+
     return dynacfgPipeline
 }
 
@@ -752,7 +756,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         currentBuild.result = currentBuild.result.combine(tmpRes)
                 } catch (Throwable ignored) {}
                 try { // we try to track results based on each stage outcome
-                    Result wr = dynamatrix.getWorstResult()
+                    Result wr = dynamatrix.getWorstResult(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                     if (wr != null)
                         currentBuild.result = currentBuild.result.combine(wr)
                 } catch (Throwable ignored) {}
@@ -789,10 +793,10 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     // ResultDescription may be a String representation
                     // of the Result class, or one of our tags, or an
                     // exception text vs. count of hits to that value.
-                    Map<String, Integer> mapCountStages = dynamatrix.getCountStages()
+                    Map<String, Integer> mapCountStages = dynamatrix.getCountStages(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                     // returns Map<Result, Set<String>>
-                    Map<Result, Set<String>> mapres = dynamatrix.reportStageResults()
+                    Map<Result, Set<String>> mapres = dynamatrix.reportStageResults(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                     if (mapres == null || mapCountStages == null) {
                         reportedNonSuccess = true
                         catchError(message: 'Marking a hard FAILURE') {
@@ -942,27 +946,30 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                 echo "OVERALL: Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} " +
                     "'slow build' combos to run; ended up with following counts: " +
-                    dynamatrix.toStringStageCount()
+                    dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                 if (dynamatrixGlobalState.enableDebugTrace)
-                    echo dynamatrix.toStringStageCountDump()
+                    echo dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                 // Build finished, remove the rolling progress via GPBP steps (with id)
-                dynamatrix.updateProgressBadge(true)
+                dynamatrix.updateProgressBadge(true, dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                 if (!reportedNonSuccess && currentBuild.result in [null, 'SUCCESS']) {
                     // Report success as a badge too, so interrupted incomplete
                     // builds (Jenkins/server restart etc.) are more visible
                     try {
-                        String txt = dynamatrix.toStringStageCountNonZero()
+                        String txt = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                        if ("[:]".equals(txt)) txt = null
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDumpNonZero()
+                            txt = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                            if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDump()
+                            txt = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                            if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCount()
+                            txt = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                         }
 
                         String txtOK = "Build completed successfully"
@@ -977,18 +984,18 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     }
                 } else {
                     try {
-                        String txt = dynamatrix.toStringStageCountNonZero()
+                        String txt = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                         if ("[:]".equals(txt)) txt = null
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDumpNonZero()
+                            txt = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                             if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDump()
+                            txt = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                             if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCount()
+                            txt = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                         }
                         txt = "Not all went well: " + txt +
                                 " in Dynamatrix instance " +
@@ -1002,7 +1009,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         )
 
                         // returns Map<Result, Set<String>>
-                        Map<Result, Set<String>> mapres = dynamatrix.reportStageResults()
+                        Map<Result, Set<String>> mapres = dynamatrix.reportStageResults(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                         if (mapres.containsKey(Result.SUCCESS))
                             mapres.remove(Result.SUCCESS)
 
@@ -1010,7 +1017,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                             mapres.each { Result r, Set<String> sns ->
                                 txt = "<nl>Result: ${r.toString()} (${sns.size()}):\n"
                                 sns.each { String sn ->
-                                    String archPrefix = dynamatrix.getLogKey(sn)
+                                    String archPrefix = dynamatrix.getLogKey(sn, dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
                                     txt += "<li>${sn}"
                                     if (archPrefix) {
                                         // File naming as defined in vars/buildMatrixCellCI.groovy
