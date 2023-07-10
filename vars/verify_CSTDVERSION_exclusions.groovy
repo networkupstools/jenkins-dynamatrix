@@ -1,4 +1,5 @@
-package org.nut.dynamatrix;
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
 
 /* A little PoC to test the excludeCombos in-vivo with Jenkins console */
 def call(Boolean debug = false) {

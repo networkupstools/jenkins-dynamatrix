@@ -1,4 +1,5 @@
-package org.nut.dynamatrix;
+// Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
+// package org.nut.dynamatrix;
 
 /* For build agents that define a shell wrapper, such as ssh or chroot
  * into the "real" build environment, pass the "sh" argument command
