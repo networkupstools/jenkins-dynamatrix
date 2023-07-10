@@ -79,11 +79,11 @@ prepareDynamatrix([
  * Or a Set, if called from inside a pipeline stage (CPS code).
  */
 def call(Map dynacfgOrig = [:], Closure body = null) {
-    return call(dynacfgOrig, false, true, body)
+    return call(dynacfgOrig, false, false, body)
 }
 
 def call(Map dynacfgOrig = [:], boolean returnSet, Closure body = null) {
-    return call(dynacfgOrig, returnSet, true, body)
+    return call(dynacfgOrig, returnSet, false, body)
 }
 
 def call(Map dynacfgOrig = [:], boolean returnSet, Boolean rememberClones, Closure body = null) {

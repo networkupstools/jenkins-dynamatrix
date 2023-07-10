@@ -131,7 +131,7 @@ class Dynamatrix implements Cloneable {
      * @see #setWorstResult(String, String)
      * @see #resultFromString
      */
-    public Result getWorstResult(Boolean recurse = true) {
+    public Result getWorstResult(Boolean recurse = false) {
         Result r = this.@dmWorstResult
         if (recurse && this.knownClones.size() > 0) {
             this.knownClones.each {
@@ -325,7 +325,7 @@ class Dynamatrix implements Cloneable {
      * @see #setLogKey
      */
     @NonCPS
-    synchronized public String getLogKey(String s, Boolean recurse = true) {
+    synchronized public String getLogKey(String s, Boolean recurse = false) {
         Map<String, String> mapTrackStageLogkeys = this.getTrackStageLogkeys(recurse)
         if (mapTrackStageLogkeys.containsKey(s)) {
             return mapTrackStageLogkeys[s]
@@ -352,7 +352,7 @@ class Dynamatrix implements Cloneable {
      * @return
      */
     @NonCPS
-    synchronized public Map<Result, Set<String>> reportStageResults(Boolean recurse = true) {
+    synchronized public Map<Result, Set<String>> reportStageResults(Boolean recurse = false) {
         Map<Result, Set<String>> mapres = [:]
         this.getTrackStageResults(recurse).each { String sn, Result r ->
 //        this.trackStageResults.each { String sn, Result r ->
@@ -433,20 +433,20 @@ class Dynamatrix implements Cloneable {
 
     /** Reporting the accounted values:
      * We started the stage (maybe more than once) */
-    public Integer countStagesStarted(Boolean recurse = true) {
+    public Integer countStagesStarted(Boolean recurse = false) {
         Map<String, Integer> mapCountStages = this.getCountStages(recurse)
         return intNullZero(mapCountStages?.STARTED) + intNullZero(mapCountStages?.RESTARTED)
     }
 
     /** Reporting the accounted values:
      * We restarted the stage */
-    public Integer countStagesRestarted(Boolean recurse = true) {
+    public Integer countStagesRestarted(Boolean recurse = false) {
         return intNullZero(this.getCountStages(recurse)?.RESTARTED)
     }
 
     /** Reporting the accounted values:
      * We know we finished the stage, successfully or with "fex" exception caught */
-    public Integer countStagesCompleted(Boolean recurse = true) {
+    public Integer countStagesCompleted(Boolean recurse = false) {
         return intNullZero(this.getCountStages(recurse)?.COMPLETED)
     }
 
@@ -455,32 +455,32 @@ class Dynamatrix implements Cloneable {
      * (due to {@link #mustAbort}, after getting a node
      * to execute our logic on)
      */
-    public Integer countStagesAbortedSafe(Boolean recurse = true) {
+    public Integer countStagesAbortedSafe(Boolean recurse = false) {
         return intNullZero(this.getCountStages(recurse)?.ABORTED_SAFE)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesFinishedOK(Boolean recurse = true) {
+    public Integer countStagesFinishedOK(Boolean recurse = false) {
         return intNullZero(this.getCountStages(recurse)?.SUCCESS)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesFinishedFailure(Boolean recurse = true) {
+    public Integer countStagesFinishedFailure(Boolean recurse = false) {
         return intNullZero(this.getCountStages(recurse)?.FAILURE)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesFinishedFailureAllowed(Boolean recurse = true) {
+    public Integer countStagesFinishedFailureAllowed(Boolean recurse = false) {
         return intNullZero(this.getCountStages(recurse)?.UNSTABLE)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesAborted(Boolean recurse = true) {
+    public Integer countStagesAborted(Boolean recurse = false) {
         return intNullZero(this.getCountStages(recurse)?.ABORTED)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesAbortedNotBuilt(Boolean recurse = true) {
+    public Integer countStagesAbortedNotBuilt(Boolean recurse = false) {
         return intNullZero(this.getCountStages(recurse)?.NOT_BUILT)
     }
 
@@ -536,7 +536,7 @@ class Dynamatrix implements Cloneable {
     // Must be CPS - calls pipeline script steps; this
     // precludes use of at least synchronized{} blocks
     synchronized
-    Boolean updateProgressBadge(Boolean removeOnly = false, Boolean recurse = true) {
+    Boolean updateProgressBadge(Boolean removeOnly = false, Boolean recurse = false) {
         if (!this.script)
             return null
 
@@ -653,7 +653,7 @@ class Dynamatrix implements Cloneable {
         return ret
     }
 
-    public Dynamatrix clone(String dynamatrixComment, Boolean rememberMe = true) throws CloneNotSupportedException {
+    public Dynamatrix clone(String dynamatrixComment, Boolean rememberMe = false) throws CloneNotSupportedException {
         Dynamatrix ret = (Dynamatrix) super.clone()
         ret.dynamatrixComment = dynamatrixComment
         ret.knownClones = []
@@ -697,7 +697,7 @@ class Dynamatrix implements Cloneable {
      * Report amounts of stages which have certain verdicts,
      * zero or not, in layman wording.
      */
-    public String toStringStageCount(Boolean recurse = true) {
+    public String toStringStageCount(Boolean recurse = false) {
         return "countStagesStarted:${countStagesStarted(recurse)} " +
             "(of which countStagesRestarted:${countStagesRestarted(recurse)}) " +
             "countStagesCompleted:${countStagesCompleted(recurse)} " +
@@ -713,7 +713,7 @@ class Dynamatrix implements Cloneable {
      * Report amounts of stages which have certain verdicts,
      * greater than zero, in layman wording.
      */
-    public String toStringStageCountNonZero(Boolean recurse = true) {
+    public String toStringStageCountNonZero(Boolean recurse = false) {
         String s = ""
         Integer i
 
@@ -752,7 +752,7 @@ class Dynamatrix implements Cloneable {
      * greater than zero, in debug-friendly wording (using
      * key names from {@link #countStages} map).
      */
-    public String toStringStageCountDumpNonZero(Boolean recurse = true) {
+    public String toStringStageCountDumpNonZero(Boolean recurse = false) {
         Map<String, Integer> m = [:]
         this.getCountStages(recurse).each {String k, Integer v ->
             if (v > 0) m[k] = v
@@ -766,7 +766,7 @@ class Dynamatrix implements Cloneable {
      * made from this {@link Dynamatrix} object.
      */
     @NonCPS
-    synchronized public Map<String, Integer> getCountStages(Boolean recurse = true) {
+    synchronized public Map<String, Integer> getCountStages(Boolean recurse = false) {
         // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
         // Groovy and Java should support it, but...
         Map<String, Integer> mapres = new ConcurrentHashMap<String, Integer>()
@@ -794,7 +794,7 @@ class Dynamatrix implements Cloneable {
      * made from this {@link Dynamatrix} object.
      */
     @NonCPS
-    synchronized public Map<String, String> getTrackStageLogkeys(Boolean recurse = true) {
+    synchronized public Map<String, String> getTrackStageLogkeys(Boolean recurse = false) {
         // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
         // Groovy and Java should support it, but...
         Map<String, String> mapres = new ConcurrentHashMap<String, String>()
@@ -822,7 +822,7 @@ class Dynamatrix implements Cloneable {
      * made from this {@link Dynamatrix} object.
      */
     @NonCPS
-    synchronized public Map<String, Result> getTrackStageResults(Boolean recurse = true) {
+    synchronized public Map<String, Result> getTrackStageResults(Boolean recurse = false) {
         // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
         // Groovy and Java should support it, but...
         Map<String, Result> mapres = new ConcurrentHashMap<String, Result>()
@@ -845,7 +845,7 @@ class Dynamatrix implements Cloneable {
     }
 
     /** Returns stringification of current {@link #countStages} map contents. */
-    public String toStringStageCountDump(Boolean recurse = true) {
+    public String toStringStageCountDump(Boolean recurse = false) {
         if (recurse) {
             return this.getCountStages(recurse).toString()
         } else {
@@ -1973,12 +1973,12 @@ def parallelStages = prepareDynamatrix(
 
     /** @see #generateBuild(Map, boolean, boolean, Closure) */
     def generateBuild(Map dynacfgOrig = [:], Closure bodyOrig = null) {
-        return generateBuild(dynacfgOrig, false, true, bodyOrig)
+        return generateBuild(dynacfgOrig, false, false, bodyOrig)
     }
 
     /** @see #generateBuild(Map, boolean, boolean, Closure) */
     def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Closure bodyOrig = null) {
-        return generateBuild(dynacfgOrig, returnSet, true, bodyOrig)
+        return generateBuild(dynacfgOrig, returnSet, false, bodyOrig)
     }
 
     /**
