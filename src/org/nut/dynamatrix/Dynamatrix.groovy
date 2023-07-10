@@ -40,6 +40,8 @@ class Dynamatrix implements Cloneable {
     private def script
     /** Prepared String with identifier of this object */
     private final String objectID = Integer.toHexString(hashCode())
+    /** Arbitrary comment to explain why this Dynamatrix instance was created */
+    public String dynamatrixComment = null
     /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     /** Have some defaults, if only to have all expected fields defined */
@@ -525,8 +527,9 @@ class Dynamatrix implements Cloneable {
 
 ////////////////////////// END OF RESULTS ACCOUNTING ///////////////////
 
-    public Dynamatrix(Object script) {
+    public Dynamatrix(Object script, String dynamatrixComment = null) {
         this.script = script
+        this.dynamatrixComment = dynamatrixComment
         this.dynacfg = new DynamatrixConfig(script)
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
         this.enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
@@ -546,7 +549,16 @@ class Dynamatrix implements Cloneable {
 
     @Override
     public Dynamatrix clone() throws CloneNotSupportedException {
-        return (Dynamatrix) super.clone();
+        Dynamatrix ret = (Dynamatrix) super.clone()
+        ret.dynamatrixComment = "Clone of Dynamatrix@${this.objectID}" +
+                (ret.dynamatrixComment == null ? "" : ": ${ret.dynamatrixComment}")
+        return ret
+    }
+
+    public Dynamatrix clone(String dynamatrixComment) throws CloneNotSupportedException {
+        Dynamatrix ret = (Dynamatrix) super.clone()
+        ret.dynamatrixComment = dynamatrixComment
+        return ret
     }
 
     /** Clone current {@link #dynacfg} into {@link #dynacfgSaved}.
