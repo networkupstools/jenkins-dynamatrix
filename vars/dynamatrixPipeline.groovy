@@ -977,16 +977,22 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 } else {
                     try {
                         String txt = dynamatrix.toStringStageCountNonZero()
+                        if ("[:]".equals(txt)) txt = null
                         if (!(Utils.isStringNotEmpty(txt))) {
                             txt = dynamatrix.toStringStageCountDumpNonZero()
+                            if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
                             txt = dynamatrix.toStringStageCountDump()
+                            if ("[:]".equals(txt)) txt = null
                         }
                         if (!(Utils.isStringNotEmpty(txt))) {
                             txt = dynamatrix.toStringStageCount()
                         }
-                        txt = "Not all went well: " + txt
+                        txt = "Not all went well: " + txt +
+                                "in Dynamatrix instance " +
+                                dynamatrix.getClass().getName() + '@' + Integer.toHexString(dynamatrix.hashCode()) +
+                                " aka " + dynamatrix.objectID
                         manager.addShortText(txt)
                         createSummary(
                             text: txt,
