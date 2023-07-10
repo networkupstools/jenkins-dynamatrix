@@ -87,6 +87,7 @@ def call(Map dynacfgOrig = [:], Boolean returnSet, Closure body = null) {
 
     // Have some defaults, if only to have all expected fields defined
     Dynamatrix dynamatrix = new Dynamatrix(this, "prepareDynamatrix() step for ${dynacfgOrig}")
+    dynamatrix.dynamatrixComment = "prepareDynamatrix() step"
     dynamatrix.prepareDynamatrix(dynacfgOrig)
 
     // We use a custom "dynamatrix" instance here, so no further

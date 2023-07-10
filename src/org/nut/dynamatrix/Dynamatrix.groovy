@@ -1807,6 +1807,8 @@ def parallelStages = prepareDynamatrix(
             }
 
             Dynamatrix dmClone = this.clone("Clone of ${this.objectID} made in Dynamatrix.generateBuild() because needsPrepareDynamatrixClone() for ${dynacfgOrig}")
+            dmClone.dynamatrixComment = "Clone of ${this.objectID} made in Dynamatrix.generateBuild() because needsPrepareDynamatrixClone()"
+
             dmClone.clearNeedsPrepareDynamatrixClone(dynacfgOrig)
             dmClone.prepareDynamatrix(dynacfgOrig)
             // Don't forget to clear the config, to not loop on this
