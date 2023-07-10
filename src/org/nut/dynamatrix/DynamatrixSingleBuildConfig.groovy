@@ -16,7 +16,13 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 class DynamatrixSingleBuildConfig implements Cloneable {
     private final String objectID = Integer.toHexString(hashCode())
     private def script = null
-    def stageNameFunc = null
+
+    /**
+     * Typically may be assigned something like
+     *    <pre>stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc</pre>
+     */
+    Closure stageNameFunc = null
+
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     public boolean enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
