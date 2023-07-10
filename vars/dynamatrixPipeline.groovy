@@ -990,7 +990,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                             txt = dynamatrix.toStringStageCount()
                         }
                         txt = "Not all went well: " + txt +
-                                "in Dynamatrix instance " +
+                                " in Dynamatrix instance " +
                                 dynamatrix.getClass().getName() + '@' + Integer.toHexString(dynamatrix.hashCode()) +
                                 " aka " + dynamatrix.objectID
                         manager.addShortText(txt)

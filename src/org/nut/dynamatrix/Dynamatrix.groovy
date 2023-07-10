@@ -357,8 +357,8 @@ class Dynamatrix implements Cloneable {
      */
     //@NonCPS
     synchronized public Integer countStagesIncrement(String k, String sn = null) {
-        this.script?.echo "countStagesIncrement(" + (k == null ? "<null>" : "'${k}'") + ", '${sn}') " +
-                "in Dynamatrix instance " +
+        this.script?.echo "countStagesIncrement(" + (k == null ? "<null>" : "'${k}'") + ", '${sn}')" +
+                " in Dynamatrix instance " +
                 getClass().getName() + '@' + Integer.toHexString(hashCode()) +
                 " aka " + this.objectID
 
@@ -370,6 +370,8 @@ class Dynamatrix implements Cloneable {
         } else {
             this.countStages[k] = 1
         }
+        this.script?.echo "countStagesIncrement(${k}, ...) in Dynamatrix@${this.objectID} " +
+                "got up to: ${this.countStages[k]}; current worst result is: ${this.getWorstResult()?.toString()}"
         return this.countStages[k]
     }
 
@@ -494,7 +496,7 @@ class Dynamatrix implements Cloneable {
             txt = this.toStringStageCount()
         }
         txt = "Build in progress: " + txt +
-                "in Dynamatrix instance " +
+                " in Dynamatrix instance " +
                 getClass().getName() + '@' + Integer.toHexString(hashCode()) +
                 " aka " + this.objectID
 
