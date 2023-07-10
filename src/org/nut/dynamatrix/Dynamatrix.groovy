@@ -1818,8 +1818,8 @@ def parallelStages = prepareDynamatrix(
                 body.resolveStrategy = Closure.DELEGATE_FIRST
                 if (!Utils.isMapNotEmpty(body.delegate))
                     body.delegate = [:]
-                body.delegate.dsbc = dsbc
-                body.delegate.stageName = stageName
+                body.delegate.dsbc = bodyData.dsbc
+                body.delegate.stageName = bodyData.stageName
             }
 
             String matrixTag = null
