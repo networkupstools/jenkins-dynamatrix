@@ -638,6 +638,7 @@ class Dynamatrix implements Cloneable {
     @Override
     public Dynamatrix clone() throws CloneNotSupportedException {
         Dynamatrix ret = (Dynamatrix) super.clone()
+        ret.knownClones = []
         this.knownClones << ret
         ret.dynamatrixComment = "Clone of Dynamatrix@${this.objectID}" +
                 (ret.dynamatrixComment == null ? "" : ": ${ret.dynamatrixComment}")
@@ -654,9 +655,10 @@ class Dynamatrix implements Cloneable {
 
     public Dynamatrix clone(String dynamatrixComment, Boolean rememberMe = true) throws CloneNotSupportedException {
         Dynamatrix ret = (Dynamatrix) super.clone()
+        ret.dynamatrixComment = dynamatrixComment
+        ret.knownClones = []
         if (rememberMe)
             this.knownClones << ret
-        ret.dynamatrixComment = dynamatrixComment
 
         if (this.shouldDebugTrace()) {
             StringWriter stackTrace = new StringWriter()
