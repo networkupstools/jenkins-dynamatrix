@@ -51,7 +51,7 @@ def call(Map VARVAL, Closure body) {
 
     VARVAL.keySet().each() { def VAR ->
         def DEFVAL = VARVAL[VAR]
-        if (Utils.isStringNotEmpty(((Map)env)?.getAt(VAR)) || envmap.containsKey(VAR)) {
+        if (Utils.isStringNotEmpty(env.VAR) || envmap.containsKey(VAR)) {
             return // continue
         }
 
