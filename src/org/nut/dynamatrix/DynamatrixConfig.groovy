@@ -694,6 +694,16 @@ def parallelStages = prepareDynamatrix(
         return this
     }
 
+    public Set getDynamatrixAxesLabels() {
+        if (this.@dynamatrixAxesLabels != null
+        &&  !Utils.isList(this.@dynamatrixAxesLabels)
+        ) {
+            this.sanitycheckDynamatrixAxesLabels()
+        }
+
+        return (Set)(this.@dynamatrixAxesLabels)
+    }
+
     /**
      * Our callers expect a few specific data constructs here:
      * either a single string or pattern (that will be remade into
@@ -701,30 +711,30 @@ def parallelStages = prepareDynamatrix(
      */
     public def sanitycheckDynamatrixAxesLabels() {
         String errs = ""
-        if (this.dynamatrixAxesLabels != null) {
-            if (Utils.isList(this.dynamatrixAxesLabels)) {
+        if (this.@dynamatrixAxesLabels != null) {
+            if (Utils.isList(this.@dynamatrixAxesLabels)) {
                 // TODO: Match superclass to not list all children of Set etc?
                 // TODO: Check entries if this object that they are strings/patterns
-                if (this.dynamatrixAxesLabels.size() > 0)
+                if (this.@dynamatrixAxesLabels.size() > 0)
                     return true
                 // Else no automagic... but maybe got strict requirements?
                 if (this.dynamatrixRequiredLabelCombos.size() > 0)
                     return true
                 errs += "Initially requested dynamatrixAxesLabels and dynamatrixRequiredLabelCombos are both empty"
-            } else if (Utils.isString(this.dynamatrixAxesLabels)) {
-                if (this.dynamatrixAxesLabels.equals("")) {
-                    this.dynamatrixAxesLabels = null
+            } else if (Utils.isString(this.@dynamatrixAxesLabels)) {
+                if ("" == this.@dynamatrixAxesLabels?.toString()) {
+                    this.@dynamatrixAxesLabels = null
                 } else {
-                    this.dynamatrixAxesLabels = [this.dynamatrixAxesLabels]
+                    this.@dynamatrixAxesLabels = [this.@dynamatrixAxesLabels]
                 }
                 return true
-            } else if (Utils.isRegex(this.dynamatrixAxesLabels)) {
-                this.dynamatrixAxesLabels = [this.dynamatrixAxesLabels]
+            } else if (Utils.isRegex(this.@dynamatrixAxesLabels)) {
+                this.@dynamatrixAxesLabels = [this.@dynamatrixAxesLabels]
                 return true
             } else {
                 //if (!errs.equals("")) errs += "\n"
-                errs += "Not sure what type 'dynamatrixAxesLabels' is: ${Utils.castString(this.dynamatrixAxesLabels)}"
-                //this.dynamatrixAxesLabels = null
+                errs += "Not sure what type 'dynamatrixAxesLabels' is: ${Utils.castString(this.@dynamatrixAxesLabels)}"
+                //this.@dynamatrixAxesLabels = null
             }
         }
 
