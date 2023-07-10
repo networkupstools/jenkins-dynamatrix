@@ -533,7 +533,8 @@ class Dynamatrix implements Cloneable {
      * @see #toStringStageCountDump
      * @see #toStringStageCountDumpNonZero
      */
-    // Must be CPS - calls pipeline script steps
+    // Must be CPS - calls pipeline script steps; this
+    // precludes use of at least synchronized{} blocks
     synchronized
     Boolean updateProgressBadge(Boolean removeOnly = false, Boolean recurse = true) {
         if (!this.script)
@@ -586,6 +587,12 @@ class Dynamatrix implements Cloneable {
             // Note: not "addInfoBadge()" which is rolled-up and small (no text except when hovered)
             // Update: although this seems to have same effect, not that of addShortText (that has no "id")
             // Update2: checking with a "null" icon if that would work as addShortText in effect (seems so by build.xml markup)
+            try {
+                // Retry removal in case another parallel branch already
+                // added its message while we were preparing the string
+                this.script.removeBadges(id: "Build-progress-badge@" + this.objectID)
+            } catch (Throwable ignore) {} // ok if missing
+
             this.script.addBadge(icon: null, text: txt, id: "Build-progress-badge@" + this.objectID)
             res = true
         } catch (Throwable t) {
