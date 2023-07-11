@@ -653,6 +653,12 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                             } // stage item: par1["Discover slow build matrix"]
                         } // if slowBuild...
 
+                        try {
+                            String qtxt = "Quick-test phase planned parallel stages (overall, not only dynamatrix): " + par1.values().count { it instanceof Closure }
+                            echo qtxt
+                            manager.addShortText(qtxt)
+                        } catch (Throwable ignore) {}   // no-op
+
                         // Walk the plank
                         try {
                             parallel par1
