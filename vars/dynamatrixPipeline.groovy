@@ -18,6 +18,7 @@ import hudson.model.Result;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 /*
 // For in-place tests as Replay pipeline:
@@ -652,8 +653,19 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                             } // stage item: par1["Discover slow build matrix"]
                         } // if slowBuild...
 
+                        try {
+                            String qtxt = "Quick-test phase planned parallel stages (overall, not only dynamatrix): " + par1.values().count { it instanceof Closure }
+                            echo qtxt
+                            manager.addShortText(qtxt)
+                        } catch (Throwable ignore) {}   // no-op
+
                         // Walk the plank
-                        parallel par1
+                        try {
+                            parallel par1
+                        } catch (Throwable t) {
+                            echo "[ERROR] Something failed in the parallel stage: ${t}"
+                            currentBuild.result = 'FAILURE'
+                        }
 
                         echo "Completed the 'Quick tests and prepare the bigger dynamatrix' stage"
                     } // stage-quick tests
@@ -674,6 +686,24 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} 'slow build' combos to run" + (dynacfgPipeline?.failFast ? "; failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
             echo "[Quick tests and prepare the bigger dynamatrix summary] ${currentBuild.result}"
             if (!(currentBuild.result in [null, 'SUCCESS'])) {
+                // The "parallel par1" above failed...
+                try {
+                    // Not reporting counts from our "dynamatrix" object here, it is empty up here.
+                    // The yellow badge reported until now came from another, was made (and hidden
+                    // and scrapped) by shellcheck() step => prepareDynamatrix() step.
+                    txt = "Quick-test phase: FAILED"
+                    // DO NOT remove badges - let last words be seen!
+                    // manager.removeBadges()
+                    manager.addShortText(txt)
+                    createSummary(
+                            text: txt,
+                            icon: '/images/svgs/warning.svg'    // '/images/48x48/warning.png'
+                    )
+                } catch (Throwable t) {
+                    echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                    if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                }
+
                 if (Utils.isClosure(dynacfgPipeline?.notifyHandler)) {
                     try {
                         // Can depend on plugins not available at this Jenkins
@@ -884,7 +914,8 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                                 // Remove Jenkins-defined results; and also the
                                 // data Dynamatrix.groovy classifies; do any remain?
-                                Map<String, Integer> mapresOther = (Map<String, Integer>)(mapCountStages.clone())
+                                Map<String, Integer> mapresOther = new ConcurrentHashMap<String, Integer>()
+                                mapresOther.putAll(mapCountStages)
                                 for (String r in [
                                     'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
                                     'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE',
