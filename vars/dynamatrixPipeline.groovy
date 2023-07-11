@@ -18,6 +18,7 @@ import hudson.model.Result;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 /*
 // For in-place tests as Replay pipeline:
@@ -884,7 +885,8 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                                 // Remove Jenkins-defined results; and also the
                                 // data Dynamatrix.groovy classifies; do any remain?
-                                Map<String, Integer> mapresOther = (Map<String, Integer>)(mapCountStages.clone())
+                                Map<String, Integer> mapresOther = new ConcurrentHashMap<String, Integer>()
+                                mapresOther.putAll(mapCountStages)
                                 for (String r in [
                                     'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
                                     'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE',
