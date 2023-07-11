@@ -654,7 +654,12 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         } // if slowBuild...
 
                         // Walk the plank
-                        parallel par1
+                        try {
+                            parallel par1
+                        } catch (Throwable t) {
+                            echo "[ERROR] Something failed in the parallel stage: ${t}"
+                            currentBuild.result = 'FAILURE'
+                        }
 
                         echo "Completed the 'Quick tests and prepare the bigger dynamatrix' stage"
                     } // stage-quick tests
@@ -675,6 +680,37 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             echo "[Quick tests and prepare the bigger dynamatrix summary] Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} 'slow build' combos to run" + (dynacfgPipeline?.failFast ? "; failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
             echo "[Quick tests and prepare the bigger dynamatrix summary] ${currentBuild.result}"
             if (!(currentBuild.result in [null, 'SUCCESS'])) {
+                // The "parallel par1" above failed...
+                try {
+                    String txt = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                    if ("[:]".equals(txt)) txt = null
+                    if (!(Utils.isStringNotEmpty(txt))) {
+                        txt = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                        if ("[:]".equals(txt)) txt = null
+                    }
+                    if (!(Utils.isStringNotEmpty(txt))) {
+                        txt = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                        if ("[:]".equals(txt)) txt = null
+                    }
+                    if (!(Utils.isStringNotEmpty(txt))) {
+                        txt = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                    }
+                    txt = "Not all went well in quick-test phase: " + txt
+                    if (dynamatrix.shouldDebugTrace())
+                        txt +=
+                                " in Dynamatrix@${dynamatrix.objectID}" +
+                                        (dynamatrix.dynamatrixComment == null ? "" : " with comment: ${dynamatrix.dynamatrixComment}")
+                    manager.removeBadges()
+                    manager.addShortText(txt)
+                    createSummary(
+                            text: txt,
+                            icon: '/images/svgs/warning.svg'    // '/images/48x48/warning.png'
+                    )
+                } catch (Throwable t) {
+                    echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                    if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                }
+
                 if (Utils.isClosure(dynacfgPipeline?.notifyHandler)) {
                     try {
                         // Can depend on plugins not available at this Jenkins
