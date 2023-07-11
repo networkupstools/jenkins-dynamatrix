@@ -682,25 +682,12 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             if (!(currentBuild.result in [null, 'SUCCESS'])) {
                 // The "parallel par1" above failed...
                 try {
-                    String txt = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                    if ("[:]".equals(txt)) txt = null
-                    if (!(Utils.isStringNotEmpty(txt))) {
-                        txt = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                        if ("[:]".equals(txt)) txt = null
-                    }
-                    if (!(Utils.isStringNotEmpty(txt))) {
-                        txt = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                        if ("[:]".equals(txt)) txt = null
-                    }
-                    if (!(Utils.isStringNotEmpty(txt))) {
-                        txt = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                    }
-                    txt = "Not all went well in quick-test phase: " + txt
-                    if (dynamatrix.shouldDebugTrace())
-                        txt +=
-                                " in Dynamatrix@${dynamatrix.objectID}" +
-                                        (dynamatrix.dynamatrixComment == null ? "" : " with comment: ${dynamatrix.dynamatrixComment}")
-                    manager.removeBadges()
+                    // Not reporting counts from our "dynamatrix" object here, it is empty up here.
+                    // The yellow badge reported until now came from another, was made (and hidden
+                    // and scrapped) by shellcheck() step => prepareDynamatrix() step.
+                    txt = "Quick-test phase: FAILED"
+                    // DO NOT remove badges - let last words be seen!
+                    // manager.removeBadges()
                     manager.addShortText(txt)
                     createSummary(
                             text: txt,
