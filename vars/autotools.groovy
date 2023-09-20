@@ -27,6 +27,10 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
 
         // Initialize default `make` implementation to use (there are many), etc.:
         if (!dynacfgPipeline.containsKey('defaultTools')) {
+            dynacfgPipeline['defaultTools'] = [:]
+        }
+
+        if (!dynacfgPipeline['defaultTools'].containsKey('MAKE')) {
             dynacfgPipeline['defaultTools'] = [
                 'MAKE': 'make'
             ]
