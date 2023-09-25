@@ -50,7 +50,7 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('build')) {
-            dynacfgPipeline.buildPhases['build'] = "( eval time \${MAKE} \${MAKE_OPTS} -k all )"
+            dynacfgPipeline.buildPhases['build'] = "( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval time \${MAKE} \${MAKE_OPTS} -k all )"
         }
 
         // Note: here and below, the "first parallel" run tries to not
@@ -58,19 +58,19 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         // non-fatal warnings), so the Jenkins saved logs are not in
         // gigabytes range per dynamatrix run :)
         if (!dynacfgPipeline.buildPhases.containsKey('buildQuiet')) {
-            dynacfgPipeline.buildPhases['buildQuiet'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} VERBOSE=0 V=0 -s -k -j 4 all >/dev/null && echo "SUCCESS" && exit 0; echo "First attempt failed (\$?), retrying to log what did:"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
+            dynacfgPipeline.buildPhases['buildQuiet'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} VERBOSE=0 V=0 -s -k -j 4 all >/dev/null && echo "SUCCESS" && exit 0; echo "First attempt failed (\$?), retrying to log what did:"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('buildQuietCautious')) {
-            dynacfgPipeline.buildPhases['buildQuietCautious'] = """( echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} VERBOSE=0 V=0 -s -k -j 4 all >/dev/null && echo "Seemingly a SUCCESS" ; echo "First attempt finished (\$?), retrying to log what fails (if any):"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
+            dynacfgPipeline.buildPhases['buildQuietCautious'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} VERBOSE=0 V=0 -s -k -j 4 all >/dev/null && echo "Seemingly a SUCCESS" ; echo "First attempt finished (\$?), retrying to log what fails (if any):"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('check')) {
-            dynacfgPipeline.buildPhases['check'] = "( eval time \${MAKE} \${MAKE_OPTS} check )"
+            dynacfgPipeline.buildPhases['check'] = "( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval time \${MAKE} \${MAKE_OPTS} check )"
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('distcheck')) {
-            dynacfgPipeline.buildPhases['distcheck'] = """( eval \${CONFIG_ENVVARS} time \${MAKE} \${MAKE_OPTS} distcheck DISTCHECK_CONFIGURE_FLAGS="\${CONFIG_OPTS}" )"""
+            dynacfgPipeline.buildPhases['distcheck'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval \${CONFIG_ENVVARS} time \${MAKE} \${MAKE_OPTS} distcheck DISTCHECK_CONFIGURE_FLAGS="\${CONFIG_OPTS}" )"""
         }
     }
 
