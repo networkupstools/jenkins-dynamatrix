@@ -57,7 +57,7 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('build')) {
-            dynacfgPipeline.buildPhases['build'] = "( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval time \${MAKE} \${MAKE_OPTS} -k all )"
+            dynacfgPipeline.buildPhases['build'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
         // Note: here and below, the "first parallel" run tries to not
@@ -73,7 +73,7 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('check')) {
-            dynacfgPipeline.buildPhases['check'] = "( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval time \${MAKE} \${MAKE_OPTS} check )"
+            dynacfgPipeline.buildPhases['check'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval time \${MAKE} \${MAKE_OPTS} check )"""
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('distcheck')) {
