@@ -36,6 +36,13 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
             ]
         }
 
+        if (!(Utils.isStringNotEmpty(dynacfgPipeline?.defaultTools?.MAKE?.strip()))) {
+            echo "WARNING: MAKE is somehow unset or blank, defaulting!"
+            dynacfgPipeline['defaultTools'] = [
+                'MAKE': 'make'
+            ]
+        }
+
         if (!dynacfgPipeline.containsKey('buildPhases')) {
             dynacfgPipeline.buildPhases = [:]
         }
