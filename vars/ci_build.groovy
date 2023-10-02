@@ -34,6 +34,17 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
 
         // Initialize default `make` implementation to use (there are many), etc.:
         if (!dynacfgPipeline.containsKey('defaultTools')) {
+            dynacfgPipeline['defaultTools'] = [:]
+        }
+
+        if (!dynacfgPipeline['defaultTools'].containsKey('MAKE')) {
+            dynacfgPipeline['defaultTools'] = [
+                'MAKE': 'make'
+            ]
+        }
+
+        if (!(Utils.isStringNotEmpty(dynacfgPipeline?.defaultTools?.MAKE?.strip()))) {
+            echo "WARNING: MAKE is somehow unset or blank, defaulting!"
             dynacfgPipeline['defaultTools'] = [
                 'MAKE': 'make'
             ]
@@ -66,6 +77,8 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
 
         // CONFIG_ENVVARS are set by code in configureEnvvars.groovy
         if (!dynacfgPipeline.buildPhases.containsKey('check')) {
+            // Note: here even an empty MAKE envvar should not be a problem,
+            // the ci_build.sh script should find/guess one
             dynacfgPipeline.buildPhases['check'] = """ (
 [ -x ./ci_build.sh ] || exit
 

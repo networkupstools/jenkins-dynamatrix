@@ -133,6 +133,17 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
 
     // Initialize default `make` implementation to use (there are many), etc.:
     if (!dynacfgPipeline.containsKey('defaultTools')) {
+        dynacfgPipeline['defaultTools'] = [:]
+    }
+
+    if (!dynacfgPipeline['defaultTools'].containsKey('MAKE')) {
+        dynacfgPipeline['defaultTools'] = [
+            'MAKE': 'make'
+        ]
+    }
+
+    if (!(Utils.isStringNotEmpty(dynacfgPipeline?.defaultTools?.MAKE?.strip()))) {
+        echo "WARNING: MAKE is somehow unset or blank, defaulting!"
         dynacfgPipeline['defaultTools'] = [
             'MAKE': 'make'
         ]
