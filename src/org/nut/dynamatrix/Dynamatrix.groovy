@@ -1080,11 +1080,14 @@ def parallelStages = prepareDynamatrix(
         boolean debugMilestones = this.shouldDebugMilestones()
         boolean debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
-        // Avoid NPEs and changing the original Map's entries unexpectedly:
+        // Avoid NPEs (TBD: and changing the original Map's entries unexpectedly
+        // commented away currently - this may misbehave vs. generateBuild() =>
+        // use of script delegate => caller's original dynacfgPipeline when
+        // resolving stage closures):
         if (dynacfgOrig == null) {
             dynacfgOrig = [:]
-        } else {
-            dynacfgOrig = (Map)(dynacfgOrig.clone())
+//        } else {
+//            dynacfgOrig = (Map)(dynacfgOrig.clone())
         }
 
         //if (debugErrors) this.script.println "[WARNING] NOT FULLY IMPLEMENTED: Dynamatrix.prepareDynamatrix()"

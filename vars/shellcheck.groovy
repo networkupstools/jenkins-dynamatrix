@@ -50,11 +50,14 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
  * and pipeline serialization).
  */
 Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
-    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    // Avoid NPEs (TBD: and changing the original Map's entries unexpectedly
+    // commented away currently - this may misbehave vs. generateBuild() =>
+    // use of script delegate => caller's original dynacfgPipeline when
+    // resolving stage closures):
     if (dynacfgPipeline == null) {
         dynacfgPipeline = [:]
-    } else {
-        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+//    } else {
+//        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
     }
 
     // Set of Map'able tuples of <String, Closure>
@@ -273,11 +276,14 @@ Map makeMap(Set<List> stagesShellcheck_arr = []) {
 }
 
 Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
-    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    // Avoid NPEs (TBD: and changing the original Map's entries unexpectedly
+    // commented away currently - this may misbehave vs. generateBuild() =>
+    // use of script delegate => caller's original dynacfgPipeline when
+    // resolving stage closures):
     if (dynacfgPipeline == null) {
         dynacfgPipeline = [:]
-    } else {
-        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+//    } else {
+//        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
     }
 
     if (dynacfgPipeline.containsKey('shellcheck')) {

@@ -120,11 +120,14 @@ def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
 
 /** Revise base defaults not too specific for any particular toolchain we would use */
 Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
-    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    // Avoid NPEs (TBD: and changing the original Map's entries unexpectedly
+    // commented away currently - this may misbehave vs. generateBuild() =>
+    // use of script delegate => caller's original dynacfgPipeline when
+    // resolving stage closures):
     if (dynacfgPipeline == null) {
         dynacfgPipeline = [:]
-    } else {
-        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+//    } else {
+//        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
     }
 
     if (!dynacfgPipeline.containsKey('buildSystem')) {
@@ -204,17 +207,20 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     // dynacfgBase = Base configuration for Dynamatrix for this pipeline
     // dynacfgPipeline = Step-dependent setup in sub-maps
 
-    // Avoid NPEs and changing the original Map's entries unexpectedly:
+    // Avoid NPEs (TBD: and changing the original Map's entries unexpectedly
+    // commented away currently - this may misbehave vs. generateBuild() =>
+    // use of script delegate => caller's original dynacfgPipeline when
+    // resolving stage closures):
     if (dynacfgPipeline == null) {
         dynacfgPipeline = [:]
-    } else {
-        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
+//    } else {
+//        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
     }
 
     if (dynacfgBase == null) {
         dynacfgBase = [:]
-    } else {
-        dynacfgBase = (Map)(dynacfgBase.clone())
+//    } else {
+//        dynacfgBase = (Map)(dynacfgBase.clone())
     }
 
     // Hacky big switch for a max debug option
