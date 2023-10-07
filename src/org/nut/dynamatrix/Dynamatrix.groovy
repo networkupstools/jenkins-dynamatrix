@@ -627,7 +627,8 @@ class Dynamatrix implements Cloneable {
             (new Exception()).printStackTrace(new PrintWriter(stackTrace))
             script.echo "Creating new Dynamatrix@${this.objectID}" +
                     (this.dynamatrixComment == null ? "" : ": ${this.dynamatrixComment}") +
-                    " at: " + stackTrace.toString()
+                    " at (via dummy Exception for tracing, do not worry): " +
+                    stackTrace.toString()
         }
     }
 
@@ -647,7 +648,8 @@ class Dynamatrix implements Cloneable {
             StringWriter stackTrace = new StringWriter()
             (new Exception()).printStackTrace(new PrintWriter(stackTrace))
             script.echo "Creating new Dynamatrix@${this.objectID} CLONE: ${this.dynamatrixComment}" +
-                    " at: " + stackTrace.toString()
+                    " at (via dummy Exception for tracing, do not worry): " +
+                    stackTrace.toString()
         }
 
         return ret
@@ -665,7 +667,8 @@ class Dynamatrix implements Cloneable {
             (new Exception()).printStackTrace(new PrintWriter(stackTrace))
             script.echo "Creating new Dynamatrix@${this.objectID} CLONE" +
                     (this.dynamatrixComment == null ? "" : ": ${this.dynamatrixComment}") +
-                    " at: " + stackTrace.toString()
+                    " at (via dummy Exception for tracing, do not worry): " +
+                    stackTrace.toString()
         }
 
         return ret
