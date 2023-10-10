@@ -510,6 +510,18 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
     }
 
     /**
+     * Get a clone of an SCM Vars collection for specified stashName key.
+     * @param stashName
+     * @return
+     */
+    synchronized static Map getSCMVars(def stashName) {
+        if (stashName != null && stashSCMVars.containsKey(stashName)) {
+            return (Map)(stashSCMVars[stashName]).clone()
+        }
+        return null
+    }
+
+    /**
      * lock: rely on Lockable Resources plugin<br/>
      *
      * TODO: try/catch to do similar via filesystem, e.g. using some
