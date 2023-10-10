@@ -66,4 +66,3 @@ class dynamatrixGlobalState {
      */
     static def stageNameFunc = null
 }
-
