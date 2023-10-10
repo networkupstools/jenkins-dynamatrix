@@ -1,6 +1,8 @@
 // Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
 // package org.nut.dynamatrix;
 
+import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.UserRemoteConfig;
 import org.nut.dynamatrix.DynamatrixStash;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.Utils;
@@ -171,6 +173,21 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             Map scmVars = DynamatrixStash.getSCMVars(stashName)
             def scmCommit = scmVars?.GIT_COMMIT
             def scmURL = scmVars?.GIT_URL
+
+            if (scmVars == null) {
+                if (scm != null && scm instanceof GitSCM) {
+                    for(UserRemoteConfig c : scm.getUserRemoteConfigs()) {
+                        if (!("dynamatrix" in c.getUrl())) {
+                            scmURL = c.getUrl()
+                            //scmCommit = ...
+                        }
+                    }
+                }
+            }
+
+            if (scmCommit == null) {
+                scmCommit = env?.GIT_COMMIT
+            }
 
             Map stepArgs = [
                     $class            : "GitHubCommitStatusSetter",
