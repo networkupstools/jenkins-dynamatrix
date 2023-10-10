@@ -1,6 +1,7 @@
 // Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
 // package org.nut.dynamatrix;
 
+import org.nut.dynamatrix.DynamatrixStash;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.Utils;
 
@@ -156,4 +157,43 @@ Set<String> listChangedFiles() {
     Set<String> changedFiles = listChangedFilesGitWorkspace()
     changedFiles += listChangedFilesJenkinsData()
     return (Set<String>)(changedFiles.flatten())
+}
+
+/**
+ * Optional reporter of github status events which allows to trace certain
+ * but not all stages or situations (e.g. only failures of matrix cells).
+ * For Git URL/commit references uses DynamatrixStash.getSCMVars() cached data.
+ * Inspired by https://github.com/jenkinsci/github-plugin README examples.
+ */
+def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null) {
+    if (dynamatrixGlobalState.enableGithubStatusHighlights) {
+        try {
+            Map scmVars = DynamatrixStash.getSCMVars(stashName)
+            def scmCommit = scmVars?.GIT_COMMIT
+            def scmURL = scmVars?.GIT_URL
+
+            Map stepArgs = [
+                    $class            : "GitHubCommitStatusSetter",
+                    errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
+                    //errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+                    statusResultSource: [$class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]]]
+            ]
+
+            if (Utils.isStringNotEmpty(scmURL))
+                stepArgs['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: scmURL]
+
+            if (Utils.isStringNotEmpty(scmCommit))
+                stepArgs['commitShaSource'] = [$class: "ManuallyEnteredShaSource", url: scmCommit]
+
+            // e.g. "ci/jenkins/build-status", "integration" or "build"
+            if (Utils.isStringNotEmpty(messageContext))
+                stepArgs['contextSource'] = [$class: "ManuallyEnteredCommitContextSource", context: messageContext]
+
+            step(stepArgs);
+        } catch (Throwable t) {
+            echo "WARNING: Tried to use GitHubCommitStatusSetter but got an exception; is github-plugin installed and configured?"
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo t.toString()
+        }
+    }
 }
