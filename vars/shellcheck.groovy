@@ -245,7 +245,10 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                     // it can not get any better. So we can just assign.
                     currentBuild.result = bigStageResult
                     if (bigStageResult == 'FAILURE') {
-                        String msg = "FATAL: shellcheck for ${MATRIX_TAG} failed in at least one sub-test above"
+                        String msg = "shellcheck for ${MATRIX_TAG} failed in at least one sub-test"
+                        infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc, msg,
+                                'FAILURE', "shellcheck-${MATRIX_TAG}")
+                        msg = "FATAL: ${msg} above"
                         //echo msg
                         manager.buildFailure()
                         //error msg

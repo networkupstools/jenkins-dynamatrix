@@ -2612,9 +2612,27 @@ def parallelStages = prepareDynamatrix(
 
                             // might still be failed, just not re-thrown:
                             switch (dsbc.dsbcResultInterim) {
-                                case [null, 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
-                                      'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']:
+                                case [null, 'SUCCESS', 'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']:
                                     parstageCompleted = true
+                                    break
+
+                                case ['FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT']:
+                                    if (true) { // scoping
+                                        // Calculated above in this method.
+                                        // Or try variant from buildMatrixCellCI:
+                                        String MATRIX_TAG = matrixTag
+                                        if (MATRIX_TAG == null) {
+                                            MATRIX_TAG = stageName.trim()
+                                            if ("MATRIX_TAG=" in MATRIX_TAG) {
+                                                MATRIX_TAG = MATRIX_TAG - ~/^MATRIX_TAG="*/ - ~/"*$/
+                                            }
+                                        }
+
+                                        String msg = "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
+                                        script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc, msg,
+                                                'FAILURE', "slowbuild-${MATRIX_TAG}")
+                                        parstageCompleted = true
+                                    }
                                     break
 
                                 case ['AGENT_DISCONNECTED', 'AGENT_TIMEOUT', 'UNKNOWN']:

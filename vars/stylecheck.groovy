@@ -23,6 +23,9 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 
 def call(Map dynacfgPipeline = [:]) {
     if (dynacfgPipeline?.stylecheck) {
+        infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                'awaiting stylecheck results',
+                'PENDING', "stylecheck")
         node(infra.labelDocumentationWorker()) {
             withEnvOptional(dynacfgPipeline?.defaultTools) {
                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
@@ -47,7 +50,17 @@ def call(Map dynacfgPipeline = [:]) {
                     }
                 }
 
-                sh """ ${dynacfgPipeline.stylecheck} """
+                try {
+                    sh """ ${dynacfgPipeline.stylecheck} """
+                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                            'stylecheck passed for this commit',
+                            'SUCCESS', "stylecheck")
+                } catch (Throwable t) {
+                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                            'stylecheck failed for this commit',
+                            'FAILURE', "stylecheck")
+                    throw t
+                }
             }
         }
     }

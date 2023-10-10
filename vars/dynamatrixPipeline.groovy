@@ -445,6 +445,9 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 }
 
                                 dynamatrix.saveDynacfg()
+                                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                        'Discover slow build matrix',
+                                        'PENDING', "slowbuild-discover")
                                 dynacfgPipeline.slowBuild.each { Map sb ->
                                     if (dynamatrixGlobalState.enableDebugTrace) {
                                         echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
@@ -636,6 +639,10 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                     }
                                 }
                                 echo sbSummary + sbSummaryCount
+                                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                        sbSummary,
+                                        "SUCCESS", // nothing blew up?.. //( (stagesBinBuild.size() == 0) ? 'FAILURE' : 'SUCCESS'),
+                                        "slowbuild-discover")
 
                                 try {
                                     // Note: we also report "Running..." more or less
@@ -678,8 +685,26 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                         // Walk the plank
                         try {
+                            if (stagesShellcheck_arr?.size() > 0) {
+                                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                        'awaiting shellcheck results',
+                                        'PENDING', "shellcheck")
+                            }
                             parallel par1
+
+                            // If we are here - nothing crashed in parallel stages
+                            if (stagesShellcheck_arr?.size() > 0) {
+                                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                        'shellcheck passed for this commit',
+                                        'SUCCESS', "shellcheck")
+                            }
                         } catch (Throwable t) {
+                            // FIXME: Find a way to query parallel-stage node status
+                            //  for shellchecks to report if they were what failed?
+                            //  UIs can do it, so it is queryable somehow...
+                            //  For now in case of early failure, overall shellcheck
+                            //  status remains PENDING (but there may be specific
+                            //  messages for MATRIX_TAG if any of them failed).
                             echo "[ERROR] Something failed in the parallel stage: ${t}"
                             currentBuild.result = 'FAILURE'
                         }
@@ -755,6 +780,10 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             try {
                 String txt = "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; " +
                         "failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
+
+                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                        txt, "PENDING", "slowbuild-run")
+
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
                 manager.addShortText(txt)
@@ -786,6 +815,11 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 }
             }
             echo "Completed the 'slow build' dynamatrix"
+
+            infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                    "Completed the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages)",
+                    ( (tmpRes == null || tmpRes == "SUCCESS") ? "SUCCESS" : "FAILURE"),
+                    "slowbuild-run")
 
             String analyzeStageName = "Analyze the bigger dynamatrix"
             if (dynamatrix.mustAbort) {
