@@ -55,6 +55,20 @@ class dynamatrixGlobalState {
      * points to System.(out|err).println? */
     static Boolean enableDebugSysprint = true
 
+    static Boolean enableGithubStatusHighlights = false
+    static {
+        try {
+            // Is it recognized?
+            // https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github/status/GitHubCommitStatusSetter.java
+            Class z = Class.forName("org.jenkinsci.plugins.github.status.GitHubCommitStatusSetter")
+            if (z != null) {
+                enableGithubStatusHighlights = true
+            }
+        } catch (Exception ignored) {
+            enableGithubStatusHighlights = false
+        }
+    }
+
     /**
      * Takes a {@link DynamatrixSingleBuildConfig} object as argument and
      * returns a string. Can be used for definition of "meaningful" short
