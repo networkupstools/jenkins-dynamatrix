@@ -1142,6 +1142,16 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         "Completed the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages)",
                         ( (currentBuild.result == null || currentBuild.result == "SUCCESS") ? "SUCCESS" : "FAILURE"),
                         "slowbuild-run")
+
+                if (stagesBinBuild.size() > 0 && "countStages" in txtCounts) {
+                    // Try to repeat with a more detailed message that
+                    // might be too long for GitHub to accept it
+                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                            "Completed the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages): " +
+                            txtCounts.replaceAll("countStages", ""),
+                            ((currentBuild.result == null || currentBuild.result == "SUCCESS") ? "SUCCESS" : "FAILURE"),
+                            "slowbuild-run")
+                }
             }
         }
 
