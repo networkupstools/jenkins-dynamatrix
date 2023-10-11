@@ -597,8 +597,23 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 String sbSummaryCount = "" // non-null string in any case
                                 if (stagesBinBuild.size() == 0) {
                                     sbSummary = "Did not discover any ${sbSummarySuffix}"
+                                    // Limited by 140 chars
+                                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                            "Did not discover any " +
+                                            "'slow build' configurations over " +
+                                            "${countFiltersSeen} filter " +
+                                            "definition(s) tried",
+                                            "SUCCESS", // nothing blew up?.. //( (stagesBinBuild.size() == 0) ? 'FAILURE' : 'SUCCESS'),
+                                            "slowbuild-discover")
                                 } else {
                                     sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
+                                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                            "Discovered ${stagesBinBuild.size()} " +
+                                            "'slow build' configurations over " +
+                                            "${countFiltersSeen} filter " +
+                                            "definition(s) tried",
+                                            "SUCCESS",
+                                            "slowbuild-discover")
                                     dynacfgPipeline.slowBuild.each { Map sb ->
                                         if (sb?.mapParStages) {
                                             // Note: Char sequence at start of string is parsed for badge markup below
@@ -639,10 +654,6 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                     }
                                 }
                                 echo sbSummary + sbSummaryCount
-                                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
-                                        sbSummary,
-                                        "SUCCESS", // nothing blew up?.. //( (stagesBinBuild.size() == 0) ? 'FAILURE' : 'SUCCESS'),
-                                        "slowbuild-discover")
 
                                 try {
                                     // Note: we also report "Running..." more or less
