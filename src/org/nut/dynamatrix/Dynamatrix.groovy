@@ -2707,12 +2707,10 @@ def parallelStages = prepareDynamatrix(
                                         "'${dsbc.dsbcResultInterim}' and a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    if (!(dsbc.dsbcResultInterim in ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'])) {
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
-                                                "'slow build' stage for ${MATRIX_TAG} finished " +
-                                                "with abortion verdict: ${dsbc.dsbcResultInterim}",
-                                                'FAILURE', "slowbuild-${MATRIX_TAG}")
-                                    }
+                                    script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                            "'slow build' stage for ${MATRIX_TAG} finished " +
+                                            "with abortion verdict: ${dsbc.dsbcResultInterim}",
+                                            'FAILURE', "slowbuild-${MATRIX_TAG}")
 
                                     parstageCompleted = true
                                     break
@@ -2734,12 +2732,10 @@ def parallelStages = prepareDynamatrix(
                                         "aborting the stage-running loop; a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    if (!(dsbc.dsbcResultInterim in ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'])) {
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
-                                                "'slow build' stage for ${MATRIX_TAG} finished " +
-                                                "with unclassified verdict: ${dsbc.dsbcResultInterim}",
-                                                'FAILURE', "slowbuild-${MATRIX_TAG}")
-                                    }
+                                    script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                            "'slow build' stage for ${MATRIX_TAG} finished " +
+                                            "with unclassified verdict: ${dsbc.dsbcResultInterim}",
+                                            'FAILURE', "slowbuild-${MATRIX_TAG}")
 
                                     // DO NOT continue to loop
                                     parstageCompleted = true
