@@ -234,11 +234,10 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                     statusResultSource: [$class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]]]
             ]
 
-            if (Utils.isStringNotEmpty(scmURL))
+            if (Utils.isStringNotEmpty(scmURL) && Utils.isStringNotEmpty(scmCommit)) {
                 stepArgs['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: scmURL]
-
-            if (Utils.isStringNotEmpty(scmCommit))
                 stepArgs['commitShaSource'] = [$class: "ManuallyEnteredShaSource", url: scmCommit]
+            }
 
             // e.g. "ci/jenkins/build-status", "integration" or "build"
             if (Utils.isStringNotEmpty(messageContext))
