@@ -228,6 +228,18 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                 scmURL = env?.GIT_URL
             }
 
+            // Honour the limit, 140 chars as last reported for this writing:
+            //    Failed to update commit state on GitHub. Ignoring exception
+            //    [{"message":"Validation Failed","errors":[{
+            //     "resource":"Status","code":"custom","field":"description",
+            //     "message":"description is too long (maximum is 140 characters)"}],
+            // As of this writing, the plugin step does not return a value
+            // in case of an error during posting, just logs it:
+            // https://github.com/jenkinsci/github-plugin/blob/309cf75c74ba1f254b9fe09fc43b5d9e08956813/src/main/java/org/jenkinsci/plugins/github/status/GitHubCommitStatusSetter.java#L132
+            if (message.length() > 140) {
+                message = message.substring(0, 135) - ~/ [^\s]*$/ + "<...>"
+            }
+
             Map stepArgs = [
                     $class            : "GitHubCommitStatusSetter",
                     errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
