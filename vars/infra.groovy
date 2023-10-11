@@ -205,7 +205,13 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                             def methodName = "getRepositoryUrl"
                             scmURL = src."$methodName"()
                         }
-                    } catch (Throwable ignored) {
+                    } catch (Throwable t) {
+                        echo ("WARNING: Tried to use GitHubSCMSource " +
+                                "and PullRequestSCMRevision but got an exception; " +
+                                "is github_branch_source-plugin installed and " +
+                                "configured?")
+                        //if (dynamatrixGlobalState.enableDebugTrace)
+                            echo t.toString()
                     }
                 }
             }
