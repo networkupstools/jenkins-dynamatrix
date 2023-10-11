@@ -6,6 +6,8 @@ import hudson.plugins.git.UserRemoteConfig;
 import jenkins.scm.api.SCMRevision;
 import jenkins.scm.api.SCMRevisionAction;
 import jenkins.scm.api.SCMSource;
+import org.jenkinsci.plugins.github_branch_source.GitHubSCMSource;
+import org.jenkinsci.plugins.github_branch_source.PullRequestSCMRevision;
 import org.nut.dynamatrix.DynamatrixStash;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.Utils;
@@ -186,33 +188,19 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                 SCMSource src = SCMSource.SourceByItem.findSource(currentBuild.rawBuild.getParent());
                 SCMRevision revision = (src != null ? SCMRevisionAction.getRevision(src, currentBuild.rawBuild) : null);
 
-                if (src != null && revision != null) {
-                    try {
-                        Class clazzSrc = Class.forName("org.jenkinsci.plugins.github_branch_source.GitHubSCMSource");
-                        Class clazzRev = Class.forName("org.jenkinsci.plugins.github_branch_source.PullRequestSCMRevision");
+                if (src != null && revision != null
+                && revision instanceof PullRequestSCMRevision
+                && src instanceof GitHubSCMSource
+                ) {
+                    // PRs are "<source>+<target> (<ephemeral>)", e.g.
+                    // 1aaff29c6706228a1fcae1c933e611f8b6aad441+5dc7970253626986815d79c5c7fa295bf221c876 (2259e6ff57cfb00864beb056f1720bab28cd0a64)
+                    String s = (revision.toString().trim() - ~/\+.*$/).trim()
+                    scmCommit = s
 
-                        if (clazzRev != null && clazzSrc != null
-                        && revision.getClass().isAssignableFrom(clazzRev)
-                        && src.getClass().isAssignableFrom(clazzSrc)
-                        ) {
-                            // PRs are "<source>+<target> (<ephemeral>)", e.g.
-                            // 1aaff29c6706228a1fcae1c933e611f8b6aad441+5dc7970253626986815d79c5c7fa295bf221c876 (2259e6ff57cfb00864beb056f1720bab28cd0a64)
-                            String s = (revision.toString().trim() - ~/\+.*$/).trim()
-                            scmCommit = s
-
-                            // Use reflection to avoid casting and required
-                            // imports and thus plugins installed
-                            def methodName = "getRepositoryUrl"
-                            scmURL = src."$methodName"()
-                        }
-                    } catch (Throwable t) {
-                        echo ("WARNING: Tried to use GitHubSCMSource " +
-                                "and PullRequestSCMRevision but got an exception; " +
-                                "is github_branch_source-plugin installed and " +
-                                "configured?")
-                        //if (dynamatrixGlobalState.enableDebugTrace)
-                            echo t.toString()
-                    }
+                    // Use reflection to avoid casting and required
+                    // imports and thus plugins installed
+                    def methodName = "getRepositoryUrl"
+                    scmURL = src."$methodName"()
                 }
             }
 
