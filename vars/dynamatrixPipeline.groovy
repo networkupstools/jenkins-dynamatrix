@@ -1050,28 +1050,36 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 // Build finished, remove the rolling progress via GPBP steps (with id)
                 dynamatrix.updateProgressBadge(true, dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
+                String txtCounts = null
+                try {
+                    txtCounts = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                    if ("[:]".equals(txtCounts)) txtCounts = null
+                    if (!(Utils.isStringNotEmpty(txtCounts))) {
+                        txtCounts = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                        if ("[:]".equals(txtCounts)) txtCounts = null
+                    }
+                    if (!(Utils.isStringNotEmpty(txtCounts))) {
+                        txtCounts = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                        if ("[:]".equals(txtCounts)) txtCounts = null
+                    }
+                    if (!(Utils.isStringNotEmpty(txtCounts))) {
+                        txtCounts = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
+                        if ("[:]".equals(txtCounts)) txtCounts = null
+                    }
+                } catch (Throwable ignored) {
+                    // no-op
+                }
+                if (txtCounts == null)
+                    txtCounts = "Failed to account specific stage results"
+
                 if (!reportedNonSuccess && currentBuild.result in [null, 'SUCCESS']) {
                     // Report success as a badge too, so interrupted incomplete
                     // builds (Jenkins/server restart etc.) are more visible
                     try {
-                        String txt = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                        if ("[:]".equals(txt)) txt = null
-                        if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                            if ("[:]".equals(txt)) txt = null
-                        }
-                        if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                            if ("[:]".equals(txt)) txt = null
-                        }
-                        if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                        }
-
                         String txtOK = "Build completed successfully"
                         manager.addShortText(txtOK)
                         createSummary(
-                            text: txtOK + ": " + txt,
+                            text: txtOK + ": " + txtCounts,
                             icon: '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
                             )
                     } catch (Throwable t) {
@@ -1080,20 +1088,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     }
                 } else {
                     try {
-                        String txt = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                        if ("[:]".equals(txt)) txt = null
-                        if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                            if ("[:]".equals(txt)) txt = null
-                        }
-                        if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                            if ("[:]".equals(txt)) txt = null
-                        }
-                        if (!(Utils.isStringNotEmpty(txt))) {
-                            txt = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                        }
-                        txt = "Not all went well: " + txt
+                        String txt = "Not all went well: " + txtCounts
                         if (dynamatrix.shouldDebugTrace())
                             txt +=
                                 " in Dynamatrix@${dynamatrix.objectID}" +
