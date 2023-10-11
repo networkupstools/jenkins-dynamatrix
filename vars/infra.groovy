@@ -3,6 +3,9 @@
 
 import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
+import jenkins.scm.api.SCMRevision;
+import jenkins.scm.api.SCMRevisionAction;
+import jenkins.scm.api.SCMSource;
 import org.nut.dynamatrix.DynamatrixStash;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.Utils;
@@ -165,7 +168,10 @@ Set<String> listChangedFiles() {
  * Optional reporter of github status events which allows to trace certain
  * but not all stages or situations (e.g. only failures of matrix cells).
  * For Git URL/commit references uses DynamatrixStash.getSCMVars() cached data.
- * Inspired by https://github.com/jenkinsci/github-plugin README examples.
+ * Inspired by https://github.com/jenkinsci/github-plugin README examples,
+ * https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github/status/GitHubCommitStatusSetter.java
+ * and https://github.com/jenkinsci/github-branch-source-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github_branch_source/GitHubBuildStatusNotification.java#L337
+ * sources.
  */
 def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null) {
     if (dynamatrixGlobalState.enableGithubStatusHighlights) {
@@ -175,18 +181,50 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             def scmURL = scmVars?.GIT_URL
 
             if (scmVars == null) {
-                if (scm != null && scm instanceof GitSCM) {
-                    for(UserRemoteConfig c : scm.getUserRemoteConfigs()) {
-                        if (!("dynamatrix" in c.getUrl())) {
-                            scmURL = c.getUrl()
-                            //scmCommit = ...
+                // At least if there's just one SCMSource attached
+                // to the job definition...
+                SCMSource src = SCMSource.SourceByItem.findSource(currentBuild.rawBuild.getParent());
+                SCMRevision revision = (src != null ? SCMRevisionAction.getRevision(src, currentBuild.rawBuild) : null);
+
+                if (src != null && revision != null) {
+                    try {
+                        Class clazzSrc = Class.forName("org.jenkinsci.plugins.github_branch_source.GitHubSCMSource");
+                        Class clazzRev = Class.forName("org.jenkinsci.plugins.github_branch_source.PullRequestSCMRevision");
+
+                        if (clazzRev != null && clazzSrc != null
+                        && revision.getClass().isAssignableFrom(clazzRev)
+                        && src.getClass().isAssignableFrom(clazzSrc)
+                        ) {
+                            // PRs are "<source>+<target> (<ephemeral>)", e.g.
+                            // 1aaff29c6706228a1fcae1c933e611f8b6aad441+5dc7970253626986815d79c5c7fa295bf221c876 (2259e6ff57cfb00864beb056f1720bab28cd0a64)
+                            String s = (revision.toString().trim() - ~/\+.*$/).trim()
+                            scmCommit = s
+
+                            // Use reflection to avoid casting and required
+                            // imports and thus plugins installed
+                            def methodName = "getRepositoryUrl"
+                            scmURL = src."$methodName"()
                         }
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+
+            if (scmURL == null && scm != null && scm instanceof GitSCM) {
+                for(UserRemoteConfig c : scm.getUserRemoteConfigs()) {
+                    if (!("dynamatrix" in c.getUrl())) {
+                        scmURL = c.getUrl()
+                        //scmCommit = ... ?
                     }
                 }
             }
 
             if (scmCommit == null) {
                 scmCommit = env?.GIT_COMMIT
+            }
+
+            if (scmURL == null) {
+                scmURL = env?.GIT_URL
             }
 
             Map stepArgs = [
