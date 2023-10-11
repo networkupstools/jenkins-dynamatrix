@@ -173,7 +173,7 @@ Set<String> listChangedFiles() {
  * Inspired by https://github.com/jenkinsci/github-plugin README examples,
  * https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github/status/GitHubCommitStatusSetter.java
  * and https://github.com/jenkinsci/github-branch-source-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github_branch_source/GitHubBuildStatusNotification.java#L337
- * sources.
+ * sources. See also https://docs.github.com/rest/commits/statuses#create-a-commit-status
  */
 def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null) {
     if (dynamatrixGlobalState.enableGithubStatusHighlights) {
@@ -182,9 +182,16 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             def scmCommit = scmVars?.GIT_COMMIT
             def scmURL = scmVars?.GIT_URL
 
+            // Most of the time cached info is present, except
+            // early in the job run - while the git checkout
+            // and stash operation runs in a parallel stage.
+            // The cached SCMVars only become known after the
+            // appearance of that git workspace, but we send
+            // some statuses before that.
             if (scmVars == null) {
                 // At least if there's just one SCMSource attached
-                // to the job definition...
+                // to the job definition, we can do this (TOCHECK:
+                // what if there are many sources in definition?):
                 SCMSource src = SCMSource.SourceByItem.findSource(currentBuild.rawBuild.getParent());
                 SCMRevision revision = (src != null ? SCMRevisionAction.getRevision(src, currentBuild.rawBuild) : null);
 
@@ -225,7 +232,14 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                     $class            : "GitHubCommitStatusSetter",
                     errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
                     //errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
-                    statusResultSource: [$class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]]]
+                    statusResultSource: [
+                            $class: "ConditionalStatusResultSource",
+                            results: [[
+                                              $class: "AnyBuildResult",
+                                              message: message,
+                                              state: state
+                                      ]]
+                    ]
             ]
 
             if (Utils.isStringNotEmpty(scmURL) && Utils.isStringNotEmpty(scmCommit)) {
