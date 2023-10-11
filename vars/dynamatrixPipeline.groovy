@@ -828,7 +828,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             echo "Completed the 'slow build' dynamatrix"
 
             infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
-                    "Completed the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages)",
+                    "Analyzing results after the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages)...",
                     ( (tmpRes == null || tmpRes == "SUCCESS") ? "SUCCESS" : "FAILURE"),
                     "slowbuild-run")
 
@@ -1142,6 +1142,11 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                     }
                 }
+
+                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                        "Completed the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages)",
+                        ( (currentBuild.result == null || currentBuild.result == "SUCCESS") ? "SUCCESS" : "FAILURE"),
+                        "slowbuild-run")
             }
         }
 
