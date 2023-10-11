@@ -23,6 +23,9 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 
 def call(Map dynacfgPipeline = [:]) {
     if (dynacfgPipeline?.spellcheck) {
+        infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                'awaiting spellcheck results',
+                'PENDING', "spellcheck")
         node(infra.labelDocumentationWorker()) {
             withEnvOptional(dynacfgPipeline.defaultTools) {
                 unstashCleanSrc(dynacfgPipeline.stashnameSrc)
@@ -47,7 +50,17 @@ def call(Map dynacfgPipeline = [:]) {
                     }
                 }
 
-                sh """ ${dynacfgPipeline.spellcheck} """
+                try {
+                    sh """ ${dynacfgPipeline.spellcheck} """
+                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                            'spellcheck passed for this commit',
+                            'SUCCESS', "spellcheck")
+                } catch (Throwable t) {
+                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                            'spellcheck failed for this commit',
+                            'FAILURE', "spellcheck")
+                    throw t
+                }
             }
         }
     }

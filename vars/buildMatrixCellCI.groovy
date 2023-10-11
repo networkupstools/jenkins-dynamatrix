@@ -650,6 +650,4 @@ EOF
     // but warnings-ng only had the whole job log to parse then
 //   return """ ${cmd}
 //"""
-
 }
-

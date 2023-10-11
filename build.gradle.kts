@@ -119,6 +119,7 @@ dependencies {
     testImplementation ("com.cloudbees:groovy-cps:3624.v43b_a_38b_62b_b_7")
     implementation ("org.jenkins-ci.main:remoting:3131.vf2b_b_798b_ce99")
     implementation ("org.jenkins-ci.plugins:git:5.1.0")
+    implementation ("org.jenkins-ci.plugins:github-branch-source:1701.v00cc8184df93")
     implementation ("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     testImplementation("org.assertj:assertj-core:3.12.2")
 /*
@@ -177,6 +178,7 @@ sharedLibrary {
         dependency("org.jenkins-ci.plugins", "pipeline-utility-steps", "2.13.0")
 
         dependency("org.jenkins-ci.plugins", "git", "5.1.0")
+        dependency("org.jenkins-ci.plugins", "github-branch-source", "1701.v00cc8184df93")
         dependency("org.jenkins-ci.main", "remoting", "3131.vf2b_b_798b_ce99")
 
         dependency("javax.activation", "activation", "1.1")

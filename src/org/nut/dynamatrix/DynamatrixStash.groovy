@@ -468,14 +468,22 @@ echo "[DEBUG before stash()] Files in `pwd`: `find . -type f | wc -l` and all FS
 git status || true
 """
 
-                if (stashName != null && !(stashSCMVars.containsKey(stashName))) {
-                    stashSCMVars[stashName] = [:]
-                    stashSCMVars[stashName].GIT_COMMIT = script.sh (returnStdout: true,
-                        label:"Investigate git checkout metadata before stash()",
-                        script:'git log -1 --format="%H"').trim()
-                    stashSCMVars[stashName].GIT_URL = script.sh (returnStdout: true,
-                        label:"Investigate git checkout metadata before stash()",
-                        script:'git config remote.origin.url').trim()
+                if (stashName != null) {
+                    if (!(stashSCMVars.containsKey(stashName))) {
+                        stashSCMVars[stashName] = [:]
+                    }
+
+                    if (!(Utils.isStringNotEmpty(stashSCMVars?.stashName?.GIT_COMMIT))) {
+                        stashSCMVars[stashName].GIT_COMMIT = script.sh(returnStdout: true,
+                                label: "Investigate git checkout metadata before stash()",
+                                script: 'git log -1 --format="%H"').trim()
+                    }
+
+                    if (!(Utils.isStringNotEmpty(stashSCMVars?.stashName?.GIT_URL))) {
+                        stashSCMVars[stashName].GIT_URL = script.sh(returnStdout: true,
+                                label: "Investigate git checkout metadata before stash()",
+                                script: 'git config remote.origin.url').trim()
+                    }
                 }
             } // isUnix
 
@@ -507,6 +515,18 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 """
         }
         return res
+    }
+
+    /**
+     * Get a clone of an SCM Vars collection for specified stashName key.
+     * @param stashName
+     * @return
+     */
+    synchronized static Map getSCMVars(def stashName) {
+        if (stashName != null && stashSCMVars.containsKey(stashName)) {
+            return (Map)(stashSCMVars[stashName]).clone()
+        }
+        return null
     }
 
     /**
