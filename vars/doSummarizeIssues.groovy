@@ -18,6 +18,19 @@ void call(def issueAnalysisArr, String id, String name, String sJOB_NAME, String
             name: name,
             //referenceJobName: reference,
             //recordIssues-only//filters: [includePackage('io.jenkins.plugins.analysis.*')],
+
+            // Below we require that any warnings exposed by the analysis
+            // would mark the build as unstable. This is anticipated in
+            // "fightwarn" style branches dedicated to higher verbosity
+            // and sensitivity of tools that deal with code inspection,
+            // but allows for zero tolerance on typical branches and PRs.
+            //   https://github.com/jenkinsci/warnings-ng-plugin/blob/master/doc/Documentation.md#quality-gate-configuration
+            // The "TOTAL" count of any-severity warnings (1 or more) is
+            // what matters for us here; other options are available - for
+            // more details see `enum QualityGateType` in plugin sources:
+            //   https://github.com/jenkinsci/warnings-ng-plugin/blob/master/plugin/src/main/java/io/jenkins/plugins/analysis/core/util/QualityGate.java
+            qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]],
+
             issues: issueAnalysisArr
             ]
 
