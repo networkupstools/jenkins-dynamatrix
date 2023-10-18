@@ -2661,6 +2661,15 @@ def parallelStages = prepareDynamatrix(
                                 " finished with verdict " +
                                 "'${dsbc.dsbcResultInterim}'" +
                                 "; a Throwable was caught: ${Utils.castString(t)}")
+
+                            String MATRIX_TAG = matrixTag
+                            if (MATRIX_TAG == null) {
+                                MATRIX_TAG = stageName.trim()
+                                if ("MATRIX_TAG=" in MATRIX_TAG) {
+                                    MATRIX_TAG = MATRIX_TAG - ~/^MATRIX_TAG="*/ - ~/"*$/
+                                }
+                            }
+
                             switch (dsbc.dsbcResultInterim) {
                                 case [null, 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT']:
                                     script.echo "[DEBUG]: DSBC requested " +

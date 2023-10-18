@@ -176,6 +176,9 @@ Set<String> listChangedFiles() {
  * sources. See also https://docs.github.com/rest/commits/statuses#create-a-commit-status
  */
 def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null) {
+    if (dynamatrixGlobalState.enableDebugTrace)
+        echo "[DEBUG] reportGithubStageStatus called; dynamatrixGlobalState.enableGithubStatusHighlights=${dynamatrixGlobalState.enableGithubStatusHighlights}, stashName=${stashName}, message=${message}, state=${state}, messageContext=${messageContext}"
+
     if (dynamatrixGlobalState.enableGithubStatusHighlights) {
         try {
             Map scmVars = DynamatrixStash.getSCMVars(stashName)
@@ -264,7 +267,7 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                 stepArgs['contextSource'] = [$class: "ManuallyEnteredCommitContextSource", context: messageContext]
 
             if (dynamatrixGlobalState.enableDebugTrace) {
-                echo "[DEBUG] reportGithubStageStatus():\n\t" +
+                echo "[DEBUG] reportGithubStageStatus() with GitHubCommitStatusSetter step:\n\t" +
                         "stashName=${Utils.castString(stashName)}\n\t" +
                         "scmVars=${Utils.castString(scmVars)}\n\t" +
                         "scmURL=${Utils.castString(scmURL)}\n\t" +
