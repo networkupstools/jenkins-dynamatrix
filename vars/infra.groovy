@@ -176,8 +176,8 @@ Set<String> listChangedFiles() {
  * sources. See also https://docs.github.com/rest/commits/statuses#create-a-commit-status
  */
 def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null) {
-    //if (dynamatrixGlobalState.enableDebugTrace)
-    echo "[DEBUG] reportGithubStageStatus called; dynamatrixGlobalState.enableGithubStatusHighlights=${dynamatrixGlobalState.enableGithubStatusHighlights}, stashName=${stashName}, message=${message}, state=${state}, messageContext=${messageContext}"
+    if (dynamatrixGlobalState.enableDebugTrace)
+        echo "[DEBUG] reportGithubStageStatus called; dynamatrixGlobalState.enableGithubStatusHighlights=${dynamatrixGlobalState.enableGithubStatusHighlights}, stashName=${stashName}, message=${message}, state=${state}, messageContext=${messageContext}"
 
     if (dynamatrixGlobalState.enableGithubStatusHighlights) {
         try {
@@ -266,19 +266,19 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             if (Utils.isStringNotEmpty(messageContext))
                 stepArgs['contextSource'] = [$class: "ManuallyEnteredCommitContextSource", context: messageContext]
 
-//            if (dynamatrixGlobalState.enableDebugTrace) {
+            if (dynamatrixGlobalState.enableDebugTrace) {
                 echo "[DEBUG] reportGithubStageStatus() with GitHubCommitStatusSetter step:\n\t" +
                         "stashName=${Utils.castString(stashName)}\n\t" +
                         "scmVars=${Utils.castString(scmVars)}\n\t" +
                         "scmURL=${Utils.castString(scmURL)}\n\t" +
                         "scmCommit=${Utils.castString(scmCommit)}\n\t" +
                         "stepArgs=${Utils.castString(stepArgs)}"
-//            }
+            }
 
             step(stepArgs);
         } catch (Throwable t) {
             echo "WARNING: Tried to use GitHubCommitStatusSetter but got an exception; is github-plugin installed and configured?"
-            //if (dynamatrixGlobalState.enableDebugTrace)
+            if (dynamatrixGlobalState.enableDebugTrace)
                 echo t.toString()
         }
     }
