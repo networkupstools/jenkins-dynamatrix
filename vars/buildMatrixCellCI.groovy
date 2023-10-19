@@ -548,10 +548,17 @@ done
                 sumtxt += lastErr.replaceFirst(/ for .*$/, '')
                 sumtxt += "<ul>"
                 try {
-                    // TODO: refactor with dsbc.dsbcResultLogs map contents
-                    for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config"]) {
-                        if (fileExists(".ci.${archPrefix}.${F}.log.gz")) {
-                            sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
+                    if (Utils.isMapNotEmpty(dsbc?.dsbcResultLogs)) {
+                        dsbc.dsbcResultLogs.each { String phaseLog, Object phaseVerdict ->
+                            if (fileExists(phaseLog)) {
+                                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${phaseLog}'>${phaseLog}</a> [${phaseVerdict}]</li>"
+                            }
+                        }
+                    } else {
+                        for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config"]) {
+                            if (fileExists(".ci.${archPrefix}.${F}.log.gz")) {
+                                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
+                            }
                         }
                     }
                     def files = findFiles(glob: ".ci.${archPrefix}.*_config*.log.gz")
