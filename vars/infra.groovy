@@ -175,7 +175,7 @@ Set<String> listChangedFiles() {
  * and https://github.com/jenkinsci/github-branch-source-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github_branch_source/GitHubBuildStatusNotification.java#L337
  * sources. See also https://docs.github.com/rest/commits/statuses#create-a-commit-status
  */
-def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null) {
+def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null, String backrefUrl = null) {
     if (dynamatrixGlobalState.enableDebugTrace)
         echo "[DEBUG] reportGithubStageStatus called; dynamatrixGlobalState.enableGithubStatusHighlights=${dynamatrixGlobalState.enableGithubStatusHighlights}, stashName=${stashName}, message=${message}, state=${state}, messageContext=${messageContext}"
 
@@ -267,6 +267,12 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             // use different contexts for different practical job aspects, e.g. spellcheck vs shellcheck
             if (Utils.isStringNotEmpty(messageContext))
                 stepArgs['contextSource'] = [$class: "ManuallyEnteredCommitContextSource", context: messageContext]
+
+            // e.g. "https://ci.networkupstools.org/job/nut/job/nut/job/PR-2063/69//artifact/.ci.MD5_899dfa229658900e3de07f19c790e888.check.log.gz"
+            // Defaults to https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github/status/sources/BuildRefBackrefSource.java
+            // that uses the Display URL of the build (redirects to one of UI implementation pages)
+            if (Utils.isStringNotEmpty(backrefUrl))
+                stepArgs['statusBackrefSource'] = [$class: "ManuallyEnteredBackrefSource", backref: backrefUrl]
 
             if (dynamatrixGlobalState.enableDebugTrace) {
                 echo "[DEBUG] reportGithubStageStatus() with GitHubCommitStatusSetter step:\n\t" +
