@@ -1105,6 +1105,8 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                             mapres.remove(Result.SUCCESS)
 
                         if (mapres.size() > 0) {
+                            // No trailing slash - ensured below
+                            String buildArtifactUrlPrefix = "${env.BUILD_URL?.replaceLast('/', '')}/artifact"
                             mapres.each { Result r, Set<String> sns ->
                                 txt = "<nl>Result: ${r.toString()} (${sns.size()}):\n"
                                 sns.each { String sn ->
@@ -1114,10 +1116,10 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         // File naming as defined in vars/buildMatrixCellCI.groovy
                                         txt += "\n<p>See build artifacts keyed with: '${archPrefix}' e.g. similar to:<ul>\n"
                                         for (String url in [
-                                            "${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz",
-                                            "${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.nut_report_feature.log.gz",
-                                            "${env.BUILD_URL}/artifact/.ci.${archPrefix}.build.log.gz",
-                                            "${env.BUILD_URL}/artifact/.ci.${archPrefix}.check.log.gz"
+                                            "${buildArtifactUrlPrefix}/.ci.${archPrefix}.config.log.gz",
+                                            "${buildArtifactUrlPrefix}/.ci.${archPrefix}.config.nut_report_feature.log.gz",
+                                            "${buildArtifactUrlPrefix}/.ci.${archPrefix}.build.log.gz",
+                                            "${buildArtifactUrlPrefix}/.ci.${archPrefix}.check.log.gz"
                                         ]) {
                                             txt += "<li><a href='${url}'>${url}</a></li>\n"
                                         }
