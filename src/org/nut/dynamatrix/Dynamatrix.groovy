@@ -2194,7 +2194,7 @@ def parallelStages = prepareDynamatrix(
                         }
                     }
 
-                    dsbc.startCount = dsbc.startCount + 1
+                    dsbc.startNewAttempt()
                     if (dsbc.dsbcResultInterim == null) {
                         dsbc.thisDynamatrix?.countStagesIncrement('STARTED', stageName + sbName)
                     } else {

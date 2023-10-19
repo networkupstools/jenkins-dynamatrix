@@ -108,6 +108,16 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     public String dsbcResultInterim = null
     public Integer startCount = 0
 
+    /**
+     * As we progress through the matrix cell build, record the filenames
+     * here and eventually add related verdicts (shell exit-codes, Result
+     * objects, Dynamatrix extended result strings...)<br/>
+     * Being a LinkedHashMap this one retains the order of original inserts
+     * as we iterate it.<br/>
+     * @see #getLatestDsbcResultLog
+     */
+    public LinkedHashMap<String, Object> dsbcResultLogs = [:]
+
     /** Same units as for {@code timeout()} step, e.g.
      * <pre>
      *    dsbc.stageTimeoutSettings = {time: 12, unit: "HOURS"}
@@ -175,6 +185,16 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     @NonCPS
     public boolean shouldDebugErrors() {
         return ( (this.enableDebugTrace || this.enableDebugTraceFailures || this.enableDebugErrors) && this.script != null)
+    }
+
+    /**
+     * Helper for build attempt accounting. Notifications etc. are up to the caller.
+     * @return  (Probably) the new value of startCount
+     */
+    @NonCPS
+    def startNewAttempt() {
+        dsbcResultLogs = [:]
+        startCount++
     }
 
     @NonCPS
@@ -268,6 +288,29 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     @NonCPS
     public static String C_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
         return 'MATRIX_TAG="' + C_StageNameTagValue(dsbc) + "\" && " + dsbc.defaultStageName()
+    }
+
+    /**
+     * Helper to learn the latest log, e.g. for notification backref URLs
+     * (assuming the last matrix-cell step is what caused the failure we
+     * notify about).<br/>
+     *
+     * TODO: Another helper (or options here) to find earliest/newest FAILED
+     *  matrix-cell step, for notifications to be even more relevant.
+     *
+     * @return  Filename of the log. Caller should prepend the
+     *          build artifact location etc. to make an URL of it.
+     */
+    @NonCPS
+    String getLatestDsbcResultLog() {
+        String s = null
+        // as a LinkedHashMap it has a specific order of entries
+        if (Utils.isMapNotEmpty(dsbcResultLogs)) {
+            dsbcResultLogs.each {
+                s = it.key
+            }
+        }
+        return s
     }
 
     /**

@@ -1114,6 +1114,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                     txt += "<li>${sn}"
                                     if (archPrefix) {
                                         // File naming as defined in vars/buildMatrixCellCI.groovy
+                                        // TODO: refactor with dsbc.dsbcResultLogs map contents
                                         txt += "\n<p>See build artifacts keyed with: '${archPrefix}' e.g. similar to:<ul>\n"
                                         for (String url in [
                                             "${buildArtifactUrlPrefix}/.ci.${archPrefix}.config.log.gz",
