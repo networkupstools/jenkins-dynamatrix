@@ -263,6 +263,8 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             }
 
             // e.g. "ci/jenkins/build-status", "integration" or "build"
+            // re-use same context with different status or message as we progress from recognition of a codepath to its verdict
+            // use different contexts for different practical job aspects, e.g. spellcheck vs shellcheck
             if (Utils.isStringNotEmpty(messageContext))
                 stepArgs['contextSource'] = [$class: "ManuallyEnteredCommitContextSource", context: messageContext]
 
