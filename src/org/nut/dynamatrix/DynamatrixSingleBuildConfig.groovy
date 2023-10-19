@@ -100,7 +100,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      * it would be tracked in, e.g. for failFastSafe support */
     public Dynamatrix thisDynamatrix = null
 
-    /* Help Dynamatrix accounting track intentional error()/unstable()/...
+    /** Help Dynamatrix accounting track intentional error()/unstable()/...
      * exits from each build scenario. See also setWorstResult() below. */
     public Result dsbcResult = null
     /** If this is 'UNKNOWN', exception summary, etc. we may want to retry the
