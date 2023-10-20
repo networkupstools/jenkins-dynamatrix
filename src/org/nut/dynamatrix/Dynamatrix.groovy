@@ -2228,6 +2228,8 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('RESTARTED', stageName + sbName)
                         dsbc.dsbcResultInterim = null
                     }
+
+                    // Create or update the yellow-box (badge) report when beginning a matrix cell
                     dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                     try {
                         def payloadRes = payloadTmp()
@@ -2248,7 +2250,6 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         return payloadRes
                     } catch (FlowInterruptedException fex) {
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
@@ -2285,7 +2286,6 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.dsbcResultInterim = fexres
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(fex)
                         throw fex
                     } catch (AbortException hexA) {
@@ -2350,7 +2350,6 @@ def parallelStages = prepareDynamatrix(
                                 }
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(hexA)
                         throw hexA
                     } catch (RequestAbortedException rae) {
@@ -2397,7 +2396,6 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(rae)
                         throw rae
                     } catch (RemotingSystemException rse) {
@@ -2442,7 +2440,6 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(rse)
                         throw rse
                     } catch (IOException jioe) {
@@ -2492,7 +2489,6 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(jioe)
                         throw jioe
                     } catch (InterruptedException jlie) {
@@ -2535,7 +2531,6 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(jlie)
                         throw jlie
                     // TODO // } catch (hudson.plugins.git.GitException gex) { // see https://github.com/networkupstools/jenkins-dynamatrix/issues/19 about evil force-pushes
@@ -2547,6 +2542,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName)
 
+                        // FIXME? Keep the report here (another in finally) for good measure?
                         dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         dsbc.dsbcResultInterim = 'Throwable'
 
@@ -2575,6 +2571,10 @@ def parallelStages = prepareDynamatrix(
 
                         printStackTraceStderrOptional(t)
                         throw t
+                    }
+                    finally {
+                        // Also update after ending a matrix cell, successfully or not
+                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                     }
                 }
             }
