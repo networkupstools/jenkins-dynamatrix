@@ -563,20 +563,7 @@ class Dynamatrix implements Cloneable {
         if (removeOnly) return true
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
-        String txt = this.toStringStageCountNonZero(recurse)
-        if ("[:]".equals(txt)) txt = null
-        if (!(Utils.isStringNotEmpty(txt))) {
-            txt = this.toStringStageCountDumpNonZero(recurse)
-            if ("[:]".equals(txt)) txt = null
-        }
-        if (!(Utils.isStringNotEmpty(txt))) {
-            txt = this.toStringStageCountDump(recurse)
-            if ("[:]".equals(txt)) txt = null
-        }
-        if (!(Utils.isStringNotEmpty(txt))) {
-            txt = this.toStringStageCount(recurse)
-        }
-        txt = "Build in progress: " + txt
+        String txt = "Build in progress: " + this.toStringStageCountBestEffort(recurse)
         if (this.shouldDebugTrace())
             txt +=
                 " in Dynamatrix@${this.objectID}" +
@@ -694,6 +681,39 @@ class Dynamatrix implements Cloneable {
             return true
         }
         return false
+    }
+
+    /**
+     * Report amounts of stages which have certain verdicts
+     * (best-effort), for reporting. Use one of our algorithms
+     * until something succeeds. Always returns a String (maybe
+     * with an error message that it could not retrieve interesting
+     * info).
+     */
+    public String toStringStageCountBestEffort(Boolean recurse = false) {
+        String txtCounts = null
+        try {
+            txtCounts = this.toStringStageCountNonZero(recurse)
+            if ("[:]".equals(txtCounts)) txtCounts = null
+            if (!(Utils.isStringNotEmpty(txtCounts))) {
+                txtCounts = this.toStringStageCountDumpNonZero(recurse)
+                if ("[:]".equals(txtCounts)) txtCounts = null
+            }
+            if (!(Utils.isStringNotEmpty(txtCounts))) {
+                txtCounts = this.toStringStageCountDump(recurse)
+                if ("[:]".equals(txtCounts)) txtCounts = null
+            }
+            if (!(Utils.isStringNotEmpty(txtCounts))) {
+                txtCounts = this.toStringStageCount(recurse)
+                if ("[:]".equals(txtCounts)) txtCounts = null
+            }
+        } catch (Throwable ignored) {
+            // no-op
+        }
+        if (txtCounts == null)
+            txtCounts = "Failed to account specific stage results"
+
+        return txtCounts
     }
 
     /**

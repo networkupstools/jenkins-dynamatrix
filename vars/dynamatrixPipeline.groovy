@@ -1050,27 +1050,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 // Build finished, remove the rolling progress via GPBP steps (with id)
                 dynamatrix.updateProgressBadge(true, dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
-                String txtCounts = null
-                try {
-                    txtCounts = dynamatrix.toStringStageCountNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                    if ("[:]".equals(txtCounts)) txtCounts = null
-                    if (!(Utils.isStringNotEmpty(txtCounts))) {
-                        txtCounts = dynamatrix.toStringStageCountDumpNonZero(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                        if ("[:]".equals(txtCounts)) txtCounts = null
-                    }
-                    if (!(Utils.isStringNotEmpty(txtCounts))) {
-                        txtCounts = dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                        if ("[:]".equals(txtCounts)) txtCounts = null
-                    }
-                    if (!(Utils.isStringNotEmpty(txtCounts))) {
-                        txtCounts = dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
-                        if ("[:]".equals(txtCounts)) txtCounts = null
-                    }
-                } catch (Throwable ignored) {
-                    // no-op
-                }
-                if (txtCounts == null)
-                    txtCounts = "Failed to account specific stage results"
+                String txtCounts = dynamatrix.toStringStageCountBestEffort(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                 if (!reportedNonSuccess && currentBuild.result in [null, 'SUCCESS']) {
                     // Report success as a badge too, so interrupted incomplete
