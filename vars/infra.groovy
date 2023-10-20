@@ -181,7 +181,19 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
 
     if (dynamatrixGlobalState.enableGithubStatusHighlights) {
         try {
-            Map scmVars = DynamatrixStash.getSCMVars(stashName)
+            Map scmVars = null
+            // If this was a first report before/during checkout, so info about
+            // it was not stashed yet and we had to discover git information
+            // elsewhere - cache that. In particular, this may help "against"
+            // pull requests rebuilt automatically as a "merge" job with an
+            // ephemeral commit (after the target branch marches on due to
+            // other development), and the actual stashed info about the git
+            // workspace checked out and recorded would have a tip commit hash
+            // unknown to github. So we actually prefer that info if available.
+            if (stashName != null)
+                scmVars = DynamatrixStash.getSCMVars(stashName + ":reportGithubStageStatus-orig")
+            if (scmVars == null)
+                scmVars = DynamatrixStash.getSCMVars(stashName)
             def scmCommit = scmVars?.GIT_COMMIT
             def scmURL = scmVars?.GIT_URL
 
@@ -260,6 +272,17 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             if (Utils.isStringNotEmpty(scmURL) && Utils.isStringNotEmpty(scmCommit)) {
                 stepArgs['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: scmURL]
                 stepArgs['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: scmCommit]
+
+                // See comments above
+                if (scmVars == null && stashName != null) {
+                    String scmVarsKey = "${stashName}:reportGithubStageStatus-orig"
+                    scmVars = DynamatrixStash.getSCMVarsPrivate()
+                    if (!(scmVars.containsKey(scmVarsKey))) {
+                        scmVars[scmVarsKey] = [:]
+                    }
+                    scmVars[scmVarsKey].GIT_COMMIT = scmCommit
+                    scmVars[scmVarsKey].GIT_URL = scmUrl
+                }
             }
 
             // e.g. "ci/jenkins/build-status", "integration" or "build"

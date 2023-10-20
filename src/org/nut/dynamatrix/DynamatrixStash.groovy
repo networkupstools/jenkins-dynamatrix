@@ -530,6 +530,14 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
     }
 
     /**
+     * Hack to do allow access to the map for external consumers (e.g. reportGithubStageStatus)
+     * @return
+     */
+    synchronized static Map getSCMVarsPrivate() {
+        return stashSCMVars
+    }
+
+    /**
      * lock: rely on Lockable Resources plugin<br/>
      *
      * TODO: try/catch to do similar via filesystem, e.g. using some
