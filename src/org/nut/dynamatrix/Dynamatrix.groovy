@@ -2649,8 +2649,8 @@ def parallelStages = prepareDynamatrix(
                                         }
 
                                         String msg = "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc, msg,
-                                                'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                        script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                                msg, 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLog())
                                         parstageCompleted = true
                                     }
@@ -2700,7 +2700,7 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     if (!(dsbc.dsbcResultInterim in [null, 'SUCCESS'])) {
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                        script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                                 "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLog())
@@ -2722,7 +2722,7 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     if (!(dsbc.dsbcResultInterim in ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'])) {
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                        script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                                 "'slow build' stage for ${MATRIX_TAG} finished somehow " +
                                                 "with unexpected verdict: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
@@ -2739,7 +2739,7 @@ def parallelStages = prepareDynamatrix(
                                         "'${dsbc.dsbcResultInterim}' and a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                    script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with abortion verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "slowbuild-run/${MATRIX_TAG}",
@@ -2765,7 +2765,7 @@ def parallelStages = prepareDynamatrix(
                                         "aborting the stage-running loop; a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                    script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with unclassified verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "slowbuild-run/${MATRIX_TAG}",

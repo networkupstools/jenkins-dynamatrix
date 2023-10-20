@@ -55,7 +55,7 @@ import org.nut.dynamatrix.*;
     // or something like this for a realistic build
     //dynacfgPipeline.slowBuildDefaultBody = { delegate -> setDelegate(delegate)
     //    withEnvOptional(dynacfgPipeline.defaultTools) {
-    //        unstashCleanSrc(dynacfgPipeline.stashnameSrc)
+    //        unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
     //        buildMatrixCellCI(dynacfgPipeline, dsbc)
     //    }
     //  }
@@ -152,7 +152,7 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         ]
     }
 
-    if (!dynacfgPipeline.stashnameSrc) {
+    if (!dynacfgPipeline.get("stashnameSrc")) {
         dynacfgPipeline.stashnameSrc = 'src-checkedout'
     }
 
@@ -366,13 +366,13 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
  */
                     if (infra.labelCheckoutWorker() != infra.labelDefaultWorker()) {
                         node(infra.labelCheckoutWorker()) {
-                            stashCleanSrc(dynacfgPipeline.stashnameSrc, dynacfgPipeline?.bodyStashCmd)
+                            stashCleanSrc(dynacfgPipeline.get("stashnameSrc"), dynacfgPipeline?.bodyStashCmd)
                             changedFiles = infra.listChangedFiles()
                         }
                     } else {
                         // Already on worker suitable for checkouts,
                         // do not need to block requiring a node here
-                        stashCleanSrc(dynacfgPipeline.stashnameSrc, dynacfgPipeline?.bodyStashCmd)
+                        stashCleanSrc(dynacfgPipeline.get("stashnameSrc"), dynacfgPipeline?.bodyStashCmd)
                         changedFiles = infra.listChangedFiles()
                     }
 
@@ -445,7 +445,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 }
 
                                 dynamatrix.saveDynacfg()
-                                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                                         'Discover slow build matrix',
                                         'PENDING', "slowbuild-discover")
                                 dynacfgPipeline.slowBuild.each { Map sb ->
@@ -598,7 +598,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 if (stagesBinBuild.size() == 0) {
                                     sbSummary = "Did not discover any ${sbSummarySuffix}"
                                     // Limited by 140 chars
-                                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                    infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                                             "Did not discover any " +
                                             "'slow build' configurations over " +
                                             "${countFiltersSeen} filter " +
@@ -607,7 +607,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                             "slowbuild-discover")
                                 } else {
                                     sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
-                                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                    infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                                             "Discovered ${stagesBinBuild.size()} " +
                                             "'slow build' configurations over " +
                                             "${countFiltersSeen} filter " +
@@ -697,7 +697,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         // Walk the plank
                         try {
                             if (stagesShellcheck_arr?.size() > 0) {
-                                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                                         'awaiting shellcheck results',
                                         'PENDING', "shellcheck")
                             }
@@ -705,7 +705,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                             // If we are here - nothing crashed in parallel stages
                             if (stagesShellcheck_arr?.size() > 0) {
-                                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                                infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                                         'shellcheck passed for this commit',
                                         'SUCCESS', "shellcheck")
                             }
@@ -792,7 +792,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 String txt = "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; " +
                         "failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
 
-                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                         txt, "PENDING", "slowbuild-run")
 
                 //removeBadges(id: "Discovery-counter")
@@ -827,7 +827,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             }
             echo "Completed the 'slow build' dynamatrix"
 
-            infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+            infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                     "Analyzing results after the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages)...",
                     ( (tmpRes == null || tmpRes == "SUCCESS") ? "SUCCESS" : "FAILURE"),
                     "slowbuild-run")
@@ -1121,7 +1121,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     }
                 }
 
-                infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                         "Completed the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages)",
                         ( (currentBuild.result == null || currentBuild.result == "SUCCESS") ? "SUCCESS" : "FAILURE"),
                         "slowbuild-run")
@@ -1129,7 +1129,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 if (stagesBinBuild.size() > 0 && "countStages" in txtCounts) {
                     // Try to repeat with a more detailed message that
                     // might be too long for GitHub to accept it
-                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                    infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                             "Completed the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages): " +
                             txtCounts.replaceAll("countStages", ""),
                             ((currentBuild.result == null || currentBuild.result == "SUCCESS") ? "SUCCESS" : "FAILURE"),
