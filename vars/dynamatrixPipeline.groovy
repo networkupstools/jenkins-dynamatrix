@@ -792,6 +792,8 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 String txt = "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; " +
                         "failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
 
+                dynamatrix.countStagesExpected = stagesBinBuild.size() - 1
+                dynamatrix.reportPrefixCountStagesExpected = txt
                 infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                         txt, "PENDING", "slowbuild-run")
 

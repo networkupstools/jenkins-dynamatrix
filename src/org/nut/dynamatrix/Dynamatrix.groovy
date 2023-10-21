@@ -171,6 +171,15 @@ class Dynamatrix implements Cloneable {
         ]
 
     /**
+     * Used for regular updates of reportGithubStageStatus() during the run.
+     */
+    public String reportPrefixCountStagesExpected = null
+    /**
+     * May get used for regular updates of reportGithubStageStatus() during the run.
+     */
+    public Integer countStagesExpected = null
+
+    /**
      * For each {@code stageName} (map key), track its {@link Result}
      * object value (if set by stage payload)
      */
@@ -2574,7 +2583,17 @@ def parallelStages = prepareDynamatrix(
                     }
                     finally {
                         // Also update after ending a matrix cell, successfully or not
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
+                        if (dsbc.thisDynamatrix) {
+                            dsbc.thisDynamatrix.updateProgressBadge(false, rememberClones)
+                            if (dsbc.thisDynamatrix.reportPrefixCountStagesExpected != null) {
+                                script.infra.reportGithubStageStatus(
+                                        dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                        dsbc.thisDynamatrix.reportPrefixCountStagesExpected + ": " +
+                                        dsbc.thisDynamatrix.toStringStageCountBestEffort().replaceAll("countStages", ""),
+                                        "PENDING",
+                                        "slowbuild-run")
+                            }
+                        }
                     }
                 }
             }
