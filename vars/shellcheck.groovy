@@ -103,7 +103,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                         stage("prep for ${MATRIX_TAG}") {
                             sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
                             withEnvOptional(dynacfgPipeline.defaultTools) {
-                                unstashCleanSrc(dynacfgPipeline.stashnameSrc)
+                                unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 
                                 if (dynacfgPipeline?.shellcheck_prepconf != null) {
                                     if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_prepconf)) {
@@ -246,7 +246,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                     currentBuild.result = bigStageResult
                     if (bigStageResult == 'FAILURE') {
                         String msg = "shellcheck for ${MATRIX_TAG} failed in at least one sub-test"
-                        infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc, msg,
+                        infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                 'FAILURE', "shellcheck-${MATRIX_TAG}")
                         msg = "FATAL: ${msg} above"
                         //echo msg

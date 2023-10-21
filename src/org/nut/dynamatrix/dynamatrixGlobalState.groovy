@@ -56,6 +56,7 @@ class dynamatrixGlobalState {
     static Boolean enableDebugSysprint = true
 
     static Boolean enableGithubStatusHighlights = false
+    static Boolean enableDebugTraceGithubStatusHighlights = false
     static {
         try {
             // Is it recognized?

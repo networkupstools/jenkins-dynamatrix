@@ -1,6 +1,8 @@
 // Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
 // package org.nut.dynamatrix;
 
+
+import hudson.model.Result;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
@@ -308,28 +310,34 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
 
             if (cmdPrep != "") {
                 lastLog = cmdPrepLog
+                dsbc?.dsbcResultLogs[lastLog + ".gz"] = null
                 def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
+                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 }
+                dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
             }
         }
 
         if (cmdBuild != "" && shRes == 0) {
             stage('Build' + strMayFail) {
                 lastLog = cmdBuildLog
+                dsbc?.dsbcResultLogs[lastLog + ".gz"] = null
                 def res = sh (script: cmdCommon + cmdBuild, returnStatus: true, label: (cmdCommonLabel + cmdBuildLabel.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
+                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 }
+                dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
             }
         }
 
@@ -355,28 +363,34 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
         if (cmdTest1 != "" && shRes == 0) {
             stage(nameTest1 + strMayFail) {
                 lastLog = cmdTest1Log
+                dsbc?.dsbcResultLogs[lastLog + ".gz"] = null
                 def res = sh (script: cmdCommon + cmdTest1, returnStatus: true, label: (cmdCommonLabel + cmdTest1Label.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
+                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 }
+                dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
             }
         }
 
         if (cmdTest2 != "" && shRes == 0) {
             stage(nameTest2 + strMayFail) {
                 lastLog = cmdTest2Log
+                dsbc?.dsbcResultLogs[lastLog + ".gz"] = null
                 def res = sh (script: cmdCommon + cmdTest2, returnStatus: true, label: (cmdCommonLabel + cmdTest2Label.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
+                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 }
+                dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
             }
         }
 
@@ -534,9 +548,17 @@ done
                 sumtxt += lastErr.replaceFirst(/ for .*$/, '')
                 sumtxt += "<ul>"
                 try {
-                    for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config"]) {
-                        if (fileExists(".ci.${archPrefix}.${F}.log.gz")) {
-                            sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
+                    if (Utils.isMapNotEmpty(dsbc?.dsbcResultLogs)) {
+                        dsbc.dsbcResultLogs.each { String phaseLog, Object phaseVerdict ->
+                            if (fileExists(phaseLog)) {
+                                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${phaseLog}'>${phaseLog}</a> [${phaseVerdict}]</li>"
+                            }
+                        }
+                    } else {
+                        for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config"]) {
+                            if (fileExists(".ci.${archPrefix}.${F}.log.gz")) {
+                                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
+                            }
                         }
                     }
                     def files = findFiles(glob: ".ci.${archPrefix}.*_config*.log.gz")

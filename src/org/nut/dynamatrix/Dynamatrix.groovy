@@ -171,6 +171,15 @@ class Dynamatrix implements Cloneable {
         ]
 
     /**
+     * Used for regular updates of reportGithubStageStatus() during the run.
+     */
+    public String reportPrefixCountStagesExpected = null
+    /**
+     * May get used for regular updates of reportGithubStageStatus() during the run.
+     */
+    public Integer countStagesExpected = null
+
+    /**
      * For each {@code stageName} (map key), track its {@link Result}
      * object value (if set by stage payload)
      */
@@ -563,20 +572,7 @@ class Dynamatrix implements Cloneable {
         if (removeOnly) return true
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
-        String txt = this.toStringStageCountNonZero(recurse)
-        if ("[:]".equals(txt)) txt = null
-        if (!(Utils.isStringNotEmpty(txt))) {
-            txt = this.toStringStageCountDumpNonZero(recurse)
-            if ("[:]".equals(txt)) txt = null
-        }
-        if (!(Utils.isStringNotEmpty(txt))) {
-            txt = this.toStringStageCountDump(recurse)
-            if ("[:]".equals(txt)) txt = null
-        }
-        if (!(Utils.isStringNotEmpty(txt))) {
-            txt = this.toStringStageCount(recurse)
-        }
-        txt = "Build in progress: " + txt
+        String txt = "Build in progress: " + this.toStringStageCountBestEffort(recurse)
         if (this.shouldDebugTrace())
             txt +=
                 " in Dynamatrix@${this.objectID}" +
@@ -694,6 +690,39 @@ class Dynamatrix implements Cloneable {
             return true
         }
         return false
+    }
+
+    /**
+     * Report amounts of stages which have certain verdicts
+     * (best-effort), for reporting. Use one of our algorithms
+     * until something succeeds. Always returns a String (maybe
+     * with an error message that it could not retrieve interesting
+     * info).
+     */
+    public String toStringStageCountBestEffort(Boolean recurse = false) {
+        String txtCounts = null
+        try {
+            txtCounts = this.toStringStageCountNonZero(recurse)
+            if ("[:]".equals(txtCounts)) txtCounts = null
+            if (!(Utils.isStringNotEmpty(txtCounts))) {
+                txtCounts = this.toStringStageCountDumpNonZero(recurse)
+                if ("[:]".equals(txtCounts)) txtCounts = null
+            }
+            if (!(Utils.isStringNotEmpty(txtCounts))) {
+                txtCounts = this.toStringStageCountDump(recurse)
+                if ("[:]".equals(txtCounts)) txtCounts = null
+            }
+            if (!(Utils.isStringNotEmpty(txtCounts))) {
+                txtCounts = this.toStringStageCount(recurse)
+                if ("[:]".equals(txtCounts)) txtCounts = null
+            }
+        } catch (Throwable ignored) {
+            // no-op
+        }
+        if (txtCounts == null)
+            txtCounts = "Failed to account specific stage results"
+
+        return txtCounts
     }
 
     /**
@@ -2194,7 +2223,7 @@ def parallelStages = prepareDynamatrix(
                         }
                     }
 
-                    dsbc.startCount = dsbc.startCount + 1
+                    dsbc.startNewAttempt()
                     if (dsbc.dsbcResultInterim == null) {
                         dsbc.thisDynamatrix?.countStagesIncrement('STARTED', stageName + sbName)
                     } else {
@@ -2208,6 +2237,8 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('RESTARTED', stageName + sbName)
                         dsbc.dsbcResultInterim = null
                     }
+
+                    // Create or update the yellow-box (badge) report when beginning a matrix cell
                     dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                     try {
                         def payloadRes = payloadTmp()
@@ -2228,7 +2259,6 @@ def parallelStages = prepareDynamatrix(
                             }
                         }
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         return payloadRes
                     } catch (FlowInterruptedException fex) {
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
@@ -2265,7 +2295,6 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.dsbcResultInterim = fexres
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(fex)
                         throw fex
                     } catch (AbortException hexA) {
@@ -2330,7 +2359,6 @@ def parallelStages = prepareDynamatrix(
                                 }
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(hexA)
                         throw hexA
                     } catch (RequestAbortedException rae) {
@@ -2377,7 +2405,6 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(rae)
                         throw rae
                     } catch (RemotingSystemException rse) {
@@ -2422,7 +2449,6 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(rse)
                         throw rse
                     } catch (IOException jioe) {
@@ -2472,7 +2498,6 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(jioe)
                         throw jioe
                     } catch (InterruptedException jlie) {
@@ -2515,7 +2540,6 @@ def parallelStages = prepareDynamatrix(
                                 createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
-                        dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         printStackTraceStderrOptional(jlie)
                         throw jlie
                     // TODO // } catch (hudson.plugins.git.GitException gex) { // see https://github.com/networkupstools/jenkins-dynamatrix/issues/19 about evil force-pushes
@@ -2527,6 +2551,7 @@ def parallelStages = prepareDynamatrix(
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName)
 
+                        // FIXME? Keep the report here (another in finally) for good measure?
                         dsbc.thisDynamatrix?.updateProgressBadge(false, rememberClones)
                         dsbc.dsbcResultInterim = 'Throwable'
 
@@ -2555,6 +2580,20 @@ def parallelStages = prepareDynamatrix(
 
                         printStackTraceStderrOptional(t)
                         throw t
+                    }
+                    finally {
+                        // Also update after ending a matrix cell, successfully or not
+                        if (dsbc.thisDynamatrix) {
+                            dsbc.thisDynamatrix.updateProgressBadge(false, rememberClones)
+                            if (dsbc.thisDynamatrix.reportPrefixCountStagesExpected != null) {
+                                script.infra.reportGithubStageStatus(
+                                        dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                        dsbc.thisDynamatrix.reportPrefixCountStagesExpected + ": " +
+                                        dsbc.thisDynamatrix.toStringStageCountBestEffort().replaceAll("countStages", ""),
+                                        "PENDING",
+                                        "slowbuild-run")
+                            }
+                        }
                     }
                 }
             }
@@ -2629,8 +2668,9 @@ def parallelStages = prepareDynamatrix(
                                         }
 
                                         String msg = "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc, msg,
-                                                'FAILURE', "slowbuild-run/${MATRIX_TAG}")
+                                        script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                                msg, 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                                dsbc.getLatestDsbcResultLog())
                                         parstageCompleted = true
                                     }
                                     break
@@ -2679,9 +2719,10 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     if (!(dsbc.dsbcResultInterim in [null, 'SUCCESS'])) {
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                        script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                                 "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}",
-                                                'FAILURE', "slowbuild-run/${MATRIX_TAG}")
+                                                'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                                dsbc.getLatestDsbcResultLog())
                                     }
 
                                     parstageCompleted = true
@@ -2700,10 +2741,11 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     if (!(dsbc.dsbcResultInterim in ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'])) {
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                        script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                                 "'slow build' stage for ${MATRIX_TAG} finished somehow " +
                                                 "with unexpected verdict: ${dsbc.dsbcResultInterim}",
-                                                'FAILURE', "slowbuild-run/${MATRIX_TAG}")
+                                                'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                                dsbc.getLatestDsbcResultLog())
                                     }
 
                                     parstageCompleted = true
@@ -2716,10 +2758,11 @@ def parallelStages = prepareDynamatrix(
                                         "'${dsbc.dsbcResultInterim}' and a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                    script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with abortion verdict: ${dsbc.dsbcResultInterim}",
-                                            'FAILURE', "slowbuild-run/${MATRIX_TAG}")
+                                            'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                            dsbc.getLatestDsbcResultLog())
 
                                     parstageCompleted = true
                                     break
@@ -2741,10 +2784,11 @@ def parallelStages = prepareDynamatrix(
                                         "aborting the stage-running loop; a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    script.infra.reportGithubStageStatus(dynacfgOrig.stashnameSrc,
+                                    script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with unclassified verdict: ${dsbc.dsbcResultInterim}",
-                                            'FAILURE', "slowbuild-run/${MATRIX_TAG}")
+                                            'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                            dsbc.getLatestDsbcResultLog())
 
                                     // DO NOT continue to loop
                                     parstageCompleted = true

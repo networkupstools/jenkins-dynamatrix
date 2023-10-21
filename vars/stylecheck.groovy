@@ -23,12 +23,12 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 
 def call(Map dynacfgPipeline = [:]) {
     if (dynacfgPipeline?.stylecheck) {
-        infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+        infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                 'awaiting stylecheck results',
                 'PENDING', "stylecheck")
         node(infra.labelDocumentationWorker()) {
             withEnvOptional(dynacfgPipeline?.defaultTools) {
-                unstashCleanSrc(dynacfgPipeline.stashnameSrc)
+                unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 
                 if (dynacfgPipeline?.stylecheck_prepconf != null) {
                     if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_prepconf)) {
@@ -52,11 +52,11 @@ def call(Map dynacfgPipeline = [:]) {
 
                 try {
                     sh """ ${dynacfgPipeline.stylecheck} """
-                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                    infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                             'stylecheck passed for this commit',
                             'SUCCESS', "stylecheck")
                 } catch (Throwable t) {
-                    infra.reportGithubStageStatus(dynacfgPipeline.stashnameSrc,
+                    infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                             'stylecheck failed for this commit',
                             'FAILURE', "stylecheck")
                     throw t
