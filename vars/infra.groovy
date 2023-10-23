@@ -176,9 +176,12 @@ Set<String> listChangedFiles() {
  * sources. See also https://docs.github.com/rest/commits/statuses#create-a-commit-status
  */
 def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null, String backrefUrl = null) {
-    if (dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights
-    || (dynamatrixGlobalState.enableDebugTrace && dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights != false)
-    ) {
+    boolean doDebug = (
+            dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights
+            || (dynamatrixGlobalState.enableDebugTrace && dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights != false)
+    )
+
+    if (doDebug) {
         echo "[DEBUG] reportGithubStageStatus called; dynamatrixGlobalState.enableGithubStatusHighlights=${dynamatrixGlobalState.enableGithubStatusHighlights}, stashName=${stashName}, message=${message}, state=${state}, messageContext=${messageContext}, backrefUrl=${backrefUrl}"
     }
 
@@ -218,6 +221,10 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                 SCMSource src = SCMSource.SourceByItem.findSource(currentBuild.rawBuild.getParent());
                 SCMRevision revision = (src != null ? SCMRevisionAction.getRevision(src, currentBuild.rawBuild) : null);
 
+                if (doDebug) {
+                    echo ("[DEBUG] reportGithubStageStatus discovering from SCMSource=${Utils.castString(src)} and SCMRevision=${Utils.castString(revision)}")
+                }
+
                 if (src != null && revision != null
                 && revision instanceof PullRequestSCMRevision
                 && src instanceof GitHubSCMSource
@@ -236,6 +243,10 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
 
             if (scmURL == null && scm != null && scm instanceof GitSCM) {
                 for(UserRemoteConfig c : scm.getUserRemoteConfigs()) {
+                    if (doDebug) {
+                        echo ("[DEBUG] reportGithubStageStatus discovering from scm.getUserRemoteConfigs()): ${Utils.castString(c)}")
+                    }
+
                     if (!("dynamatrix" in c.getUrl())) {
                         scmURL = c.getUrl()
                         //scmCommit = ... ?
@@ -306,9 +317,7 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             if (Utils.isStringNotEmpty(backrefUrl))
                 stepArgs['statusBackrefSource'] = [$class: "ManuallyEnteredBackrefSource", backref: backrefUrl]
 
-            if (dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights
-            || (dynamatrixGlobalState.enableDebugTrace && dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights != false)
-            ) {
+            if (doDebug) {
                 echo "[DEBUG] reportGithubStageStatus() with GitHubCommitStatusSetter step:\n\t" +
                         "stashName=${Utils.castString(stashName)}\n\t" +
                         "stashNameUsed=${Utils.castString(stashNameUsed)}\n\t" +
@@ -322,9 +331,7 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
         } catch (Throwable t) {
             echo "WARNING: Tried to use GitHubCommitStatusSetter but got an exception; is github-plugin installed and configured?"
 
-            if (dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights
-            || (dynamatrixGlobalState.enableDebugTrace && dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights != false)
-            ) {
+            if (doDebug) {
                 echo t.toString()
             }
         }
