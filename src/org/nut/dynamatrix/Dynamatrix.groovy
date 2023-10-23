@@ -2632,7 +2632,6 @@ def parallelStages = prepareDynamatrix(
 
                 parstageCode = {
                     def parstageCompleted = false
-                    String buildArtifactUrlPrefixSlashed = "${env.BUILD_URL?.replaceLast('/', '')}/artifact/"
                     while (!parstageCompleted) {
                         try {
                             if (enableDebugSysprint)
@@ -2671,7 +2670,7 @@ def parallelStages = prepareDynamatrix(
                                         String msg = "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
                                         script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                                 msg, 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                                buildArtifactUrlPrefixSlashed + dsbc.getLatestDsbcResultLog())
+                                                dsbc.getLatestDsbcResultLogUrl())
                                         parstageCompleted = true
                                     }
                                     break
@@ -2723,7 +2722,7 @@ def parallelStages = prepareDynamatrix(
                                         script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
                                                 "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                                buildArtifactUrlPrefixSlashed + dsbc.getLatestDsbcResultLog())
+                                                dsbc.getLatestDsbcResultLogUrl())
                                     }
 
                                     parstageCompleted = true
@@ -2746,7 +2745,7 @@ def parallelStages = prepareDynamatrix(
                                                 "'slow build' stage for ${MATRIX_TAG} finished somehow " +
                                                 "with unexpected verdict: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                                buildArtifactUrlPrefixSlashed + dsbc.getLatestDsbcResultLog())
+                                                dsbc.getLatestDsbcResultLogUrl())
                                     }
 
                                     parstageCompleted = true
@@ -2763,7 +2762,7 @@ def parallelStages = prepareDynamatrix(
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with abortion verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                            buildArtifactUrlPrefixSlashed + dsbc.getLatestDsbcResultLog())
+                                            dsbc.getLatestDsbcResultLogUrl())
 
                                     parstageCompleted = true
                                     break
@@ -2789,7 +2788,7 @@ def parallelStages = prepareDynamatrix(
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with unclassified verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                            buildArtifactUrlPrefixSlashed + dsbc.getLatestDsbcResultLog())
+                                            dsbc.getLatestDsbcResultLogUrl())
 
                                     // DO NOT continue to loop
                                     parstageCompleted = true
