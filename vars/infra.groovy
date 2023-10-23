@@ -179,7 +179,7 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
     if (dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights
     || (dynamatrixGlobalState.enableDebugTrace && dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights != false)
     ) {
-        echo "[DEBUG] reportGithubStageStatus called; dynamatrixGlobalState.enableGithubStatusHighlights=${dynamatrixGlobalState.enableGithubStatusHighlights}, stashName=${stashName}, message=${message}, state=${state}, messageContext=${messageContext}"
+        echo "[DEBUG] reportGithubStageStatus called; dynamatrixGlobalState.enableGithubStatusHighlights=${dynamatrixGlobalState.enableGithubStatusHighlights}, stashName=${stashName}, message=${message}, state=${state}, messageContext=${messageContext}, backrefUrl=${backrefUrl}"
     }
 
     if (dynamatrixGlobalState.enableGithubStatusHighlights) {
