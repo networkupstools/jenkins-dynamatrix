@@ -184,6 +184,7 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
 
     if (dynamatrixGlobalState.enableGithubStatusHighlights) {
         try {
+            String stashNameUsed = null
             Map scmVars = null
             // If this was a first report before/during checkout, so info about
             // it was not stashed yet and we had to discover git information
@@ -193,10 +194,14 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             // other development), and the actual stashed info about the git
             // workspace checked out and recorded would have a tip commit hash
             // unknown to github. So we actually prefer that info if available.
-            if (stashName != null)
-                scmVars = DynamatrixStash.getSCMVars(stashName + ":reportGithubStageStatus-orig")
-            if (scmVars == null)
-                scmVars = DynamatrixStash.getSCMVars(stashName)
+            if (stashName != null) {
+                stashNameUsed = stashName + ":reportGithubStageStatus-orig"
+                scmVars = DynamatrixStash.getSCMVars(stashNameUsed)
+            }
+            if (scmVars == null) {
+                stashNameUsed = stashName
+                scmVars = DynamatrixStash.getSCMVarsstashNameUsed)
+            }
             def scmCommit = scmVars?.GIT_COMMIT
             def scmURL = scmVars?.GIT_URL
 
@@ -285,6 +290,7 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                     }
                     scmVars[scmVarsKey].GIT_COMMIT = scmCommit
                     scmVars[scmVarsKey].GIT_URL = scmUrl
+                    stashNameUsed = scmVarsKey
                 }
             }
 
@@ -305,6 +311,7 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             ) {
                 echo "[DEBUG] reportGithubStageStatus() with GitHubCommitStatusSetter step:\n\t" +
                         "stashName=${Utils.castString(stashName)}\n\t" +
+                        "stashNameUsed=${Utils.castString(stashNameUsed)}\n\t" +
                         "scmVars=${Utils.castString(scmVars)}\n\t" +
                         "scmURL=${Utils.castString(scmURL)}\n\t" +
                         "scmCommit=${Utils.castString(scmCommit)}\n\t" +
