@@ -214,6 +214,29 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             // The cached SCMVars only become known after the
             // appearance of that git workspace, but we send
             // some statuses before that.
+/*
+    // INVESTIGATION HACKS
+    def j = Jenkins.instance.getItemByFullName("nut/nut/fightwarn")
+    println "job: ${j}"
+    def build = j.getBuildByNumber(117)
+
+    println build
+
+    def commitHashForBuild(build) {
+      def scmAction = null
+      build?.actions.each { action ->
+        println "action: <${action?.getClass()}>'${action}'"
+        if (action instanceof jenkins.scm.api.SCMRevisionAction)
+            scmAction = action
+      }
+      println "scmAction: <${scmAction?.getClass()}>'${scmAction}'"
+      println "scmAction.revision: <${scmAction?.revision?.getClass()}>'${scmAction?.revision}'"
+      println "scmAction.revision.hash: <${scmAction?.revision?.hash?.getClass()}>'${scmAction?.revision?.hash}'"
+      return scmAction?.revision?.hash
+    }
+
+    println commitHashForBuild(build)
+*/
             if (scmVars == null) {
                 // At least if there's just one SCMSource attached
                 // to the job definition, we can do this (TOCHECK:
@@ -257,6 +280,14 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             if (scmCommit == null) {
                 scmCommit = env?.GIT_COMMIT
             }
+
+/*
+            // TODO: consider pr/1979/head or pull/1979/head - note
+            //  this may march on while the build is running?
+            if (scmCommit == null && env?.BRANCH_NAME ==~ /^PR-[0-9]+$/ ) {
+                scmCommit = env?.GIT_COMMIT
+            }
+*/
 
             if (scmURL == null) {
                 scmURL = env?.GIT_URL
