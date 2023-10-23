@@ -3,11 +3,13 @@
 
 import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
+import hudson.plugins.git.util.BuildData;
 import jenkins.scm.api.SCMRevision;
 import jenkins.scm.api.SCMRevisionAction;
 import jenkins.scm.api.SCMSource;
 import org.jenkinsci.plugins.github_branch_source.GitHubSCMSource;
 import org.jenkinsci.plugins.github_branch_source.PullRequestSCMRevision;
+import org.jenkinsci.plugins.workflow.steps.scm.MultiSCMRevisionState;
 import org.nut.dynamatrix.DynamatrixStash;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.Utils;
@@ -273,6 +275,72 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                     if (!("dynamatrix" in c.getUrl())) {
                         scmURL = c.getUrl()
                         //scmCommit = ... ?
+                    }
+                }
+
+                if (scmURL != null && doDebug) {
+                    echo ("[DEBUG] reportGithubStageStatus discovered for scmURL from scm.getUserRemoteConfigs()): ${scmURL}")
+                }
+            }
+
+            if (scmCommit == null) {
+                Set scmRevisionActions = []
+                Set scmBuildDataActions = []
+                currentBuild?.rawBuild?.actions?.each { def action ->
+                    if (action instanceof SCMRevisionAction) {
+                        // action: <class jenkins.scm.api.SCMRevisionAction>'jenkins.scm.api.SCMRevisionAction@4d7f0122'
+                        def hash = action?.revision?.hash
+                        if (hash)
+                            scmRevisionActions << hash
+                        return
+                    }
+
+                    if (action instanceof BuildData) {
+                        // Be sure to use the tested application project repo, not the dynamatrix library one!
+                        // action: <class hudson.plugins.git.util.BuildData>'hudson.plugins.git.util.BuildData@1e28ec57[scmName=,remoteUrls=[https://github.com/networkupstools/jenkins-dynamatrix.git],buildsByBranchName={fightwarn=Build #117 of Revision 324a60a8c515e12e246b3e2dd6006a2e24b92163 (fightwarn), gitcache=Build #73 of Revision 37befb64cf2c1050ee52e953b31f66131b3cdf50 (gitcache), master=Build #109 of Revision 1ebcfae07883a03683f6fd4f9e4f7b57af874b33 (master)},lastBuild=Build #117 of Revision 324a60a8c515e12e246b3e2dd6006a2e24b92163 (fightwarn)]'
+                        // action: <class hudson.plugins.git.util.BuildData>'hudson.plugins.git.util.BuildData@ba407b9a[scmName=,remoteUrls=[https://github.com/networkupstools/nut.git],buildsByBranchName={fightwarn=Build #117 of Revision 971f53ef95cb275bae22a691106dff867bdb4c2c (fightwarn)},lastBuild=Build #117 of Revision 971f53ef95cb275bae22a691106dff867bdb4c2c (fightwarn)]'
+                        if (!(action.hasBeenBuilt(null)))
+                            return
+
+                        Boolean wrongRepo = false
+                        action?.getRemoteUrls()?.each {
+                            if (wrongRepo) return
+                            if (it?.toLowerCase() ==~ /.*dynamatrix.*/)
+                                wrongRepo = true
+                            if (scmURL != null && it?.toLowerCase() != scmURL.toLowerCase())
+                                wrongRepo = true
+                        }
+                        if (wrongRepo)
+                            return
+
+                        def hash = action?.lastBuild?.SHA1?.toString()
+                        if (hash)
+                            scmBuildDataActions << hash
+                        return
+                    }
+
+                    // CAN'T USE (without reflection): package-private final class MultiSCMRevisionState extends hudson.scm.SCMRevisionState
+                    // action: <class org.jenkinsci.plugins.workflow.steps.scm.MultiSCMRevisionState>'MultiSCMRevisionState{git https://github.com/networkupstools/jenkins-dynamatrix.git=hudson.scm.SCMRevisionState$None@739f26cc, git https://github.com/networkupstools/nut.git=hudson.scm.SCMRevisionState$None@739f26cc}'
+
+                    // action: <class io.jenkins.plugins.forensics.git.reference.GitCommitsRecord>'Commits in 'nut/nut/fightwarn #117': 5 (latest: 324a60a8c515e12e246b3e2dd6006a2e24b92163)'
+                    // action: <class io.jenkins.plugins.forensics.git.reference.GitCommitsRecord>'Commits in 'nut/nut/fightwarn #117': 200 (latest: 971f53ef95cb275bae22a691106dff867bdb4c2c)'
+
+                    // TOTHINK: Can we tap into discoveries of the competitors? :)
+                    // action: <class io.jenkins.plugins.checks.github.GitHubChecksAction>'io.jenkins.plugins.checks.github.GitHubChecksAction@366e9872'
+                    // action: <class org.jenkinsci.plugins.githubautostatus.BuildStatusAction>'org.jenkinsci.plugins.githubautostatus.BuildStatusAction@2b24af81'
+
+                    if (Utils.isListNotEmpty(scmBuildDataActions) && scmBuildDataActions.size() == 1) {
+                        scmCommit = scmBuildDataActions[0]
+                    } else {
+                        if (Utils.isListNotEmpty(scmRevisionActions) && scmRevisionActions.size() == 1) {
+                            scmCommit = scmRevisionActions[0]
+                        }
+                    }
+
+                    if (doDebug) {
+                        echo ("[DEBUG] reportGithubStageStatus discovered for scmCommit: scmBuildDataActions=${scmBuildDataActions} scmRevisionActions=${scmRevisionActions} " +
+                                (scmCommit == null ? "and could not pick exactly one" : "and picked ${scmCommit}")
+                        )
                     }
                 }
             }
