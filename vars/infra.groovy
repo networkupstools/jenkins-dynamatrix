@@ -205,8 +205,8 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                 stashNameUsed = stashName
                 scmVars = DynamatrixStash.getSCMVarsstashNameUsed)
             }
-            def scmCommit = scmVars?.GIT_COMMIT
-            def scmURL = scmVars?.GIT_URL
+            String scmCommit = scmVars?.GIT_COMMIT
+            String scmURL = scmVars?.GIT_URL
 
             // Most of the time cached info is present, except
             // early in the job run - while the git checkout
