@@ -399,7 +399,7 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
                         scmVars[scmVarsKey] = [:]
                     }
                     scmVars[scmVarsKey].GIT_COMMIT = scmCommit
-                    scmVars[scmVarsKey].GIT_URL = scmUrl
+                    scmVars[scmVarsKey].GIT_URL = scmURL
                     stashNameUsed = scmVarsKey
                 }
             }
