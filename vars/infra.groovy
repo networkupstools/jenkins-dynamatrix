@@ -205,7 +205,7 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
             }
             if (scmVars == null) {
                 stashNameUsed = stashName
-                scmVars = DynamatrixStash.getSCMVarsstashNameUsed)
+                scmVars = DynamatrixStash.getSCMVars(stashNameUsed)
             }
             String scmCommit = scmVars?.GIT_COMMIT
             String scmURL = scmVars?.GIT_URL
