@@ -299,7 +299,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      *  matrix-cell step, for notifications to be even more relevant.
      *
      * @return  Filename of the log. Caller should prepend the
-     *          build artifact location etc. to make an URL of it.
+     *          build artifact location etc. to make an URL of
+     *          it, with a prefix like this:
+     *          <pre>String buildArtifactUrlPrefixSlashed = env.BUILD_URL?.replaceLast('/', '') + "/artifact/"</pre>
      */
     @NonCPS
     String getLatestDsbcResultLog() {
@@ -311,6 +313,22 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             }
         }
         return s
+    }
+
+    /**
+     * Returns an URL to expected artifact with the log per
+     * {@link #getLatestDsbcResultLog} or null in case of
+     * problems resolving some sub-strings for such URL.
+     * @return String (URL or null)
+     */
+    @NonCPS
+    String getLatestDsbcResultLogUrl() {
+        String buildUrl = this.script?.env?.BUILD_URL
+        String logFile = getLatestDsbcResultLog()
+        if (Utils.isStringNotEmpty(buildUrl) && Utils.isStringNotEmpty(logFile)) {
+            return buildUrl.replaceLast('/', '') + "/artifact/" + logFile
+        }
+        return null
     }
 
     /**

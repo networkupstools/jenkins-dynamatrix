@@ -2100,6 +2100,30 @@ def parallelStages = prepareDynamatrix(
                 }
             }
 
+            // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+            // NOTE: vars/prepareDynamatrix passes a null dynacfgOrig for its
+            // work (to avoid further re-customizations here)!
+            String stashName = dynacfgOrig?.get("stashnameSrc")
+            if (stashName == null) {
+                // TODO: Parameterize the magic name (dynacfgPipeline) somehow
+                try {
+                    stashName = dynacfgPipeline?.get("stashnameSrc")
+                } catch (Throwable ignored) {}
+                if (stashName == null) {
+                    try {
+                        stashName = this.script?.dynacfgPipeline?.get("stashnameSrc")
+                    } catch (Throwable ignored) {}
+                }
+                if (stashName == null) {
+                    try {
+                        Closure x = {return dynacfgPipeline.get("stashnameSrc")}
+                        x = x.dehydrate().rehydrate([:], this.script, this.script)
+                        x.resolveStrategy = Closure.DELEGATE_FIRST
+                        stashName = x.call()
+                    } catch (Throwable ignored) {}
+                }
+            }
+
             if (debugMilestonesDetails
             //|| debugMilestones
             //|| debugTrace
@@ -2586,8 +2610,7 @@ def parallelStages = prepareDynamatrix(
                         if (dsbc.thisDynamatrix) {
                             dsbc.thisDynamatrix.updateProgressBadge(false, rememberClones)
                             if (dsbc.thisDynamatrix.reportPrefixCountStagesExpected != null) {
-                                script.infra.reportGithubStageStatus(
-                                        dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                script.infra.reportGithubStageStatus(stashName,
                                         dsbc.thisDynamatrix.reportPrefixCountStagesExpected + ": " +
                                         dsbc.thisDynamatrix.toStringStageCountBestEffort().replaceAll("countStages", ""),
                                         "PENDING",
@@ -2668,9 +2691,9 @@ def parallelStages = prepareDynamatrix(
                                         }
 
                                         String msg = "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                        script.infra.reportGithubStageStatus(stashName,
                                                 msg, 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                                dsbc.getLatestDsbcResultLog())
+                                                dsbc.getLatestDsbcResultLogUrl())
                                         parstageCompleted = true
                                     }
                                     break
@@ -2719,10 +2742,10 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     if (!(dsbc.dsbcResultInterim in [null, 'SUCCESS'])) {
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                        script.infra.reportGithubStageStatus(stashName,
                                                 "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                                dsbc.getLatestDsbcResultLog())
+                                                dsbc.getLatestDsbcResultLogUrl())
                                     }
 
                                     parstageCompleted = true
@@ -2741,11 +2764,11 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     if (!(dsbc.dsbcResultInterim in ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'])) {
-                                        script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                        script.infra.reportGithubStageStatus(stashName,
                                                 "'slow build' stage for ${MATRIX_TAG} finished somehow " +
                                                 "with unexpected verdict: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                                dsbc.getLatestDsbcResultLog())
+                                                dsbc.getLatestDsbcResultLogUrl())
                                     }
 
                                     parstageCompleted = true
@@ -2758,11 +2781,11 @@ def parallelStages = prepareDynamatrix(
                                         "'${dsbc.dsbcResultInterim}' and a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                    script.infra.reportGithubStageStatus(stashName,
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with abortion verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                            dsbc.getLatestDsbcResultLog())
+                                            dsbc.getLatestDsbcResultLogUrl())
 
                                     parstageCompleted = true
                                     break
@@ -2784,11 +2807,11 @@ def parallelStages = prepareDynamatrix(
                                         "aborting the stage-running loop; a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    script.infra.reportGithubStageStatus(dynacfgOrig.get("stashnameSrc"),  // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
+                                    script.infra.reportGithubStageStatus(stashName,
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with unclassified verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "slowbuild-run/${MATRIX_TAG}",
-                                            dsbc.getLatestDsbcResultLog())
+                                            dsbc.getLatestDsbcResultLogUrl())
 
                                     // DO NOT continue to loop
                                     parstageCompleted = true
