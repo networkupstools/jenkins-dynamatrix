@@ -2103,15 +2103,15 @@ def parallelStages = prepareDynamatrix(
             // TODO: Fix into DSBC copy of dynacfg for mixed-config jobs?
             // NOTE: vars/prepareDynamatrix passes a null dynacfgOrig for its
             // work (to avoid further re-customizations here)!
-            String stashName = dynacfgOrig.get("stashnameSrc")
+            String stashName = dynacfgOrig?.get("stashnameSrc")
             if (stashName == null) {
                 // TODO: Parameterize the magic name (dynacfgPipeline) somehow
                 try {
-                    stashName = dynacfgPipeline.get("stashnameSrc")
+                    stashName = dynacfgPipeline?.get("stashnameSrc")
                 } catch (Throwable ignored) {}
                 if (stashName == null) {
                     try {
-                        stashName = script.dynacfgPipeline.get("stashnameSrc")
+                        stashName = this.script?.dynacfgPipeline?.get("stashnameSrc")
                     } catch (Throwable ignored) {}
                 }
                 if (stashName == null) {
