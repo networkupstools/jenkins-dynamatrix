@@ -192,6 +192,10 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
         String cmdTest1Log = ""
         String cmdTest2Log = ""
 
+        // Prepare for a new clean slate
+        // FIXME? Assumes one DSBC is used for one build scenario
+        dsbc?.dsbcResultLogs?.clear()
+
         String cmdCommon = """ """
         String cmdPrep = ""
         String cmdBuild = ""
