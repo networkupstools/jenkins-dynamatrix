@@ -555,17 +555,23 @@ done
                     sumtxt += msg + ": "
                 sumtxt += lastErr.replaceFirst(/ for .*$/, '')
                 sumtxt += "<ul>"
+                boolean lastLogPosted = false
                 try {
                     if (Utils.isMapNotEmpty(dsbc?.dsbcResultLogs)) {
                         dsbc.dsbcResultLogs.each { String phaseLog, Object phaseVerdict ->
                             if (fileExists(phaseLog)) {
                                 sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${phaseLog}'>${phaseLog}</a> [${phaseVerdict}]</li>"
+                                if (phaseLog in [lastLog, lastLog + ".gz"])
+                                    lastLogPosted = true
                             }
                         }
                     } else {
                         for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config"]) {
-                            if (fileExists(".ci.${archPrefix}.${F}.log.gz")) {
-                                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/.ci.${archPrefix}.${F}.log.gz'>.ci.${archPrefix}.${F}.log.gz</a></li>"
+                            String phaseLog = ".ci.${archPrefix}.${F}.log.gz"
+                            if (fileExists(phaseLog)) {
+                                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${phaseLog}'>${phaseLog}</a></li>"
+                                if (phaseLog in [lastLog, lastLog + ".gz"])
+                                    lastLogPosted = true
                             }
                         }
                     }
@@ -576,7 +582,9 @@ done
                         }
                     }
                 } catch (Throwable ignored) {} // no-op, possibly some iteration/fileExists problem
-                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
+
+                if (!lastLogPosted)
+                    sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
 
                 createSummary(text: sumtxt, icon: suming_prefix + sumimg + suming_suffix)
             } catch (Throwable ignored) {} // no-op, possibly missing badge plugin
