@@ -563,19 +563,27 @@ done
                     for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config", "config.nut_report_feature"]) {
                         phaseLogs << ".ci.${archPrefix}.${F}.log.gz".toString()
                     }
+
                     def files = findFiles(glob: ".ci.${archPrefix}.*_config*.log.gz")
                     if (Utils.isListNotEmpty(files)) {
                         files.each { FileWrapper FF ->
                             phaseLogs << FF.name
                         }
                     }
+
                     if (Utils.isMapNotEmpty(dsbc?.dsbcResultLogs)) {
-                        phaseLogs += dsbc.dsbcResultLogs.KeySet
+                        dsbc.dsbcResultLogs.each { String phaseLog, Object phaseVerdict ->
+                            phaseLogs << phaseLog
+                        }
                     }
+
+                    String buildArtifactUrlPrefix = "${env.BUILD_URL?.replaceLast('/', '')}/artifact"
                     phaseLogs.each { String phaseLog ->
+                        if (!Utils.isStringNotEmpty(phaseLog))
+                            return // continue
                         Object phaseVerdict = dsbc?.dsbcResultLogs?.get(phaseLog)
                         if (fileExists(phaseLog)) {
-                            sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${phaseLog}'>${phaseLog}</a>"
+                            sumtxt += "<li><a href='${buildArtifactUrlPrefix}/${phaseLog}'>${phaseLog}</a>"
                             if (Utils.isStringNotEmpty(phaseVerdict))
                                 sumtxt += " [${phaseVerdict}]"
                             sumtxt += "</li>"
