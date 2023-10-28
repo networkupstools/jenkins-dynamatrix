@@ -47,7 +47,7 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
                     if (env?.GCCVER) {
                         id += "-${env.GCCVER}"
                         try {
-                            if (env?.GCCVER?.replaceAll(/\..*$/, '')?.toInteger() < 4) {
+                            if (env?.GCCVER?.replaceFirst(/\..*$/, '')?.toInteger() < 4) {
                                 compilerTool = 'gcc3'
                             }
                         } catch (Throwable ignored) {}
@@ -70,7 +70,7 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
                 id = "GCC-${env.GCCVER}"
                 compilerTool = 'gcc'
                 try {
-                    if (env?.GCCVER?.replaceAll(/\..*$/, '')?.toInteger() < 4) {
+                    if (env?.GCCVER?.replaceFirst(/\..*$/, '')?.toInteger() < 4) {
                         compilerTool = 'gcc3'
                     }
                 } catch (Throwable ignored) {}
@@ -577,7 +577,7 @@ done
                         }
                     }
 
-                    String buildArtifactUrlPrefix = "${env.BUILD_URL?.replaceLast('/', '')}/artifact"
+                    String buildArtifactUrlPrefix = "${env.BUILD_URL?.replaceFirst(/\/+$/, '')}/artifact"
                     phaseLogs.each { String phaseLog ->
                         if (!Utils.isStringNotEmpty(phaseLog))
                             return // continue

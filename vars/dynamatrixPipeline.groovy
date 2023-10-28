@@ -1088,7 +1088,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                         if (mapres.size() > 0) {
                             // No trailing slash - ensured below
-                            String buildArtifactUrlPrefix = "${env.BUILD_URL?.replaceLast('/', '')}/artifact"
+                            String buildArtifactUrlPrefix = "${env.BUILD_URL?.replaceFirst(/\/+$/, '')}/artifact"
                             mapres.each { Result r, Set<String> sns ->
                                 txt = "<nl>Result: ${r.toString()} (${sns.size()}):\n"
                                 sns.each { String sn ->

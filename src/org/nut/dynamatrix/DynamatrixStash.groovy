@@ -690,10 +690,10 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 refrepoName = stashName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
                 if (!refrepoName) {
                     // e.g. "nut/nut/master" or "nut/nut/PR-683" for MBR pipelines
-                    refrepoName = script?.env?.JOB_NAME?.replaceLast(/\\/PR-[0-9]+$/, '')
+                    refrepoName = script?.env?.JOB_NAME?.replaceFirst(/\\/PR-[0-9]+$/, '')
                 }
                 if (!refrepoName) {
-                    refrepoName = scmURL.replaceLast(/\\.git$/, '')
+                    refrepoName = scmURL.replaceFirst(/\\.git$/, '')
                     String rOld = null
                     while (rOld != refrepoName) {
                         rOld = refrepoName
