@@ -319,8 +319,9 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
+                } else {
+                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
                 }
-                dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
             }
         }
 
@@ -336,8 +337,9 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
+                } else {
+                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
                 }
-                dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
             }
         }
 
@@ -372,8 +374,9 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
+                } else {
+                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
                 }
-                dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
             }
         }
 
@@ -389,8 +392,9 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
+                } else {
+                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
                 }
-                dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
             }
         }
 
