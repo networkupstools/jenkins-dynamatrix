@@ -176,6 +176,7 @@ Set<String> listChangedFiles() {
  * https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github/status/GitHubCommitStatusSetter.java
  * and https://github.com/jenkinsci/github-branch-source-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github_branch_source/GitHubBuildStatusNotification.java#L337
  * sources. See also https://docs.github.com/rest/commits/statuses#create-a-commit-status
+ * https://www.jenkins.io/doc/pipeline/steps/github/#stepclass-githubcommitstatussetter-set-github-commit-status-universal
  */
 def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null, String backrefUrl = null) {
     boolean doDebug = (
