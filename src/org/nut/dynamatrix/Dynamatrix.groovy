@@ -2742,10 +2742,14 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     if (!(dsbc.dsbcResultInterim in [null, 'SUCCESS'])) {
-                                        script.infra.reportGithubStageStatus(stashName,
+                                        try {
+                                            script.infra.reportGithubStageStatus(stashName,
                                                 "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
+                                        } catch (Throwable tt) {
+                                            script.echo "[DEBUG]: reportGithubStageStatus() failed with: ${tt}"
+                                        }
                                     }
 
                                     parstageCompleted = true
@@ -2764,11 +2768,15 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     if (!(dsbc.dsbcResultInterim in ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'])) {
-                                        script.infra.reportGithubStageStatus(stashName,
+                                        try {
+                                            script.infra.reportGithubStageStatus(stashName,
                                                 "'slow build' stage for ${MATRIX_TAG} finished somehow " +
                                                 "with unexpected verdict: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
+                                        } catch (Throwable tt) {
+                                            script.echo "[DEBUG]: reportGithubStageStatus() failed with: ${tt}"
+                                        }
                                     }
 
                                     parstageCompleted = true
@@ -2781,11 +2789,15 @@ def parallelStages = prepareDynamatrix(
                                         "'${dsbc.dsbcResultInterim}' and a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    script.infra.reportGithubStageStatus(stashName,
+                                    try {
+                                        script.infra.reportGithubStageStatus(stashName,
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with abortion verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "slowbuild-run/${MATRIX_TAG}",
                                             dsbc.getLatestDsbcResultLogUrl())
+                                    } catch (Throwable tt) {
+                                        script.echo "[DEBUG]: reportGithubStageStatus() failed with: ${tt}"
+                                    }
 
                                     parstageCompleted = true
                                     break
@@ -2807,11 +2819,15 @@ def parallelStages = prepareDynamatrix(
                                         "aborting the stage-running loop; a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    script.infra.reportGithubStageStatus(stashName,
+                                    try {
+                                        script.infra.reportGithubStageStatus(stashName,
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with unclassified verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "slowbuild-run/${MATRIX_TAG}",
                                             dsbc.getLatestDsbcResultLogUrl())
+                                    } catch (Throwable tt) {
+                                        script.echo "[DEBUG]: reportGithubStageStatus() failed with: ${tt}"
+                                    }
 
                                     // DO NOT continue to loop
                                     parstageCompleted = true
