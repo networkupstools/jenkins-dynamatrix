@@ -589,7 +589,7 @@ done
                         Object phaseVerdict = dsbc?.dsbcResultLogs?.get(phaseLog)
                         if (fileExists(phaseLog)) {
                             sumtxt += "<li><a href='${buildArtifactUrlPrefix}/${phaseLog}'>${phaseLog}</a>"
-                            if (Utils.isStringNotEmpty(phaseVerdict))
+                            if (Utils.isStringNotEmpty(phaseVerdict?.toString()))
                                 sumtxt += " [${phaseVerdict}]"
                             sumtxt += "</li>"
                             if (phaseLog in [lastLog + ".gz", lastLog])
