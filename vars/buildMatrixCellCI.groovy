@@ -3,6 +3,7 @@
 
 
 import hudson.model.Result;
+import org.jenkinsci.plugins.pipeline.utility.steps.fs.FileWrapper;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
@@ -557,28 +558,29 @@ done
                 sumtxt += "<ul>"
                 boolean lastLogPosted = false
                 try {
-                    if (Utils.isMapNotEmpty(dsbc?.dsbcResultLogs)) {
-                        dsbc.dsbcResultLogs.each { String phaseLog, Object phaseVerdict ->
-                            if (fileExists(phaseLog)) {
-                                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${phaseLog}'>${phaseLog}</a> [${phaseVerdict}]</li>"
-                                if (phaseLog in [lastLog, lastLog + ".gz"])
-                                    lastLogPosted = true
-                            }
-                        }
-                    } else {
-                        for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config"]) {
-                            String phaseLog = ".ci.${archPrefix}.${F}.log.gz"
-                            if (fileExists(phaseLog)) {
-                                sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${phaseLog}'>${phaseLog}</a></li>"
-                                if (phaseLog in [lastLog, lastLog + ".gz"])
-                                    lastLogPosted = true
-                            }
-                        }
+                    // Keep Set order of mention
+                    LinkedHashSet<String> phaseLogs = []
+                    for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config", "config.nut_report_feature"]) {
+                        phaseLogs << ".ci.${archPrefix}.${F}.log.gz".toString()
                     }
                     def files = findFiles(glob: ".ci.${archPrefix}.*_config*.log.gz")
                     if (Utils.isListNotEmpty(files)) {
-                        files.each { def FF -> // FileWrapper FF ->
-                            sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${FF.name}'>${FF.name}</a></li>"
+                        files.each { FileWrapper FF ->
+                            phaseLogs << FF.name
+                        }
+                    }
+                    if (Utils.isMapNotEmpty(dsbc?.dsbcResultLogs)) {
+                        phaseLogs += dsbc.dsbcResultLogs.KeySet
+                    }
+                    phaseLogs.each { String phaseLog ->
+                        Object phaseVerdict = dsbc?.dsbcResultLogs?.get(phaseLog)
+                        if (fileExists(phaseLog)) {
+                            sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${phaseLog}'>${phaseLog}</a>"
+                            if (Utils.isStringNotEmpty(phaseVerdict))
+                                sumtxt += " [${phaseVerdict}]"
+                            sumtxt += "</li>"
+                            if (phaseLog in [lastLog + ".gz", lastLog])
+                                lastLogPosted = true
                         }
                     }
                 } catch (Throwable ignored) {} // no-op, possibly some iteration/fileExists problem
