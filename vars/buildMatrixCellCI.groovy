@@ -314,17 +314,17 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
 
             if (cmdPrep != "") {
                 lastLog = cmdPrepLog
-                dsbc?.dsbcResultLogs[lastLog + ".gz"] = null
+                dsbc?.dsbcResultLogs[cmdPrepLog + ".gz"] = null
                 def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
-                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    dsbc?.dsbcResultLogs[cmdPrepLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 } else {
-                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
+                    dsbc?.dsbcResultLogs[cmdPrepLog + ".gz"] = Result.SUCCESS
                 }
             }
         }
@@ -332,17 +332,17 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
         if (cmdBuild != "" && shRes == 0) {
             stage('Build' + strMayFail) {
                 lastLog = cmdBuildLog
-                dsbc?.dsbcResultLogs[lastLog + ".gz"] = null
+                dsbc?.dsbcResultLogs[cmdBuildLog + ".gz"] = null
                 def res = sh (script: cmdCommon + cmdBuild, returnStatus: true, label: (cmdCommonLabel + cmdBuildLabel.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
-                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    dsbc?.dsbcResultLogs[cmdBuildLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 } else {
-                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
+                    dsbc?.dsbcResultLogs[cmdBuildLog + ".gz"] = Result.SUCCESS
                 }
             }
         }
@@ -369,17 +369,17 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
         if (cmdTest1 != "" && shRes == 0) {
             stage(nameTest1 + strMayFail) {
                 lastLog = cmdTest1Log
-                dsbc?.dsbcResultLogs[lastLog + ".gz"] = null
+                dsbc?.dsbcResultLogs[cmdTest1Log + ".gz"] = null
                 def res = sh (script: cmdCommon + cmdTest1, returnStatus: true, label: (cmdCommonLabel + cmdTest1Label.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
-                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    dsbc?.dsbcResultLogs[cmdTest1Log + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 } else {
-                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
+                    dsbc?.dsbcResultLogs[cmdTest1Log + ".gz"] = Result.SUCCESS
                 }
             }
         }
@@ -387,17 +387,17 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
         if (cmdTest2 != "" && shRes == 0) {
             stage(nameTest2 + strMayFail) {
                 lastLog = cmdTest2Log
-                dsbc?.dsbcResultLogs[lastLog + ".gz"] = null
+                dsbc?.dsbcResultLogs[cmdTest2Log + ".gz"] = null
                 def res = sh (script: cmdCommon + cmdTest2, returnStatus: true, label: (cmdCommonLabel + cmdTest2Label.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
-                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    dsbc?.dsbcResultLogs[cmdTest2Log + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 } else {
-                    dsbc?.dsbcResultLogs[lastLog + ".gz"] = Result.SUCCESS
+                    dsbc?.dsbcResultLogs[cmdTest2Log + ".gz"] = Result.SUCCESS
                 }
             }
         }
