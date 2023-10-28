@@ -315,17 +315,18 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
 
             if (cmdPrep != "") {
                 lastLog = cmdPrepLog
-                dsbc?.dsbcResultLogs[cmdPrepLog + ".gz"] = null
+                String phaseLog = lastLog + ".gz"
+                dsbc?.dsbcResultLogs[phaseLog] = null
                 def res = sh (script: cmdCommon + cmdPrep, returnStatus: true, label: (cmdCommonLabel + cmdPrepLabel.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
-                    dsbc?.dsbcResultLogs[cmdPrepLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    dsbc?.dsbcResultLogs[phaseLog] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Prep'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 } else {
-                    dsbc?.dsbcResultLogs[cmdPrepLog + ".gz"] = Result.SUCCESS
+                    dsbc?.dsbcResultLogs[phaseLog] = Result.SUCCESS
                 }
             }
         }
@@ -333,17 +334,18 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
         if (cmdBuild != "" && shRes == 0) {
             stage('Build' + strMayFail) {
                 lastLog = cmdBuildLog
-                dsbc?.dsbcResultLogs[cmdBuildLog + ".gz"] = null
+                String phaseLog = lastLog + ".gz"
+                dsbc?.dsbcResultLogs[phaseLog] = null
                 def res = sh (script: cmdCommon + cmdBuild, returnStatus: true, label: (cmdCommonLabel + cmdBuildLabel.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
-                    dsbc?.dsbcResultLogs[cmdBuildLog + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    dsbc?.dsbcResultLogs[phaseLog] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Build'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 } else {
-                    dsbc?.dsbcResultLogs[cmdBuildLog + ".gz"] = Result.SUCCESS
+                    dsbc?.dsbcResultLogs[phaseLog] = Result.SUCCESS
                 }
             }
         }
@@ -370,17 +372,18 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
         if (cmdTest1 != "" && shRes == 0) {
             stage(nameTest1 + strMayFail) {
                 lastLog = cmdTest1Log
-                dsbc?.dsbcResultLogs[cmdTest1Log + ".gz"] = null
+                String phaseLog = lastLog + ".gz"
+                dsbc?.dsbcResultLogs[phaseLog] = null
                 def res = sh (script: cmdCommon + cmdTest1, returnStatus: true, label: (cmdCommonLabel + cmdTest1Label.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
-                    dsbc?.dsbcResultLogs[cmdTest1Log + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    dsbc?.dsbcResultLogs[phaseLog] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 } else {
-                    dsbc?.dsbcResultLogs[cmdTest1Log + ".gz"] = Result.SUCCESS
+                    dsbc?.dsbcResultLogs[phaseLog] = Result.SUCCESS
                 }
             }
         }
@@ -388,17 +391,18 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
         if (cmdTest2 != "" && shRes == 0) {
             stage(nameTest2 + strMayFail) {
                 lastLog = cmdTest2Log
-                dsbc?.dsbcResultLogs[cmdTest2Log + ".gz"] = null
+                String phaseLog = lastLog + ".gz"
+                dsbc?.dsbcResultLogs[phaseLog] = null
                 def res = sh (script: cmdCommon + cmdTest2, returnStatus: true, label: (cmdCommonLabel + cmdTest2Label.trim()))
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
-                    dsbc?.dsbcResultLogs[cmdTest2Log + ".gz"] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    dsbc?.dsbcResultLogs[phaseLog] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test2'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
                 } else {
-                    dsbc?.dsbcResultLogs[cmdTest2Log + ".gz"] = Result.SUCCESS
+                    dsbc?.dsbcResultLogs[phaseLog] = Result.SUCCESS
                 }
             }
         }
@@ -564,6 +568,7 @@ done
                         phaseLogs << ".ci.${archPrefix}.${F}.log.gz".toString()
                     }
 
+                    // Patterns prepared above for sub-dir logs (out-of-tree builds, some tools):
                     def files = findFiles(glob: ".ci.${archPrefix}.*_config*.log.gz")
                     if (Utils.isListNotEmpty(files)) {
                         files.each { FileWrapper FF ->
@@ -579,7 +584,7 @@ done
 
                     String buildArtifactUrlPrefix = "${env.BUILD_URL?.replaceFirst(/\/+$/, '')}/artifact"
                     phaseLogs.each { String phaseLog ->
-                        if (!Utils.isStringNotEmpty(phaseLog))
+                        if (!(Utils.isStringNotEmpty(phaseLog)))
                             return // continue
                         Object phaseVerdict = dsbc?.dsbcResultLogs?.get(phaseLog)
                         if (fileExists(phaseLog)) {
