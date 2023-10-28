@@ -590,7 +590,7 @@ done
                         if (fileExists(phaseLog)) {
                             sumtxt += "<li><a href='${buildArtifactUrlPrefix}/${phaseLog}'>${phaseLog}</a>"
                             if (Utils.isStringNotEmpty(phaseVerdict?.toString()))
-                                sumtxt += " [${phaseVerdict}]"
+                                sumtxt += " <b><i>[${phaseVerdict}]</i></b>"
                             sumtxt += "</li>"
                             if (phaseLog in [lastLog + ".gz", lastLog])
                                 lastLogPosted = true
