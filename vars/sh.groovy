@@ -21,6 +21,8 @@
  *
  * See NUT::docs/ci-farm-lxc-setup.txt for setup details.
  */
+
+import hudson.AbortException;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
 def ciWrapSh(def script, Map shargs = [:]) {
@@ -36,7 +38,30 @@ ${shcmd}
 __CI_WRAP_SH_EOF__
 """
     }
-    return script.sh(shargs)
+
+    try {
+        return script.sh(shargs)
+    } catch (Throwable t) {
+        if (t.toString().contains(/script returned exit code 255/)
+        && "${env?.CI_WRAP_SH}".contains("ssh")
+        ) {
+            // Retry with a simple test to confirm an (SSH) networking error
+            String shOut = script.sh(
+                    "(echo true | LANG=C LC_ALL=C ${env.CI_WRAP_SH}) 2>&1",
+                    returnStdout: true)?.trim()
+
+            for (String clue in ["Connection reset by peer", "Permission denied"] ) {
+                if (shOut?.contains(clue)) {
+                    def hexA = new AbortException("ciWrapSh: agent connection problem (${t.toString()}): ${clue}")
+                    hexA.initCause(t.getCause())
+                    throw hexA
+                }
+            }
+        }
+
+        // Some other error case, keep as is
+        throw t
+    }
 }
 
 def ciWrapSh(def script, String shcmd) {

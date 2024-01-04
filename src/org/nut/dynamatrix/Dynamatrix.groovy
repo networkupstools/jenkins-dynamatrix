@@ -2336,7 +2336,19 @@ def parallelStages = prepareDynamatrix(
                             } else {
                                 // Involve localization?..
                                 switch (hexA.toString()) {
+                                    case ~/.*ciWrapSh: agent connection problem.*/ :
+                                        // Thrown by/via our vars/sh.groovy step:
+                                        // networking faults - something to retry
+                                        // (hopefully with another agent, or after
+                                        // this one's SSH etc. self-heals):
+                                        dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                                        dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
+                                        break
+
                                     case ~/.*missing workspace.*/ :
+                                        // For now treat these SCM or workspace
+                                        // instantiation issues similar to
+                                        // networking faults - something to retry:
                                         dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                         dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                                         break
