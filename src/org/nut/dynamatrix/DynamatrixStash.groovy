@@ -502,10 +502,23 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         return checkoutCleanSrc(script, stashName, scmCommit, untieRefrepoNow, scmbody)
     } // checkoutCleanSrcNamed()
 
-    /** Optional closure can fully detail how the code is checked out */
-    static def stashCleanSrc(def script, String stashName, Closure scmbody = null) {
+    /**
+     * Optional closure can fully detail how the code is checked out.<br/>
+     *
+     * Optional scmCommit specifies the revision to check out
+     * (default null follows what the pipeline job was launched for).<br/>
+     *
+     * After {@code checkoutCleanSrcNamed()} creates a named {@code stash()}
+     * of all files (including hidden, etc.) in the current directory.<br/>
+     *
+     * NOTE: uses lock step and so relies on Lockable Resources plugin<br/>
+     *
+     * @see #checkoutCleanSrcNamed(Object, String, String, Boolean, Closure)
+     * @see #checkoutCleanSrc(Object, String, String, Boolean, Closure)
+     */
+    static def stashCleanSrc(def script, String stashName, String scmCommit = null, Closure scmbody = null) {
         script.lock (resource: "dynamatrix-stash:${stashName}:${script?.env?.BUILD_TAG}", quantity: 1) {
-            def res = checkoutCleanSrcNamed(script, stashName, true, scmbody)
+            def res = checkoutCleanSrcNamed(script, stashName, scmCommit, true, scmbody)
 
             // Be sure to get also "hidden" files like .* in Unix customs => .git*
             // so avoid default exclude patterns
