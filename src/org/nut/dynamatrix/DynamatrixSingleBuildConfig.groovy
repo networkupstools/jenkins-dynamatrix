@@ -335,31 +335,56 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      * Return the set of (not-null and unique) values represented
      * by whichever is populated of the: build agent labels, virtual
      * labels, and envvars (but not the CLI options). Any composite
-     * labels are split into separate entries. Resulting set is not
-     * "guaranteed" to only contain key=value strings, but is expected
-     * to for practical purposes (consumer should check it if important;
-     * may contain sets of further strings, keys may theoretically be
-     * not-strings, etc.)
+     * labels (but not envvars) are split into separate entries.
+     * The resulting set is not "guaranteed" to only contain
+     * {@code key=value} strings, but is expected to for practical
+     * purposes (consumer should check it if important; technically
+     * may contain sets of further strings, keys may theoretically
+     * be not-strings, etc.)<br/>
+     *
+     * NOTE: envvars (e.g. from {@code dynamatrixAxesCommonEnv} entries
+     * like {@code CONFIG_OPTS=--with-all --without-docs} are fair game
+     * to be interpreted as a single {@code CONFIG_OPTS} environment
+     * variable which becomes multiple tokens after shell substitution.
+     * A quoted {@code CFLAGS="-O2 -g -m64 -Wall"} should remain a
+     * single token in Dynamatrix-derived code (may be split into many
+     * later on, by {@code configure} scripts or {@code make} programs).
      */
     @NonCPS
     public Set getKVSet() {
         // All labels of the world, unite!
-        Set labelSet1 = (buildLabelSet + virtualLabelSet + envvarSet).flatten()
+        Set labelSet1 = (buildLabelSet + virtualLabelSet).flatten()
+        // Pre-clean
         labelSet1.remove(null)
         labelSet1.remove("")
-        Set labelSet = []
+
+        // Use (matrix-provided) non-trivial envvar entries "as is"
+        Set labelSet = envvarSet.flatten()
+        // Pre-clean
+        labelSet.remove(null)
+        labelSet.remove("")
+
+        // Populate with parsed label expressions
         labelSet1.each() {def label ->
             // Split composite labels like "COMPILER=CLANG CLANGVER=9", if any
             // and avoid removing from inside the loop over same Set
-            if (Utils.isStringNotEmpty(label) && label =~ /\s+/ && !(label =~ /^[^=\s]+=["']/)) { // do not split intentional multi-token values like CFLAGS="-Wall -Werror...'
-                Set<String> tmpSet = ((String)label).split(/\s/)
-                tmpSet.remove(null)
-                tmpSet.remove("")
-                labelSet += tmpSet
-            } else {
-                labelSet.add(label)
+            if (Utils.isStringNotEmpty(label?.toString()?.trim())) {
+                // do not split intentional multi-token values like CFLAGS="-Wall -Werror...'
+                // containing whitespace but encased into quotes (added as is below)
+                if (label =~ /\s+/ && !(label =~ /^[^=\s]+=["']/)) {
+                    // Split multi-tokens
+                    Set<String> tmpSet = ((String)label).split(/\s/)
+                    tmpSet.remove(null)
+                    tmpSet.remove("")
+                    labelSet += tmpSet
+                } else {
+                    // Use as is
+                    labelSet.add(label)
+                }
             }
         }
+
+        // Post-clean
         labelSet.remove(null)
         labelSet.remove("")
 
