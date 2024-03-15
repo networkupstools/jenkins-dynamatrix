@@ -362,7 +362,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         labelSet1.remove("")
 
         // Use (matrix-provided) non-trivial envvar entries "as is"
-        Set labelSet = envvarSet.flatten()
+        Set labelSet = envvarSet?.flatten() ?: []
         // Pre-clean
         labelSet.remove(null)
         labelSet.remove("")
