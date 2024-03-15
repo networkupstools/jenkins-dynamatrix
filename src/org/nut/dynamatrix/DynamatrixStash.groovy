@@ -795,12 +795,12 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     // maintained by the agent process; disabled for now:
                     //script.withEnv(["GIT_REFERENCE_REPO_DIR="]) {
                         // check if git is there at all (error out if can't init)
-                        script.sh (label:"Ensuring git workspace presence",
+                        script.sh (label:"Ensuring git workspace presence in refrepo path",
                             script: "if [ -e .git ] || grep -qw bare config ; then true ; else git init --bare && git config gc.auto 0 || exit ; fi; test -e .git || grep -qw bare config")
 
                         // check if commit is there (non-fatal)
                         // TODO: generic SCM revision check? Specific GitSCM trick?
-                        ret = script.sh (label:"Checking git commit presence for ${scmCommit}",
+                        ret = script.sh (label:"Checking git commit presence for ${scmCommit} in refrepo path",
                             returnStatus: true,
                             script: "git log -1 '${scmCommit}'")
 
@@ -809,7 +809,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
                             // Checkout from SCM URL (may fail if
                             // e.g. build agent has no internet)...
-                            ret = script.sh (label:"Trying direct git fetch from URL ${scmURL} for ${scmCommit}",
+                            ret = script.sh (label:"Trying direct git fetch from URL ${scmURL} for ${scmCommit} into refrepo path",
                                 returnStatus: true,
                                 script: """
 git remote -v | grep -w '${scmURL}' || git remote add "`LANG=C TZ=UTC LC_ALL=C date -u | tr ' :,' '_'`_\$\$" '${scmURL}' || exit
