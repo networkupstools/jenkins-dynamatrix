@@ -177,6 +177,11 @@ class DynamatrixStash {
 
         String refrepo = getGitRefrepoDir(script)
         if (refrepo != null) {
+            // TODO: If we have a refrepo AND scmCommit (as hash),
+            //  check if the specified commit is known in the reference
+            //  and if yes - just check it out from there (e.g. fudge
+            //  the upstream repo to refrepo, then fudge back to URL).
+            //    if (scmCommit ==~ /^[0-9a-fA-F]{40}$/) { ... }
             if (scmParams.containsKey('extensions')) {
                 def seenClone = false
                 def seenSubmodules = false
@@ -282,6 +287,11 @@ class DynamatrixStash {
                                 if (extension.hasProperty('reference') && extension.reference instanceof String
                                 &&  extension.reference.trim() != refrepo.trim()
                                 ) {
+                                    // TODO: If we have a refrepo AND scmCommit (as hash),
+                                    //  check if the specified commit is known in the reference
+                                    //  and if yes - just check it out from there (e.g. fudge
+                                    //  the upstream repo to refrepo, then fudge back to URL).
+                                    //    if (scmCommit ==~ /^[0-9a-fA-F]{40}$/) { ... }
                                     def originalReference = extension.reference
                                     script.print('replacing reference: ' +
                                         originalReference +
