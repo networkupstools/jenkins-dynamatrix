@@ -410,9 +410,9 @@ class DynamatrixStash {
                 && scm.containsKey('$class')
                 && scm['$class'].toString() in ['GitSCM']
             ) {
-                res = checkoutGit(script, (Map)scm)
+                res = checkoutGit(script, (Map)scm, scmCommit)
             } else {
-                res = checkoutSCM(script, scm)
+                res = checkoutSCM(script, scm, scmCommit)
                 //res = script.checkout (scm)
             }
             if (stashName != null) {
