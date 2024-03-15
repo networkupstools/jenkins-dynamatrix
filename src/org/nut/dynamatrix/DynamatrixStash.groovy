@@ -363,12 +363,42 @@ class DynamatrixStash {
         return clonedScm
     } // cloneSCM()
 
+    /** Variant of {@code checkoutCleanSrc()} with {@code scmCommit=null}
+     *  and {@code untieRefrepoNow=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Closure) */
     static def checkoutCleanSrc(def script, String stashName, Closure scmbody) {
-        return checkoutCleanSrc(script, stashName, true, scmbody)
+        return checkoutCleanSrc(script, stashName, null, true, scmbody)
     } // checkoutCleanSrc() wrapper
 
-    /** Optional closure can fully detail how the code is checked out */
-    static def checkoutCleanSrc(def script, String stashName = null, Boolean untieRefrepoNow = true, Closure scmbody = null) {
+    /** Variant of {@code checkoutCleanSrc()} with {@code untieRefrepoNow=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Closure) */
+    static def checkoutCleanSrc(def script, String stashName, String scmCommit, Closure scmbody) {
+        return checkoutCleanSrc(script, stashName, scmCommit, true, scmbody)
+    } // checkoutCleanSrc() wrapper
+
+    /** Variant of {@code checkoutCleanSrc()} with {@code scmCommit=null}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Closure) */
+    static def checkoutCleanSrc(def script, String stashName, Boolean untieRefrepoNow, Closure scmbody) {
+        return checkoutCleanSrc(script, stashName, null, untieRefrepoNow, scmbody)
+    } // checkoutCleanSrc() wrapper
+
+    /**
+     * Optional stashName allows to cache the SCM operation result.<br/>
+     *
+     * Optional scmCommit can constrain which source revision gets used
+     * (helpful to continue checking the originally requested PR source
+     * even if the source branch gets changed during CI build).<br/>
+     *
+     * Optional untieRefrepoNow is useful for initial checkouts headed
+     * to stashing and is not desired for subsequent checkouts on build
+     * agents.<br/>
+     *
+     * Optional closure can fully detail how the code is checked out.<br/>
+     *
+     * @see #checkoutCleanSrcNamed
+     * @see #checkoutCleanSrcRefrepoWS
+     */
+    static def checkoutCleanSrc(def script, String stashName = null, String scmCommit = null, Boolean untieRefrepoNow = true, Closure scmbody = null) {
         deleteWS(script)
 
         def scm = cloneSCM(script)
@@ -435,22 +465,41 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
         } // node isUnix(), can sh
     } // untieRefrepo()
 
+    /** Variant of {@code checkoutCleanSrcNamed()} with with {@code scmCommit=null}
+     *  and {@code untieRefrepoNow=true}.
+     *  @see #checkoutCleanSrcNamed(Object, String, String, Boolean, Closure) */
     static def checkoutCleanSrcNamed(def script, String stashName, Closure scmbody = null) {
-        return checkoutCleanSrcNamed(script, stashName, true, scmbody)
+        return checkoutCleanSrcNamed(script, stashName, null, true, scmbody)
+    } // checkoutCleanSrcNamed() wrapper
+
+    /** Variant of {@code checkoutCleanSrcNamed()} with {@code untieRefrepoNow=true}.
+     *  @see #checkoutCleanSrcNamed(Object, String, String, Boolean, Closure) */
+    static def checkoutCleanSrcNamed(def script, String stashName, String scmCommit, Closure scmbody = null) {
+        return checkoutCleanSrcNamed(script, stashName, scmCommit, true, scmbody)
+    } // checkoutCleanSrcNamed() wrapper
+
+    /** Variant of {@code checkoutCleanSrcNamed()} with {@code scmCommit=null}.
+     *  @see #checkoutCleanSrcNamed(Object, String, String, Boolean, Closure) */
+    static def checkoutCleanSrcNamed(def script, String stashName, Boolean untieRefrepoNow, Closure scmbody = null) {
+        return checkoutCleanSrcNamed(script, stashName, null, untieRefrepoNow, scmbody)
     } // checkoutCleanSrcNamed() wrapper
 
     /**
-     * Optional closure can fully detail how the code is checked out.<br/>
-     * Remember last used method for this stashName,
-     * we may have to replay it on some workers
+     * Optional closure can fully detail <b>how</b> the code is checked out.<br/>
+     *
+     * Here we remember the last used method for this stashName, since
+     * we may have to replay it on some workers.<br/>
+     *
+     * Then the arguments are passed to
+     * {@link #checkoutCleanSrc(Object, String, String, Boolean, Closure)}
      */
-    static def checkoutCleanSrcNamed(def script, String stashName, Boolean untieRefrepoNow, Closure scmbody = null) {
+    static def checkoutCleanSrcNamed(def script, String stashName, String scmCommit, Boolean untieRefrepoNow, Closure scmbody = null) {
         // Different name because groovy gets lost with parameter count
         // when some can be defaulted.
         script.echo "Saving scmbody for ${stashName}: ${Utils.castString(scmbody)}"
         stashCode[stashName] = scmbody
         script.echo "Calling actual checkoutCleanSrc()"
-        return checkoutCleanSrc(script, stashName, untieRefrepoNow, scmbody)
+        return checkoutCleanSrc(script, stashName, scmCommit, untieRefrepoNow, scmbody)
     } // checkoutCleanSrcNamed()
 
     /** Optional closure can fully detail how the code is checked out */
@@ -552,6 +601,8 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
      * so naming a lock by agent name alone may be folly.
      * See also:
      *   https://stackoverflow.com/questions/36581015/accessing-the-current-jenkins-build-in-groovy-script
+     *
+     * @see #checkoutCleanSrc(Object, String, String, Boolean, Closure)
      */
     synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName) {
         def scm = cloneSCM(script)
@@ -787,14 +838,14 @@ exit \$RET
                 // They specified "scm-ws", so now they get this:
                 if (refrepoPath == null) {
                     script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' did not determine a refrepoPath cached in agent workspace: repo '${scmURL}' commit '${scmCommit}'"
-                    //ret = checkoutCleanSrc(script, stashCode[stashName])
+                    //ret = checkoutCleanSrc(script, stashCode[stashName], scmCommit)
                     ret = false
                 } else {
                     script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
                         // checkout with refrepo
                         script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' with refrepoPath='${refrepoPath}': repo '${scmURL}' commit '${scmCommit}'"
                         // "false" says to not "untie" refrepo in the build agent:
-                        ret = checkoutCleanSrc(script, stashCode[stashName], false)
+                        ret = checkoutCleanSrc(script, stashCode[stashName], scmCommit, false)
                     } // withEnv for checking/populating original workspace
                       // just using refrepo (if usable in the end)
                 }
