@@ -90,6 +90,9 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      * <pre>
      *   ["CFLAGS=-stdc=gnu99", "CXXFLAGS=-stdcxx=g++99", "--without-docs"]
      * </pre>
+     * WARNING: Not currently used by common build cell logic (autotools or
+     * ci_build), and better-targeted envvars like {@code CONFIG_OPTS} set
+     * via {@link DynamatrixConfig#dynamatrixAxesCommonEnv} are recommended.
      */
     public Set clioptSet
 

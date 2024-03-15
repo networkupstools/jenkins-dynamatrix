@@ -23,8 +23,9 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
     // extract CONFIG_ENVVARS set in shell back to groovy and shell again.
 
     // TODO: Pass into build additional hints that may be in dsbc, e.g.
-    // clioptSet - but gotta decide to which tool they should go and when
-    // (e.g. configure script takes some opts, ci_build normally does not)
+    //  clioptSet - but gotta decide to which tool they should go and when
+    //  (e.g. the configure script takes some opts for normal build and for a
+    //  distcheck it can take some others, while ci_build normally takes none)
 
     // for analysis part after the build
     String compilerTool = null
