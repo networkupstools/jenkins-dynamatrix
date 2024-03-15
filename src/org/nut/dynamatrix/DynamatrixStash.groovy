@@ -861,14 +861,14 @@ exit \$RET
                 // They specified "scm-ws", so now they get this:
                 if (refrepoPath == null) {
                     script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' did not determine a refrepoPath cached in agent workspace: repo '${scmURL}' commit '${scmCommit}'"
-                    //ret = checkoutCleanSrc(script, stashCode[stashName], scmCommit)
+                    //ret = checkoutCleanSrc(script, stashName, stashCode[stashName])
                     ret = false
                 } else {
                     script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
                         // checkout with refrepo
                         script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' with refrepoPath='${refrepoPath}': repo '${scmURL}' commit '${scmCommit}'"
                         // "false" says to not "untie" refrepo in the build agent:
-                        ret = checkoutCleanSrc(script, stashCode[stashName], scmCommit, false)
+                        ret = checkoutCleanSrc(script, stashName, false, stashCode[stashName])
                     } // withEnv for checking/populating original workspace
                       // just using refrepo (if usable in the end)
                 }
@@ -923,7 +923,7 @@ exit \$RET
                     // We error out otherwise, same as would for unstash().
                     // Do benefit from local reference repo, if any (untie=false)
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrc"
-                    if (checkoutCleanSrc(script, stashCode[stashName], false))
+                    if (checkoutCleanSrc(script, stashName, false, stashCode[stashName]))
                         return
 
                     // on error, fall through to unstash
@@ -942,7 +942,7 @@ exit \$RET
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
                     if (checkoutCleanSrcRefrepoWS(script, stashName) == false) {
                         script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but failed on node '${script?.env?.NODE_NAME}'. Falling back to 'scm'."
-                        if (checkoutCleanSrc(script, stashCode[stashName], false))
+                        if (checkoutCleanSrc(script, stashName, false, stashCode[stashName]))
                             return
                     } else {
                         return
