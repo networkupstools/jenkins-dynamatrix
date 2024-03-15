@@ -538,7 +538,11 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
     }
 
     /**
-     * lock: rely on Lockable Resources plugin<br/>
+     * Wraps specifically Git checkouts (via GitSCM class or a script.scm
+     * Map implying one) to use a locally available Git reference repo
+     * to speed up checkouts (possibly forgo networking to SCM server).<br/>
+     *
+     * NOTE: uses lock step and so relies on Lockable Resources plugin<br/>
      *
      * TODO: try/catch to do similar via filesystem, e.g. using some
      *  file with the name of the build in that directory.<br/>
