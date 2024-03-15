@@ -861,14 +861,16 @@ exit \$RET
                 // They specified "scm-ws", so now they get this:
                 if (refrepoPath == null) {
                     script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' did not determine a refrepoPath cached in agent workspace: repo '${scmURL}' commit '${scmCommit}'"
-                    //ret = checkoutCleanSrc(script, stashName, stashCode[stashName])
+                    //ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), stashCode[stashName])
                     ret = false
                 } else {
                     script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
                         // checkout with refrepo
                         script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' with refrepoPath='${refrepoPath}': repo '${scmURL}' commit '${scmCommit}'"
-                        // "false" says to not "untie" refrepo in the build agent:
-                        ret = checkoutCleanSrc(script, stashName, false, stashCode[stashName])
+                        // "false" says to not "untie" refrepo in the build agent;
+                        // we only request specific scmCommit if it is a known Git
+                        // SHA hash (not a symbolic branch/tag/PR/... name):
+                        ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), false, stashCode[stashName])
                     } // withEnv for checking/populating original workspace
                       // just using refrepo (if usable in the end)
                 }
