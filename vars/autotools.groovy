@@ -77,7 +77,9 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('distcheck')) {
-            dynacfgPipeline.buildPhases['distcheck'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval \${CONFIG_ENVVARS} time \${MAKE} \${MAKE_OPTS} distcheck DISTCHECK_CONFIGURE_FLAGS="\${CONFIG_OPTS}" )"""
+            // Note the use of optional quoting for CONFIG_OPTS expansion
+            // to avoid an existing but empty token in Makefile processing:
+            dynacfgPipeline.buildPhases['distcheck'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval \${CONFIG_ENVVARS} time \${MAKE} \${MAKE_OPTS} distcheck DISTCHECK_CONFIGURE_FLAGS=\${CONFIG_OPTS:+\\"\$CONFIG_OPTS\\"} )"""
         }
     }
 
