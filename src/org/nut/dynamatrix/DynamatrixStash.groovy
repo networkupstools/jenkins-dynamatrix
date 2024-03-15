@@ -136,7 +136,7 @@ class DynamatrixStash {
 
         // Final answer
         return null
-    }
+    } // getGitRefrepoDir()
 
     /**
      * Helper to produce a git checkout with the parameter array
@@ -222,7 +222,7 @@ class DynamatrixStash {
         def s = script.checkout(scmParams)
         stashSCMVars[scmParams] = s
         return s
-    }
+    } // checkoutGit()
 
     /**
      * Similar to {@link #checkoutGit}(), but for an SCM class; inspired by
@@ -321,7 +321,7 @@ class DynamatrixStash {
         def s = script.checkout(scmParams)
         stashSCMVars[scmParams] = s
         return s
-    }
+    } // checkoutSCM()
 
     /**
      * Per https://plugins.jenkins.io/workflow-scm-step/ the common
@@ -361,11 +361,11 @@ class DynamatrixStash {
         }
 
         return clonedScm
-    }
+    } // cloneSCM()
 
     static def checkoutCleanSrc(def script, String stashName, Closure scmbody) {
         return checkoutCleanSrc(script, stashName, true, scmbody)
-    }
+    } // checkoutCleanSrc() wrapper
 
     /** Optional closure can fully detail how the code is checked out */
     static def checkoutCleanSrc(def script, String stashName = null, Boolean untieRefrepoNow = true, Closure scmbody = null) {
@@ -433,11 +433,11 @@ git status || true
 echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under: `find . | wc -l`" || true
 """
         } // node isUnix(), can sh
-    }
+    } // untieRefrepo()
 
     static def checkoutCleanSrcNamed(def script, String stashName, Closure scmbody = null) {
         return checkoutCleanSrcNamed(script, stashName, true, scmbody)
-    }
+    } // checkoutCleanSrcNamed() wrapper
 
     /**
      * Optional closure can fully detail how the code is checked out.<br/>
@@ -515,7 +515,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 """
         }
         return res
-    }
+    } // unstashScriptedSrc()
 
     /**
      * Get a clone of an SCM Vars collection for specified stashName key.
@@ -807,7 +807,7 @@ exit \$RET
         }
 
         return ret
-    }
+    } // checkoutCleanSrcRefrepoWS()
 
     static def unstashCleanSrc(def script, String stashName) {
         deleteWS(script)
