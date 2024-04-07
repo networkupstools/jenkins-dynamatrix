@@ -53,12 +53,15 @@ java {
 repositories {
     maven (url = "https://repo.jenkins-ci.org/releases/")
     maven (url = "https://repo.jenkins-ci.org/incrementals/")
-    maven (url = "https://repo.jenkins-ci.org/public/")
+    // Mirror not served anymore // maven (url = "https://repo.jenkins-ci.org/public/")
     maven (url = "https://plugins.gradle.org/m2/")
+
+    mavenCentral()
+
     // Note: this one reports "403 Forbidden" if an URL is bad -
     // check spelling of the artifact (too few/many components etc.)
     maven (url = "https://mvnrepository.com/artifact/")
-    mavenCentral()
+
     jcenter()
 }
 
