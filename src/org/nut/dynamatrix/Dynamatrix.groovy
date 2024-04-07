@@ -2353,7 +2353,7 @@ def parallelStages = prepareDynamatrix(
                                         dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                                         break
 
-                                    case ~/.*Error cloning remote repo.*/ :
+                                    case ~/.*Error (fetching|cloning) remote repo.*/ :
                                         // For now treat these SCM issues similar to
                                         // networking faults - something to retry:
                                         dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
