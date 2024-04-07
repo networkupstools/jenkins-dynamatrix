@@ -100,7 +100,7 @@ dependencies {
     //testImplementation ("javax.xml.bind:javaxb-api")
     // Avoid java.lang.NoClassDefFoundError: com/sun/activation/registries/LogSupport
     // https://github.com/jakartaee/mail-api/issues/627
-    testImplementation ("javax.activation:activation:1.1")
+    testImplementation ("javax.activation:activation:1.1.1")
     // Alternatively: https://github.com/jakartaee/jaf-api/issues/60
     //testImplementation ("com.sun.activation:jakarta.activation:2.0.0")
     testImplementation ("jakarta.xml.bind:jakarta.xml.bind-api")
@@ -184,7 +184,7 @@ sharedLibrary {
         dependency("org.jenkins-ci.plugins", "github-branch-source", "1701.v00cc8184df93")
         dependency("org.jenkins-ci.main", "remoting", "3131.vf2b_b_798b_ce99")
 
-        dependency("javax.activation", "activation", "1.1")
+        dependency("javax.activation", "activation", "1.1.1")
         //dependency("com.sun.activation", "jakarta.activation", "2.0.0")
 
         dependency ("org.jenkins-ci.main", "jenkins-test-harness", "1949.vb_b_37feefe78c")
