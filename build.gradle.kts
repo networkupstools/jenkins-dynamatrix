@@ -246,7 +246,8 @@ idea {
 // https://github.com/mkobit/jenkins-pipeline-shared-libraries-gradle-plugin/issues/69
 tasks {
     wrapper {
-        gradleVersion = "5.5.1"
+        //gradleVersion = "5.5.1"
+        gradleVersion = "7.2"
     }
 
     test {
