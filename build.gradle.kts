@@ -46,8 +46,8 @@ buildScan {
 
 java {
     //sourceCompatibility = JavaVersion.VERSION_1_8
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 //noinspection JCenterRepository
@@ -278,13 +278,13 @@ tasks {
     compileKotlin {
         kotlinOptions {
             //jvmTarget = "1.8"
-            jvmTarget = "17"
+            jvmTarget = "11"
         }
     }
     compileTestKotlin {
         kotlinOptions {
             //jvmTarget = "1.8"
-            jvmTarget = "17"
+            jvmTarget = "11"
         }
     }
 }
