@@ -2335,7 +2335,8 @@ def parallelStages = prepareDynamatrix(
                                 dsbc.dsbcResultInterim = 'UNKNOWN'
                             } else {
                                 // Involve localization?..
-                                switch (hexA.toString()) {
+                                // See also "failureLogs" preparation in buildMatrixCellCI
+                                switch (hexA.toString().replaceAll('\n', ';')) {
                                     case ~/.*ciWrapSh: agent connection problem.*/ :
                                         // Thrown by/via our vars/sh.groovy step:
                                         // networking faults - something to retry

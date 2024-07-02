@@ -7,7 +7,13 @@ import org.jenkinsci.plugins.pipeline.utility.steps.fs.FileWrapper;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.Reader;
 import java.security.MessageDigest; // md5
+import java.util.zip.GZIPInputStream;
 
 /*
  * Run one combination of settings in the matrix for chosen compiler, etc.
@@ -620,7 +626,69 @@ done
             dsbc?.setWorstResult('SUCCESS')
             if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'SUCCESS') }
         } else {
-            def msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
+            // Check log for string patterns we treat in Dynamatrix
+            // exception-parser as a symptom to retry build cell.
+            // First, collect existing unsuccessful phase log files:
+            Set<String> failureLogs = []
+            boolean lastLogPosted = false
+            phaseLogs.each { String phaseLog ->
+                if (!(Utils.isStringNotEmpty(phaseLog)))
+                    return // continue
+                Object phaseVerdict = dsbc?.dsbcResultLogs?.get(phaseLog)
+                if (phaseVerdict?.toString() in ["SUCCESS", "null"])
+                    return // continue
+
+                // Only lastLog remains?
+                if (fileExists(phaseLog)) {
+                    failureLogs << phaseLog
+                }
+                if (phaseLog in [lastLog + ".gz", lastLog])
+                    lastLogPosted = true
+            }
+            if (!lastLogPosted) {
+                if (fileExists(lastLog)) {
+                    failureLogs << lastLog
+                    lastLogPosted = true
+                } else if (fileExists(lastLog + ".gz")) {
+                    failureLogs << lastLog + ".gz"
+                    lastLogPosted = true
+                }
+            }
+
+            // If we collect any clues here, unstable(msgFail) for Dynamatrix
+            // to handle a retry as AGENT_DISCONNECTED
+            String msgFail = ''
+            failureLogs.each { String phaseLog ->
+                // Inspired by https://stackoverflow.com/a/1080394/4715872
+                InputStream fileStream = new FileInputStream(phaseLog)
+                if (phaseLog ==~ /\.gz$/)
+                    fileStream = new GZIPInputStream(fileStream)
+                Reader decoder = new InputStreamReader(fileStream, 'UTF-8')
+                BufferedReader buffered = new BufferedReader(decoder)
+                //BufferedReader buffered = new BufferedReader(fileStream)
+
+                String contentLine;
+                while ((contentLine = in.readLine()) != null) {
+                    switch (contentLine) {
+                        case [
+                            ~/.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates).*/,
+                            ~/.*Error (fetching|cloning) remote repo.*/,
+                            ~/.*bin\/\\S+: cannot open : No such file or directory.*/,
+                        ]:
+                            if (!(msgFail.isEmpty()))
+                                msgFail += "\n"
+                            msgFail += contentLine
+                            break
+                    }
+                }
+            }
+            if (Utils.isStringNotEmpty(msgFail)) {
+                echo "Build-and-check step had issues recoverable by a retry, marking it UNSTABLE: ${msgFail}"
+                unstable(msgFail)
+            }
+
+            // Proceed with usual failure handling
+            msgFail = 'Build-and-check step failed, proceeding to cover the rest of matrix'
             if (dsbc?.thisDynamatrix?.failFast) {
                 echo "Raising mustAbort flag to prevent build scenarios which did not yet start from starting, fault detected in stage '${stageName}': executed shell steps failed"
                 dsbc.thisDynamatrix.mustAbort = true
