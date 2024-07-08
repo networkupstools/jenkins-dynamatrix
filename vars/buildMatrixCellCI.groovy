@@ -543,6 +543,8 @@ done
             }
         }
 
+        // Keep Set order of mention
+        LinkedHashSet<String> phaseLogs = []
         if (shRes != 0) {
             // Add a summary page entry as we go through the build,
             // so developers can quickly find the faults
@@ -569,8 +571,6 @@ done
                 sumtxt += "<ul>"
                 boolean lastLogPosted = false
                 try {
-                    // Keep Set order of mention
-                    LinkedHashSet<String> phaseLogs = []
                     for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config", "config.nut_report_feature"]) {
                         phaseLogs << ".ci.${archPrefix}.${F}.log.gz".toString()
                     }
