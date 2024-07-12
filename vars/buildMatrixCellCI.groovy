@@ -673,6 +673,7 @@ done
                         case [
                             ~/.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates).*/,
                             ~/.*Error (fetching|cloning) remote repo.*/,
+                            ~/.*Resource temporarily unavailable.*/,
                             ~/.*bin\/\\S+: cannot open : No such file or directory.*/,
                         ]:
                             if (!(msgFail.isEmpty()))

@@ -2346,7 +2346,7 @@ def parallelStages = prepareDynamatrix(
                                         dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                                         break
 
-                                    case ~/.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates).*/ :
+                                    case ~/.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates|Resource temporarily unavailable).*/ :
                                         // For now treat these SCM or workspace
                                         // instantiation issues similar to
                                         // networking faults - something to retry:
