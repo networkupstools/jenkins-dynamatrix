@@ -108,18 +108,39 @@ def call() {
 
 	if (Utils.isStringNotEmpty(msg)) {
                 try {
+                        // https://plugins.jenkins.io/groovy-postbuild/
+                        // Positional args:
+                        // addShortText(text, color, background, border, borderColor) -
+                        //   puts a badge with a short text, using the specified format.
+                        //   Supports html color names.
                         manager.addShortText(
-                                text: msg,
-                                background: '#00FFC0',
-                                border: 1,
-                                borderColor: '#00C0A0'
+                                msg,
+                                '#000000',
+                                '#00FFC0',
+                                1,
+                                '#00C0A0'
                         )
-                } catch (Throwable t) {
-                    echo "WARNING: Tried to addShortText(), but failed to; " +
-                            "are the Groovy Postbuild plugin and " +
-                            "jenkins-badge-plugin installed?" +
-                            (dynamatrixGlobalState.enableDebugTrace ? "\n" + t.toString() : " " + t.getMessage()) +
-                            "\nMeant to say: " + msg
+                } catch (Throwable t1) {
+                        try {
+                                // https://plugins.jenkins.io/badge/
+                                // With one "text" arg or named parameters (map)
+                                // addShortText(text: <text>, background: <background>,
+                                //              border: <border>, borderColor: <borderColor>,
+                                //              color: <color>, link: <link>)
+                                addShortText([
+                                        text: msg,
+                                        background: '#00FFC0',
+                                        border: 1,
+                                        borderColor: '#00C0A0'
+                                ])
+                        } catch (Throwable t2) {
+                            echo "WARNING: Tried to addShortText(), but failed to; " +
+                                    "are the Groovy Postbuild plugin and/or " +
+                                    "jenkins-badge-plugin installed?" +
+                                    "\n" + (dynamatrixGlobalState.enableDebugTrace ? t1.toString() : t1.getMessage()) +
+                                    "\n" + (dynamatrixGlobalState.enableDebugTrace ? t2.toString() : t2.getMessage()) +
+                                    "\nMeant to say: " + msg
+                        }
                 }
 	} else {
 		return null
