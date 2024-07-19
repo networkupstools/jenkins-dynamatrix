@@ -115,9 +115,11 @@ def call() {
                                 borderColor: '#00C0A0'
                         )
                 } catch (Throwable t) {
-                    echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-                    if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
-                    echo msg
+                    echo "WARNING: Tried to addShortText(), but failed to; " +
+                            "are the Groovy Postbuild plugin and " +
+                            "jenkins-badge-plugin installed?" +
+                            (dynamatrixGlobalState.enableDebugTrace ? "\n" + t.toString() : " " + t.getMessage()) +
+                            "\nMeant to say: " + msg
                 }
 	} else {
 		return null
