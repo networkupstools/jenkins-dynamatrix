@@ -262,6 +262,8 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     if (dynamatrixGlobalState.enableDebugTrace)
         dynamatrix.dynamatrixComment = dynamatrixComment
 
+    reportBuildCause()
+
     // To hop over CPS limitations, we first store our stages
     // (generated inside CPS code) as a Set of tuples, then
     // convert into a Map just for `parallel`. Go figure...
