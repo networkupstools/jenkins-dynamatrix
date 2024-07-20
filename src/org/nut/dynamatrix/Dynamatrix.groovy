@@ -551,6 +551,7 @@ class Dynamatrix implements Cloneable {
 
         try {
             this.script.removeBadges(id: "Build-progress-badge@" + this.objectID)
+            //this.script.reportBuildCause()
         } catch (Throwable tOK) { // ok if missing
             this.script.echo "WARNING: Tried to removeBadges() for 'Build-progress-badge@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
             if (this.shouldDebugTrace()) {
@@ -562,6 +563,7 @@ class Dynamatrix implements Cloneable {
         // Seems we can not "remove" a summary entry, despite what the docs say
         try {
             this.script.removeBadges(id: "Build-progress-summary@" + this.objectID)
+            //this.script.reportBuildCause()
         } catch (Throwable tOK) { // ok if missing
             this.script.echo "WARNING: Tried to removeBadges() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
             if (this.shouldDebugTrace()) {
@@ -587,6 +589,7 @@ class Dynamatrix implements Cloneable {
                 // Retry removal in case another parallel branch already
                 // added its message while we were preparing the string
                 this.script.removeBadges(id: "Build-progress-badge@" + this.objectID)
+                //this.script.reportBuildCause()
             } catch (Throwable ignore) {} // ok if missing
 
             this.script.addBadge(icon: null, text: txt, id: "Build-progress-badge@" + this.objectID)
