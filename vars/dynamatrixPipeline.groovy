@@ -749,6 +749,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     txt = "Quick-test phase: FAILED"
                     // DO NOT remove badges - let last words be seen!
                     // manager.removeBadges()
+                    // reportBuildCause()
                     manager.addShortText(txt)
                     createSummary(
                             text: txt,
@@ -779,6 +780,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 String txt = "No 'slow build' dynamatrix stages discovered"
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
+                reportBuildCause()
                 manager.addShortText(txt)
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
             } catch (Throwable t) {
@@ -801,6 +803,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
+                reportBuildCause()
                 manager.addShortText(txt)
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
             } catch (Throwable t) {
