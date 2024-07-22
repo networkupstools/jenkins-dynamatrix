@@ -686,6 +686,10 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                     if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
                                 }
 
+                                try {
+                                    manager.addShortText(sbSummary + "; waiting for quick-tests to complete")
+                                } catch (Throwable ignore) {}   // no-op
+
                                 echo "NOTE: If this is the last line you see in job console log for a long time, then we are waiting for some build agents for shellcheck/spellcheck; slowBuild stage discovery is completed"
                             } // stage item: par1["Discover slow build matrix"]
                         } // if slowBuild...
