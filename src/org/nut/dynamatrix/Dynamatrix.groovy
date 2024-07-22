@@ -2777,6 +2777,13 @@ def parallelStages = prepareDynamatrix(
                                         }
                                     }
 
+                                    if (dsbc.dsbcResultInterim == null
+                                        && t instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+                                    ) {
+                                        script.echo "[DEBUG]: Considering this stage deliberately aborted by script (e.g. timeout) or admin (e.g. obsoleted source)"
+                                        dsbc.dsbcResultInterim = 'ABORTED'
+                                    }
+
                                     parstageCompleted = true
                                     break
 
