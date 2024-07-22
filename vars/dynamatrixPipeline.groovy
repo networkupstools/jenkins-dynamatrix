@@ -1163,6 +1163,19 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             }
         }
 
+        try {
+        // Did the "parallel stagesBinBuild" above fail or succeed?..
+            txt = "Overall result: "
+            String curres = "${currentBuild.result}".toString()
+            if (!(curres in [null, 'null']))
+                curres = 'SUCCESS'
+            txt += " ${curres}"
+            manager.addShortText(txt)
+        } catch (Throwable t) {
+            echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+        }
+
     } // node to manage the pipeline
 
 }
