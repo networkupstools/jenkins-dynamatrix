@@ -751,6 +751,9 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     // The yellow badge reported until now came from another, was made (and hidden
                     // and scrapped) by shellcheck() step => prepareDynamatrix() step.
                     txt = "Quick-test phase: FAILED"
+                    String curres = "${currentBuild.result}".toString()
+                    if (!(curres in [null, 'null', 'SUCCESS']))
+                        txt += " (${curres})"
                     // DO NOT remove badges - let last words be seen!
                     // manager.removeBadges()
                     // reportBuildCause()
