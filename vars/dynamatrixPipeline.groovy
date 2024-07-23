@@ -1167,7 +1167,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
         // Did the "parallel stagesBinBuild" above fail or succeed?..
             txt = "Overall result: "
             String curres = "${currentBuild.result}".toString()
-            if (!(curres in [null, 'null']))
+            if (curres in [null, 'null'])
                 curres = 'SUCCESS'
             txt += " ${curres}"
             manager.addShortText(txt)
