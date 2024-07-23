@@ -674,12 +674,27 @@ done
                         case [
                             ~/.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates).*/,
                             ~/.*Error (fetching|cloning) remote repo.*/,
+                        ]:
+                            if (!(msgFail.isEmpty()))
+                                msgFail += "\n"
+                            msgFail += "buildMatrixCell: workspace problem: " + contentLine
+                            break
+
+                        case [
                             ~/.*Resource temporarily unavailable.*/,
+                        ]:
+                            if (!(msgFail.isEmpty()))
+                                msgFail += "\n"
+                            msgFail += "buildMatrixCell: memory problem: " + contentLine
+                            break
+
+                        case [
+                            // Make substitutions of progs/files ended up as empty strings?
                             ~/.*bin\/\\S+: cannot open : No such file or directory.*/,
                         ]:
                             if (!(msgFail.isEmpty()))
                                 msgFail += "\n"
-                            msgFail += contentLine
+                            msgFail += "buildMatrixCell: scripting problem: " + contentLine
                             break
                     }
                 }

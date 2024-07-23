@@ -2349,6 +2349,17 @@ def parallelStages = prepareDynamatrix(
                                         dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                                         break
 
+                                    case [~/.*buildMatrixCell: workspace problem.*/, ~/.*buildMatrixCell: memory problem.*/] :
+                                        dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                                        dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
+                                        break
+
+                                    case ~/.*buildMatrixCell: scripting problem.*/ :
+                                        dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName)
+                                        dsbc.dsbcResultInterim = 'FAILURE'
+                                        break
+
+                                    // legacy fallback
                                     case ~/.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates|Resource temporarily unavailable).*/ :
                                         // For now treat these SCM or workspace
                                         // instantiation issues similar to
@@ -2357,6 +2368,7 @@ def parallelStages = prepareDynamatrix(
                                         dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                                         break
 
+                                    // legacy fallback
                                     case ~/.*Error (fetching|cloning) remote repo.*/ :
                                         // For now treat these SCM issues similar to
                                         // networking faults - something to retry:
@@ -2364,6 +2376,7 @@ def parallelStages = prepareDynamatrix(
                                         dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
                                         break
 
+                                    // legacy fallback
                                     case ~/.*bin\/\\S+: cannot open : No such file or directory.*/ :
                                         // in practice FreeBSD agent tends to do this
                                         // (with various programs, often `/bin/sh`)
