@@ -3,6 +3,7 @@
 
 
 import hudson.model.Result;
+import hudson.AbortException;
 import org.jenkinsci.plugins.pipeline.utility.steps.fs.FileWrapper;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.*;
@@ -684,8 +685,10 @@ done
                 }
             }
             if (Utils.isStringNotEmpty(msgFail)) {
-                echo "Build-and-check step had issues recoverable by a retry, marking it UNSTABLE: ${msgFail}"
-                unstable(msgFail)
+                // TOTHINK: Consider https://stackoverflow.com/questions/42667600/abort-current-build-from-pipeline-in-jenkins
+                echo "Build-and-check step had issues recoverable by a retry, aborting: ${msgFail}"
+                //unstable(msgFail)
+                throw new AbortException(msgFail)
             }
 
             // Proceed with usual failure handling
