@@ -2365,12 +2365,13 @@ def parallelStages = prepareDynamatrix(
                                         break
 
                                     case ~/.*bin\/\\S+: cannot open : No such file or directory.*/ :
-                                        // For now treat these RAM(?) issues similar to
-                                        // build agent faults - something to retry;
                                         // in practice FreeBSD agent tends to do this
-                                        // (with various programs, often `/bin/sh`):
-                                        dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
-                                        dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
+                                        // (with various programs, often `/bin/sh`)
+                                        // when makefile variables for source/target
+                                        // files resolve into empty strings, so not
+                                        // 'AGENT_DISCONNECTED' but a 'FAILURE' here:
+                                        dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName)
+                                        dsbc.dsbcResultInterim = 'FAILURE'
                                         break
 
                                     case ~/.*script returned exit code [^0].*/ :
