@@ -438,6 +438,33 @@ class DynamatrixStash {
             res = scmbody()
         }
 
+        if (scmCommit != "master" && script.isUnix()) {
+            // Instantiate local master branch, if absent:
+            // PRs aimed at another branch only cause their
+            // source and target branches be known, but not
+            // master that is used for some ChangeLogs, etc.
+            script.sh label:"Learn the recent history of master branch", script:"""
+git log -1 master && exit
+
+REFREPO='${getGitRefrepoDir(script)}'
+if [ x"\${REFREPO}" == xnull ] || [ x"\${REFREPO}" == x ] || [ ! -d "\${REFREPO}" ] ; then
+    REFREPO=""
+fi
+
+for R in \$REFREPO `git remote` ; do
+    # Start by branching from a locally known replica, if any
+    git log -1 "\$R/master" && git branch master "\$R/master" && exit
+
+    # Continue by requesting an update from git remote(s),
+    # including registration of a branch newly known in index
+    git fetch "\$R" "refs/heads/master:remotes/\$R/master" \\
+    && git fetch "\$R" "refs/heads/master:refs/heads/master"
+done
+
+echo "FAILED to fetch a master branch; some build nuances may misbehave" >&2
+"""
+        }
+
         if (untieRefrepoNow) {
             // For initial checkouts headed to stashing
             // Not desired for subsequent checkouts on build agents
