@@ -468,7 +468,7 @@ done
         // to avoid duplicates? Or on the contrary, would we want to see
         // some bugs in generated dist'ed code even if original does not
         // have them?
-        String filterSysHeaders = ".*[/\\\\]usr[/\\\\].*\\.(h|hpp)\$"
+        String filterSysHeaders = ".*[/\\\\]usr[/\\\\](?!(|.*[/\\\\])home[/\\\\]).*\\.(h|hpp)\$"
         // Scanner has a limitation regex for "URL" of the analysis:
         String warningsNgId = (id + "-" + archPrefix) //.toLowerCase()
         switch (compilerTool) {
