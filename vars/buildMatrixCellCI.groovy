@@ -681,7 +681,7 @@ done
                             break
 
                         case [
-                            ~/.*Resource temporarily unavailable.*/,
+                            ~/.*(spawn|fork|exec).*Resource temporarily unavailable.*/,
                         ]:
                             if (!(msgFail.isEmpty()))
                                 msgFail += "\n"

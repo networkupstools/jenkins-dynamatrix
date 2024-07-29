@@ -2360,7 +2360,7 @@ def parallelStages = prepareDynamatrix(
                                         break
 
                                     // legacy fallback
-                                    case ~/.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates|Resource temporarily unavailable).*/ :
+                                    case ~/.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates|(spawn|fork|exec).*Resource temporarily unavailable).*/ :
                                         // For now treat these SCM or workspace
                                         // instantiation issues similar to
                                         // networking faults - something to retry:
