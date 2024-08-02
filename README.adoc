@@ -351,6 +351,7 @@ Pipeline Libraries followed these articles:
 * https://stackoverflow.com/questions/53363828/jenkins-shared-library-with-intellij
 
 Random example self-tests:
+
 * https://github.com/jenkinsci/workflow-cps-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/cps/DSLTest.java
 
 Unit-tests of the JSL library
