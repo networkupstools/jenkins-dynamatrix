@@ -88,6 +88,14 @@ named labels to generate a list of possible build combinations as a
 boolean label expression, and so dynamically generate the payload
 structure of each build.
 
+A sibling link:https://github.com/networkupstools/jenkins-swarm-nutci[jenkins-swarm-nutci]
+project is used on build agents which can dial in to the NUT CI farm
+and provide their services and capabilities (conveyed by the labels
+which are part of their configuration), and includes some scripting
+for common configuration approach as well as for automated start-up
+on numerous platforms. It might be usable "as is" or easily adapted
+by other projects.
+
 Since the same CI farm and Swarm agent workers can be used for the
 benefit of several FOSS projects, one of the label patterns allows
 to declare that this worker is suitable for (and contributes to)
