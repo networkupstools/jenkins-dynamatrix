@@ -293,7 +293,7 @@ Practice, especially during early development iterations, may be mixed.
 Inspirational reading
 ~~~~~~~~~~~~~~~~~~~~~
 
-* https://www.jenkins.io/blog/2020/10/21/a-sustainable-pattern-with-shared-library/ -- it
+* https://www.jenkins.io/blog/2020/10/21/a-sustainable-pattern-with-shared-library/ - it
   provides a useful pattern allowing a default configuration for a
   generic librarly build recipe implementation to be merged with
   options desired for a particular pipeline's build, including an
@@ -302,21 +302,21 @@ Inspirational reading
   of abstraction is handled the same way, and whatever really differs
   has the hooks and hacks for that individuality.
 
-* https://github.com/jenkins-infra/pipeline-library/blob/master/vars/buildPlugin.groovy -- this
+* https://github.com/jenkins-infra/pipeline-library/blob/master/vars/buildPlugin.groovy - this
   code orchestrating standard builds of Jenkins plugins manages a
   similar matrix, optionally based on build parameters
 
-* https://bmuschko.com/blog/jenkins-shared-libraries/ -- goes
+* https://bmuschko.com/blog/jenkins-shared-libraries/ - goes
   into the much welcome and somewhat gritty detail about using
   classes instead of "vars" used quickly as steps, which is what most
   of the other articles focus on
 
-* https://www.linkedin.com/pulse/jenkins-shared-pipeline-libraries-custom-runtime-delgado-garrido -- a
+* https://www.linkedin.com/pulse/jenkins-shared-pipeline-libraries-custom-runtime-delgado-garrido - a
   pattern for configs in component sources that can tune behavior of
   otherwise standardized library pipelines and/or maintain a Singleton
   with config (and other) data during the run
 
-* https://www.linkedin.com/pulse/jenkins-global-shared-pipeline-libraries-real-unit-delgado-garrido -- and
+* https://www.linkedin.com/pulse/jenkins-global-shared-pipeline-libraries-real-unit-delgado-garrido - and
   another pattern for keeping real logic hidden in classes, frontended
   by steps in "vars" folder
 
@@ -330,12 +330,12 @@ really a good thing:
 * https://tomd.xyz/jenkins-shared-library/
 * https://medium.com/@werne2j/jenkins-shared-libraries-part-1-5ba3d072536a
 * https://medium.com/@werne2j/how-to-build-your-own-jenkins-shared-library-9dc129db260c
-* https://medium.com/@werne2j/unit-testing-a-jenkins-shared-library-9bfb6b599748 -- article
+* https://medium.com/@werne2j/unit-testing-a-jenkins-shared-library-9bfb6b599748 - article
   about testing with maven and Jenkins-Spock library
 * https://medium.com/@werne2j/collecting-code-coverage-for-a-jenkins-shared-library-c2d8f502732e
-* https://medium.com/disney-streaming/testing-jenkins-shared-libraries-4d4939406fa2 -- article
+* https://medium.com/disney-streaming/testing-jenkins-shared-libraries-4d4939406fa2 - article
   about testing with gradle and Jenkins Pipeline Unit library
-* https://dev.to/kuperadrian/how-to-setup-a-unit-testable-jenkins-shared-pipeline-library-2e62 -- article
+* https://dev.to/kuperadrian/how-to-setup-a-unit-testable-jenkins-shared-pipeline-library-2e62 - article
   about testing with gradle, mockito and IntelliJ IDEA integration and injectable contexts
 
 Standard reading library:
