@@ -74,6 +74,14 @@ later deactivated or destroyed to conserve run-time resources of the
 centralized build farm. This allows to sequentialize builds of varied
 operating environments hosted on systems with limited memory.
 
+This library, or generally persistent CI farms, can also take advantage
+of https://github.com/jimklimov/git-refrepo-scripts and a (currently
+custom) build of Git Client Plugin with the changes proposed in PR
+https://github.com/jenkinsci/git-client-plugin/pull/644
+to maintain reference repositories on the CI server, and so reduce
+the traffic and time needed for future Git check-outs.
+
+
 Main idea
 ~~~~~~~~~
 
