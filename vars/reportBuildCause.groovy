@@ -129,7 +129,8 @@ def call() {
                                 //              color: <color>, link: <link>)
                                 addShortText([
                                         text: msg,
-                                        background: '#00FFC0',
+                                        color:       '#000000',
+                                        background:  '#00FFC0',
                                         border: 1,
                                         borderColor: '#00C0A0'
                                 ])
