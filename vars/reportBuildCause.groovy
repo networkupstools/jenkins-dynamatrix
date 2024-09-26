@@ -23,7 +23,11 @@ def call() {
                 return  // continue
 
             if (it.shortDescription) {
-                if (completeBuildCause) { // join multiple build causes with ampersand
+                if (completeBuildCause
+                && !("${completeBuildCause}".startsWith("${it.shortDescription} & "))
+                && !(" & ${it.shortDescription} & " in "${completeBuildCause}")
+                ) {
+                    // join multiple unique build causes with ampersand
                     completeBuildCause = "${completeBuildCause} & ${it.shortDescription}"
                 } else {
                     completeBuildCause = it.shortDescription
