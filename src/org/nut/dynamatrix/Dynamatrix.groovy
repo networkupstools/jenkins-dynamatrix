@@ -506,11 +506,13 @@ class Dynamatrix implements Cloneable {
         Boolean res = null
 
         if (this.script && Utils.isStringNotEmpty(txt)) {
+            String txtBadgeId = "Build-progress-summary@" + (objId == null ? this.objectID : objId)
             try {
-                this.script.createSummary(icon: icon, text: txt, id: "Build-progress-summary@" + (objId == null ? this.objectID : objId))
+                this.script.createSummary(icon: icon, text: txt, id: txtBadgeId)
                 if (res == null) res = true
             } catch (Throwable t) {
-                this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                //this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                this.script.echo "WARNING: Tried to createSummary() for '${txtBadgeId}', but failed to; is the jenkins-badge-plugin installed?"
                 if (this.shouldDebugTrace()) {
                     this.script.echo (t.toString())
                 }
@@ -581,6 +583,7 @@ class Dynamatrix implements Cloneable {
                 (this.dynamatrixComment == null ? "" : " with comment: ${this.dynamatrixComment}")
 
         Boolean res = null
+        String txtBadgeId = "Build-progress-badge@" + this.objectID
         try {
             // Note: not "addInfoBadge()" which is rolled-up and small (no text except when hovered)
             // Update: although this seems to have same effect, not that of addShortText (that has no "id")
@@ -588,14 +591,21 @@ class Dynamatrix implements Cloneable {
             try {
                 // Retry removal in case another parallel branch already
                 // added its message while we were preparing the string
-                this.script.removeBadges(id: "Build-progress-badge@" + this.objectID)
+                this.script.removeBadges(id: txtBadgeId)
                 //this.script.reportBuildCause()
             } catch (Throwable ignore) {} // ok if missing
 
-            this.script.addBadge(icon: null, text: txt, id: "Build-progress-badge@" + this.objectID)
+            try {
+                // Badge v2.x API, with style
+                this.script.addBadge(icon: null, text: txt, id: txtBadgeId,
+                    cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-BuildProgressBadge"
+                )
+            } catch (Throwable ignore) {
+                this.script.addBadge(icon: null, text: txt, id: txtBadgeId)
+            }
             res = true
         } catch (Throwable t) {
-            this.script.echo "WARNING: Tried to addBadge() for 'Build-progress-badge@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            this.script.echo "WARNING: Tried to addBadge() for '${txtBadgeId}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
             if (this.shouldDebugTrace()) {
                 this.script.echo (t.toString())
             }
