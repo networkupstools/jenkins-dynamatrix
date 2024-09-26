@@ -19,6 +19,9 @@ def call() {
     String completeBuildCause = null
     currentBuild?.buildCauses?.each {
         try {
+            if (!(it?.shortDescription) || (it?.shortDescription?.trim()?.isBlank()))
+                return  // continue
+
             if (it.shortDescription) {
                 if (completeBuildCause) { // join multiple build causes with ampersand
                     completeBuildCause = "${completeBuildCause} & ${it.shortDescription}"
