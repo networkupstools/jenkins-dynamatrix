@@ -664,11 +664,26 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                     // Note we are not using "manager" leading to Groovy
                                     // PostBuild Plugin implementation, but the better
                                     // featured jenkins-badge-plugin step
-                                    //addInfoBadge(text: sbSummary, id: "Discovery-counter")
-                                    // While we add temporarily and remove one badge,
-                                    // GPBP is okay (for some reason, Badge plugin leaves
-                                    // ugly formatting in job's main page with list of builds):
-                                    manager.addInfoBadge(sbSummary)
+                                    try {
+                                        // Badge v2.x API, with style
+                                        addInfoBadge(text: sbSummary, id: "Discovery-counter",
+                                            cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-DiscoveryCounter"
+                                        )
+                                    } catch (Throwable ignored) {
+/*
+                                        try {
+                                            addInfoBadge(text: sbSummary, id: "Discovery-counter")
+                                        } catch (Throwable ignored2) {
+                                            // NOTE: Was temporarily used INSTEAD of badge plugin (1.x) code
+*/
+                                            // FIXME: While we add temporarily and remove one badge,
+                                            //  GPBP is okay (for some reason, Badge plugin leaves
+                                            //  ugly formatting in job's main page with list of builds):
+                                            manager.addInfoBadge(sbSummary)
+/*
+                                        }
+*/
+                                    }
 
                                     // Add a line to the build's info page too (note the
                                     // path here is somewhat relative to /static/hexhash/
@@ -687,8 +702,15 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 }
 
                                 try {
-                                    manager.addShortText(sbSummary + "; waiting for quick-tests to complete")
-                                } catch (Throwable ignore) {}   // no-op
+                                    // Badge v2.x API, with style
+                                    addBadge(text: sbSummary + "; waiting for quick-tests to complete",
+                                        cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-WaitingCompletion"
+                                    )
+                                } catch (Throwable ignored) {
+                                    try {
+                                        manager.addShortText(sbSummary + "; waiting for quick-tests to complete")
+                                    } catch (Throwable ignore) {}   // no-op
+                                }
 
                                 echo "NOTE: If this is the last line you see in job console log for a long time, then we are waiting for some build agents for shellcheck/spellcheck; slowBuild stage discovery is completed"
                             } // stage item: par1["Discover slow build matrix"]
@@ -697,7 +719,14 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         try {
                             String qtxt = "Quick-test phase planned parallel stages (overall, not only dynamatrix): " + par1.values().count { it instanceof Closure }
                             echo qtxt
-                            manager.addShortText(qtxt)
+                            try {
+                                // Badge v2.x API, with style
+                                addBadge(text: qtxt,
+                                    cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-Planned"
+                                )
+                            } catch (Throwable ignore0) {
+                                manager.addShortText(qtxt)
+                            }
                         } catch (Throwable ignore) {}   // no-op
 
                         // Walk the plank
@@ -750,14 +779,21 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     // Not reporting counts from our "dynamatrix" object here, it is empty up here.
                     // The yellow badge reported until now came from another, was made (and hidden
                     // and scrapped) by shellcheck() step => prepareDynamatrix() step.
-                    txt = "Quick-test phase: FAILED"
+                    String txt = "Quick-test phase: FAILED"
                     String curres = "${currentBuild.result}".toString()
                     if (!(curres in [null, 'null', 'SUCCESS']))
                         txt += " (${curres})"
                     // DO NOT remove badges - let last words be seen!
                     // manager.removeBadges()
                     // reportBuildCause()
-                    manager.addShortText(txt)
+                    try {
+                        // Badge v2.x API, with style
+                        addBadge(text: txt,
+                            cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-FAILURE"
+                        )
+                    } catch (Throwable ignored) {
+                        manager.addShortText(txt)
+                    }
                     createSummary(
                             text: txt,
                             icon: '/images/svgs/warning.svg'    // '/images/48x48/warning.png'
@@ -788,7 +824,14 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
                 reportBuildCause()
-                manager.addShortText(txt)
+                try {
+                    // Badge v2.x API, with style
+                    addBadge(text: txt,
+                        cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-NoStagesDiscovered"
+                    )
+                } catch (Throwable ignored) {
+                    manager.addShortText(txt)
+                }
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
             } catch (Throwable t) {
                 echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
@@ -811,7 +854,14 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
                 reportBuildCause()
-                manager.addShortText(txt)
+                try {
+                    // Badge v2.x API, with style
+                    addBadge(text: txt,
+                        cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-Running"
+                    )
+                } catch (Throwable ignored) {
+                    manager.addShortText(txt)
+                }
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
             } catch (Throwable t) {
                 echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
@@ -1071,7 +1121,14 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     // builds (Jenkins/server restart etc.) are more visible
                     try {
                         String txtOK = "Build completed successfully"
-                        manager.addShortText(txtOK)
+                        try {
+                            // Badge v2.x API, with style
+                            addBadge(text: txtOK,
+                                cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-SUCCESS"
+                            )
+                        } catch (Throwable ignored) {
+                            manager.addShortText(txtOK)
+                        }
                         createSummary(
                             text: txtOK + ": " + txtCounts,
                             icon: '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
@@ -1087,7 +1144,14 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                             txt +=
                                 " in Dynamatrix@${dynamatrix.objectID}" +
                                 (dynamatrix.dynamatrixComment == null ? "" : " with comment: ${dynamatrix.dynamatrixComment}")
-                        manager.addShortText(txt)
+                        try {
+                            // Badge v2.x API, with style
+                            addBadge(text: txt,
+                                cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-NotWell"
+                            )
+                        } catch (Throwable ignored) {
+                            manager.addShortText(txt)
+                        }
                         createSummary(
                             text: txt,
                             icon: '/images/svgs/warning.svg'	// '/images/48x48/warning.png'
@@ -1165,12 +1229,19 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
         try {
         // Did the "parallel stagesBinBuild" above fail or succeed?..
-            txt = "Overall result: "
+            String txt = "Overall result: "
             String curres = "${currentBuild.result}".toString()
             if (curres in [null, 'null'])
                 curres = 'SUCCESS'
             txt += " ${curres}"
-            manager.addShortText(txt)
+            try {
+                // Badge v2.x API, with style
+                addBadge(text: txt,
+                    cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-${curres}"
+                )
+            } catch (Throwable ignored) {
+                manager.addShortText(txt)
+            }
         } catch (Throwable t) {
             echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
             if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()

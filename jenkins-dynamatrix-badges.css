@@ -1,0 +1,107 @@
+/* //////////////////////////////////////////////////////////////////////////////////////////////// */
+
+/*
+ * This file offers CSS styles to be used along with
+ * https://github.com/networkupstools/jenkins-dynamatrix
+ * with Jenkins Badge plugin v2.x (supporting cssStyle
+ * method arguments instead of a series of colors and
+ * line thicknesses that end up hard-coded into messages).
+ *
+ * Per https://www.jenkins.io/doc/pipeline/steps/badge/#addbadge-add-badge
+ * > Classes will be applied to the enclosing <span> of a badge.
+ *
+ * Licensed under the terms of GPLv2+.
+ */
+
+/* Align to markup of badges before Badge plugin 1.10
+ * (yellowish boxes perhaps come from Groovy Postbuild plugin)
+ */
+.badge-jenkins-dynamatrix-Baseline {
+  border:       1px solid #C0C000 !important;
+  border-radius: 3px !important;
+  padding:      0px 3px !important;
+  background:   #FFFF00 !important;
+  opacity:      1 !important;
+  color:        #000000 !important;
+  white-space:  normal !important;
+  text-align:   right !important;
+}
+.badge-jenkins-dynamatrix-Baseline--default-background::before {
+  opacity:      0 !important;
+}
+
+/* Customizations over baseline style. To see the names involved,
+ * try to `grep cssClass` in Jenkins-Dynamatrix JSL code base.
+ */
+
+/* Reporting of build cause (user, timer, index/push, etc.) */
+.badge-jenkins-dynamatrix-ReportBuildCause {
+  color:        #000000 !important;
+  background:   #00C0FF !important;
+  border:       1px !important;
+  border-color: #00C0A0 !important;
+}
+
+/* "Build in progress: " + this.toStringStageCountBestEffort(recurse) */
+.badge-jenkins-dynamatrix-BuildProgressBadge {
+}
+
+/* Part of quick stage summary: "Discovered X slow build stages" to do later */
+.badge-jenkins-dynamatrix-QuickTest-DiscoveryCounter {
+}
+
+/* sbSummary + "; waiting for quick-tests to complete" */
+.badge-jenkins-dynamatrix-QuickTest-WaitingCompletion {
+}
+
+/* "Quick-test phase planned parallel stages (overall, not only dynamatrix): " + par1.values().count { it instanceof Closure } */
+.badge-jenkins-dynamatrix-QuickTest-Planned {
+}
+
+/* "Quick-test phase: FAILED" */
+.badge-jenkins-dynamatrix-QuickTest-FAILURE {
+  border-color: #FF4040 !important;
+  background:   #E07070 !important;
+}
+
+/* "No 'slow build' dynamatrix stages discovered" */
+.badge-jenkins-dynamatrix-QuickTest-NoStagesDiscovered {
+}
+
+/* "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; " +
+                           "failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
+ */
+.badge-jenkins-dynamatrix-SlowBuild-Running {
+}
+
+/* "Not all went well: " + txtCounts */
+.badge-jenkins-dynamatrix-SlowBuild-NotWell {
+  border-color: #FFE040 !important;
+  background:   #A08080 !important;
+}
+
+/* Suffixes below follow Jenkins Result class stringification, see
+ * https://javadoc.jenkins-ci.org/hudson/model/Result.html
+ */
+.badge-jenkins-dynamatrix-SlowBuild-SUCCESS {
+  border-color: #40FF40 !important;
+  background:   #00E070 !important;
+}
+
+.badge-jenkins-dynamatrix-SlowBuild-FAILURE {
+  border-color: #FF4040 !important;
+  background:   #E07070 !important;
+}
+
+.badge-jenkins-dynamatrix-SlowBuild-UNSTABLE {
+  border-color: #FFE040 !important;
+  background:   #E0E070 !important;
+}
+
+.badge-jenkins-dynamatrix-SlowBuild-ABORTED {
+  background:   #D0C0C0 !important;
+}
+
+.badge-jenkins-dynamatrix-SlowBuild-NOT_BUILT {
+  background:   #A09090 !important;
+}
