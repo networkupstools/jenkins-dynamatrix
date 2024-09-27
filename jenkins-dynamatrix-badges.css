@@ -76,8 +76,9 @@
 
 /* "Not all went well: " + txtCounts */
 .badge-jenkins-dynamatrix-SlowBuild-NotWell {
-  border-color: #FFE040 !important;
-  background:   #A08080 !important;
+  border-color: #FF8040 !important;
+  border-width: 2px !important;
+  background:   #FFE080 !important;
 }
 
 /* Suffixes below follow Jenkins Result class stringification, see
@@ -90,18 +91,22 @@
 
 .badge-jenkins-dynamatrix-SlowBuild-FAILURE {
   border-color: #FF4040 !important;
+  border-width: 2px !important;
   background:   #E07070 !important;
 }
 
 .badge-jenkins-dynamatrix-SlowBuild-UNSTABLE {
-  border-color: #FFE040 !important;
-  background:   #E0E070 !important;
+  border-color: #FF8040 !important;
+  border-width: 2px !important;
+  background:   #E0A070 !important;
 }
 
 .badge-jenkins-dynamatrix-SlowBuild-ABORTED {
+  border-width: 2px !important;
   background:   #D0C0C0 !important;
 }
 
 .badge-jenkins-dynamatrix-SlowBuild-NOT_BUILT {
+  border-width: 2px !important;
   background:   #A09090 !important;
 }
