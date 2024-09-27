@@ -24,7 +24,7 @@ def call() {
 
             if (it.shortDescription) {
                 if (completeBuildCause
-                && !("${completeBuildCause}" == "${it.shortDescription}"))
+                && !("${completeBuildCause}" == "${it.shortDescription}")
                 && !("${completeBuildCause}".startsWith("${it.shortDescription} & "))
                 && !(" & ${it.shortDescription} & " in "${completeBuildCause}")
                 ) {
