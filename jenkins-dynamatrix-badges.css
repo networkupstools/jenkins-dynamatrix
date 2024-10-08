@@ -110,3 +110,30 @@
   border-width: 2px !important;
   background:   #A09090 !important;
 }
+
+/* ///////////////////////////////// LEGACY /////////////////////// */
+
+/* Align to markup of badges before plugin 1.10 */
+.badge-shortText {
+  border: 1px solid #C0C000 !important;
+  background: #FFFF00 !important;
+  opacity: 1 !important;
+  color: #000000 !important;
+  white-space: normal !important;
+  text-align: right !important;
+}
+.badge-shortText--default-background::before {
+  opacity: 0 !important;
+}
+
+/* For color-less badges of 1.10 (with plugin reverted, so no style again) */
+/*
+.build-badge {
+  border: 1px solid #C0C000 !important;
+  background: #FFFF00 !important;
+  opacity: 1 !important;
+  color: #000000 !important;
+  white-space: normal !important;
+  text-align: right !important;
+}
+*/
