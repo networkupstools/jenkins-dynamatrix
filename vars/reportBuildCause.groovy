@@ -16,7 +16,7 @@ def call() {
     def cause = null
     String msg = null
 
-    # Preserve instertion order, and at most one of each entry:
+    // Preserve insertion order, and at most one of each entry:
     LinkedHashSet<String> causes = []
     currentBuild?.buildCauses?.each {
         def descr = it?.shortDescription?.trim()
