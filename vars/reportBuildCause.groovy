@@ -16,27 +16,15 @@ def call() {
     def cause = null
     String msg = null
 
-    String completeBuildCause = null
+    # Preserve instertion order, and at most one of each entry:
+    LinkedHashSet<String> causes = []
     currentBuild?.buildCauses?.each {
-        try {
-            if (!(it?.shortDescription) || (it?.shortDescription?.trim()?.isBlank()))
-                return  // continue
-
-            if (it.shortDescription) {
-                if (completeBuildCause
-                && !("${completeBuildCause}" == "${it.shortDescription}")
-                && !("${completeBuildCause}".startsWith("${it.shortDescription} & "))
-                && !(" & ${it.shortDescription} & " in "${completeBuildCause}")
-                ) {
-                    // join multiple unique build causes with ampersand
-                    completeBuildCause = "${completeBuildCause} & ${it.shortDescription}"
-                } else {
-                    completeBuildCause = it.shortDescription
-                }
-            }
-        } catch (Throwable ignored) {}
+        def descr = it?.shortDescription?.trim()
+        if (Utils.isStringNotEmpty(descr))
+	    causes.add(descr)
     }
 
+    String completeBuildCause = causes.join(' & ').trim()
     if (!(Utils.isStringNotEmpty(completeBuildCause))) {
         // Started by user? Several ways to test for that...
         def specificCause = findCauseType(
