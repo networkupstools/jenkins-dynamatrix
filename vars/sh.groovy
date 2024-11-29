@@ -47,7 +47,7 @@ __CI_WRAP_SH_EOF__
         ) {
             // Retry with a simple test to confirm an (SSH) networking error
             String shOut = script.sh(
-                    "(echo true | LANG=C LC_ALL=C ${env.CI_WRAP_SH}) 2>&1",
+                    script: "(echo true | LANG=C LC_ALL=C ${env.CI_WRAP_SH}) 2>&1",
                     returnStdout: true)?.trim()
 
             for (String clue in ["Connection reset by peer", "Permission denied"] ) {
