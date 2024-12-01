@@ -674,6 +674,7 @@ done
                         case [
                             ~/.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates).*/,
                             ~/.*Error (fetching|cloning) remote repo.*/,
+                            ~/.*Host key verification failed.*/,
                         ]:
                             if (!(msgFail.isEmpty()))
                                 msgFail += "\n"
