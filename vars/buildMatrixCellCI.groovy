@@ -387,6 +387,13 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
                     dsbc?.dsbcResultLogs[phaseLog] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    // Typical autotools structure? More logs?
+                    sh (script: "ls -1 test*/*.log test*/*.trs || true",
+                        returnStdout: true
+                    ).split('\n').each {
+                        def testLog = it.trim().replace("\/", "_")
+                        dsbc?.dsbcResultLogs[(lastLog - ~/\.log$/) + ".${testLog}.gz"] = dsbc?.dsbcResultLogs[phaseLog]
+                    }
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
@@ -448,7 +455,14 @@ done
         // similar to analysis above allows for out-of-tree builds etc.
         sh label: 'Compress collected logs', script: """
 if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
-find . -type f -name config.log -o -name config.nut_report_feature.log -o -name 'cppcheck*.xml' | sed 's,^\\./,,' \
+
+find test* -type f -name '*.log' -o -name '*.trs' | sed 's,^\\./,,' \\
+| while read F ; do
+    N="`echo "\$F" | tr '/' '_'`"
+    if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.check.'"\$N"'.gz' || true ; fi
+done
+
+find . -type f -name config.log -o -name config.nut_report_feature.log -o -name 'cppcheck*.xml' | sed 's,^\\./,,' \\
 | while read F ; do
     N="`echo "\$F" | tr '/' '_'`"
     if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$N"'.gz' || true ; fi
