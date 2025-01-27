@@ -466,6 +466,35 @@ echo "FAILED to fetch a master branch; some build nuances may misbehave" >&2
 """
         }
 
+        if (script.env?.CHANGE_TARGET && script.env?.CHANGE_TARGET != "master" && scmCommit != "${script.env?.CHANGE_TARGET}" && script.isUnix()) {
+            // Instantiate local PR-target branch, if absent:
+            script.sh label:"Learn the recent history of ${script.env?.CHANGE_TARGET} PR-target branch", script:"""
+CHANGE_TARGET='${script.env?.CHANGE_TARGET}'
+SHORT_TARGET="`echo "\${CHANGE_TARGET}" | sed 's,^origin/,,'`"
+
+git log -1 "\${CHANGE_TARGET}" && exit
+git log -1 "\${SHORT_TARGET}" && exit
+
+REFREPO='${getGitRefrepoDir(script)}'
+if [ x"\${REFREPO}" == xnull ] || [ x"\${REFREPO}" == x ] || [ ! -d "\${REFREPO}" ] ; then
+    REFREPO=""
+fi
+
+for R in \$REFREPO `git remote` ; do
+    # Start by branching from a locally known replica, if any
+    git log -1 "\$R/\${SHORT_TARGET}" && git branch "\${SHORT_TARGET}" "\$R/\${SHORT_TARGET}" && exit
+
+    # Continue by requesting an update from git remote(s),
+    # including registration of a branch newly known in index
+    git fetch "\$R" "refs/heads/\${SHORT_TARGET}:remotes/\$R/\${SHORT_TARGET}" \\
+    && git fetch "\$R" "refs/heads/\${SHORT_TARGET}:refs/heads/\${SHORT_TARGET}"
+done
+
+git log -1 "\$R/\${SHORT_TARGET}" && git branch "\${SHORT_TARGET}" "\$R/\${SHORT_TARGET}" && exit
+echo "FAILED to fetch a \${SHORT_TARGET} PR-target branch; some build nuances may misbehave" >&2
+"""
+        }
+
         if (untieRefrepoNow) {
             // For initial checkouts headed to stashing
             // Not desired for subsequent checkouts on build agents
