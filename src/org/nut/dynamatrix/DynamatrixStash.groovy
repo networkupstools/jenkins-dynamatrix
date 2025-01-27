@@ -461,6 +461,7 @@ for R in \$REFREPO `git remote` ; do
     && git fetch "\$R" "refs/heads/master:refs/heads/master"
 done
 
+git log -1 "\$R/master" && git branch master "\$R/master" && exit
 echo "FAILED to fetch a master branch; some build nuances may misbehave" >&2
 """
         }
