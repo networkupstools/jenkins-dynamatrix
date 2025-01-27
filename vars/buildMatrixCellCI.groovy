@@ -391,7 +391,7 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                     sh (script: "ls -1 test*/*.log test*/*.trs || true",
                         returnStdout: true
                     ).split('\n').each {
-                        def testLog = it.trim().replace("\/", "_")
+                        def testLog = it.trim().replace("/", "_")
                         dsbc?.dsbcResultLogs[(lastLog - ~/\.log$/) + ".${testLog}.gz"] = dsbc?.dsbcResultLogs[phaseLog]
                     }
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
