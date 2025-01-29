@@ -386,14 +386,18 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                 if (res != 0) {
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
-                    dsbc?.dsbcResultLogs[phaseLog] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
+                    def phaseRes = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
                     // Typical autotools structure? More logs?
                     sh (script: "ls -1 test*/*.log test*/*.trs || true",
                         returnStdout: true
                     ).split('\n').each {
-                        def testLog = it.trim().replace("/", "_")
-                        dsbc?.dsbcResultLogs[(lastLog - ~/\.log$/) + ".${testLog}.gz"] = dsbc?.dsbcResultLogs[phaseLog]
+                        def testLog = it?.trim()?.replace("/", "_")
+                        if (testLog)
+                            dsbc?.dsbcResultLogs[(lastLog - ~/\.log$/) + ".${testLog}.gz"] = phaseRes
                     }
+                    // The main log goes into LinkedHasMap last,
+                    // so it is the URL linked to GitHub status:
+                    dsbc?.dsbcResultLogs[phaseLog] = phaseRes
                     if (dsbc?.thisDynamatrix) { dsbc.thisDynamatrix.setWorstResult(stageName, 'UNSTABLE') }
                     lastErr = "FAILED 'Test1'" + (stageName ? " for ${stageName}" : "")
                     unstable lastErr
