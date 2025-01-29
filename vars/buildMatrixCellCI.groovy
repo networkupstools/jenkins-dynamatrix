@@ -393,6 +393,8 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                     ).split('\n').each {
                         def testLog = it?.trim()?.replace("/", "_")
                         if (testLog)
+                            // FIXME: Analyze autotools test-driver log summary to assign
+                            //  actual verdicts to test cases, maybe not all of them failed
                             dsbc?.dsbcResultLogs[(lastLog - ~/\.log$/) + ".${testLog}.gz"] = phaseRes
                     }
                     // The main log goes into LinkedHasMap last,
