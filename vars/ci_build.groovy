@@ -23,7 +23,7 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // internally, but values placed into it are fed from standard envvars
     // like CC, CFLAGS and others.
 
-    if (dynacfgPipeline.containsKey('buildSystem')
+    if (dynacfgPipeline?.containsKey('buildSystem')
     &&  Utils.isStringNotEmpty(dynacfgPipeline.buildSystem)
     &&  ((String)(dynacfgPipeline.buildSystem) in ['ci_build', 'ci_build.sh', 'zproject'])
     ) {

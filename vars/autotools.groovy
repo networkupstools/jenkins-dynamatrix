@@ -17,7 +17,7 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // Sanity-check the pipeline options
 
-    if (dynacfgPipeline.containsKey('buildSystem')
+    if (dynacfgPipeline?.containsKey('buildSystem')
     &&  'autotools' == dynacfgPipeline.buildSystem
     ) {
         // Not using closures to make sure envvars are expanded during real

@@ -34,13 +34,17 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // with many implementations in other cases), we can remap variables from
     // names in the label into ones used below, e.g. `COMPILER=\${xxxCOMPILER}`
 
-    if (dynacfgPipeline.containsKey('configureEnvvars')) {
+    if (dynacfgPipeline?.containsKey('configureEnvvars')) {
         if (dynacfgPipeline?.traceBuildShell_configureEnvvars) {
             echo "[DEBUG] dynacfgPipeline.configureEnvvars already exists:\n#####\n${dynacfgPipeline.configureEnvvars}\n#####"
         } else {
             echo "[DEBUG] dynacfgPipeline.configureEnvvars already exists"
         }
     } else {
+        if (dynacfgPipeline == null) {
+            dynacfgPipeline = [:]
+        }
+
         dynacfgPipeline['configureEnvvars'] = """ {
 ${dynacfgPipeline.containsKey('configureEnvvars_remap') ? "eval ${dynacfgPipeline.configureEnvvars_remap}" : ""}
 
