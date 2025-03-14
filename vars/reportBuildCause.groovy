@@ -95,11 +95,11 @@ def call() {
 
     if (currentBuild?.buildCauses)
         if (dynamatrixGlobalState.enableDebugTrace)
-            echo("[DEBUG] currentBuild.buildCauses:", currentBuild?.buildCauses)
+            echo("[DEBUG] currentBuild.buildCauses:" + currentBuild?.buildCauses)
 
     if (Utils.isStringNotEmpty(completeBuildCause) && msg != completeBuildCause) {
         if (dynamatrixGlobalState.enableDebugTrace)
-            echo("[DEBUG] Summarized complete build cause(s):", completeBuildCause)
+            echo("[DEBUG] Summarized complete build cause(s):" + completeBuildCause)
     }
 
     if (Utils.isStringNotEmpty(msg)) {
