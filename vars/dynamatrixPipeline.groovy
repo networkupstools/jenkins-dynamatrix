@@ -125,21 +125,29 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     // use of script delegate => caller's original dynacfgPipeline when
     // resolving stage closures):
     if (dynacfgPipeline == null) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline[]"
         dynacfgPipeline = [:]
 //    } else {
 //        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
     }
 
     if (!dynacfgPipeline.containsKey('buildSystem')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildSystem"
         dynacfgPipeline.buildSystem = 'autotools'
     }
 
     // Initialize default `make` implementation to use (there are many), etc.:
     if (!dynacfgPipeline.containsKey('defaultTools')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): prepare empty dynacfgPipeline.defaultTools[]"
         dynacfgPipeline['defaultTools'] = [:]
     }
 
     if (!dynacfgPipeline['defaultTools'].containsKey('MAKE')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.defaultTools[] with one MAKE"
         dynacfgPipeline['defaultTools'] = [
             'MAKE': 'make'
         ]
@@ -153,14 +161,20 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     }
 
     if (!dynacfgPipeline.get("stashnameSrc")) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.stashnameSrc"
         dynacfgPipeline.stashnameSrc = 'src-checkedout'
     }
 
     if (!dynacfgPipeline.containsKey('fixedGitTimestamp')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.fixedGitTimestamp"
         dynacfgPipeline.fixedGitTimestamp = true
     }
 
     if (!dynacfgPipeline.containsKey('failFast')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.failFast"
         dynacfgPipeline.failFast = true
     }
 
@@ -171,6 +185,8 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         // proceed when they get onto a node.
         // false means to use the pipeline parallel() step implementation,
         // which tries to abort all running code if one stage fails, ASAP.
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.failFastSafe"
         dynacfgPipeline.failFastSafe = true
     }
 
@@ -180,23 +196,33 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         // and so far no way was found to remove them during e.g. final
         // grouped or aggregated analysis publishing stage.
         // This flag does not however preclude that final publication.
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.delayedIssueAnalysis"
         dynacfgPipeline.delayedIssueAnalysis = true
     }
 
     if (!dynacfgPipeline.containsKey('traceBuildShell_configureEnvvars')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.traceBuildShell_configureEnvvars"
         dynacfgPipeline.traceBuildShell_configureEnvvars = false
     }
 
     if (!dynacfgPipeline.containsKey('traceBuildShell')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.traceBuildShell"
         dynacfgPipeline.traceBuildShell = true
     }
 
     // Use milestones to cancel older PR builds if new iterations land?
     if (!dynacfgPipeline.containsKey('useMilestones')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.useMilestones"
         dynacfgPipeline.useMilestones = true
     }
 
     if (!dynacfgPipeline.containsKey('recurseIntoDynamatrixCloneStats')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.recurseIntoDynamatrixCloneStats"
         dynacfgPipeline.recurseIntoDynamatrixCloneStats = true
     }
 
@@ -212,12 +238,16 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     // use of script delegate => caller's original dynacfgPipeline when
     // resolving stage closures):
     if (dynacfgPipeline == null) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.call(): populate missing dynacfgPipeline[]"
         dynacfgPipeline = [:]
 //    } else {
 //        dynacfgPipeline = (Map)(dynacfgPipeline.clone())
     }
 
     if (dynacfgBase == null) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.call(): populate missing dynacfgBase[]"
         dynacfgBase = [:]
 //    } else {
 //        dynacfgBase = (Map)(dynacfgBase.clone())
@@ -234,6 +264,8 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     }
 
     if (!dynacfgBase.containsKey('defaultDynamatrixConfig')) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "dynamatrixPipeline.call(): populate missing dynacfgBase.defaultDynamatrixConfig"
         dynacfgBase['defaultDynamatrixConfig'] = "C+CXX"
     }
 

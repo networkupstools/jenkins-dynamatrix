@@ -34,10 +34,14 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
 
         // Initialize default `make` implementation to use (there are many), etc.:
         if (!dynacfgPipeline.containsKey('defaultTools')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): prepare empty dynacfgPipeline.defaultTools[]"
             dynacfgPipeline['defaultTools'] = [:]
         }
 
         if (!dynacfgPipeline['defaultTools'].containsKey('MAKE')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.defaultTools[] with one MAKE"
             dynacfgPipeline['defaultTools'] = [
                 'MAKE': 'make'
             ]
@@ -51,27 +55,39 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.containsKey('buildPhases')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): prepare empty dynacfgPipeline.buildPhases[]"
             dynacfgPipeline.buildPhases = [:]
         }
 
         // Subshell common operations to prepare codebase:
         if (!dynacfgPipeline.buildPhases.containsKey('prepconf')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['prepconf'] = null"
             dynacfgPipeline.buildPhases['prepconf'] = null
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('configure')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['configure'] = null"
             dynacfgPipeline.buildPhases['configure'] = null
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('build')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['build'] = null"
             dynacfgPipeline.buildPhases['build'] = null
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('buildQuiet')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['buildQuiet'] = null"
             dynacfgPipeline.buildPhases['buildQuiet'] = null
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('buildQuietCautious')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['buildQuietCautious'] = null"
             dynacfgPipeline.buildPhases['buildQuietCautious'] = null
         }
 
@@ -79,6 +95,8 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         if (!dynacfgPipeline.buildPhases.containsKey('check')) {
             // Note: here even an empty MAKE envvar should not be a problem,
             // the ci_build.sh script should find/guess one
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['prepconf'] with script to call ci_build.sh"
             dynacfgPipeline.buildPhases['check'] = """ (
 [ -x ./ci_build.sh ] || exit
 
@@ -87,8 +105,13 @@ eval BUILD_TYPE="\${BUILD_TYPE}" BUILD_WARNOPT="\${BUILD_WARNOPT}" BUILD_WARNFAT
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('distcheck')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "ci_build.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['distcheck'] = null"
             dynacfgPipeline.buildPhases['distcheck'] = null
         }
+    } else {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "ci_build.sanityCheckDynacfgPipeline(): SKIP: dynacfgPipeline.buildSystem is missing or not ['ci_build', 'ci_build.sh', 'zproject']"
     }
 
     return dynacfgPipeline

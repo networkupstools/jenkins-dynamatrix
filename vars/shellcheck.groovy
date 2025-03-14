@@ -292,20 +292,30 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     if (dynacfgPipeline.containsKey('shellcheck')) {
         if (Utils.isMap(dynacfgPipeline['shellcheck'])) {
             if (!dynacfgPipeline['shellcheck'].containsKey('dynamatrixAxesLabels') || "".equals(dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'])) {
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck.dynamatrixAxesLabels"
                 dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'] = [~/^OS_.+/]
             }
             if (!dynacfgPipeline['shellcheck'].containsKey('single') || "".equals(dynacfgPipeline['shellcheck']['single'])) {
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck.single = null"
                 dynacfgPipeline['shellcheck']['single'] = null
             }
             if (!dynacfgPipeline['shellcheck'].containsKey('multi') || "".equals(dynacfgPipeline['shellcheck']['multi'])) {
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck.multi = null"
                 dynacfgPipeline['shellcheck']['multi'] = null
             }
             if (!dynacfgPipeline['shellcheck'].containsKey('multiLabel') || "".equals(dynacfgPipeline['shellcheck']['multiLabel'])) {
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck.multiLabel"
                 dynacfgPipeline['shellcheck']['multiLabel'] = 'SHELL_PROGS'
             }
         } else {
             if ("${dynacfgPipeline['shellcheck']}".trim().equals("true")) {
                 // Assign defaults
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo "shellcheck.sanityCheckDynacfgPipeline(): true: defaulting a reasonable config"
                 dynacfgPipeline['shellcheck'] = [
                     'dynamatrixAxesLabels': [~/^OS_.+/],
                     'single': '( \${MAKE} shellcheck )',
@@ -313,6 +323,8 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
                     'multiLabel': 'SHELL_PROGS'
                 ]
             } else if ("${dynacfgPipeline['shellcheck']}".trim().equals("false")) {
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo "shellcheck.sanityCheckDynacfgPipeline(): false: defaulting a null-filled config"
                 dynacfgPipeline['shellcheck'] = [:]
                 dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'] = []
                 dynacfgPipeline['shellcheck']['single'] = null
@@ -323,6 +335,8 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
             }
         }
     } else {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "shellcheck.sanityCheckDynacfgPipeline(): defaulting a null-filled config"
         dynacfgPipeline['shellcheck'] = [:]
         dynacfgPipeline['shellcheck']['dynamatrixAxesLabels'] = []
         dynacfgPipeline['shellcheck']['single'] = null
@@ -331,24 +345,34 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     }
 
     if (!dynacfgPipeline.shellcheck.stageNameFunc) {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck.stageNameFunc"
         dynacfgPipeline.shellcheck.stageNameFunc = DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
     }
 
     if (dynacfgPipeline.containsKey('shellcheck_prepconf')) {
         if ("${dynacfgPipeline['shellcheck_prepconf']}".trim().equals("true")) {
             // Use whatever buildPhases provide
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck_prepconf = null"
             dynacfgPipeline['shellcheck_prepconf'] = null
         }
     } else {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck_prepconf = null"
         dynacfgPipeline['shellcheck_prepconf'] = null
     }
 
     if (dynacfgPipeline.containsKey('shellcheck_configure')) {
         if ("${dynacfgPipeline['shellcheck_configure']}".trim().equals("true")) {
             // Use whatever buildPhases provide
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck_configure = null"
             dynacfgPipeline['shellcheck_configure'] = null
         }
     } else {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck_configure = null"
         dynacfgPipeline['shellcheck_configure'] = null
     }
 

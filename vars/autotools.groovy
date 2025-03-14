@@ -27,10 +27,14 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
 
         // Initialize default `make` implementation to use (there are many), etc.:
         if (!dynacfgPipeline.containsKey('defaultTools')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): prepare empty dynacfgPipeline.defaultTools[]"
             dynacfgPipeline['defaultTools'] = [:]
         }
 
         if (!dynacfgPipeline['defaultTools'].containsKey('MAKE')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.defaultTools[] with one MAKE"
             dynacfgPipeline['defaultTools'] = [
                 'MAKE': 'make'
             ]
@@ -44,19 +48,27 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         }
 
         if (!dynacfgPipeline.containsKey('buildPhases')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): prepare empty dynacfgPipeline.buildPhases[]"
             dynacfgPipeline.buildPhases = [:]
         }
 
         // Subshell common operations to prepare codebase:
         if (!dynacfgPipeline.buildPhases.containsKey('prepconf')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['prepconf']"
             dynacfgPipeline.buildPhases['prepconf'] = "( if [ -x ./autogen.sh ]; then ./autogen.sh || exit; else if [ -s configure.ac ] ; then mkdir -p config && autoreconf --install --force --verbose -I config || exit ; fi; fi ; [ -x configure ] || exit )"
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('configure')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['configure']"
             dynacfgPipeline.buildPhases['configure'] = " ( [ -x configure ] || exit; eval \${CONFIG_ENVVARS} time ./configure \${CONFIG_OPTS} ) "
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('build')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['build']"
             dynacfgPipeline.buildPhases['build'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
@@ -65,22 +77,33 @@ def sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         // non-fatal warnings), so the Jenkins saved logs are not in
         // gigabytes range per dynamatrix run :)
         if (!dynacfgPipeline.buildPhases.containsKey('buildQuiet')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['buildQuiet']"
             dynacfgPipeline.buildPhases['buildQuiet'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} VERBOSE=0 V=0 -s -k -j 4 all >/dev/null && echo "SUCCESS" && exit 0; echo "First attempt failed (\$?), retrying to log what did:"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('buildQuietCautious')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['buildQuietCautious']"
             dynacfgPipeline.buildPhases['buildQuietCautious'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; echo "First running a quiet parallel build..." >&2; eval time \${MAKE} \${MAKE_OPTS} VERBOSE=0 V=0 -s -k -j 4 all >/dev/null && echo "Seemingly a SUCCESS" ; echo "First attempt finished (\$?), retrying to log what fails (if any):"; eval time \${MAKE} \${MAKE_OPTS} -k all )"""
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('check')) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['check']"
             dynacfgPipeline.buildPhases['check'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval time \${MAKE} \${MAKE_OPTS} check )"""
         }
 
         if (!dynacfgPipeline.buildPhases.containsKey('distcheck')) {
             // Note the use of optional quoting for CONFIG_OPTS expansion
             // to avoid an existing but empty token in Makefile processing:
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "autotools.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.buildPhases['distcheck']"
             dynacfgPipeline.buildPhases['distcheck'] = """( if [ x"\${MAKE-}" = x ]; then echo "WARNING: MAKE is somehow unset, defaulting!" >&2; MAKE=make; fi; eval \${CONFIG_ENVVARS} time \${MAKE} \${MAKE_OPTS} distcheck DISTCHECK_CONFIGURE_FLAGS=\${CONFIG_OPTS:+\\"\$CONFIG_OPTS\\"} )"""
         }
+    } else {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "autotools.sanityCheckDynacfgPipeline(): SKIP: dynacfgPipeline.buildSystem is missing or not 'autotools'"
     }
 
     return dynacfgPipeline

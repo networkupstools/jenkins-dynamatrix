@@ -93,29 +93,43 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
 
     if (dynacfgPipeline.containsKey('stylecheck')) {
         if ("${dynacfgPipeline['stylecheck']}".trim().equals("true")) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "stylecheck.sanityCheckDynacfgPipeline(): true: defaulting a reasonable config"
             dynacfgPipeline['stylecheck'] = '( \${MAKE} stylecheck )'
         } else if ("${dynacfgPipeline['stylecheck']}".trim().equals("false")) {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "stylecheck.sanityCheckDynacfgPipeline(): false: defaulting a null config"
             dynacfgPipeline['stylecheck'] = null
         }
     } else {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "stylecheck.sanityCheckDynacfgPipeline(): defaulting a null config"
         dynacfgPipeline['stylecheck'] = null
     }
 
     if (dynacfgPipeline.containsKey('stylecheck_prepconf')) {
         if ("${dynacfgPipeline['stylecheck_prepconf']}".trim().equals("true")) {
             // Use whatever buildPhases provide
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "stylecheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.stylecheck_prepconf = null"
             dynacfgPipeline['stylecheck_prepconf'] = null
         }
     } else {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "stylecheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.stylecheck_prepconf = null"
         dynacfgPipeline['stylecheck_prepconf'] = null
     }
 
     if (dynacfgPipeline.containsKey('stylecheck_configure')) {
         if ("${dynacfgPipeline['stylecheck_configure']}".trim().equals("true")) {
             // Use whatever buildPhases provide
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "stylecheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.stylecheck_configure = null"
             dynacfgPipeline['stylecheck_configure'] = null
         }
     } else {
+        if (dynamatrixGlobalState.enableDebugTrace)
+            echo "stylecheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.stylecheck_configure = null"
         dynacfgPipeline['stylecheck_configure'] = null
     }
 
