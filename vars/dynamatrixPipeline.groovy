@@ -259,8 +259,11 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     String dynamatrixComment = "dynamatrixPipeline() step"
     Dynamatrix dynamatrix = new Dynamatrix(this, dynamatrixComment +
             (dynamatrixGlobalState.enableDebugTrace ? " for ${dynacfgBase} + ${dynacfgPipeline}" : ""))
-    if (dynamatrixGlobalState.enableDebugTrace)
+    if (dynamatrixGlobalState.enableDebugTrace) {
+        // Reset stored comment back to short string,
+        // after the constructor has reported about itself
         dynamatrix.dynamatrixComment = dynamatrixComment
+    }
 
     reportBuildCause()
 
