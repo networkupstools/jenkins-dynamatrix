@@ -757,9 +757,12 @@ def cmdlineBuildLogged(String cmd, String logfile, String stageName, String CI_S
 tail -f '${logfile}' &
 CILOGPID=\$!
 ( ${cmd} ) >> '${logfile}' 2>&1 || RES=\$?
-sleep 1; echo ''
+sleep 1
 kill "\$CILOGPID" >/dev/null 2>&1
 ( # cat helps avoid errors due to expansion of cmd (et al) as shell-parsable code
+  echo ''
+  echo '=================================='
+  echo ''
   set +x
   printf "FINISHED with exit-code \$RES "
   cat << EOF
@@ -800,7 +803,7 @@ EOF
         echo "...like \${CONFIG_LOG_URLS}"
     fi
   fi
-) >&2
+) | tee -a '${logfile}' >&2
 [ \$RES = 0 ] || exit \$RES
 """
 
