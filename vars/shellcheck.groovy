@@ -101,32 +101,53 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                         // On current node/workspace, prepare source once for
                         // tests that are not expected to impact each other
                         stage("prep for ${MATRIX_TAG}") {
-                            sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
-                            withEnvOptional(dynacfgPipeline.defaultTools) {
-                                unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
+                            String msgFail = "Failed stage: prep for ${MATRIX_TAG}" + "\n  for ${Utils.castString(dsbc)}"
+                            Boolean didFail = true
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
+                                sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
+                                withEnvOptional(dynacfgPipeline.defaultTools) {
+                                    unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 
-                                if (dynacfgPipeline?.shellcheck_prepconf != null) {
-                                    if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_prepconf)) {
-                                        sh """ ${dynacfgPipeline.shellcheck_prepconf} """
-                                    } // else: pipeline author wants this skipped
-                                } else {
-                                    if (dynacfgPipeline?.buildPhases?.prepconf) {
-                                        sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+                                    if (dynacfgPipeline?.shellcheck_prepconf != null) {
+                                        if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_prepconf)) {
+                                            sh """ ${dynacfgPipeline.shellcheck_prepconf} """
+                                        } // else: pipeline author wants this skipped
+                                    } else {
+                                        if (dynacfgPipeline?.buildPhases?.prepconf) {
+                                            sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+                                        }
                                     }
-                                }
 
-                                if (dynacfgPipeline?.shellcheck_configure != null) {
-                                    if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_configure)) {
-                                        sh """ ${dynacfgPipeline.shellcheck_configure} """
-                                    } // else: pipeline author wants this skipped
-                                } else {
-                                    if (dynacfgPipeline?.buildPhases?.configure) {
-                                        sh """ ${dynacfgPipeline.buildPhases.configure} """
+                                    if (dynacfgPipeline?.shellcheck_configure != null) {
+                                        if (Utils.isStringNotEmpty(dynacfgPipeline.shellcheck_configure)) {
+                                            sh """ ${dynacfgPipeline.shellcheck_configure} """
+                                        } // else: pipeline author wants this skipped
+                                    } else {
+                                        if (dynacfgPipeline?.buildPhases?.configure) {
+                                            sh """ ${dynacfgPipeline.buildPhases.configure} """
+                                        }
                                     }
-                                }
 
+                                }
+                                didFail = false
                             }
-                            return true
+
+                            if (didFail) {
+                                // Track the big-stage fault to explode in the end:
+                                bigStageResult = 'FAILURE'
+                                dsbc.setWorstResult('FAILURE')
+                                dsbc.dsbcResultInterim = 'FAILURE'
+                                // Track the small-stage fault in a way that we can continue with other sub-stages:
+                                //echo msgFail
+                                currentBuild.result = 'FAILURE'
+                                manager.buildFailure()
+                                // Using unstable here to signal that something is
+                                // wrong with the stage verdict; given the earlier
+                                // harsher FAILURE that would be the verdict used.
+                                unstable(msgFail)
+                            }
+
+                            return didFail
                         }
 
                         // Jenkins Groovy CPS does not like to track a Map
