@@ -155,8 +155,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                             Closure stagesShellcheckNode_val = {
                                                 String msgFail = "Failed stage: ${stageName} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(dsbc)}"
                                                 Boolean didFail = true
-                                                //catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
-                                                try {
+                                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
                                                     withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
                                                         withEnvOptional(dynacfgPipeline.defaultTools) {
                                                             sh """ set +x
@@ -166,21 +165,21 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                                         }
                                                     }
                                                     didFail = false
-                                                } catch (Throwable ignored) {}
+                                                }
 
                                                 if (didFail) {
                                                     // Track the big-stage fault to explode in the end:
                                                     bigStageResult = 'FAILURE'
                                                     dsbc.setWorstResult('FAILURE')
+                                                    dsbc.dsbcResultInterim = 'FAILURE'
                                                     // Track the small-stage fault in a way that we can continue with other sub-stages:
-                                                    echo msgFail
+                                                    //echo msgFail
                                                     currentBuild.result = 'FAILURE'
                                                     manager.buildFailure()
                                                     // Using unstable here to signal that something is
                                                     // wrong with the stage verdict; given the earlier
                                                     // harsher FAILURE that would be the verdict used.
                                                     unstable(msgFail)
-                                                    dsbc.dsbcResultInterim = 'FAILURE'
                                                 }
                                                 return didFail
                                             } // added stage
