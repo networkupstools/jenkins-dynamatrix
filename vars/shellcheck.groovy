@@ -148,6 +148,21 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                             }
 
                             return didFail
+                        } // stage(prep)
+
+                        if (bigStageResult == 'FAILURE') {
+                            currentBuild.result = bigStageResult
+                            String msg = "prep for shellcheck for ${MATRIX_TAG} failed"
+                            infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
+                                'FAILURE', "shellcheck-${MATRIX_TAG}")
+                            msg = "FATAL: ${msg} above"
+                            dsbc.setWorstResult('FAILURE')
+                            dsbc.dsbcResultInterim = 'FAILURE'
+                            echo msg
+                            manager.buildFailure()
+                            //error msg
+                            unstable(msg)
+                            return false
                         }
 
                         // Jenkins Groovy CPS does not like to track a Map
