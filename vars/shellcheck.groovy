@@ -170,16 +170,16 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                                 if (didFail) {
                                                     // Track the big-stage fault to explode in the end:
                                                     bigStageResult = 'FAILURE'
-                                                    dsbc.dsbcResultInterim = 'FAILURE'
                                                     dsbc.setWorstResult('FAILURE')
                                                     // Track the small-stage fault in a way that we can continue with other sub-stages:
-                                                    //echo msgFail
+                                                    echo msgFail
                                                     currentBuild.result = 'FAILURE'
                                                     manager.buildFailure()
                                                     // Using unstable here to signal that something is
                                                     // wrong with the stage verdict; given the earlier
                                                     // harsher FAILURE that would be the verdict used.
                                                     unstable(msgFail)
+                                                    dsbc.dsbcResultInterim = 'FAILURE'
                                                 }
                                                 return didFail
                                             } // added stage
@@ -250,7 +250,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                 'FAILURE', "shellcheck-${MATRIX_TAG}")
                         msg = "FATAL: ${msg} above"
-                        //echo msg
+                        dsbc.dsbcResultInterim = 'FAILURE'
+                        echo msg
                         manager.buildFailure()
                         //error msg
                         unstable(msg)
