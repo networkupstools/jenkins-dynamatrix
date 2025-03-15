@@ -271,12 +271,13 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                 'FAILURE', "shellcheck-${MATRIX_TAG}")
                         msg = "FATAL: ${msg} above"
+                        dsbc.setWorstResult('FAILURE')
                         dsbc.dsbcResultInterim = 'FAILURE'
                         echo msg
                         manager.buildFailure()
                         //error msg
                         unstable(msg)
-                }
+                    }
             } // generateBuild + closure for one hit of stagesShellcheck
     } // if dynacfgPipeline.shellcheck
 
