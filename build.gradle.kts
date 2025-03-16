@@ -7,19 +7,20 @@ plugins {
     id ("java")
 
     // See https://docs.gradle.com/enterprise/gradle-plugin/#gradle_6_x_and_later
-    //id("com.gradle.build-scan") version "2.3"
-    //id( "com.gradle.enterprise") version "3.7.2"
+    //id ("com.gradle.build-scan") version "2.3"
+    //id ("com.gradle.enterprise") version "3.7.2"
 
-    id("com.mkobit.jenkins.pipelines.shared-library") version "0.10.1" apply true
-    id("com.github.ben-manes.versions") version "0.21.0"
+    id ("com.mkobit.jenkins.pipelines.shared-library") version "0.10.1" apply true
+    id ("com.github.ben-manes.versions") version "0.21.0"
 
     // https://discuss.gradle.org/t/unable-to-resolve-class-when-compiling-jenkins-groovy-script/28153/11
     // https://github.com/mkobit/jenkins-pipeline-shared-libraries-gradle-plugin/issues/65
-    id("org.jenkins-ci.jpi") version "0.38.0" apply false
-    id ("org.jetbrains.kotlin.jvm") version "1.6.10-RC"
+    id ("org.jenkins-ci.jpi") version "0.51.0" apply false
+    //id ("org.jetbrains.kotlin.jvm") version "1.6.10-RC"
+    id ("org.jetbrains.kotlin.jvm") version "2.1.0-Beta1"
 
     // https://github.com/JetBrains/gradle-idea-ext-plugin
-    id ("org.jetbrains.gradle.plugin.idea-ext") version "1.1.7" apply true
+    id ("org.jetbrains.gradle.plugin.idea-ext") version "1.1.9" apply true
 }
 
 group "org.nut.dynamatrix"
@@ -53,26 +54,26 @@ java {
 //noinspection JCenterRepository
 // https://blog.gradle.org/jcenter-shutdown says it will remain R/O
 repositories {
-    maven (url = "https://repo.jenkins-ci.org/releases/")
-    maven (url = "https://repo.jenkins-ci.org/incrementals/")
-    // Mirror not served anymore // maven (url = "https://repo.jenkins-ci.org/public/")
+    //jcenter()
+    mavenCentral()
     maven (url = "https://plugins.gradle.org/m2/")
 
-    mavenCentral()
+    //maven (url = "https://repo.jenkins-ci.org/releases/")
+    maven (url = "https://repo.jenkins-ci.org/incrementals/")
+    // Mirror not served anymore // maven (url = "https://repo.jenkins-ci.org/public/")
 
     // Note: this one reports "403 Forbidden" if an URL is bad -
     // check spelling of the artifact (too few/many components etc.)
     maven (url = "https://mvnrepository.com/artifact/")
-
-    jcenter()
 }
 
 dependencies {
-    // https://mvnrepository.com/artifact/com.cloudbees/groovy-cps
-    implementation ("com.cloudbees:groovy-cps:3624.v43b_a_38b_62b_b_7")
+    // NOTE: https://stackoverflow.com/questions/65731542/why-is-there-no-kotlin-stdlib-jdk11
+    implementation ("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
-    implementation ("org.eclipse.hudson:hudson-core:3.2.1")
+    // FIXME: relocated to JAKARTA.servlet-api
     implementation ("javax.servlet:javax.servlet-api:4.0.1")
+    testImplementation ("javax.servlet:javax.servlet-api:4.0.1")
 
     // Currently Jenkins CPS-transforms over Groovy 2.4.21 foundations
     // (check over time with `println GroovySystem.version` on our
@@ -87,17 +88,6 @@ dependencies {
     //implementation ("com.sun.xml.bind:jaxb-impl:4.0.1")
     //implementation ("org.glassfish.main.javaee-api:javax.jws:3.1.2.2")
 
-    // NOTE: Need a version with https://github.com/jenkinsci/http-request-plugin/pull/120 code in it!
-    // https://mvnrepository.com/artifact/org.jenkins-ci.plugins/http_request (older releases)
-    //implementation ("org.jenkins-ci.plugins:http_request:1.8.27")
-    //testImplementation ("org.jenkins-ci.plugins:http_request:1.8.27")
-    // https://repo.jenkins-ci.org/incrementals/org/jenkins-ci/plugins/http_request/1.17-rc492.f4a_b_5b_1a_43c3/
-    implementation ("org.jenkins-ci.plugins:http_request:1.17-rc492.f4a_b_5b_1a_43c3")
-    testImplementation ("org.jenkins-ci.plugins:http_request:1.17-rc492.f4a_b_5b_1a_43c3")
-
-    testImplementation ("com.mkobit.jenkins.pipelines:jenkins-pipeline-shared-libraries-gradle-plugin:0.10.1")
-    testImplementation ("javax.servlet:javax.servlet-api:4.0.1")
-
     // NOTE: https://stackoverflow.com/questions/52502189/java-11-package-javax-xml-bind-does-not-exist
     //testImplementation ("javax.xml.bind:javaxb-api")
     // Avoid java.lang.NoClassDefFoundError: com/sun/activation/registries/LogSupport
@@ -108,28 +98,47 @@ dependencies {
     testImplementation ("jakarta.xml.bind:jakarta.xml.bind-api")
     testImplementation ("com.sun.xml.bind:jaxb-impl")
 
-    implementation ("org.jenkins-ci.main:jenkins-test-harness:1949.vb_b_37feefe78c")
+    testImplementation ("org.junit.jupiter:junit-jupiter-api:5.11.2")
+    testRuntimeOnly ("org.junit.jupiter:junit-jupiter-engine:5.11.2")
+
+    testImplementation ("com.mkobit.jenkins.pipelines:jenkins-pipeline-shared-libraries-gradle-plugin:0.10.1")
+
+    // https://mvnrepository.com/artifact/com.cloudbees/groovy-cps
+    implementation ("com.cloudbees:groovy-cps:3964.v0767b_4b_a_0b_fa_")
+    testImplementation ("com.cloudbees:groovy-cps:3964.v0767b_4b_a_0b_fa_")
+
+    // 3.3.3 is currently latest but buggy, some components
+    // refer to snapshot versions inconsistently
+    implementation ("org.eclipse.hudson:hudson-core:3.2.1")
     testImplementation ("org.eclipse.hudson:hudson-core:3.2.1")
-    testImplementation ("org.junit.jupiter:junit-jupiter-api:5.7.2")
-    testRuntimeOnly ("org.junit.jupiter:junit-jupiter-engine:5.7.2")
-    testRuntimeOnly ("org.jenkins-ci.plugins:matrix-project:1.20")
-    testRuntimeOnly ("org.jenkins-ci.plugins.workflow:workflow-step-api:2.24")
+
+    // NOTE: Need a version with https://github.com/jenkinsci/http-request-plugin/pull/120 code in it!
+    // https://mvnrepository.com/artifact/org.jenkins-ci.plugins/http_request (older releases)
+    //implementation ("org.jenkins-ci.plugins:http_request:1.8.27")
+    //testImplementation ("org.jenkins-ci.plugins:http_request:1.8.27")
+    // https://repo.jenkins-ci.org/incrementals/org/jenkins-ci/plugins/http_request/1.17-rc492.f4a_b_5b_1a_43c3/
+    implementation ("org.jenkins-ci.plugins:http_request:1.19")
+    testImplementation ("org.jenkins-ci.plugins:http_request:1.19")
+
+    implementation ("org.jenkins-ci.main:jenkins-test-harness:2289.vfd344a_6d1660")
+    testRuntimeOnly ("org.jenkins-ci.plugins:matrix-project:831.v084e85a_b_4ea_d")
+    testRuntimeOnly ("org.jenkins-ci.plugins.workflow:workflow-step-api:678.v3ee58b_469476")
     // https://mvnrepository.com/artifact/org.jenkins-ci.plugins/pipeline-utility-steps
-    testRuntimeOnly("org.jenkins-ci.plugins:pipeline-utility-steps:2.13.0")
+    testRuntimeOnly("org.jenkins-ci.plugins:pipeline-utility-steps:2.16.2")
     // Avoid   40.920 [id=44]	SEVERE	jenkins.InitReactorRunner$1#onTaskFailed:
     //   Failed Loading plugin Pipeline Utility Steps v2.13.0 (pipeline-utility-steps)
     //   java.io.IOException: Failed to load: Pipeline Utility Steps (pipeline-utility-steps 2.13.0)
     //   - Update required: Pipeline: Groovy (workflow-cps 2.72) to be updated to 2660.vb_c0412dc4e6d or higher
-    testRuntimeOnly("org.jenkins-ci.plugins.workflow:workflow-cps:3624.v43b_a_38b_62b_b_7")
+    testRuntimeOnly("org.jenkins-ci.plugins.workflow:workflow-cps:3961.ve48ee2c44a_b_3")
     testImplementation ("com.cloudbees:groovy-cps:3624.v43b_a_38b_62b_b_7")
     implementation ("org.jenkins-ci.main:remoting:3131.vf2b_b_798b_ce99")
     implementation ("org.jenkins-ci.plugins:git:5.1.0")
     implementation ("org.jenkins-ci.plugins:github-branch-source:1701.v00cc8184df93")
-    implementation ("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     testImplementation("org.assertj:assertj-core:3.12.2")
 /*
   val spock = "org.spockframework:spock-core:1.2-groovy-2.4"
   testImplementation(spock)
+  testImplementation("org.assertj:assertj-core:3.12.2")
   integrationTestImplementation(spock)
 */
 }
@@ -163,24 +172,26 @@ sharedLibrary {
     //coreVersion.set("2.303")
     // TODO: retrieve downloaded plugin resource
     pluginDependencies {
-        dependency("org.jenkins-ci.plugins", "pipeline-build-step", "2.9")
-        dependency("org.6wind.jenkins", "lockable-resources", "2.5")
-        val declarativePluginsVersion = "1.3.9"
+        dependency("org.jenkins-ci.plugins", "pipeline-build-step", "540.vb_e8849e1a_b_d8")
+        dependency("org.6wind.jenkins", "lockable-resources", "1315.v4ea_8e5159ec8")
+        dependency("org.jenkins-ci.plugins", "badge", "2.2")
+        dependency("sp.sd", "nexus-artifact-uploader", "2.14")
+
+        val declarativePluginsVersion = "2.2214.vb_b_34b_2ea_9b_83"
         dependency("org.jenkinsci.plugins", "pipeline-model-api", declarativePluginsVersion)
-        dependency("org.jenkins-ci.plugins.workflow", "workflow-step-api", "2.24")
-        dependency("org.jenkins-ci.plugins.workflow", "workflow-cps", "3624.v43b_a_38b_62b_b_7")
+        dependency("org.jenkins-ci.plugins.workflow", "workflow-step-api", "678.v3ee58b_469476")
+        dependency("org.jenkins-ci.plugins.workflow", "workflow-cps", "3961.ve48ee2c44a_b_3")
         dependency("org.jenkinsci.plugins", "pipeline-model-declarative-agent", "1.1.1")
         dependency("org.jenkinsci.plugins", "pipeline-model-definition", declarativePluginsVersion)
         dependency("org.jenkinsci.plugins", "pipeline-model-extensions", declarativePluginsVersion)
         // Jenkins Server startup in tests throws long noisy stack traces without these:
-        dependency("org.jenkins-ci.plugins", "git-client", "3.10.0")
-        dependency("org.jenkins-ci.plugins", "git-server", "1.10")
-        dependency("org.jenkins-ci.modules", "sshd", "3.1.0")
-        //dependency("org.jenkins-ci.plugins", "http_request", "1.8.27")
-        dependency("org.jenkins-ci.plugins", "http_request", "1.17-rc492.f4a_b_5b_1a_43c3")
+        dependency("org.jenkins-ci.plugins", "git-client", "4.7.0")
+        dependency("org.jenkins-ci.plugins", "git-server", "126.v0d945d8d2b_39")
+        dependency("org.jenkins-ci.modules", "sshd", "3.322.v159e91f6a_550")
+        dependency("org.jenkins-ci.plugins", "http_request", "1.19")
 
-        dependency("org.jenkins-ci.plugins", "matrix-project", "1.20")
-        dependency("org.jenkins-ci.plugins", "pipeline-utility-steps", "2.13.0")
+        dependency("org.jenkins-ci.plugins", "matrix-project", "831.v084e85a_b_4ea_d")
+        dependency("org.jenkins-ci.plugins", "pipeline-utility-steps", "2.16.2")
 
         dependency("org.jenkins-ci.plugins", "git", "5.1.0")
         dependency("org.jenkins-ci.plugins", "github-branch-source", "1701.v00cc8184df93")
@@ -189,7 +200,8 @@ sharedLibrary {
         dependency("javax.activation", "activation", "1.1.1")
         //dependency("com.sun.activation", "jakarta.activation", "2.0.0")
 
-        dependency ("org.jenkins-ci.main", "jenkins-test-harness", "1949.vb_b_37feefe78c")
+        // https://mvnrepository.com/artifact/org.jenkins-ci.main/jenkins-test-harness
+        dependency ("org.jenkins-ci.main", "jenkins-test-harness", "2207.v3b_df04c801d4" /* "2289.vfd344a_6d1660" too new */)
     }
 }
 
@@ -247,7 +259,9 @@ idea {
 tasks {
     wrapper {
         //gradleVersion = "5.5.1"
-        gradleVersion = "7.2"
+        //gradleVersion = "7.2"
+        //gradleVersion = "7.1"
+        gradleVersion = "8.8"
     }
 
     test {
@@ -278,13 +292,15 @@ tasks {
     compileKotlin {
         kotlinOptions {
             //jvmTarget = "1.8"
-            jvmTarget = "11"
+            //jvmTarget = "11"
+            jvmTarget = "21"
         }
     }
     compileTestKotlin {
         kotlinOptions {
             //jvmTarget = "1.8"
-            jvmTarget = "11"
+            //jvmTarget = "11"
+            jvmTarget = "21"
         }
     }
 }
