@@ -83,7 +83,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
             dynamatrixAxesLabels: dynacfgPipeline.shellcheck.dynamatrixAxesLabels,
             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
             stageNameFunc: dynacfgPipeline.shellcheck.stageNameFunc
-            ],
+            ] + (dynacfgPipeline.shellcheck?.excludeCombos ? [excludeCombos: dynacfgPipeline.shellcheck?.excludeCombos,] : [:]),
             returnSet) { def delegate -> setDelegate(delegate)
                     String MATRIX_TAG = delegate.stageName.trim() - ~/^MATRIX_TAG="*/ - ~/"*$/
 
