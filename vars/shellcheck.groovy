@@ -85,7 +85,9 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
             stageNameFunc: dynacfgPipeline.shellcheck.stageNameFunc
             ] + (dynacfgPipeline.shellcheck?.excludeCombos ? [excludeCombos: dynacfgPipeline.shellcheck?.excludeCombos,] : [:]),
             returnSet) { def delegate -> setDelegate(delegate)
-                    String MATRIX_TAG = delegate.stageName.trim() - ~/^MATRIX_TAG="*/ - ~/"*$/
+                    DynamatrixSingleBuildConfig MATRIX_DSBC = delegate.dsbc
+                    String MATRIX_STAGENAME = delegate.stageName.trim()
+                    String MATRIX_TAG = MATRIX_STAGENAME - ~/^MATRIX_TAG="*/ - ~/"*$/
 
                     // Cache faults of sub-tests as a fault of this big stage,
                     // but let them all pass first so we know all shells which
@@ -101,7 +103,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                         // On current node/workspace, prepare source once for
                         // tests that are not expected to impact each other
                         stage("prep for ${MATRIX_TAG}") {
-                            String msgFail = "Failed stage: prep for ${MATRIX_TAG}" + "\n  for ${Utils.castString(dsbc)}"
+                            String msgFail = "Failed stage: prep for ${MATRIX_TAG}" + "\n  for ${Utils.castString(MATRIX_DSBC)}"
                             Boolean didFail = true
                             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
                                 sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
@@ -135,8 +137,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                             if (didFail) {
                                 // Track the big-stage fault to explode in the end:
                                 bigStageResult = 'FAILURE'
-                                dsbc.setWorstResult('FAILURE')
-                                dsbc.dsbcResultInterim = 'FAILURE'
+                                MATRIX_DSBC.setWorstResult('FAILURE')
+                                MATRIX_DSBC.dsbcResultInterim = 'FAILURE'
                                 // Track the small-stage fault in a way that we can continue with other sub-stages:
                                 //echo msgFail
                                 currentBuild.result = 'FAILURE'
@@ -156,8 +158,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                             infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                 'FAILURE', "shellcheck-${MATRIX_TAG}")
                             msg = "FATAL: ${msg} above"
-                            dsbc.setWorstResult('FAILURE')
-                            dsbc.dsbcResultInterim = 'FAILURE'
+                            MATRIX_DSBC.setWorstResult('FAILURE')
+                            MATRIX_DSBC.dsbcResultInterim = 'FAILURE'
                             echo msg
                             manager.buildFailure()
                             //error msg
@@ -189,7 +191,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                             }
                                             String stagesShellcheckNode_key = "Test with ${SHELL_PROGS} for ${MATRIX_TAG}"
                                             Closure stagesShellcheckNode_val = {
-                                                String msgFail = "Failed stage: ${stageName} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(dsbc)}"
+                                                String msgFail = "Failed stage: ${MATRIX_STAGENAME} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(MATRIX_DSBC)}"
                                                 Boolean didFail = true
                                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
                                                     withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
@@ -206,8 +208,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                                 if (didFail) {
                                                     // Track the big-stage fault to explode in the end:
                                                     bigStageResult = 'FAILURE'
-                                                    dsbc.setWorstResult('FAILURE')
-                                                    dsbc.dsbcResultInterim = 'FAILURE'
+                                                    MATRIX_DSBC.setWorstResult('FAILURE')
+                                                    MATRIX_DSBC.dsbcResultInterim = 'FAILURE'
                                                     // Track the small-stage fault in a way that we can continue with other sub-stages:
                                                     //echo msgFail
                                                     currentBuild.result = 'FAILURE'
@@ -286,8 +288,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                 'FAILURE', "shellcheck-${MATRIX_TAG}")
                         msg = "FATAL: ${msg} above"
-                        dsbc.setWorstResult('FAILURE')
-                        dsbc.dsbcResultInterim = 'FAILURE'
+                        MATRIX_DSBC.setWorstResult('FAILURE')
+                        MATRIX_DSBC.dsbcResultInterim = 'FAILURE'
                         echo msg
                         manager.buildFailure()
                         //error msg
