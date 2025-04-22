@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.*;
 
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
+import org.jenkinsci.plugins.workflow.support.steps.AgentOfflineException;
 
 import org.nut.dynamatrix.DynamatrixConfig;
 import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
@@ -2524,7 +2525,7 @@ def parallelStages = prepareDynamatrix(
                         }
                         printStackTraceStderrOptional(rse)
                         throw rse
-                    } catch (IOException jioe) {
+                    } catch (IOException | AgentOfflineException jioe) {
                         // Tends to happen with networking lags or agent crash, e.g.:
                         //   java.io.IOException: Unable to create live FilePath for agentName
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
@@ -2533,7 +2534,7 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (jioe.toString() ==~ /.*(Unable to create live FilePath for|No space left on device|was marked offline|Connection was broken|ChannelClosedException|ClosedChannelException|The channel is closing down or has closed down|Agent was removed).*/
+                            if (jioe.toString() ==~ /.*(Unable to create live FilePath for|No space left on device|was marked offline|Connection was broken|ChannelClosedException|ClosedChannelException|The channel is closing down or has closed down|Agent was removed|Node is being removed).*/
                             ) {
                                 // Note: "No space left" is not exactly a disconnection, but is
                                 // a cause to retry the stage on another agent (or even same one
