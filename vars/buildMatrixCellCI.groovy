@@ -704,10 +704,20 @@ done
 
                         case [
                             ~/.*(spawn|fork|exec).*Resource temporarily unavailable.*/,
+                            ~/.*No space left on device.*/,
                         ]:
                             if (!(msgFail.isEmpty()))
                                 msgFail += "\n"
                             msgFail += "buildMatrixCell: memory problem: " + contentLine
+                            break
+
+                        // These probably do not appear in shell logs, but just in case:
+                        case [
+                            ~/.*(AgentOfflineException|Unable to create live FilePath for|was marked offline|Connection was broken|ChannelClosedException|ClosedChannelException|The channel is closing down or has closed down|Agent was removed|Node is being removed).*/,
+                        ]:
+                            if (!(msgFail.isEmpty()))
+                                msgFail += "\n"
+                            msgFail += "buildMatrixCell: agent life cycle problem: " + contentLine
                             break
 
                         case [
