@@ -713,7 +713,7 @@ done
 
                         // These probably do not appear in shell logs, but just in case:
                         case [
-                            ~/.*(AgentOfflineException|Unable to create live FilePath for|was marked offline|Connection was broken|ChannelClosedException|ClosedChannelException|The channel is closing down or has closed down|Agent was removed|Node is being removed).*/,
+                            ~/.*(AgentOfflineException|Unable to create live FilePath for|was marked offline|Connection was broken|ChannelClosedException|ClosedChannelException|The channel is closing down or has closed down|Agent was removed|Node is being removed|hudson.remoting.ProxyException|hudson.remoting.RequestAbortedException|hudson.remoting.Channel.close|hudson.slaves.SlaveComputer.closeChannel|hudson.remoting.Channel.terminate|hudson.remoting.Request.abort).*/,
                         ]:
                             if (!(msgFail.isEmpty()))
                                 msgFail += "\n"

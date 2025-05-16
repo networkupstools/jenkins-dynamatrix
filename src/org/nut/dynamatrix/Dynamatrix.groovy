@@ -2447,7 +2447,8 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (rae.toString() ==~ /.*(Unexpected termination of the channel|java.nio.channels.ClosedChannelException).*/
+                            // Note we seek some of these strings in IOException as well, just to cover more bases.
+                            if (rae.toString() ==~ /.*(Unexpected termination of the channel|java.nio.channels.ClosedChannelException|hudson.remoting.ProxyException|hudson.remoting.RequestAbortedException|hudson.remoting.Channel.close|hudson.slaves.SlaveComputer.closeChannel|hudson.remoting.Channel.terminate|hudson.remoting.Request.abort).*/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
@@ -2491,7 +2492,8 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (rse.toString() ==~ /.*(Unexpected termination of the channel|java.nio.channels.ClosedChannelException).*/
+                            // Note we seek some of these strings in IOException as well, just to cover more bases.
+                            if (rse.toString() ==~ /.*(Unexpected termination of the channel|java.nio.channels.ClosedChannelException|hudson.remoting.ProxyException|hudson.remoting.RequestAbortedException|hudson.remoting.Channel.close|hudson.slaves.SlaveComputer.closeChannel|hudson.remoting.Channel.terminate|hudson.remoting.Request.abort).*/
                             ) {
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
@@ -2534,7 +2536,8 @@ def parallelStages = prepareDynamatrix(
                             dsbc.dsbcResultInterim = 'UNKNOWN'
                         } else {
                             // Involve localization?..
-                            if (jioe.toString() ==~ /.*(Unable to create live FilePath for|No space left on device|was marked offline|Connection was broken|ChannelClosedException|ClosedChannelException|The channel is closing down or has closed down|Agent was removed|Node is being removed).*/
+                            // Note we seek some of these strings in other Exceptions above as well, just to cover more bases.
+                            if (jioe.toString() ==~ /.*(Unable to create live FilePath for|No space left on device|was marked offline|Connection was broken|ChannelClosedException|ClosedChannelException|The channel is closing down or has closed down|Agent was removed|Node is being removed|Unexpected termination of the channel|ProxyException|RequestAbortedException|Channel.close|SlaveComputer.closeChannel|Channel.terminate|Request.abort).*/
                             ) {
                                 // Note: "No space left" is not exactly a disconnection, but is
                                 // a cause to retry the stage on another agent (or even same one
