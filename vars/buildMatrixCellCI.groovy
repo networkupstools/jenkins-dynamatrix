@@ -488,28 +488,64 @@ done
         // to avoid duplicates? Or on the contrary, would we want to see
         // some bugs in generated dist'ed code even if original does not
         // have them?
-        String filterSysHeaders = ".*[/\\\\]usr[/\\\\](?!(|.*[/\\\\])home[/\\\\]).*\\.(h|hpp)\$"
+        String filterFilenames_SysHeaders = ".*[/\\\\]usr[/\\\\](?!(|.*[/\\\\])home[/\\\\]).*\\.(h|hpp)\$"
+        // Note: some *BSD builds tend to report linker warnings like:
+        //   (GCC4+) ld: warning: libstdc++.so.9, needed by /usr/pkg/lib/libcppunit.so, may conflict with libstdc++.so.7
+        //   (CLANG) /usr/bin/ld: warning: libfontconfig.so.2, needed by /usr/pkg/lib/libgd.so, may conflict with libfontconfig.so.1
+        // which is rather something OS/distro packagers should figure out.
+        // For NUT, a https://github.com/networkupstools/nut/issues/3043
+        // is logged to figure out of we can auto-detect proper libraries.
+        String filterMsg_BSDlinkerConflict = '.*ld:.*warning:.*\\.so\\.\\d.* needed by /.*may conflict with .*\\.so\\.\\d.*'
         // Scanner has a limitation regex for "URL" of the analysis:
         String warningsNgId = (id + "-" + archPrefix) //.toLowerCase()
         switch (compilerTool) {
             case 'gcc':
-                i = scanForIssues tool: gcc(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
-                ia = scanForIssues tool: gcc(id: 'CC_CXX_compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                i = scanForIssues tool: gcc(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [
+                    excludeFile(filterFilenames_SysHeaders),
+                    excludeMessage(filterMsg_BSDlinkerConflict)
+                ]
+                ia = scanForIssues tool: gcc(id: 'CC_CXX_compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [
+                    excludeFile(filterFilenames_SysHeaders),
+                    excludeMessage(filterMsg_BSDlinkerConflict)
+                ]
                 break
             case 'gcc3':
-                i = scanForIssues tool: gcc3(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
-                ia = scanForIssues tool: gcc3(id: 'CC_CXX_compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                i = scanForIssues tool: gcc3(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [
+                    excludeFile(filterFilenames_SysHeaders),
+                    excludeMessage(filterMsg_BSDlinkerConflict)
+                ]
+                ia = scanForIssues tool: gcc3(id: 'CC_CXX_compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [
+                    excludeFile(filterFilenames_SysHeaders),
+                    excludeMessage(filterMsg_BSDlinkerConflict)
+                ]
                 break
             case 'clang':
-                i = scanForIssues tool: clang(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
-                ia = scanForIssues tool: clang(id: 'CC_CXX_compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [ excludeFile(filterSysHeaders) ]
+                i = scanForIssues tool: clang(id: warningsNgId, pattern: '.ci-sanitizedPaths.*.log'), filters: [
+                    excludeFile(filterFilenames_SysHeaders),
+                    excludeMessage(filterMsg_BSDlinkerConflict)
+                ]
+                ia = scanForIssues tool: clang(id: 'CC_CXX_compiler', pattern: '.ci-sanitizedPaths.*.log'), filters: [
+                    excludeFile(filterFilenames_SysHeaders),
+                    excludeMessage(filterMsg_BSDlinkerConflict)
+                ]
                 break
         }
         if (0 == sh (returnStatus:true, script: """ test -n "`find . -name 'cppcheck*.xml' 2>/dev/null`" && echo "Found cppcheck XML reports" """)) {
             // Note: warningsNgId starts with e.g. "_gnu17..."
             // so no trailing punctuation after "CppCheck" string:
-            cppcheck = scanForIssues tool: cppCheck(id: "CppCheck" + warningsNgId, pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ], sourceCodeEncoding: 'UTF-8'
-            cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck_analyser', pattern: '**/cppcheck*.xml'), filters: [ excludeFile(filterSysHeaders) ], sourceCodeEncoding: 'UTF-8'
+            cppcheck = scanForIssues tool: cppCheck(id: "CppCheck" + warningsNgId, pattern: '**/cppcheck*.xml'),
+                sourceCodeEncoding: 'UTF-8',
+                filters: [
+                    excludeFile(filterFilenames_SysHeaders),
+                    excludeMessage(filterMsg_BSDlinkerConflict)
+                ]
+
+            cppcheckAggregated = scanForIssues tool: cppCheck(id: 'CppCheck_analyser', pattern: '**/cppcheck*.xml'),
+                sourceCodeEncoding: 'UTF-8',
+                filters: [
+                    excludeFile(filterFilenames_SysHeaders),
+                    excludeMessage(filterMsg_BSDlinkerConflict)
+                ]
         }
 
         if (i != null) {
