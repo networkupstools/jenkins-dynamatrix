@@ -495,7 +495,7 @@ done
         // which is rather something OS/distro packagers should figure out.
         // For NUT, a https://github.com/networkupstools/nut/issues/3043
         // is logged to figure out of we can auto-detect proper libraries.
-        String filterMsg_BSDlinkerConflict = '.*ld:.*warning:.*\\.so\\.\\d.* needed by /.*may conflict with .*\\.so\\.\\d.*'
+        String filterMsg_BSDlinkerConflict = '.*\\.so\\.\\d.* needed by .*may conflict with .*\\.so\\.\\d.*'
         // Scanner has a limitation regex for "URL" of the analysis:
         String warningsNgId = (id + "-" + archPrefix) //.toLowerCase()
         switch (compilerTool) {
