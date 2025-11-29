@@ -437,3 +437,37 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
         }
     }
 }
+
+def wrapMilestone(Map stepArgs) {
+    try {
+        milestone(stepArgs)
+    } catch (Throwable t) {
+        // Note: no summary here, it is added to the build page by plugin itself
+        // (as it is a `CancelledCause extends CauseOfInterruption`, probably)
+        msg = "Milestone step threw: ${t}".toString()
+        if (dynamatrixGlobalState.enableDebugTrace) {
+            // We do not echo this by default, as the plugin reports
+            // e.g. `Superseded by nut/nut/PR-3200#8` on its own; but
+            // maybe the throwable message has more/different details?
+            echo msg
+        }
+        try {
+            // Badge v2.x API, with style
+            addInfoBadge(text: msg, cssClass: "badge-jenkins-dynamatrix-Baseline "
+        } catch (Throwable ignored) {
+            try {
+                addInfoBadge(text: msg)
+            } catch (Throwable ignored2) {
+                try {
+                    manager.addInfoBadge(msg)
+                } catch (Throwable t2) {
+                    echo "WARNING: Tried to addInfoBadge(), but failed to; is the jenkins-badge-plugin installed?"
+                    if (dynamatrixGlobalState.enableDebugTrace) {
+                        echo t2.toString()
+                    }
+                }
+            }
+        }
+        throw t
+    }
+}

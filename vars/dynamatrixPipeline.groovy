@@ -340,7 +340,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             ) {
                 // Current build is a PR or not a stable branch
                 // Fence off older iteration builds if newer ones exist
-                milestone label: "Milestone before quick tests and slowBuild discovery"
+                infra.wrapMilestone label: "Milestone before quick tests and slowBuild discovery"
             }
         }
 
@@ -910,7 +910,7 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 ) {
                     // Current build is a PR or not a stable branch
                     // Fence off older iteration builds if newer ones exist
-                    milestone label: "Milestone before slowBuild matrix"
+                    infra.wrapMilestone label: "Milestone before slowBuild matrix"
                 }
             }
 
