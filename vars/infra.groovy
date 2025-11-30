@@ -453,7 +453,7 @@ def wrapMilestone(Map stepArgs) {
         }
         try {
             // Badge v2.x API, with style
-            addInfoBadge(text: msg, cssClass: "badge-jenkins-dynamatrix-Baseline "
+            addInfoBadge(text: msg, cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-NOT_BUILT")
         } catch (Throwable ignored) {
             try {
                 addInfoBadge(text: msg)
