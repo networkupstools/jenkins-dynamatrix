@@ -439,35 +439,67 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
 }
 
 def wrapMilestone(Map stepArgs) {
+    def passed = null
+    def msg = null
+    def stepDescr = "Milestone step " +
+        (Utils.isStringNotEmpty(stepArgs?.get('label')?.trim()) ? "(${stepArgs.label}) " : "")
+
     try {
         milestone(stepArgs)
+        if (Thread.interrupted() || Thread.currentThread().isInterrupted()) {
+            msg = stepDescr + "ended with this job thread interrupted"
+        } else {
+            try {
+                currentBuild.getBuildCauses().each {
+                    if ("${it}" ==~ /.*CancelledCause.*/) {
+                        msg = stepDescr + "ended with this job canceled: ${it}"
+                    }
+                }
+            } catch (Throwable ignored) {}
+
+            if (msg == null) {
+                // assume all is ok?
+                passed = true
+            }
+        }
     } catch (Throwable t) {
         // Note: no summary here, it is added to the build page by plugin itself
         // (as it is a `CancelledCause extends CauseOfInterruption`, probably)
-        msg = "Milestone step threw: ${t}".toString()
-        if (dynamatrixGlobalState.enableDebugTrace) {
-            // We do not echo this by default, as the plugin reports
-            // e.g. `Superseded by nut/nut/PR-3200#8` on its own; but
-            // maybe the throwable message has more/different details?
-            echo msg
+        passed = false
+        msg = stepDescr + "threw: ${t}".toString()
+        throw t
+    } finally {
+        if (passed == null && msg == null) {
+            // was e.interrupt() too harsh in
+            // https://github.com/jenkinsci/pipeline-milestone-step-plugin/blob/master/src/main/java/org/jenkinsci/plugins/pipeline/milestone/MilestoneStorage.java ?
+            msg = stepDescr + "did not succeed"
         }
-        try {
-            // Badge v2.x API, with style
-            addInfoBadge(text: msg, cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-NOT_BUILT")
-        } catch (Throwable ignored) {
+
+        if (msg != null) {
+            if (dynamatrixGlobalState.enableDebugTrace || passed == null) {
+                // We do not echo this by default, as the plugin reports
+                // e.g. `Superseded by nut/nut/PR-3200#8` on its own; but
+                // maybe the throwable message has more/different details?
+                echo msg
+            }
+
             try {
-                addInfoBadge(text: msg)
-            } catch (Throwable ignored2) {
+                // Badge v2.x API, with style
+                addInfoBadge(text: msg, cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-NOT_BUILT")
+            } catch (Throwable ignored) {
                 try {
-                    manager.addInfoBadge(msg)
-                } catch (Throwable t2) {
-                    echo "WARNING: Tried to addInfoBadge(), but failed to; is the jenkins-badge-plugin installed?"
-                    if (dynamatrixGlobalState.enableDebugTrace) {
-                        echo t2.toString()
+                    addInfoBadge(text: msg)
+                } catch (Throwable ignored2) {
+                    try {
+                        manager.addInfoBadge(msg)
+                    } catch (Throwable t2) {
+                        echo "WARNING: Tried to addInfoBadge(), but failed to; is the jenkins-badge-plugin installed?"
+                        if (dynamatrixGlobalState.enableDebugTrace) {
+                            echo t2.toString()
+                        }
                     }
                 }
-            }
+            } // try adding the badge
         }
-        throw t
     }
 }
