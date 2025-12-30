@@ -445,17 +445,22 @@ def wrapMilestone(Map stepArgs) {
         (Utils.isStringNotEmpty(stepArgs?.get('label')?.trim()) ? "(${stepArgs.label}) " : "")
 
     try {
+        echo "Starting milestone: ${stepArgs}"
         milestone(stepArgs)
+        echo "Completed milestone: ${stepArgs}"
         if (Thread.interrupted() || Thread.currentThread().isInterrupted()) {
             msg = stepDescr + "ended with this job thread interrupted"
         } else {
             try {
+                echo "Looking at build causes: ${currentBuild.getBuildCauses()}"
                 currentBuild.getBuildCauses().each {
                     if ("${it}" ==~ /.*CancelledCause.*/) {
                         msg = stepDescr + "ended with this job canceled: ${it}"
                     }
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {
+                echo "Could not look at build causes: ${ignored}"
+            }
 
             if (msg == null) {
                 // assume all is ok?
