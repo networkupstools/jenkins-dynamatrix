@@ -446,26 +446,73 @@ def wrapMilestone(Map stepArgs) {
 
     try {
         echo "Starting milestone: ${stepArgs}"
-        milestone(stepArgs)
+        catchError {
+            milestone(stepArgs)
+        }
         echo "Completed milestone: ${stepArgs}"
         if (Thread.interrupted() || Thread.currentThread().isInterrupted()) {
             msg = stepDescr + "ended with this job thread interrupted"
-        } else {
+        }
+
+        if (msg == null) {
             try {
                 echo "Looking at build causes: ${currentBuild.getBuildCauses()}"
                 currentBuild.getBuildCauses().each {
                     if ("${it}" ==~ /.*CancelledCause.*/) {
-                        msg = stepDescr + "ended with this job canceled: ${it}"
+                        msg = stepDescr + "ended with this job cancelled: ${it}"
                     }
                 }
             } catch (Throwable ignored) {
                 echo "Could not look at build causes: ${ignored}"
             }
+        }
 
-            if (msg == null) {
-                // assume all is ok?
-                passed = true
+        if (msg == null) {
+            try {
+                echo "Looking at raw build causes: ${currentBuild.rawBuild.causes}"
+                currentBuild.rawBuild.causes.each {
+                    if ("${it}" ==~ /.*CancelledCause.*/) {
+                        msg = stepDescr + "ended with this job cancelled: ${it}"
+                    }
+                }
+            } catch (Throwable ignored) {
+                echo "Could not look at raw build causes: ${ignored}"
             }
+        }
+
+        if (msg == null) {
+            try {
+                echo "Looking at build actions: ${currentBuild.build().getActions()}"
+                currentBuild.build().getActions().each {
+                    if ("${it}" ==~ /.*CancelledCause.*/) {
+                        msg = stepDescr + "ended with this job cancelled: ${it}"
+                    }
+                    if ("${it}" ==~ /.*InterruptedBuildAction.*/) {
+                        echo "InterruptedBuildAction: ${it} =>"
+                        echo "InterruptedBuildAction.causes(): ${it.causes}"
+                        it.causes.each { it2 ->
+                            if ("${it2}" ==~ /.*CancelledCause.*/) {
+                                echo "=== Ended with this job interrupted and canceled: ${it2}"
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable ignored) {
+                echo "Could not look at build causes: ${ignored}"
+            }
+        }
+
+        if (currentBuild.result == 'FAILURE') {
+            msg = stepDescr + "ended with this job result becoming FAILURE"
+        }
+
+        if (currentBuild.result == 'NOT_BUILT') {
+            msg = stepDescr + "ended with this job result becoming NOT_BUILT"
+        }
+
+        if (msg == null) {
+            // assume all is ok?
+            passed = true
         }
     } catch (Throwable t) {
         // Note: no summary here, it is added to the build page by plugin itself
