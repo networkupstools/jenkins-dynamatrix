@@ -229,7 +229,7 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     return dynacfgPipeline
 }
 
-def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
+def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     // dynacfgBase = Base configuration for Dynamatrix for this pipeline
     // dynacfgPipeline = Step-dependent setup in sub-maps
 
@@ -1284,4 +1284,12 @@ def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
     } // node to manage the pipeline
 
+}
+
+def call(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
+    try {
+        return pipelineBody(dynacfgBase, dynacfgPipeline)
+    } finally {
+        reportUnpassedMilestones()
+    }
 }
