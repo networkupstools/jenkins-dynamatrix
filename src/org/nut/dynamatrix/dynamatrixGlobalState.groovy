@@ -80,4 +80,13 @@ class dynamatrixGlobalState {
      *    <pre>dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc</pre>
      */
     static def stageNameFunc = null
+
+    /** Track started and finished {@link infra#wrapMilestone} calls,
+     * so we can report on unfinished ones. Each entry maps the original
+     * {@code stepArgs} of that call, some {@code stepDescr} (derived
+     * from {@code stepArgs.label} if present), whether it {@code passed}
+     * and if it was {@code reported}. This should help us pick up the
+     * remainder in post-processing.
+     */
+    final static List<Map> startedMilestones = new ArrayList<>()
 }
