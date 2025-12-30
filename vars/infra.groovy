@@ -476,12 +476,12 @@ def wrapMilestone(Map stepArgs) {
         }
 
         if (msg != null) {
-            if (dynamatrixGlobalState.enableDebugTrace || passed == null) {
+            //if (dynamatrixGlobalState.enableDebugTrace || passed == null) {
                 // We do not echo this by default, as the plugin reports
                 // e.g. `Superseded by nut/nut/PR-3200#8` on its own; but
                 // maybe the throwable message has more/different details?
                 echo msg
-            }
+            //}
 
             try {
                 // Badge v2.x API, with style
