@@ -81,7 +81,7 @@ class dynamatrixGlobalState {
      */
     static def stageNameFunc = null
 
-    /** Track started and finished {@link infra#wrapMilestone} calls,
+    /** Track started and finished {@link wrapMilestone#call} executions,
      * so we can report on unfinished ones. Each entry maps the original
      * {@code stepArgs} of that call, some {@code stepDescr} (derived
      * from {@code stepArgs.label} if present), whether it {@code passed}
