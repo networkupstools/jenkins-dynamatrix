@@ -386,8 +386,6 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             env['GIT_COMMITTER_DATE'] = now
         }
 
-        dynamatrix.dynamatrixGithubNotificationContext = "quickbuild-run"
-
         stage("Initial discovery") {
             parallel (
 
@@ -429,7 +427,10 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                         // Have some defaults, if only to have all
                         // expected fields defined and node caps cached
+                        def oldDynamatrixGithubNotificationContext = dynamatrix.dynamatrixGithubNotificationContext
+                        dynamatrix.dynamatrixGithubNotificationContext = "quickbuild-run"
                         dynamatrix.prepareDynamatrix(dynacfgBase)
+                        dynamatrix.dynamatrixGithubNotificationContext = oldDynamatrixGithubNotificationContext
 
                         // In outer layer, select all suitable builders;
                         // In inner layer, unpack+config the source on
@@ -878,7 +879,6 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             // TODO: `unstable` this?
             echo "No stages were prepared for the 'slow build' dynamatrix, so completing the job"
         } else {
-            dynamatrix.dynamatrixGithubNotificationContext = "slowbuild-run"
             echo "Scheduling ${stagesBinBuild.size() - 1} stages for the 'slow build' dynamatrix, running this can take a long while..."
             try {
                 String txt = "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; " +
