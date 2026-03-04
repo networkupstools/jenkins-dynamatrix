@@ -3,6 +3,7 @@ package org.nut.dynamatrix;
 import com.cloudbees.groovy.cps.NonCPS;
 import hudson.AbortException;
 import hudson.model.Result;
+import hudson.plugins.git.GitException;
 import hudson.remoting.RequestAbortedException;
 import hudson.remoting.RemotingSystemException;
 
@@ -2551,6 +2552,8 @@ def parallelStages = prepareDynamatrix(
                                 // in this case Jenkins would terminate the build agent connection
                                 dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
                                 dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
+                                // TOTHINK: Raise some alert about disk space?
+                                //  Where/how is best to notify about that?
                             } else {
                                 String jioeRes = "java.io.IOException: " +
                                     "Message: " + jioe.getMessage() +
@@ -2623,7 +2626,59 @@ def parallelStages = prepareDynamatrix(
                         }
                         printStackTraceStderrOptional(jlie)
                         throw jlie
-                    // TODO // } catch (hudson.plugins.git.GitException gex) { // see https://github.com/networkupstools/jenkins-dynamatrix/issues/19 about evil force-pushes
+                    } catch (GitException gex) {
+                        // DNS unavailable, agent out of disk space
+                        // see also https://github.com/networkupstools/jenkins-dynamatrix/issues/19 about evil force-pushes
+                        dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
+                        if (gex == null) {
+                            dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName)
+                            dsbc.dsbcResultInterim = 'UNKNOWN'
+                        } else {
+                            // Involve localization?..
+                            // Note we seek some of these strings in other Exceptions above as well, just to cover more bases.
+                            if (gex.toString() ==~ /.*(Unable to create live FilePath for|No space left on device|Could not resolve host).*/
+                            ) {
+                                // Note: "No space left" is not exactly a disconnection, but is
+                                // a cause to retry the stage on another agent (or even same one
+                                // after someone else cleans up) rather than fail the build.
+                                // As for "live FilePath", this can mean a Remoting (comms) error,
+                                // probably not seen in this stack trace - but just in case...
+                                // Per https://github.com/jenkinsci/workflow-durable-task-step-plugin/blob/master/src/main/java/org/jenkinsci/plugins/workflow/support/steps/FilePathDynamicContext.java
+                                // in this case Jenkins would terminate the build agent connection
+                                dsbc.thisDynamatrix?.countStagesIncrement('AGENT_DISCONNECTED', stageName + sbName)
+                                dsbc.dsbcResultInterim = 'AGENT_DISCONNECTED'
+                                // TOTHINK: Raise some alert about disk space?
+                                //  Where/how is best to notify about that?
+                            } else {
+                                String gexRes = "java.io.IOException: " +
+                                    "Message: " + gex.getMessage() +
+                                    "; Cause: " + gex.getCause() +
+                                    "; toString: " + gex.toString();
+                                dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
+                                dsbc.dsbcResultInterim = 'java.io.IOException'
+
+                                def msgEx =
+                                    "A DSBC stage running on node " +
+                                        "'${script.env?.NODE_NAME}' requested " +
+                                        "for stage '${stageName}'" + sbName +
+                                        " completed with an exception:\n" +
+                                        gexRes
+
+                                if (dsbc.enableDebugTraceFailures) {
+                                    dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + gexRes, stageName + sbName) // for debug
+                                    StringWriter errors = new StringWriter();
+                                    gex.printStackTrace(new PrintWriter(errors));
+                                    script.echo "[DEBUG] " + msgEx +
+                                        "\nDetailed trace: " + errors.toString()
+                                } else {
+                                    script.echo "[ERROR] " + msgEx
+                                }
+
+                                createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
+                            }
+                        }
+                        printStackTraceStderrOptional(gex)
+                        throw gex
                     } catch (Throwable t) {
                         dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + Utils.castString(t), stageName + sbName)
 
