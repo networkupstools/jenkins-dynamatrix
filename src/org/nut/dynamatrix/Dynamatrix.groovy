@@ -47,6 +47,8 @@ class Dynamatrix implements Cloneable {
     private final String objectID = Integer.toHexString(hashCode())
     /** Arbitrary comment to explain why this Dynamatrix instance was created */
     public String dynamatrixComment = null
+    /** Context tag got github notifications */
+    public String dynamatrixGithubNotificationContext = "slowbuild-run"
     /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     /** Have some defaults, if only to have all expected fields defined */
@@ -2669,7 +2671,7 @@ def parallelStages = prepareDynamatrix(
                                         dsbc.thisDynamatrix.reportPrefixCountStagesExpected + ": " +
                                         dsbc.thisDynamatrix.toStringStageCountBestEffort().replaceAll("countStages", ""),
                                         "PENDING",
-                                        "slowbuild-run")
+                                        this.dynamatrixGithubNotificationContext)
                             }
                         }
                     }
@@ -2747,7 +2749,7 @@ def parallelStages = prepareDynamatrix(
 
                                         String msg = "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
                                         script.infra.reportGithubStageStatus(stashName,
-                                                msg, 'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                                msg, 'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
                                         parstageCompleted = true
                                     }
@@ -2800,7 +2802,7 @@ def parallelStages = prepareDynamatrix(
                                         try {
                                             script.infra.reportGithubStageStatus(stashName,
                                                 "'slow build' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}",
-                                                'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                                'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
                                         } catch (Throwable tt) {
                                             script.echo "[DEBUG]: reportGithubStageStatus() failed with: ${tt}"
@@ -2834,7 +2836,7 @@ def parallelStages = prepareDynamatrix(
                                             script.infra.reportGithubStageStatus(stashName,
                                                 "'slow build' stage for ${MATRIX_TAG} finished somehow " +
                                                 "with unexpected verdict: ${dsbc.dsbcResultInterim}",
-                                                'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                                'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
                                         } catch (Throwable tt) {
                                             script.echo "[DEBUG]: reportGithubStageStatus() failed with: ${tt}"
@@ -2855,7 +2857,7 @@ def parallelStages = prepareDynamatrix(
                                         script.infra.reportGithubStageStatus(stashName,
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with abortion verdict: ${dsbc.dsbcResultInterim}",
-                                            'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                            'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                             dsbc.getLatestDsbcResultLogUrl())
                                     } catch (Throwable tt) {
                                         script.echo "[DEBUG]: reportGithubStageStatus() failed with: ${tt}"
@@ -2885,7 +2887,7 @@ def parallelStages = prepareDynamatrix(
                                         script.infra.reportGithubStageStatus(stashName,
                                             "'slow build' stage for ${MATRIX_TAG} finished " +
                                             "with unclassified verdict: ${dsbc.dsbcResultInterim}",
-                                            'FAILURE', "slowbuild-run/${MATRIX_TAG}",
+                                            'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                             dsbc.getLatestDsbcResultLogUrl())
                                     } catch (Throwable tt) {
                                         script.echo "[DEBUG]: reportGithubStageStatus() failed with: ${tt}"
