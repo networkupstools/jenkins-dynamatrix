@@ -1136,6 +1136,10 @@ def parallelStages = prepareDynamatrix(
 //            dynacfgOrig = (Map)(dynacfgOrig.clone())
         }
 
+        if (dynacfgOrig.containsKey('dynamatrixGithubNotificationContext')) {
+            this.dynamatrixGithubNotificationContext = dynacfgOrig.dynamatrixGithubNotificationContext
+        }
+
         //if (debugErrors) this.script.println "[WARNING] NOT FULLY IMPLEMENTED: Dynamatrix.prepareDynamatrix()"
 
         // Note: in addition to standard contents of class DynamatrixConfig,

@@ -427,10 +427,9 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                         // Have some defaults, if only to have all
                         // expected fields defined and node caps cached
-                        def oldDynamatrixGithubNotificationContext = dynamatrix.dynamatrixGithubNotificationContext
-                        dynamatrix.dynamatrixGithubNotificationContext = "quickbuild-run"
-                        dynamatrix.prepareDynamatrix(dynacfgBase)
-                        dynamatrix.dynamatrixGithubNotificationContext = oldDynamatrixGithubNotificationContext
+                        dynamatrix.prepareDynamatrix(dynacfgBase + [
+                            dynamatrixGithubNotificationContext: "quickbuild-run"
+                        ])
 
                         // In outer layer, select all suitable builders;
                         // In inner layer, unpack+config the source on
