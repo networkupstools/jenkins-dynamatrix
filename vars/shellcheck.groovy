@@ -104,7 +104,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                         // On current node/workspace, prepare source once for
                         // tests that are not expected to impact each other
                         stage("prep for ${MATRIX_TAG}") {
-                            String msgFail = "Failed stage: prep for ${MATRIX_TAG}" + "\n  for ${Utils.castString(MATRIX_DSBC)}"
+                            String msgFail = "Failed stage: prep for ${MATRIX_TAG}" +
+                                "\n  for ${Utils.castString(MATRIX_DSBC)}"
                             Boolean didFail = true
                             try {
                                 sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
@@ -133,7 +134,10 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                 }
                                 didFail = false
                             } catch (Throwable t) {
-                                if (Utils.isRetryableException(t)) throw t
+                                if (Utils.isRetryableException(t)) {
+                                    didFail = false
+                                    throw t
+                                }
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
                                     throw t
                                 }
@@ -196,7 +200,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                             }
                                             String stagesShellcheckNode_key = "Test with ${SHELL_PROGS} for ${MATRIX_TAG}"
                                             Closure stagesShellcheckNode_val = {
-                                                String msgFail = "Failed stage: ${MATRIX_STAGENAME} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(MATRIX_DSBC)}"
+                                                String msgFail = "Failed stage: ${MATRIX_STAGENAME} with shell '${SHELL_PROGS}'" +
+                                                    "\n  for ${Utils.castString(MATRIX_DSBC)}"
                                                 Boolean didFail = true
                                                 try {
                                                     withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
@@ -209,7 +214,10 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                                     }
                                                     didFail = false
                                                 } catch (Throwable t) {
-                                                    if (Utils.isRetryableException(t)) throw t
+                                                    if (Utils.isRetryableException(t)) {
+                                                        didFail = false
+                                                        throw t
+                                                    }
                                                     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
                                                         throw t
                                                     }
@@ -241,13 +249,24 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                             // TOTHINK: Skip agent that does not declare any shell labels?..
                             if (stagesShellcheckNode.size() == 0) {
                                 List stagesShellcheckNode_tuple = ["Test with default shell(s) for ${MATRIX_TAG}", {
-                                    withEnvOptional(dynacfgPipeline.defaultTools) {
-                                        sh """ set +x
-                                        echo "Shell-dependent testing with default shell on `uname -a || hostname || true` system"
-                                        ${dynacfgPipeline.shellcheck.multi}
-                                        """
+                                    String msgFail = "Failed stage: ${MATRIX_STAGENAME} with default shell(s)" +
+                                        "\n  for ${Utils.castString(MATRIX_DSBC)}"
+                                    try {
+                                        withEnvOptional(dynacfgPipeline.defaultTools) {
+                                            sh """ set +x
+                                            echo "Shell-dependent testing with default shell on `uname -a || hostname || true` system"
+                                            ${dynacfgPipeline.shellcheck.multi}
+                                            """
+                                        }
+                                        return true
+                                    } catch (Throwable t) {
+                                        if (Utils.isRetryableException(t)) {
+                                            throw t
+                                        }
+                                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
+                                            throw t
+                                        }
                                     }
-                                    return true
                                 }]
                                 stagesShellcheckNode << stagesShellcheckNode_tuple
                             }
@@ -255,13 +274,24 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
 
                         if (dynacfgPipeline.shellcheck.single != null) {
                             List stagesShellcheckNode_tuple = ["Generic-shell test for ${MATRIX_TAG}", {
-                                withEnvOptional(dynacfgPipeline.defaultTools) {
-                                    sh """ set +x
-                                    echo "Generic-shell test (with recipe defaults) on `uname -a || hostname || true` system"
-                                    ${dynacfgPipeline.shellcheck.single}
-                                    """
+                                String msgFail = "Failed stage: ${MATRIX_STAGENAME} with default shell(s)" +
+                                    "\n  for ${Utils.castString(MATRIX_DSBC)}"
+                                try {
+                                    withEnvOptional(dynacfgPipeline.defaultTools) {
+                                        sh """ set +x
+                                        echo "Generic-shell test (with recipe defaults) on `uname -a || hostname || true` system"
+                                        ${dynacfgPipeline.shellcheck.single}
+                                        """
+                                    }
+                                    return true
+                                } catch (Throwable t) {
+                                    if (Utils.isRetryableException(t)) {
+                                        throw t
+                                    }
+                                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
+                                        throw t
+                                    }
                                 }
-                                return true
                             }]
                             stagesShellcheckNode << stagesShellcheckNode_tuple
                         }
