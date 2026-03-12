@@ -112,6 +112,38 @@ class Utils {
         return ( obj != {} )
     }
 
+    /**
+     * @return true if the exception is likely a networking or agent failure
+     * that can be retried by Dynamatrix.groovy (based on its catch blocks).
+     */
+    @NonCPS
+    public static boolean isRetryableException(Throwable t) {
+        if (t == null) return false
+        String ts = t.toString()
+        // Match logic in Dynamatrix.groovy (approximate for CPS/non-CPS safety)
+        if (ts ==~ /.*(Unexpected termination of the channel|Timeout waiting for agent to come back|The channel is closing down or has closed down|Agent was removed|Node is being removed|was marked offline|Connection was broken|Cannot contact .*: java.lang.InterruptedException|java.nio.channels.ClosedChannelException|ChannelClosedException|hudson.remoting.ProxyException|hudson.remoting.RequestAbortedException|hudson.remoting.Channel.close|hudson.slaves.SlaveComputer.closeChannel|hudson.remoting.Channel.terminate|hudson.remoting.Request.abort).*/)
+            return true
+        if (ts ==~ /.*(Unable to create live FilePath for|No space left on device).*/)
+            return true
+        // Should have caught these above by full names
+        if (ts ==~ /.*(ClosedChannelException|ProxyException|RequestAbortedException|Channel.close|SlaveComputer.closeChannel|Channel.terminate|Request.abort).*/)
+            return true
+        if (ts ==~ /.*(java.io.IOException: SSH channel is closed|Error (fetching|cloning) remote repo|Could not resolve host).*/)
+            return true
+        // build cell classifier messages
+        if (ts ==~ /.*(agent connection|workspace|memory) problem.*/)
+            return true
+        // legacy fallback
+        if (ts ==~ /.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates|(spawn|fork|exec).*Resource temporarily unavailable).*/)
+            return true
+        // hudson.remoting.RequestAbortedException, RemotingSystemException, etc.
+        if (ts.contains("hudson.remoting.RequestAbortedException") ||
+            ts.contains("hudson.remoting.RemotingSystemException") ||
+            ts.contains("hudson.remoting.ChannelClosedException"))
+            return true
+        return false
+    }
+
     @NonCPS
     public static String castString(def obj) {
         return "<${obj?.getClass()}>(${obj?.toString()})"

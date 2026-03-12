@@ -2305,6 +2305,12 @@ def parallelStages = prepareDynamatrix(
                         }
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         return payloadRes
+
+                        // NOTE: Lots of exception parsers follow, to see if we have a
+                        // retryable AGENT_DISCONNECTED situation, or something more severe.
+                        // Keep matched strings in sync with Utils.isRetryableException()
+                        // which is used by e.g. shellcheck() stages to evaluate whether
+                        // to bail out with catchError() quickly or not.
                     } catch (FlowInterruptedException fex) {
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
                         if (Utils.isStringNotEmpty(dsbc.dsbcResultInterim)

@@ -105,7 +105,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                         stage("prep for ${MATRIX_TAG}") {
                             String msgFail = "Failed stage: prep for ${MATRIX_TAG}" + "\n  for ${Utils.castString(MATRIX_DSBC)}"
                             Boolean didFail = true
-                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
+                            try {
                                 sh """ echo "UNPACKING for '${MATRIX_TAG}'" """
                                 withEnvOptional(dynacfgPipeline.defaultTools) {
                                     unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
@@ -129,9 +129,13 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                             sh """ ${dynacfgPipeline.buildPhases.configure} """
                                         }
                                     }
-
                                 }
                                 didFail = false
+                            } catch (Throwable t) {
+                                if (Utils.isRetryableException(t)) throw t
+                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
+                                    throw t
+                                }
                             }
 
                             if (didFail) {
@@ -193,7 +197,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                             Closure stagesShellcheckNode_val = {
                                                 String msgFail = "Failed stage: ${MATRIX_STAGENAME} with shell '${SHELL_PROGS}'" + "\n  for ${Utils.castString(MATRIX_DSBC)}"
                                                 Boolean didFail = true
-                                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
+                                                try {
                                                     withEnv(["${dynacfgPipeline.shellcheck.multiLabel}=${SHELL_PROGS}"]) {
                                                         withEnvOptional(dynacfgPipeline.defaultTools) {
                                                             sh """ set +x
@@ -203,6 +207,11 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                                         }
                                                     }
                                                     didFail = false
+                                                } catch (Throwable t) {
+                                                    if (Utils.isRetryableException(t)) throw t
+                                                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
+                                                        throw t
+                                                    }
                                                 }
 
                                                 if (didFail) {
