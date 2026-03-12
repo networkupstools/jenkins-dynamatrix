@@ -26,39 +26,52 @@ def call(Map dynacfgPipeline = [:]) {
         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                 'awaiting stylecheck results',
                 'PENDING', "stylecheck")
-        node(infra.labelDocumentationWorker()) {
-            withEnvOptional(dynacfgPipeline?.defaultTools) {
-                unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 
-                if (dynacfgPipeline?.stylecheck_prepconf != null) {
-                    if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_prepconf)) {
-                        sh """ ${dynacfgPipeline.stylecheck_prepconf} """
-                    } // else: pipeline author wants this skipped
-                } else {
-                    if (dynacfgPipeline?.buildPhases?.prepconf) {
-                        sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+        Boolean succeeded = null
+        while (!succeeded) {
+            try {
+                node(infra.labelDocumentationWorker()) {
+                    withEnvOptional(dynacfgPipeline?.defaultTools) {
+                        unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
+
+                        if (dynacfgPipeline?.stylecheck_prepconf != null) {
+                            if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_prepconf)) {
+                                sh """ ${dynacfgPipeline.stylecheck_prepconf} """
+                            } // else: pipeline author wants this skipped
+                        } else {
+                            if (dynacfgPipeline?.buildPhases?.prepconf) {
+                                sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+                            }
+                        }
+
+                        if (dynacfgPipeline?.stylecheck_configure != null) {
+                            if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_configure)) {
+                                sh """ ${dynacfgPipeline.stylecheck_configure} """
+                            } // else: pipeline author wants this skipped
+                        } else {
+                            if (dynacfgPipeline?.buildPhases?.configure) {
+                                sh """ ${dynacfgPipeline.buildPhases.configure} """
+                            }
+                        }
+
+                        sh """ ${dynacfgPipeline.stylecheck} """
+                        infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
+                                'stylecheck passed for this commit',
+                                'SUCCESS', "stylecheck")
                     }
                 }
-
-                if (dynacfgPipeline?.stylecheck_configure != null) {
-                    if (Utils.isStringNotEmpty(dynacfgPipeline.stylecheck_configure)) {
-                        sh """ ${dynacfgPipeline.stylecheck_configure} """
-                    } // else: pipeline author wants this skipped
+            } catch (Throwable t) {
+                if (Utils.isRetryableException(t)) {
+                    echo "[DEBUG]: stylecheck(${dynacfgPipeline.get("stashnameSrc")}) " +
+                        " finished with a verdict classified as " +
+                        "a retryable build agent failure - " +
+                        "will re-schedule"
+                    succeeded = false
                 } else {
-                    if (dynacfgPipeline?.buildPhases?.configure) {
-                        sh """ ${dynacfgPipeline.buildPhases.configure} """
-                    }
-                }
-
-                try {
-                    sh """ ${dynacfgPipeline.stylecheck} """
                     infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
-                            'stylecheck passed for this commit',
-                            'SUCCESS', "stylecheck")
-                } catch (Throwable t) {
-                    infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
-                            'stylecheck failed for this commit',
-                            'FAILURE', "stylecheck")
+                        'stylecheck failed for this commit',
+                        'FAILURE', "stylecheck")
+                    // Let the pipeline fault path take over
                     throw t
                 }
             }
