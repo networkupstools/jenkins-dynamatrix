@@ -63,22 +63,14 @@ class DynamatrixGithubNotifier {
         return script?.echo(message)
     }
 
-    /**
-     * Optional reporter of github status events which allows to trace certain
-     * but not all stages or situations (e.g. only failures of matrix cells).
-     * For Git URL/commit references uses DynamatrixStash.getSCMVars() cached data.
-     * Inspired by https://github.com/jenkinsci/github-plugin README examples,
-     * https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github/status/GitHubCommitStatusSetter.java
-     * and https://github.com/jenkinsci/github-branch-source-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github_branch_source/GitHubBuildStatusNotification.java#L337
-     * sources. See also https://docs.github.com/rest/commits/statuses#create-a-commit-status
-     * https://www.jenkins.io/doc/pipeline/steps/github/#stepclass-githubcommitstatussetter-set-github-commit-status-universal
+    /** Inspect SCM info associated with "currentBuild" and specified stashName
+     *  (may be null) to pick out values we can use for notifications about the
+     *  tested code base (assuming a repository which is not "dynamatrix" itself.
+     *
+     * @see #reportGithubStageStatus
      */
-    def reportGithubStageStatus(
-        def stashName,
-        String message,
-        String state,
-        String messageContext = null,
-        String backrefUrl = null
+    def getNotificationContext(
+        def stashName
     ) {
         assertScript()
         def currentBuild = script.currentBuild
@@ -90,7 +82,7 @@ class DynamatrixGithubNotifier {
         )
 
         if (doDebug) {
-            echo "[DEBUG] reportGithubStageStatus called; dynamatrixGlobalState.enableGithubStatusHighlights=${dynamatrixGlobalState.enableGithubStatusHighlights}, stashName=${stashName}, message=${message}, state=${state}, messageContext=${messageContext}, backrefUrl=${backrefUrl}"
+            echo "[DEBUG] getNotificationContext called; dynamatrixGlobalState.enableGithubStatusHighlights=${dynamatrixGlobalState.enableGithubStatusHighlights}, stashName=${stashName}"
         }
 
         if (dynamatrixGlobalState.enableGithubStatusHighlights) {
@@ -106,7 +98,7 @@ class DynamatrixGithubNotifier {
                 // workspace checked out and recorded would have a tip commit hash
                 // unknown to github. So we actually prefer that info if available.
                 if (stashName != null) {
-                    stashNameUsed = stashName + ":reportGithubStageStatus-orig"
+                    stashNameUsed = stashName + ":getNotificationContext-orig"
                     scmVars = DynamatrixStash.getSCMVars(stashNameUsed)
                 }
                 if (scmVars == null) {
@@ -149,11 +141,11 @@ class DynamatrixGithubNotifier {
                     // At least if there's just one SCMSource attached
                     // to the job definition, we can do this (TOCHECK:
                     // what if there are many sources in definition?):
-                    SCMSource src = SCMSource.SourceByItem.findSource(currentBuild.rawBuild.getParent());
-                    SCMRevision revision = (src != null ? SCMRevisionAction.getRevision(src, currentBuild.rawBuild) : null);
+                    SCMSource src = SCMSource.SourceByItem.findSource(currentBuild.rawBuild.getParent())
+                    SCMRevision revision = (src != null ? SCMRevisionAction.getRevision(src, currentBuild.rawBuild) : null)
 
                     if (doDebug) {
-                        echo ("[DEBUG] reportGithubStageStatus discovering from SCMSource=${Utils.castString(src)} and SCMRevision=${Utils.castString(revision)}")
+                        echo "[DEBUG] getNotificationContext discovering from SCMSource=${Utils.castString(src)} and SCMRevision=${Utils.castString(revision)}"
                     }
 
                     if (src != null && revision != null
@@ -175,7 +167,7 @@ class DynamatrixGithubNotifier {
                 if (scmURL == null && scm != null && scm instanceof GitSCM) {
                     for (UserRemoteConfig c : scm.getUserRemoteConfigs()) {
                         if (doDebug) {
-                            echo ("[DEBUG] reportGithubStageStatus discovering from scm.getUserRemoteConfigs()): ${Utils.castString(c)}")
+                            echo "[DEBUG] getNotificationContext discovering from scm.getUserRemoteConfigs()): ${Utils.castString(c)}"
                         }
 
                         if (!("dynamatrix" in c.getUrl())) {
@@ -185,7 +177,7 @@ class DynamatrixGithubNotifier {
                     }
 
                     if (scmURL != null && doDebug) {
-                        echo ("[DEBUG] reportGithubStageStatus discovered for scmURL from scm.getUserRemoteConfigs()): ${scmURL}")
+                        echo "[DEBUG] getNotificationContext discovered for scmURL from scm.getUserRemoteConfigs()): ${scmURL}"
                     }
                 }
 
@@ -244,8 +236,11 @@ class DynamatrixGithubNotifier {
                         }
 
                         if (doDebug) {
-                            echo ("[DEBUG] reportGithubStageStatus discovered for scmCommit: scmBuildDataActions=${scmBuildDataActions} scmRevisionActions=${scmRevisionActions} " +
-                                (scmCommit == null ? "and could not pick exactly one" : "and picked ${scmCommit}")
+                            echo("[DEBUG] getNotificationContext discovered for scmCommit: " +
+                                "scmBuildDataActions=${scmBuildDataActions} " +
+                                "scmRevisionActions=${scmRevisionActions} " +
+                                (scmCommit == null ? "and could not pick exactly one" : "and picked ${scmCommit}"
+                                )
                             )
                         }
                     }
@@ -267,39 +262,12 @@ class DynamatrixGithubNotifier {
                     scmURL = script.env?.GIT_URL
                 }
 
-                // Honour the limit, 140 chars as last reported for this writing:
-                //    Failed to update commit state on GitHub. Ignoring exception
-                //    [{"message":"Validation Failed","errors":[{
-                //     "resource":"Status","code":"custom","field":"description",
-                //     "message":"description is too long (maximum is 140 characters)"}],
-                // As of this writing, the plugin step does not return a value
-                // in case of an error during posting, just logs it:
-                // https://github.com/jenkinsci/github-plugin/blob/309cf75c74ba1f254b9fe09fc43b5d9e08956813/src/main/java/org/jenkinsci/plugins/github/status/GitHubCommitStatusSetter.java#L132
-                if (message.length() > 140) {
-                    message = message.substring(0, 135) - ~/ [^\s]*$/ + "<...>"
-                }
-
-                Map stepArgs = [
-                    $class            : "GitHubCommitStatusSetter",
-                    errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
-                    //errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
-                    statusResultSource: [
-                        $class: "ConditionalStatusResultSource",
-                        results: [[
-                                      $class: "AnyBuildResult",
-                                      message: message,
-                                      state: state
-                                  ]]
-                    ]
-                ]
-
-                if (Utils.isStringNotEmpty(scmURL) && Utils.isStringNotEmpty(scmCommit)) {
-                    stepArgs['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: scmURL]
-                    stepArgs['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: scmCommit]
-
+                if (Utils.isStringNotEmpty(scmURL)
+                 && Utils.isStringNotEmpty(scmCommit)
+                ) {
                     // See comments above
                     if (scmVars == null && stashName != null) {
-                        String scmVarsKey = "${stashName}:reportGithubStageStatus-orig"
+                        String scmVarsKey = "${stashName}:getNotificationContext-orig"
                         scmVars = DynamatrixStash.getSCMVarsPrivate()
                         if (!(scmVars.containsKey(scmVarsKey))) {
                             scmVars[scmVarsKey] = [:]
@@ -310,36 +278,130 @@ class DynamatrixGithubNotifier {
                     }
                 }
 
-                // e.g. "ci/jenkins/build-status", "integration" or "build"
-                // re-use same context with different status or message as we progress from recognition of a codepath to its verdict
-                // use different contexts for different practical job aspects, e.g. spellcheck vs shellcheck
-                if (Utils.isStringNotEmpty(messageContext))
-                    stepArgs['contextSource'] = [$class: "ManuallyEnteredCommitContextSource", context: messageContext]
-
-                // e.g. "https://ci.networkupstools.org/job/nut/job/nut/job/PR-2063/69//artifact/.ci.MD5_899dfa229658900e3de07f19c790e888.check.log.gz"
-                // Defaults to https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github/status/sources/BuildRefBackrefSource.java
-                // that uses the Display URL of the build (redirects to one of UI implementation pages)
-                if (Utils.isStringNotEmpty(backrefUrl))
-                    stepArgs['statusBackrefSource'] = [$class: "ManuallyEnteredBackrefSource", backref: backrefUrl]
-
+                Map result = [
+                    stashNameOrig   : stashName,
+                    stashNameUsed   : stashNameUsed,
+                    scmVars         : scmVars,
+                    scmCommit       : scmCommit,
+                    scmURL          : scmURL,
+                ]
                 if (doDebug) {
-                    echo "[DEBUG] reportGithubStageStatus() with GitHubCommitStatusSetter step:\n\t" +
-                        "stashName=${Utils.castString(stashName)}\n\t" +
-                        "stashNameUsed=${Utils.castString(stashNameUsed)}\n\t" +
-                        "scmVars=${Utils.castString(scmVars)}\n\t" +
-                        "scmURL=${Utils.castString(scmURL)}\n\t" +
-                        "scmCommit=${Utils.castString(scmCommit)}\n\t" +
-                        "stepArgs=${Utils.castString(stepArgs)}"
+                    echo "[DEBUG] getNotificationContext discovery results: ${Utils.castString(result)}"
                 }
-
-                script.step(stepArgs);
+                return result
             } catch (Throwable t) {
-                echo "WARNING: Tried to use GitHubCommitStatusSetter but got an exception; is github-plugin installed and configured (or we may have a trouble with build agent)?"
+                echo "WARNING: Tried to getNotificationContext() but got an exception; is github-plugin installed and configured (or we may have a trouble with build agent)?"
 
                 if (doDebug) {
                     echo t.toString()
                 }
+
+                return null
             }
+        }
+
+        return null
+    }
+
+    /**
+     * Optional reporter of github status events which allows to trace certain
+     * but not all stages or situations (e.g. only failures of matrix cells).
+     * For Git URL/commit references uses DynamatrixStash.getSCMVars() cached data.
+     * Inspired by https://github.com/jenkinsci/github-plugin README examples,
+     * https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github/status/GitHubCommitStatusSetter.java
+     * and https://github.com/jenkinsci/github-branch-source-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github_branch_source/GitHubBuildStatusNotification.java#L337
+     * sources. See also https://docs.github.com/rest/commits/statuses#create-a-commit-status
+     * https://www.jenkins.io/doc/pipeline/steps/github/#stepclass-githubcommitstatussetter-set-github-commit-status-universal
+     *
+     * @see #getNotificationContext
+     */
+    def reportGithubStageStatus(
+        def stashName,
+        String message,
+        String state,
+        String messageContext = null,
+        String backrefUrl = null
+    ) {
+        assertScript()
+
+        // May throw an exception in case of failure on its own
+        // Writes its own logs, including the returned result, if debug is enabled
+        Map notificationContext = getNotificationContext(stashName)
+        if (!(Utils.isMapNotEmpty(notificationContext))) {
+            echo "WARNING: Tried to use GitHubCommitStatusSetter but getNotificationContext() returned a null or empty map"
+            return null
+        }
+
+        boolean doDebug = (
+            dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights
+                || (dynamatrixGlobalState.enableDebugTrace && dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights != false)
+        )
+
+        // Honour the limit, 140 chars as last reported for this writing:
+        //    Failed to update commit state on GitHub. Ignoring exception
+        //    [{"message":"Validation Failed","errors":[{
+        //     "resource":"Status","code":"custom","field":"description",
+        //     "message":"description is too long (maximum is 140 characters)"}],
+        // As of this writing, the plugin step does not return a value
+        // in case of an error during posting, just logs it:
+        // https://github.com/jenkinsci/github-plugin/blob/309cf75c74ba1f254b9fe09fc43b5d9e08956813/src/main/java/org/jenkinsci/plugins/github/status/GitHubCommitStatusSetter.java#L132
+        if (message.length() > 140) {
+            message = message.substring(0, 135) - ~/ [^\s]*$/ + "<...>"
+        }
+
+        try {
+            Map stepArgs = [
+                $class            : "GitHubCommitStatusSetter",
+                errorHandlers     : [[$class: 'ShallowAnyErrorHandler']],
+                //errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+                statusResultSource: [
+                    $class : "ConditionalStatusResultSource",
+                    results: [[
+                                  $class : "AnyBuildResult",
+                                  message: message,
+                                  state  : state
+                              ]]
+                ]
+            ]
+
+            if (Utils.isStringNotEmpty(notificationContext.scmURL) && Utils.isStringNotEmpty(notificationContext.scmCommit)) {
+                stepArgs['reposSource'] = [$class: "ManuallyEnteredRepositorySource", url: notificationContext.scmURL]
+                stepArgs['commitShaSource'] = [$class: "ManuallyEnteredShaSource", sha: notificationContext.scmCommit]
+            }
+
+            // e.g. "ci/jenkins/build-status", "integration" or "build"
+            // re-use same context with different status or message as we progress from recognition of a codepath to its verdict
+            // use different contexts for different practical job aspects, e.g. spellcheck vs shellcheck
+            if (Utils.isStringNotEmpty(messageContext)) {
+                stepArgs['contextSource'] = [$class: "ManuallyEnteredCommitContextSource", context: messageContext]
+            }
+
+            // e.g. "https://ci.networkupstools.org/job/nut/job/nut/job/PR-2063/69//artifact/.ci.MD5_899dfa229658900e3de07f19c790e888.check.log.gz"
+            // Defaults to https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/org/jenkinsci/plugins/github/status/sources/BuildRefBackrefSource.java
+            // that uses the Display URL of the build (redirects to one of UI implementation pages)
+            if (Utils.isStringNotEmpty(backrefUrl)) {
+                stepArgs['statusBackrefSource'] = [$class: "ManuallyEnteredBackrefSource", backref: backrefUrl]
+            }
+
+            if (doDebug) {
+                echo "[DEBUG] reportGithubStageStatus() with GitHubCommitStatusSetter step:\n\t" +
+                    "stashName=${Utils.castString(stashName)}\n\t" +
+                    "stashNameUsed=${Utils.castString(notificationContext.stashNameUsed)}\n\t" +
+                    "scmVars=${Utils.castString(notificationContext.scmVars)}\n\t" +
+                    "scmURL=${Utils.castString(notificationContext.scmURL)}\n\t" +
+                    "scmCommit=${Utils.castString(notificationContext.scmCommit)}\n\t" +
+                    "stepArgs=${Utils.castString(stepArgs)}"
+            }
+
+            script.step(stepArgs);
+        } catch (Throwable t) {
+            echo "WARNING: Tried to use GitHubCommitStatusSetter but got an exception; is github-plugin installed and configured (or we may have a trouble with build agent)?"
+
+            if (doDebug) {
+                echo t.toString()
+            }
+
+            // TOTHINK: Retry with github-autostatus-plugin?
         }
     }
 }
