@@ -493,6 +493,7 @@ class DynamatrixGithubNotifier {
                         if (doDebug) {
                             echo "[DEBUG] fetchKnownGithubStatuses: skip not \"our\" context: '${context}'"
                         }
+                        return // continue
                     }
 
                     if (!submapExists) {
