@@ -334,7 +334,7 @@ class DynamatrixGithubNotifier {
 
                 script.step(stepArgs);
             } catch (Throwable t) {
-                echo "WARNING: Tried to use GitHubCommitStatusSetter but got an exception; is github-plugin installed and configured?"
+                echo "WARNING: Tried to use GitHubCommitStatusSetter but got an exception; is github-plugin installed and configured (or we may have a trouble with build agent)?"
 
                 if (doDebug) {
                     echo t.toString()
