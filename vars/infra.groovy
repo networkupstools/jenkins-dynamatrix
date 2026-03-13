@@ -1,6 +1,9 @@
 // Steps should not be in a package, to avoid CleanGroovyClassLoader exceptions...
 // package org.nut.dynamatrix;
 
+import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.workflow.cps.CpsThreadGroup;
 import org.nut.dynamatrix.DynamatrixGithubNotifier;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.Utils;
@@ -172,4 +175,31 @@ Set<String> listChangedFiles() {
  */
 def reportGithubStageStatus(def stashName, String message, String state, String messageContext = null, String backrefUrl = null) {
     return DynamatrixGithubNotifier.get(this).reportGithubStageStatus(stashName, message, state, messageContext, backrefUrl)
+}
+
+TaskListener getListener() {
+    // https://stackoverflow.com/questions/53172023/get-console-logger-or-tasklistener-from-pipeline-script-method
+    TaskListener listener = null
+    try {
+        listener = currentBuild.rawBuild.listener
+    } catch (Throwable ignored) {}
+
+    if (listener == null) {
+        try {
+            listener = CpsThreadGroup.current().execution.owner.listener
+        } catch (Throwable ignored) {}
+    }
+
+    if (listener == null) {
+        try {
+            listener = Jenkins.get()
+                .getItemByFullName(env.JOB_NAME)
+                .getBuildByNumber(Integer.parseInt(env.BUILD_NUMBER))
+                .getListener()
+        } catch (Throwable t) {
+            throw new InvalidObjectException("Could not get listener for this runtime", t)
+        }
+    }
+
+    return listener
 }
