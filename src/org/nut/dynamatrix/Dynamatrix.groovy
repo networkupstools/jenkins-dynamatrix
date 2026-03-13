@@ -2798,6 +2798,25 @@ def parallelStages = prepareDynamatrix(
                             // might still be failed, just not re-thrown:
                             switch (dsbc.dsbcResultInterim) {
                                 case [null, 'SUCCESS', 'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']:
+                                    if (true) { // scoping
+                                        // Calculated above in this method.
+                                        // Or try variant from buildMatrixCellCI:
+                                        String MATRIX_TAG = matrixTag
+                                        if (MATRIX_TAG == null) {
+                                            MATRIX_TAG = stageName.trim()
+                                            if ("MATRIX_TAG=" in MATRIX_TAG) {
+                                                MATRIX_TAG = MATRIX_TAG - ~/^MATRIX_TAG="*/ - ~/"*$/
+                                            }
+                                        }
+
+                                        String msg = "'slow build' stage for ${MATRIX_TAG} passed after re-run: ${dsbc.dsbcResultInterim}"
+                                        // Only actually report if this context was previously
+                                        // known by GitHub (as any state)
+                                        script.infra.updateGithubStageStatus(stashName,
+                                            msg, 'SUCCESS', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
+                                            null //dsbc.getLatestDsbcResultLogUrl()
+                                        )
+                                    }
                                     parstageCompleted = true
                                     break
 
