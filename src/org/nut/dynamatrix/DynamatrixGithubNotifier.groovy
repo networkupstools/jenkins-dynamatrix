@@ -445,9 +445,9 @@ class DynamatrixGithubNotifier {
      *  them into {@link #preexistingGithubStatusContexts}.
      */
     def fetchKnownGithubStatuses() {
-        synchronized(defaultInstanceSync) {
-            assertScript()
+        assertScript()
 
+        script.lock(resource: "dynamatrix:fetchKnownGithubStatuses-${defaultInstanceSync.hashCode()}".toString(), quantity: 1) {
             // May throw an exception in case of failure on its own
             // Writes its own logs, including the returned result, if debug is enabled
             Map notificationContext = getNotificationContext(null)
