@@ -1,5 +1,6 @@
 package org.nut.dynamatrix;
 
+import com.cloudbees.groovy.cps.NonCPS;
 import com.cloudbees.jenkins.GitHubRepositoryName;
 import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
@@ -71,6 +72,7 @@ class DynamatrixGithubNotifier {
      *  May return {@code null} if not initialized yet
      *  and called as plain {@code get()}!
      */
+    @NonCPS
     static DynamatrixGithubNotifier get(def script = null) {
         // TOTHINK: Map of default instances per script?
         // Which to return for "script==null" aka get() then?
@@ -82,6 +84,7 @@ class DynamatrixGithubNotifier {
         }
     }
 
+    @NonCPS
     private def assertScript() {
         if (!script) {
             throw new UnsupportedOperationException("This DynamatrixGithubNotifier was not yet initialized with a pipeline script context")
