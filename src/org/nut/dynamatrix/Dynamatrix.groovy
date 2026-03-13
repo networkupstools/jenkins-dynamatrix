@@ -2074,6 +2074,24 @@ def parallelStages = prepareDynamatrix(
                 returnSet, rememberClones, bodyOrig)
         }
 
+        Set<List> parallelStages = generateBuildParallelStages(dynacfgOrig, rememberClones, bodyOrig)
+
+        if (returnSet) {
+            return parallelStages
+        } else {
+            // Scope the Map for sake of CPS conversions where we don't want them
+            Map<String, Closure> parallelStages_map = [:]
+            parallelStages.each { List tup -> parallelStages_map[(String)(tup[0])] = (Closure)(tup[1]) }
+            return parallelStages_map
+        }
+    } // generateBuild()
+
+    Set<List> generateBuildParallelStages(Map dynacfgOrig, Boolean rememberClones, Closure bodyOrig) {
+        boolean debugErrors = this.shouldDebugErrors()
+        boolean debugTrace = this.shouldDebugTrace()
+        boolean debugMilestones = this.shouldDebugMilestones()
+        boolean debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+
         Set<DynamatrixSingleBuildConfig> dsbcSet = generateBuildConfigSet(dynacfgOrig)
         Dynamatrix thisDynamatrix = this
         this.script.println "[DEBUG] generateBuild(): current thisDynamatrix.failFast setting when generating parallelStages: ${thisDynamatrix.failFast}"
@@ -2109,8 +2127,8 @@ def parallelStages = prepareDynamatrix(
                 } else {
                     body.delegate = [:]
                 }
-                body.delegate.dsbc = bodyData.dsbc
-                body.delegate.stageName = bodyData.stageName
+                body.delegate['dsbc'] = bodyData.dsbc
+                body.delegate['stageName'] = bodyData.stageName
             }
 
             String matrixTag = null
@@ -2128,6 +2146,7 @@ def parallelStages = prepareDynamatrix(
             String stashName = dynacfgOrig?.get("stashnameSrc")
             if (stashName == null) {
                 // TODO: Parameterize the magic name (dynacfgPipeline) somehow
+                //  but so far try to resolve it from calling context
                 try {
                     stashName = dynacfgPipeline?.get("stashnameSrc")
                 } catch (Throwable ignored) {}
@@ -2998,14 +3017,7 @@ def parallelStages = prepareDynamatrix(
             parallelStages << [parstageName, parstageCode]
         }
 
-        if (returnSet) {
-            return parallelStages
-        } else {
-            // Scope the Map for sake of CPS conversions where we don't want them
-            Map<String, Closure> parallelStages_map = [:]
-            parallelStages.each { List tup -> parallelStages_map[(String)(tup[0])] = (Closure)(tup[1]) }
-            return parallelStages_map
-        }
-    } // generateBuild()
+        return parallelStages
+    } // generateBuildParallelStages()
 
 }
