@@ -1,5 +1,6 @@
 package org.nut.dynamatrix;
 
+import com.cloudbees.jenkins.GitHubRepositoryName;
 import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.git.util.BuildData;
@@ -8,10 +9,10 @@ import jenkins.scm.api.SCMRevisionAction;
 import jenkins.scm.api.SCMSource;
 import org.jenkinsci.plugins.github_branch_source.GitHubSCMSource;
 import org.jenkinsci.plugins.github_branch_source.PullRequestSCMRevision;
-import org.kohsuke.github.GHCommit;
 import org.kohsuke.github.GHCommitState;
+import org.kohsuke.github.GHCommitStatus;
 import org.kohsuke.github.GHRepository;
-
+import org.kohsuke.github.PagedIterable;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 import org.nut.dynamatrix.Utils;
 
@@ -433,5 +434,144 @@ class DynamatrixGithubNotifier {
 
             // TOTHINK: Retry with github-autostatus-plugin?
         }
+    }
+
+    /** Query repo(s) (currently one non-"dynamatrix") associated with this
+     *  currently running build to see if any statuses are already known,
+     *  and match {@link #patternOurGithubStatusContexts} -- then populate
+     *  them into {@link #preexistingGithubStatusContexts}.
+     */
+    def fetchKnownGithubStatuses() {
+        synchronized(defaultInstanceSync) {
+            assertScript()
+
+            // May throw an exception in case of failure on its own
+            // Writes its own logs, including the returned result, if debug is enabled
+            Map notificationContext = getNotificationContext(null)
+            if (!(Utils.isMapNotEmpty(notificationContext))) {
+                echo "WARNING: Tried to fetchKnownGithubStatuses but getNotificationContext() returned a null or empty map"
+                return null
+            }
+
+            boolean doDebug = (
+                dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights
+                    || (dynamatrixGlobalState.enableDebugTrace && dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights != false)
+            )
+
+            if (!(Utils.isStringNotEmpty(notificationContext.scmURL))
+                || !(Utils.isStringNotEmpty(notificationContext.scmCommit))
+            ) {
+                echo "WARNING: Tried to fetchKnownGithubStatuses but getNotificationContext() returned no URL or Commit info"
+                return null
+            }
+
+            GitHubRepositoryName ghRepoName = GitHubRepositoryName.create(notificationContext.scmURL)
+            Iterable<GHRepository> ghRepos = ghRepoName?.resolve()
+            if (ghRepos == null) {
+                echo "WARNING: Tried to fetchKnownGithubStatuses but failed to resolve any GHRepository object"
+                return null
+            }
+
+            ghRepos.each { GHRepository ghRepo ->
+                if (doDebug) {
+                    echo "[DEBUG] fetchKnownGithubStatuses: checking GHRepository: '${ghRepo}'"
+                }
+
+                PagedIterable<GHCommitStatus> repoCommitStatuses = ghRepo.listCommitStatuses(notificationContext.scmCommit)
+
+                Boolean submapExists = false
+                repoCommitStatuses.each { GHCommitStatus status ->
+                    if (doDebug) {
+                        echo "[DEBUG] fetchKnownGithubStatuses: checking GHCommitStatus: '${status}'"
+                    }
+
+                    String context = status.getContext()
+                    if (!(context ==~ patternOurGithubStatusContexts)) {
+                        if (doDebug) {
+                            echo "[DEBUG] fetchKnownGithubStatuses: skip not \"our\" context: '${context}'"
+                        }
+                    }
+
+                    if (!submapExists) {
+                        if (!(preexistingGithubStatusContexts.containsKey(ghRepo))) {
+                            Map<String, Map<String, GHCommitState>> subMap = new HashMap<>()
+                            preexistingGithubStatusContexts[ghRepo] = subMap
+                        }
+
+                        if (!(preexistingGithubStatusContexts[ghRepo].containsKey(notificationContext.scmCommit))) {
+                            Map<String, GHCommitState> subMap = new HashMap<>()
+                            preexistingGithubStatusContexts[ghRepo][notificationContext.scmCommit] = subMap
+                        }
+
+                        submapExists = true
+                    }
+
+                    preexistingGithubStatusContexts[ghRepo][notificationContext.scmCommit][context] = status.getState()
+                }
+            }
+        }
+    }
+
+    /** For use early in a pipeline: Check if any statuses are already known
+     *  as failed (from previous builds) and update them as "pending" */
+    def neuterKnownUnsuccessfulGithubStatuses() {
+        assertScript()
+
+        if (preexistingGithubStatusContexts.isEmpty()) {
+            fetchKnownGithubStatuses()
+        }
+
+        preexistingGithubStatusContexts.each { GHRepository repo, Map<String, Map<String, GHCommitState>> repoCommitMap ->
+            repoCommitMap.each { String commitSha, Map<String, GHCommitState> commitStates ->
+                commitStates.each { String context, GHCommitState state ->
+                    if (state in [GHCommitState.ERROR, GHCommitState.FAILURE]) {
+                        reportGithubStageStatus(null, "Should retry", "PENDING", context, null)
+                    }
+                }
+            }
+        }
+    }
+
+    /** Only calls {@link #reportGithubStageStatus} if {@code state}
+     *  is not 'SUCCESS', or for successes -- if the {@code messageContext}
+     *  is non-null and in {@link #preexistingGithubStatusContexts} */
+    def updateGithubStageStatus(
+        def stashName,
+        String message,
+        String state,
+        String messageContext = null,
+        String backrefUrl = null
+    ) {
+        GHCommitState ghCommitState = GHCommitState.valueOf(state)
+        if (ghCommitState == GHCommitState.SUCCESS) {
+            if (preexistingGithubStatusContexts.isEmpty()) {
+                fetchKnownGithubStatuses()
+            }
+
+            boolean doDebug = (
+                dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights
+                    || (dynamatrixGlobalState.enableDebugTrace && dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights != false)
+            )
+
+            Boolean wasKnown = false
+            preexistingGithubStatusContexts.each { GHRepository repo, Map<String, Map<String, GHCommitState>> repoCommitMap ->
+                if (wasKnown)
+                    return //continue
+                repoCommitMap.each { String commitSha, Map<String, GHCommitState> commitStates ->
+                    if (commitStates.containsKey(messageContext)) {
+                        wasKnown = true
+                    }
+                }
+            }
+
+            if (!wasKnown) {
+                if (doDebug) {
+                    echo "[DEBUG] updateGithubStageStatus: context '${messageContext}' was not in preexistingGithubStatusContexts"
+                }
+                return null
+            }
+        }
+
+        reportGithubStageStatus(stashName, message, state, messageContext, backrefUrl)
     }
 }
