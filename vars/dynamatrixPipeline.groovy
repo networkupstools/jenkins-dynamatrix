@@ -386,6 +386,12 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             env['GIT_COMMITTER_DATE'] = now
         }
 
+        try {
+            infra.neuterKnownUnsuccessfulGithubStatuses() // dynacfgPipeline.get("stashnameSrc"))
+        } catch (Throwable t) {
+            echo "FAILED calling infra.neuterKnownUnsuccessfulGithubStatuses(): ${t}"
+        }
+
         stage("Initial discovery") {
             parallel (
 
