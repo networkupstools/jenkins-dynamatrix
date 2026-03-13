@@ -24,6 +24,36 @@ import java.util.regex.Pattern;
  *   and https://github.com/hub4j/github-api/
  */
 class DynamatrixGithubNotifier {
+    /** When we rebuild/replay a job for the same commit, there can be
+     *  pre-existing reports about a failed dynamatrix stage, e.g.
+     *  <pre>
+     *    <b><u>slowbuild-run/MATRIX_TAG="mingw-ubuntu-plucky-make-shellcheck"</u></b>
+     *    — 'slow build' stage for ...
+     *  </pre>
+     *  which can not be removed via GitHub API, only replaced.
+     *  At the start of a build we can list known statuses and replace
+     *  them as "pending", to eventually replace with a "success" (which
+     *  we do not normally report, as there would be too many entries).<br/>
+     *
+     *  This would also let developers know if a stage that failed with
+     *  an earlier iteration was not revisited in any later build of same
+     *  commit.  Since there can be crafted replays for just the failed
+     *  build agents etc., we do not reset known successful reports.<br/>
+     *
+     *  Maps [repo][sha][context]=>state<br/>
+     *
+     *  We currently claim statuses whose context matches
+     *   {@link #patternOurGithubStatusContexts} as our own.
+     */
+    final Map<GHRepository, Map<String, Map<String, GHCommitState>>> preexistingGithubStatusContexts = new HashMap<>()
+
+    /** Used for {@link #preexistingGithubStatusContexts}<br/>
+     *
+     *  We currently claim statuses whose context includes substring
+     *  {@code /MATRIX_TAG="} as our own.
+     */
+    final Pattern patternOurGithubStatusContexts = Pattern.compile(/.*\/MATRIX_TAG=".*/)
+
     private def script
     private static DynamatrixGithubNotifier defaultInstance = null
     private static final defaultInstanceSync = new Object()
