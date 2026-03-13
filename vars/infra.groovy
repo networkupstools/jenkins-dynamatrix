@@ -177,6 +177,14 @@ def reportGithubStageStatus(def stashName, String message, String state, String 
     return DynamatrixGithubNotifier.get(this).reportGithubStageStatus(stashName, message, state, messageContext, backrefUrl)
 }
 
+def neuterKnownUnsuccessfulGithubStatuses() {
+    return DynamatrixGithubNotifier.get(this).neuterKnownUnsuccessfulGithubStatuses()
+}
+
+def updateGithubStageStatus(def stashName, String message, String state, String messageContext = null, String backrefUrl = null) {
+    return DynamatrixGithubNotifier.get(this).updateGithubStageStatus(stashName, message, state, messageContext, backrefUrl)
+}
+
 TaskListener getListener() {
     // https://stackoverflow.com/questions/53172023/get-console-logger-or-tasklistener-from-pipeline-script-method
     TaskListener listener = null
