@@ -2813,8 +2813,7 @@ def parallelStages = prepareDynamatrix(
                                             }
                                         }
 
-                                        String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
-                                        String msg = "'${buildType}' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
+                                        String msg = "'${this.dynamatrixGithubNotificationContext}' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
                                         script.infra.reportGithubStageStatus(stashName,
                                                 msg, 'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
@@ -2867,9 +2866,8 @@ def parallelStages = prepareDynamatrix(
 
                                     if (!(dsbc.dsbcResultInterim in [null, 'SUCCESS'])) {
                                         try {
-                                            String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
                                             script.infra.reportGithubStageStatus(stashName,
-                                                "'${buildType}' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}",
+                                                "'${this.dynamatrixGithubNotificationContext}' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
                                         } catch (Throwable tt) {
@@ -2901,9 +2899,8 @@ def parallelStages = prepareDynamatrix(
 
                                     if (!(dsbc.dsbcResultInterim in ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'])) {
                                         try {
-                                            String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
                                             script.infra.reportGithubStageStatus(stashName,
-                                                "'${buildType}' stage for ${MATRIX_TAG} finished somehow " +
+                                                "'${this.dynamatrixGithubNotificationContext}' stage for ${MATRIX_TAG} finished somehow " +
                                                 "with unexpected verdict: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
@@ -2923,9 +2920,8 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     try {
-                                        String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
                                         script.infra.reportGithubStageStatus(stashName,
-                                            "'${buildType}' stage for ${MATRIX_TAG} finished " +
+                                            "'${this.dynamatrixGithubNotificationContext}' stage for ${MATRIX_TAG} finished " +
                                             "with abortion verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                             dsbc.getLatestDsbcResultLogUrl())
