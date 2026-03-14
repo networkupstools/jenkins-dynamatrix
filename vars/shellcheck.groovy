@@ -135,6 +135,10 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                 didFail = false
                             } catch (Throwable t) {
                                 if (Utils.isRetryableException(t)) {
+                                    echo "[DEBUG]: shellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
+                                        " finished with a verdict classified as " +
+                                        "a retryable build agent failure - " +
+                                        "will re-schedule"
                                     didFail = false
                                     throw t
                                 }
@@ -225,6 +229,10 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                                     didFail = false
                                                 } catch (Throwable t) {
                                                     if (Utils.isRetryableException(t)) {
+                                                        echo "[DEBUG]: shellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
+                                                            " finished with a verdict classified as " +
+                                                            "a retryable build agent failure - " +
+                                                            "will re-schedule"
                                                         didFail = false
                                                         throw t
                                                     }
@@ -271,6 +279,10 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                         return true
                                     } catch (Throwable t) {
                                         if (Utils.isRetryableException(t)) {
+                                            echo "[DEBUG]: shellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
+                                                " finished with a verdict classified as " +
+                                                "a retryable build agent failure - " +
+                                                "will re-schedule"
                                             throw t
                                         }
                                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
@@ -296,6 +308,10 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                     return true
                                 } catch (Throwable t) {
                                     if (Utils.isRetryableException(t)) {
+                                        echo "[DEBUG]: shellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
+                                            " finished with a verdict classified as " +
+                                            "a retryable build agent failure - " +
+                                            "will re-schedule"
                                         throw t
                                     }
                                     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
