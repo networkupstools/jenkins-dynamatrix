@@ -413,7 +413,7 @@ class Dynamatrix implements Cloneable {
      * We started the stage (maybe more than once) */
     public Integer countStagesStarted(Boolean recurse = false) {
         Map<String, Integer> mapCountStages = this.getCountStages(recurse)
-        return Utils.intNullZero(mapCountStages?.STARTED) + intNullZero(mapCountStages?.RESTARTED)
+        return Utils.intNullZero(mapCountStages?.STARTED) + Utils.intNullZero(mapCountStages?.RESTARTED)
     }
 
     /** Reporting the accounted values:
