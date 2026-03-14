@@ -14,6 +14,7 @@ class DynamatrixConfig implements Cloneable {
     private def script
     public def stageNameFunc = null
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public boolean enableDebugTraceResolver = dynamatrixGlobalState.enableDebugTraceResolver
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
     public String dynamatrixGithubNotificationContext = "slowbuild-run"
 
@@ -354,6 +355,11 @@ def parallelStages = prepareDynamatrix(
     @NonCPS
     public boolean shouldDebugTrace() {
         return ( this.enableDebugTrace && this.script != null)
+    }
+
+    @NonCPS
+    public boolean shouldDebugTraceResolver() {
+        return ( this.enableDebugTraceResolver && this.script != null)
     }
 
     @NonCPS
