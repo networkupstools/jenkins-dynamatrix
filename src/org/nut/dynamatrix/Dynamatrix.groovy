@@ -134,7 +134,7 @@ class Dynamatrix implements Cloneable {
      *
      * @see #setWorstResult(String)
      * @see #setWorstResult(String, String)
-     * @see #resultFromString
+     * @see Utils#resultFromString
      */
     public Result getWorstResult(Boolean recurse = false) {
         Result r = this.@dmWorstResult
@@ -193,39 +193,6 @@ class Dynamatrix implements Cloneable {
     private ConcurrentHashMap<String, String> trackStageLogkeys = new ConcurrentHashMap<String, String>()
 
     /**
-     * Convert a {@link String} into a {@link Result} with added
-     * consideration for values defined by the dynamatrix ecosystem.
-     * May return {@code null} for states which do not map into
-     * a Jenkins standard Result value.
-     * @param k A String key, with either one of Jenkins standard
-     *  {@link Result} values, or a dynamatrix state machine value:
-     *  ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']
-     * @return  A {@link Result} constant, or {@code null}.
-     *
-     * @see #getWorstResult
-     * @see #setWorstResult(String)
-     * @see #setWorstResult(String, String)
-     */
-    @NonCPS
-    public static Result resultFromString(String k) {
-        Result r = null
-        try {
-            switch (k) {
-                case ['STARTED', 'RESTARTED', 'COMPLETED']: break
-                case 'ABORTED_SAFE':
-                    r = Result.fromString('ABORTED')
-                    break
-                default:
-                    r = Result.fromString(k)
-                    break
-            }
-        } catch (Throwable ignored) {
-            r = null
-        }
-        return r
-    }
-
-    /**
      * Assign the currently tracked worst result among recently executed
      * dynamatrix stages. The verdict may not improve.
      *
@@ -236,12 +203,12 @@ class Dynamatrix implements Cloneable {
      *  assignment (a {@link Result}, may be {@code null}).
      *
      * @see #getWorstResult
-     * @see #resultFromString
+     * @see Utils#resultFromString
      * @see #setWorstResult(String, String)
      */
     @NonCPS
     synchronized public Result setWorstResult(String k) {
-        Result r = resultFromString(k)
+        Result r = Utils.resultFromString(k)
         if (r != null) {
             if (this.dmWorstResult == null) {
                 this.dmWorstResult = r
@@ -267,7 +234,7 @@ class Dynamatrix implements Cloneable {
      *  assignment (a {@link Result}, may be {@code null}).
      *
      * @see #getWorstResult
-     * @see #resultFromString
+     * @see Utils#resultFromString
      * @see #setWorstResult(String)
      */
     @NonCPS
@@ -275,7 +242,7 @@ class Dynamatrix implements Cloneable {
         Result res = this.setWorstResult(k)
 
         if (sn != null) {
-            Result r = resultFromString(k)
+            Result r = Utils.resultFromString(k)
             if (r != null) {
                 if (!this.@trackStageResults.containsKey(sn)
                 ||   this.@trackStageResults[sn] == null
@@ -440,28 +407,23 @@ class Dynamatrix implements Cloneable {
         }
     }
 
-    /** Helper to treat {@code null} {@link Integer} values as zeroes for counting */
-    private static Integer intNullZero(Integer i) {
-        if (i == null) { return 0 } else { return i }
-    }
-
     /** Reporting the accounted values:
      * We started the stage (maybe more than once) */
     public Integer countStagesStarted(Boolean recurse = false) {
         Map<String, Integer> mapCountStages = this.getCountStages(recurse)
-        return intNullZero(mapCountStages?.STARTED) + intNullZero(mapCountStages?.RESTARTED)
+        return Utils.intNullZero(mapCountStages?.STARTED) + intNullZero(mapCountStages?.RESTARTED)
     }
 
     /** Reporting the accounted values:
      * We restarted the stage */
     public Integer countStagesRestarted(Boolean recurse = false) {
-        return intNullZero(this.getCountStages(recurse)?.RESTARTED)
+        return Utils.intNullZero(this.getCountStages(recurse)?.RESTARTED)
     }
 
     /** Reporting the accounted values:
      * We know we finished the stage, successfully or with "fex" exception caught */
     public Integer countStagesCompleted(Boolean recurse = false) {
-        return intNullZero(this.getCountStages(recurse)?.COMPLETED)
+        return Utils.intNullZero(this.getCountStages(recurse)?.COMPLETED)
     }
 
     /** Reporting the accounted values:
@@ -470,32 +432,32 @@ class Dynamatrix implements Cloneable {
      * to execute our logic on)
      */
     public Integer countStagesAbortedSafe(Boolean recurse = false) {
-        return intNullZero(this.getCountStages(recurse)?.ABORTED_SAFE)
+        return Utils.intNullZero(this.getCountStages(recurse)?.ABORTED_SAFE)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesFinishedOK(Boolean recurse = false) {
-        return intNullZero(this.getCountStages(recurse)?.SUCCESS)
+        return Utils.intNullZero(this.getCountStages(recurse)?.SUCCESS)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesFinishedFailure(Boolean recurse = false) {
-        return intNullZero(this.getCountStages(recurse)?.FAILURE)
+        return Utils.intNullZero(this.getCountStages(recurse)?.FAILURE)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesFinishedFailureAllowed(Boolean recurse = false) {
-        return intNullZero(this.getCountStages(recurse)?.UNSTABLE)
+        return Utils.intNullZero(this.getCountStages(recurse)?.UNSTABLE)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesAborted(Boolean recurse = false) {
-        return intNullZero(this.getCountStages(recurse)?.ABORTED)
+        return Utils.intNullZero(this.getCountStages(recurse)?.ABORTED)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesAbortedNotBuilt(Boolean recurse = false) {
-        return intNullZero(this.getCountStages(recurse)?.NOT_BUILT)
+        return Utils.intNullZero(this.getCountStages(recurse)?.NOT_BUILT)
     }
 
     /**
@@ -1352,7 +1314,7 @@ def parallelStages = prepareDynamatrix(
         // Convert Sets of Sets of strings in buildLabelCombos into the
         // array of strings (keys of the BLA Map) we can feed into the
         // agent requirements of generated pipeline stages:
-        this.buildLabelsAgents = mapBuildLabelExpressions(this.buildLabelCombosFlat)
+        this.buildLabelsAgents = Utils.mapBuildLabelExpressions(this.buildLabelCombosFlat)
 
         // Finally, append into BLA keys the constraints from commonLabelExpr
         // (the original "request" for suitable workers -- note that optional
@@ -1381,26 +1343,6 @@ def parallelStages = prepareDynamatrix(
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): detected ${this.buildLabelsAgents.size()} buildLabelsAgents combos:" + blaStr
 
         return true
-    }
-
-    /** Take {@code blcSet[]} which is a Set of Sets (equivalent to field
-     * {@link #buildLabelCombosFlat} in the class), with contents like this:
-     * <pre>
-     * [ [ARCH_BITS=64 ARCH64=amd64, COMPILER=CLANG CLANGVER=9, OS_DISTRO=openindiana],
-     *   [ARCH_BITS=32 ARCH32=armv7l, COMPILER=GCC GCCVER=4.9, OS_DISTRO=debian] ]
-     * </pre>
-     * ...and convert into a Map where keys are agent label expression strings.
-     */
-    static Map<String, Set> mapBuildLabelExpressions(Set<Set> blcSet) {
-        /** Equivalent to buildLabelsAgents in the class */
-        Map<String, Set> blaMap = [:]
-        blcSet.each() {Set combo ->
-            // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
-            // ble == build label expression
-            String ble = String.join('&&', combo).replaceAll('\\s+', '&&')
-            blaMap[ble] = combo
-        }
-        return blaMap
     }
 
     /** Returns a set of (unique) {@link DynamatrixSingleBuildConfig} items */
@@ -1434,7 +1376,7 @@ def parallelStages = prepareDynamatrix(
             // labels announced by build nodes, including use in
             // `agent { label 'expr' }` clauses
             if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): buildLabelsAgentsBuild before requiredLabelCombos: ${buildLabelsAgentsBuild}"
-            buildLabelsAgentsBuild += mapBuildLabelExpressions(dynacfgBuild.dynamatrixRequiredLabelCombos)
+            buildLabelsAgentsBuild += Utils.mapBuildLabelExpressions(dynacfgBuild.dynamatrixRequiredLabelCombos)
         }
         if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): buildLabelsAgentsBuild: ${buildLabelsAgentsBuild}"
 
@@ -2820,14 +2762,7 @@ def parallelStages = prepareDynamatrix(
                                     if (true) { // scoping
                                         // Calculated above in this method.
                                         // Or try variant from buildMatrixCellCI:
-                                        String MATRIX_TAG = matrixTag
-                                        if (MATRIX_TAG == null) {
-                                            MATRIX_TAG = stageName.trim()
-                                            if ("MATRIX_TAG=" in MATRIX_TAG) {
-                                                MATRIX_TAG = MATRIX_TAG - ~/^MATRIX_TAG="*/ - ~/"*$/
-                                            }
-                                        }
-
+                                        String MATRIX_TAG = Utils.prepare_MATRIX_TAG(matrixTag, stageName)
                                         String msg = "'slow build' stage for ${MATRIX_TAG} passed after re-run: ${dsbc.dsbcResultInterim}"
                                         // Only actually report if this context was previously
                                         // known by GitHub (as any state)
@@ -2843,13 +2778,7 @@ def parallelStages = prepareDynamatrix(
                                     if (true) { // scoping
                                         // Calculated above in this method.
                                         // Or try variant from buildMatrixCellCI:
-                                        String MATRIX_TAG = matrixTag
-                                        if (MATRIX_TAG == null) {
-                                            MATRIX_TAG = stageName.trim()
-                                            if ("MATRIX_TAG=" in MATRIX_TAG) {
-                                                MATRIX_TAG = MATRIX_TAG - ~/^MATRIX_TAG="*/ - ~/"*$/
-                                            }
-                                        }
+                                        String MATRIX_TAG = Utils.prepare_MATRIX_TAG(matrixTag, stageName)
 
                                         String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
                                         String msg = "'${buildType}' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
@@ -2889,13 +2818,7 @@ def parallelStages = prepareDynamatrix(
                                 "'${dsbc.dsbcResultInterim}'" +
                                 "; a Throwable was caught: ${Utils.castString(t)}")
 
-                            String MATRIX_TAG = matrixTag
-                            if (MATRIX_TAG == null) {
-                                MATRIX_TAG = stageName.trim()
-                                if ("MATRIX_TAG=" in MATRIX_TAG) {
-                                    MATRIX_TAG = MATRIX_TAG - ~/^MATRIX_TAG="*/ - ~/"*$/
-                                }
-                            }
+                            String MATRIX_TAG = Utils.prepare_MATRIX_TAG(matrixTag, stageName)
 
                             switch (dsbc.dsbcResultInterim) {
                                 case [null, 'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT']:

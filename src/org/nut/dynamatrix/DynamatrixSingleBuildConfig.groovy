@@ -262,7 +262,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         String sn = buildLabelExpression;
 
         if (Utils.isListNotEmpty(virtualLabelSet)) {
-            // Same as we do in Dynamatrix.mapBuildLabelExpressions() for one combo
+            // Same as we do in Utils.mapBuildLabelExpressions() for one combo
             sn += " && " + String.join('&&', virtualLabelSet).replaceAll('\\s+', '&&')
         }
 
