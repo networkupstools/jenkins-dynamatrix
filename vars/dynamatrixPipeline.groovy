@@ -258,6 +258,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     if (false)
     {
     dynamatrixGlobalState.enableDebugTrace = true
+    //dynamatrixGlobalState.enableDebugTraceResolver = true
     dynamatrixGlobalState.enableDebugErrors = true
     dynamatrixGlobalState.enableDebugMilestones = true
     dynamatrixGlobalState.enableDebugMilestonesDetails = true

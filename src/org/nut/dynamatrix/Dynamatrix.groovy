@@ -54,6 +54,8 @@ class Dynamatrix implements Cloneable {
     /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     /** Have some defaults, if only to have all expected fields defined */
+    public boolean enableDebugTraceResolver = dynamatrixGlobalState.enableDebugTraceResolver
+    /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
     /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
@@ -879,7 +881,7 @@ class Dynamatrix implements Cloneable {
         }
 
         if (!nodeCapsCache.containsKey(labelExpr)) {
-            nodeCapsCache[labelExpr] = new NodeCaps(this, dynacfg.commonLabelExpr, dynamatrixGlobalState.enableDebugTrace, dynamatrixGlobalState.enableDebugErrors)
+            nodeCapsCache[labelExpr] = new NodeCaps(this, dynacfg.commonLabelExpr, dynamatrixGlobalState.enableDebugTrace, dynamatrixGlobalState.enableDebugErrors, dynamatrixGlobalState.enableDebugTraceResolver)
         }
 
         return nodeCapsCache[labelExpr]
@@ -888,6 +890,11 @@ class Dynamatrix implements Cloneable {
     @NonCPS
     public boolean shouldDebugTrace() {
         return (this.enableDebugTrace && this.script != null)
+    }
+
+    @NonCPS
+    public boolean shouldDebugTraceResolver() {
+        return (this.enableDebugTraceResolver && this.script != null)
     }
 
     @NonCPS
@@ -1086,6 +1093,7 @@ def parallelStages = prepareDynamatrix(
     def prepareDynamatrix(Map dynacfgOrig = [:]) {
         boolean debugErrors = this.shouldDebugErrors()
         boolean debugTrace = this.shouldDebugTrace()
+        boolean debugTraceResolver = this.shouldDebugTraceResolver()
         boolean debugMilestones = this.shouldDebugMilestones()
         boolean debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
@@ -1149,7 +1157,8 @@ def parallelStages = prepareDynamatrix(
             this.script,
             commonLabelExpr,
             debugTrace,
-            debugErrors)
+            debugErrors,
+            debugTraceResolver)
 
         //this.nodeCaps = null // kick GC
         nodeCaps = tmpNodeCaps
@@ -1176,7 +1185,7 @@ def parallelStages = prepareDynamatrix(
             //TreeSet effAxis = this.nodeCaps.resolveAxisName(axis).sort()
             //TreeSet effAxis = nodeCaps.resolveAxisName(axis).sort()
             TreeSet effAxis = tmpNodeCaps.resolveAxisName(axis).sort()
-            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
+            if (debugTraceResolver) this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
             this.effectiveAxes << effAxis
         }
         this.effectiveAxes = this.effectiveAxes.sort()
@@ -1240,11 +1249,11 @@ def parallelStages = prepareDynamatrix(
                 // we would pick supported values for, by current node:
                 ArrayList axisCombos = []
                 axisSet.each() {def axis ->
-                    if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}'..."
+                    if (debugTraceResolver) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}'..."
                     //def tmpset = this.nodeCaps.resolveAxisValues(axis, nodeName, true)
                     //def tmpset = nodeCaps.resolveAxisValues(axis, nodeName, true)
                     def tmpset = tmpNodeCaps.resolveAxisValues(axis, nodeName, true)
-                    if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}': got tmpset: ${Utils.castString(tmpset)}"
+                    if (debugTraceResolver) this.script.println "[DEBUG] prepareDynamatrix(): querying values for axis '${Utils.castString(axis)}' collected for node '${Utils.castString(nodeName)}': got tmpset: ${Utils.castString(tmpset)}"
                     // Got at least one usable key=value string?
                     if (tmpset != null && tmpset.size() > 0) {
                         // TODO: Value constraints and classification
@@ -1265,7 +1274,7 @@ def parallelStages = prepareDynamatrix(
                         axisCombos = axisCombos.sort()
                         nodeAxisCombos << axisCombos
                     } else {
-                        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): ignored buildLabelCombos collected for node ${nodeName} with requested axis set ${axisSet}: only got " + axisCombos
+                        if (debugTraceResolver) this.script.println "[DEBUG] prepareDynamatrix(): ignored buildLabelCombos collected for node ${nodeName} with requested axis set ${axisSet}: only got " + axisCombos
                     }
                 }
             }
@@ -1295,7 +1304,7 @@ def parallelStages = prepareDynamatrix(
                 // this nodeResults contains the set of sets of label values
                 // supported for one of the original effectiveAxes requirements,
                 // where each of nodeAxisCombos contains a set of axisValues
-                if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
+                if (debugTraceResolver) this.script.println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
                 List tmp = Utils.cartesianSquared(nodeAxisCombos as Iterable).sort()
                 // Revive combos that had only one hit and were flattened
                 // into single items (strings) instead of Sets (of Sets)
@@ -1304,7 +1313,7 @@ def parallelStages = prepareDynamatrix(
                         if (!Utils.isList(tmp[i])) { tmp[i] = [tmp[i]] }
                     }
                 }
-                if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
+                if (debugTraceResolver) this.script.println "[DEBUG] prepareDynamatrix(): Expanded into : " + tmp
                 // Add members of tmp (many sets of unique key=value combos
                 // for each axis) as direct members of buildLabelCombosFlat
                 this.buildLabelCombosFlat += tmp
@@ -1350,6 +1359,7 @@ def parallelStages = prepareDynamatrix(
     Set<DynamatrixSingleBuildConfig> generateBuildConfigSet(Map dynacfgOrig = [:]) {
         boolean debugErrors = this.shouldDebugErrors()
         boolean debugTrace = this.shouldDebugTrace()
+        boolean debugTraceResolver = this.shouldDebugTraceResolver()
         boolean debugMilestones = this.shouldDebugMilestones()
         boolean debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
@@ -1393,7 +1403,7 @@ def parallelStages = prepareDynamatrix(
                 // or 'CSTDVERSION_${KEY}' for submaps (['c': '99', 'cxx': '98'])
                 def vals = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[k]
                 if (!Utils.isList(vals) || vals.size() == 0) {
-                    if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): dynamatrixAxesVirtualLabelsMap: SKIPPED key '${k}': its value is not a list: ${Utils.castString(vals)}"
+                    if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): dynamatrixAxesVirtualLabelsMap: SKIPPED key '${k}': its value is not a list: ${Utils.castString(vals)}"
                     return // continue
                 }
 
@@ -1418,7 +1428,7 @@ def parallelStages = prepareDynamatrix(
                     keyvalues << vv
                 }
 
-                if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}\n    with keyvalues: ${keyvalues}"
+                if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): combining dynamatrixAxesVirtualLabelsCombos: ${dynamatrixAxesVirtualLabelsCombos}\n    with keyvalues: ${keyvalues}"
                 dynamatrixAxesVirtualLabelsCombos = new HashSet(Utils.cartesianProduct(dynamatrixAxesVirtualLabelsCombos, keyvalues) as Collection)
             }
 
@@ -1509,7 +1519,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.buildLabelSet = buildLabelsAgentsBuild[ble]
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         buildLabelsAgentsBuild.remove(ble)
-                        if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: ble: ${ble}"
+                        if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: ble: ${ble}"
                         removed++
                     }
                 }
@@ -1523,7 +1533,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.virtualLabelSet = virtualLabelSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         virtualAxes.remove(virtualLabelSet)
-                        if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: virtualLabelSet: ${virtualLabelSet}"
+                        if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: virtualLabelSet: ${virtualLabelSet}"
                         removed++
                     }
                 }
@@ -1537,7 +1547,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.envvarSet = envvarSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonEnv.remove(envvarSet)
-                        if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: envvarSet: ${envvarSet}"
+                        if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: envvarSet: ${envvarSet}"
                         removed++
                     }
                 }
@@ -1551,7 +1561,7 @@ def parallelStages = prepareDynamatrix(
                     dsbc.clioptSet = clioptSet
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonOpts.remove(clioptSet)
-                        if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: clioptSet: ${clioptSet}"
+                        if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: clioptSet: ${clioptSet}"
                         removed++
                     }
                 }
@@ -1647,10 +1657,10 @@ def parallelStages = prepareDynamatrix(
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
                 if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): COMBINING: virtualAxes: ${Utils.castString(virtualAxes)}\nvs. dsbcBleSet: ${dsbcBleSet}"
                 virtualAxes.each() {Set virtualLabelSet ->
-                    //if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
+                    //if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
                     dsbcBleSet.each() {DynamatrixSingleBuildConfig tmp ->
                         DynamatrixSingleBuildConfig dsbcBleTmp = tmp.clone()
-                        //if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
+                        //if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
                         dsbcBleTmp.virtualLabelSet = virtualLabelSet
                         dsbcBleSetTmp += dsbcBleTmp
                     }

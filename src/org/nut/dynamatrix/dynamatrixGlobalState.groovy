@@ -42,6 +42,10 @@ class dynamatrixGlobalState {
      * that passes these args)
      */
     static Boolean enableDebugTrace = false
+    /** Specifically toggle tracing of node label discovery and
+     *  test martix axes resolver in loops (gigabytes of text!)
+     *  @see #enableDebugTrace */
+    static Boolean enableDebugTraceResolver = false
     /** @see #enableDebugTrace */
     static Boolean enableDebugTraceFailures = true
     /** @see #enableDebugTrace */
