@@ -206,11 +206,13 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         // we propagate that exception
         Result r = Result.fromString(k)
 
+/* // NonCPS!
         if (this.shouldDebugTrace()) {
             script.println (
                 "[TRACE] Old worst result for this DSBC was: ${this.dsbcResult}" +
                 "; new assignment is string '${k}' => Result '${r}'")
         }
+ */
 
         if (this.dsbcResult == null) {
             this.dsbcResult = r
@@ -218,10 +220,12 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             this.dsbcResult = this.dsbcResult.combine(r)
         }
 
+/* // NonCPS!
         if (this.shouldDebugTrace()) {
             script.println (
                 "[TRACE] New worst result for this DSBC is: ${this.dsbcResult}")
         }
+ */
 
         return this.dsbcResult
     }
