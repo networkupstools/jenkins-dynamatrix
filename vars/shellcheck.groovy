@@ -138,7 +138,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                     echo "[DEBUG]: shellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
                                         " finished with a verdict classified as " +
                                         "a retryable build agent failure - " +
-                                        "will re-schedule"
+                                        "will re-schedule: ${msgFail} => ${t}"
                                     didFail = false
                                     throw t
                                 }
@@ -182,7 +182,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                 return false
 
                             case ['SUCCESS', null]: if (true) {
-                                    String msg = "prep for shellcheck for ${MATRIX_TAG} failed"
+                                    String msg = "prep for shellcheck for ${MATRIX_TAG} succeeded"
                                     if (!infra.updateGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                         'SUCCESS', "shellcheck-${MATRIX_TAG}"))
                                         echo msg
@@ -232,7 +232,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                                         echo "[DEBUG]: shellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
                                                             " finished with a verdict classified as " +
                                                             "a retryable build agent failure - " +
-                                                            "will re-schedule"
+                                                            "will re-schedule: ${msgFail} => ${t}"
                                                         didFail = false
                                                         throw t
                                                     }
@@ -282,7 +282,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                             echo "[DEBUG]: shellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
                                                 " finished with a verdict classified as " +
                                                 "a retryable build agent failure - " +
-                                                "will re-schedule"
+                                                "will re-schedule: ${msgFail} => ${t}"
                                             throw t
                                         }
                                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
@@ -311,7 +311,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                         echo "[DEBUG]: shellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
                                             " finished with a verdict classified as " +
                                             "a retryable build agent failure - " +
-                                            "will re-schedule"
+                                            "will re-schedule: ${msgFail} => ${t}"
                                         throw t
                                     }
                                     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE', message: msgFail) {
@@ -365,7 +365,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                             break
 
                         case ['SUCCESS', null]: if (true) {
-                                String msg = "prep for shellcheck for ${MATRIX_TAG} failed"
+                                String msg = "shellcheck for ${MATRIX_TAG} succeeded in all tests"
                                 if (!infra.updateGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                     'SUCCESS', "shellcheck-${MATRIX_TAG}"))
                                     echo msg

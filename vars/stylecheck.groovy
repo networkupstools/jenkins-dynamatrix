@@ -65,7 +65,7 @@ def call(Map dynacfgPipeline = [:]) {
                     echo "[DEBUG]: stylecheck(${dynacfgPipeline.get("stashnameSrc")}) " +
                         " finished with a verdict classified as " +
                         "a retryable build agent failure - " +
-                        "will re-schedule"
+                        "will re-schedule: ${t}"
                     succeeded = false
                 } else {
                     infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
