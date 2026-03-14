@@ -44,8 +44,8 @@ class DynamatrixGithubNotifier {
      *
      *  Maps [repo][sha][context]=>state<br/>
      *
-     *  We currently claim statuses whose context matches
-     *   {@link #patternOurGithubStatusContexts} as our own.
+     *  We currently claim statuses whose URL links back to this JENKINS_URL,
+     *  or context matches {@link #patternOurGithubStatusContexts}, as our own.
      */
     final Map<GHRepository, Map<String, Map<String, GHCommitState>>> preexistingGithubStatusContexts = new HashMap<>()
 
@@ -441,8 +441,9 @@ class DynamatrixGithubNotifier {
 
     /** Query repo(s) (currently one non-"dynamatrix") associated with this
      *  currently running build to see if any statuses are already known,
-     *  and match {@link #patternOurGithubStatusContexts} -- then populate
-     *  them into {@link #preexistingGithubStatusContexts}.
+     *  and link back to this instance's {@code JENKINS_URL} or match
+     *  {@link #patternOurGithubStatusContexts} -- then populate them
+     *  into {@link #preexistingGithubStatusContexts}.
      */
     def fetchKnownGithubStatuses() {
         assertScript()
@@ -475,6 +476,9 @@ class DynamatrixGithubNotifier {
                 return null
             }
 
+            String JENKINS_URL = script?.env?.JENKINS_URL
+            if (!(Utils.isStringNotEmpty(JENKINS_URL?.trim())))
+                JENKINS_URL = null
             ghRepos.each { GHRepository ghRepo ->
                 if (doDebug) {
                     echo "[DEBUG] fetchKnownGithubStatuses: checking GHRepository: '${ghRepo}'"
@@ -488,12 +492,22 @@ class DynamatrixGithubNotifier {
                         echo "[DEBUG] fetchKnownGithubStatuses: checking GHCommitStatus: '${status}'"
                     }
 
+                    String url = status.getTargetUrl()
                     String context = status.getContext()
-                    if (!(context ==~ patternOurGithubStatusContexts)) {
-                        if (doDebug) {
-                            echo "[DEBUG] fetchKnownGithubStatuses: skip not \"our\" context: '${context}'"
+                    if (JENKINS_URL != null && Utils.isStringNotEmpty(url?.trim())) {
+                        if (!(url.startsWith(JENKINS_URL))) {
+                            if (doDebug) {
+                                echo "[DEBUG] fetchKnownGithubStatuses: skip not \"our\" back-tracking URL: '${url}'"
+                            }
+                            return // continue
                         }
-                        return // continue
+                    } else {
+                        if (!(context ==~ patternOurGithubStatusContexts)) {
+                            if (doDebug) {
+                                echo "[DEBUG] fetchKnownGithubStatuses: skip not \"our\" context: '${context}'"
+                            }
+                            return // continue
+                        }
                     }
 
                     if (!submapExists) {

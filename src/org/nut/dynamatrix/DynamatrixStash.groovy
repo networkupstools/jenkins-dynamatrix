@@ -299,9 +299,15 @@ class DynamatrixStash {
 
                                     // https://gist.github.com/pditommaso/263721865d84dee6ebaf
                                     field = extension.class.getDeclaredField("reference")
-                                    Field modifiersField = Field.class.getDeclaredField("modifiers")
-                                    modifiersField.setAccessible(true)
-                                    modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
+                                    try {
+                                        // This trickery was done with Java 8, but the field does not exist
+                                        // in modern Java (trick prohibited since Java 9)
+                                        Field modifiersField = Field.class.getDeclaredField("modifiers");
+                                        modifiersField.setAccessible(true);
+                                        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+                                    } catch (NoSuchFieldException e) {
+                                        // no-op, just skip modifying it
+                                    }
                                     field.setAccessible(true)
                                     field.set(extension, refrepo)
                                 }
@@ -931,6 +937,7 @@ exit \$RET
                     } // withEnv for checking/populating original workspace
                       // just using refrepo (if usable in the end)
                 }
+                script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: finished using exclusive lock (${lockName}) on node '${script?.env?.NODE_NAME}' about possibly shared git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
             } // unlock
         } catch (Throwable t) {
             script.echo "checkoutCleanSrcRefrepoWS: failed to use git refrepo on node '${script?.env?.NODE_NAME}', falling back if we can"

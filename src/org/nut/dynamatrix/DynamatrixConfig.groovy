@@ -15,6 +15,7 @@ class DynamatrixConfig implements Cloneable {
     public def stageNameFunc = null
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+    public String dynamatrixGithubNotificationContext = "slowbuild-run"
 
     /**
      * Define fields to satisfy the build example in docs:
@@ -609,6 +610,11 @@ def parallelStages = prepareDynamatrix(
             if (dynacfgOrig.containsKey('stageNameFunc')) {
                 this.stageNameFunc = dynacfgOrig.stageNameFunc
                 dynacfgOrig.remove('stageNameFunc')
+            }
+
+            if (dynacfgOrig.containsKey('dynamatrixGithubNotificationContext')) {
+                this.dynamatrixGithubNotificationContext = dynacfgOrig.dynamatrixGithubNotificationContext
+                dynacfgOrig.remove('dynamatrixGithubNotificationContext')
             }
 
             if (dynacfgOrig.containsKey('dsbcStageTimeoutSettings')) {

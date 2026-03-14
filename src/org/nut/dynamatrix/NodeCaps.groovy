@@ -22,6 +22,7 @@ class NodeCaps implements Cloneable {
 
     private boolean isInitialized = false
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+    public boolean enableDebugTraceResolver = dynamatrixGlobalState.enableDebugTraceResolver
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
     /** What we looked for (null means all known nodes) */
@@ -44,10 +45,13 @@ class NodeCaps implements Cloneable {
      * mapped to the Map of nodes' selected metadata including capabilities
      * they declared with further labels mapped as KEY=VALUE entries.
      */
-    public NodeCaps(script, String nodeLabelExpr = null, Boolean debugTrace = null, Boolean debugErrors = null) {
+    public NodeCaps(script, String nodeLabelExpr = null, Boolean debugTrace = null, Boolean debugErrors = null, Boolean debugTraceResolver = null) {
         this.script = script
         if (debugTrace != null) {
             this.enableDebugTrace = debugTrace
+        }
+        if (debugTraceResolver != null) {
+            this.enableDebugTraceResolver = debugTraceResolver
         }
         if (debugErrors != null) {
             this.enableDebugErrors = debugErrors
@@ -101,6 +105,11 @@ class NodeCaps implements Cloneable {
     }
 
     @NonCPS
+    public boolean shouldDebugTraceResolver() {
+        return ( this.enableDebugTraceResolver && this.script != null)
+    }
+
+    @NonCPS
     public boolean shouldDebugErrors() {
         return ( (this.enableDebugTrace || this.enableDebugErrors) && this.script != null)
     }
@@ -147,6 +156,7 @@ class NodeCaps implements Cloneable {
         Set res = []
         boolean debugErrors = this.shouldDebugErrors()
         boolean debugTrace = this.shouldDebugTrace()
+        boolean debugTraceResolver = this.shouldDebugTraceResolver()
 
         if (!this.isInitialized) {
             if (debugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
@@ -164,7 +174,7 @@ class NodeCaps implements Cloneable {
             return res
         }
 
-        if (debugTrace) this.script.println "[DEBUG] resolveAxisName(): ${Utils.castString(axis)}"
+        if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisName(): ${Utils.castString(axis)}"
 
         if (Utils.isString(axis)) {
             // NOTE: No support for nested request like '${COMPILER${VENDOR}}VER'
@@ -227,7 +237,7 @@ class NodeCaps implements Cloneable {
                 if (nodeName == null) return // continue
 
                 this.nodeData[nodeName].labelMap.keySet().each() {String label ->
-                    if (debugTrace) {
+                    if (debugTraceResolver) {
                         this.script.println "[DEBUG] resolveAxisName(): label: ${Utils.castString(label)}"
                         this.script.println "[DEBUG] resolveAxisName(): value: ${Utils.castString(this.nodeData[nodeName].labelMap[label])}"
                     }
@@ -235,7 +245,7 @@ class NodeCaps implements Cloneable {
                     label = label.trim()
                     if (label.equals("")) return // continue
                     if (label =~ axis && !label.contains("=")) {
-                        if (debugTrace) this.script.println "[DEBUG] resolveAxisName(): label matched axis as regex"
+                        if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisName(): label matched axis as regex"
                         res << label
                     }
                 }
@@ -270,14 +280,15 @@ class NodeCaps implements Cloneable {
         Set res = []
         boolean debugErrors = this.shouldDebugErrors()
         boolean debugTrace = this.shouldDebugTrace()
+        boolean debugTraceResolver = this.shouldDebugTraceResolver()
 
-        if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): called to look for: ${Utils.castString(axis)}"
+        if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): called to look for: ${Utils.castString(axis)}"
 
         if (node == null)
             return res
 
         if (!this.isInitialized) {
-            if (debugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
+            if (debugErrors) this.script.println "[DEBUG] resolveAxisValues(): this NodeCaps object is not populated yet"
             return res
         }
 
@@ -292,7 +303,7 @@ class NodeCaps implements Cloneable {
             if (matcher.find()) {
                 labelFixed = matcher[0][1]
                 axis = matcher[0][2]
-                if (debugTrace) {
+                if (debugTraceResolver) {
                     this.script.println "[DEBUG] resolveAxisValues(): axis split into" +
                         " fixed label part: '${labelFixed}' and the" +
                         " part whose values we would look for: '${axis}'" +
@@ -306,10 +317,10 @@ class NodeCaps implements Cloneable {
             return res;
         }
 
-        if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): looking for: ${Utils.castString(axis)}"
+        if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisValues(${node}, ${returnAssignments}): looking for: ${Utils.castString(axis)}"
 
         this.nodeData[node].labelMap.keySet().each() {String label ->
-            if (debugTrace) {
+            if (debugTraceResolver) {
                 this.script.println "[DEBUG] resolveAxisValues(): label: ${Utils.castString(label)}"
                 this.script.println "[DEBUG] resolveAxisValues(): value: ${Utils.castString(this.nodeData[node].labelMap[label])}"
             }
@@ -330,7 +341,7 @@ class NodeCaps implements Cloneable {
             // all the labels and values listed in that part of our query
 
             boolean hit = false
-            if (debugTrace) {
+            if (debugTraceResolver) {
                 this.script.println "[DEBUG]   resolveAxisValues(${node}, ${returnAssignments}): " +
                     "looking for: ${Utils.castString(axis)}    " +
                     "GOTNEXT label: ${Utils.castString(label)} // " +
@@ -340,10 +351,10 @@ class NodeCaps implements Cloneable {
                 if ( (!returnAssignments && val != null && axis.equals(label))
                 ||   ( returnAssignments && val == null && label.startsWith("${axis}="))
                 ) {
-                    if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
+                    if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
                     hit = true
                 } else {
-                    if (debugTrace) {
+                    if (debugTraceResolver) {
                         this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as string :" +
                             " returnAssignments=${returnAssignments}" +
                             " (val==null)=" + (val==null) +
@@ -358,10 +369,10 @@ class NodeCaps implements Cloneable {
                 if ( (!returnAssignments && val != null && label =~ axis && !label.contains("="))
                 ||   ( returnAssignments && val == null && label =~ ~/(${axis}|${axis}.*=)/ && label.contains("="))
                 ) {
-                    if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as regex"
+                    if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as regex"
                     hit = true
                 } else {
-                    if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as regex"
+                    if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisValues(): label did not match axis as regex"
                 }
             }
 
@@ -391,9 +402,10 @@ class NodeCaps implements Cloneable {
         Set res = []
         boolean debugErrors = this.shouldDebugErrors()
         boolean debugTrace = this.shouldDebugTrace()
+        boolean debugTraceResolver = this.shouldDebugTraceResolver()
 
         if (!this.isInitialized) {
-            if (debugErrors) this.script.println "[DEBUG] resolveAxisName(): this NodeCaps object is not populated yet"
+            if (debugErrors) this.script.println "[DEBUG] resolveAxisValues(): this NodeCaps object is not populated yet"
             return res
         }
 
@@ -406,7 +418,7 @@ class NodeCaps implements Cloneable {
             return res;
         }
 
-        if (debugTrace) this.script.println "[DEBUG] resolveAxisValues(${returnAssignments}): looking for: ${Utils.castString(axis)}"
+        if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisValues(${returnAssignments}): looking for: ${Utils.castString(axis)}"
 
         this.nodeData.keySet().each() {String nodeName ->
             if (nodeName == null) return // continue

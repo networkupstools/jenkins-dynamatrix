@@ -1,6 +1,7 @@
 package org.nut.dynamatrix;
 
 import com.cloudbees.groovy.cps.NonCPS;
+import hudson.model.Result;
 
 /**
  * Various generic helpers to check or process our data.
@@ -112,6 +113,38 @@ class Utils {
         return ( obj != {} )
     }
 
+    /**
+     * @return true if the exception is likely a networking or agent failure
+     * that can be retried by Dynamatrix.groovy (based on its catch blocks).
+     */
+    @NonCPS
+    public static boolean isRetryableException(Throwable t) {
+        if (t == null) return false
+        String ts = t.toString()
+        // Match logic in Dynamatrix.groovy (approximate for CPS/non-CPS safety)
+        if (ts ==~ /.*(Unexpected termination of the channel|Timeout waiting for agent to come back|The channel is closing down or has closed down|Agent was removed|Node is being removed|was marked offline|Connection was broken|Cannot contact .*: java.lang.InterruptedException|java.nio.channels.ClosedChannelException|ChannelClosedException|hudson.remoting.ProxyException|hudson.remoting.RequestAbortedException|hudson.remoting.Channel.close|hudson.slaves.SlaveComputer.closeChannel|hudson.remoting.Channel.terminate|hudson.remoting.Request.abort).*/)
+            return true
+        if (ts ==~ /.*(Unable to create live FilePath for|No space left on device|Stale NFS file handle).*/)
+            return true
+        // Should have caught these above by full names
+        if (ts ==~ /.*(ClosedChannelException|ProxyException|RequestAbortedException|Channel.close|SlaveComputer.closeChannel|Channel.terminate|Request.abort).*/)
+            return true
+        if (ts ==~ /.*(java.io.IOException: SSH channel is closed|Error (fetching|cloning) remote repo|Could not resolve host).*/)
+            return true
+        // build cell classifier messages
+        if (ts ==~ /.*(agent connection|workspace|memory) problem.*/)
+            return true
+        // legacy fallback
+        if (ts ==~ /.*(missing workspace|object directory .* does not exist|check .git\/objects\/info\/alternates|(spawn|fork|exec).*Resource temporarily unavailable).*/)
+            return true
+        // hudson.remoting.RequestAbortedException, RemotingSystemException, etc.
+        if (ts.contains("hudson.remoting.RequestAbortedException") ||
+            ts.contains("hudson.remoting.RemotingSystemException") ||
+            ts.contains("hudson.remoting.ChannelClosedException"))
+            return true
+        return false
+    }
+
     @NonCPS
     public static String castString(def obj) {
         return "<${obj?.getClass()}>(${obj?.toString()})"
@@ -218,4 +251,77 @@ class Utils {
         if (debug) println "Both orig and addon are neither arrays nor maps, replace:\n${orig}\n${addon}\n"
         return addon
     } // mergeMapSet()
+
+    /** Helper for {@link Dynamatrix} class */
+    @NonCPS
+    static String prepare_MATRIX_TAG(String matrixTag, String stageName) {
+        String MATRIX_TAG = matrixTag
+        if (MATRIX_TAG == null) {
+            MATRIX_TAG = stageName.trim()
+            if ("MATRIX_TAG=" in MATRIX_TAG) {
+                MATRIX_TAG = MATRIX_TAG - ~/^MATRIX_TAG="*/ - ~/"*$/
+            }
+        }
+        return MATRIX_TAG
+    }
+
+    /**
+     * Convert a {@link String} into a {@link hudson.model.Result} with added
+     * consideration for values defined by the dynamatrix ecosystem.
+     * May return {@code null} for states which do not map into
+     * a Jenkins standard Result value.
+     * @param k A String key, with either one of Jenkins standard
+     *  {@link hudson.model.Result} values, or a dynamatrix state machine value:
+     *  ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']
+     * @return  A {@link hudson.model.Result} constant, or {@code null}.
+     *
+     * @see Dynamatrix#getWorstResult
+     * @see Dynamatrix#setWorstResult(String)
+     * @see Dynamatrix#setWorstResult(String, String)
+     */
+    @NonCPS
+    static Result resultFromString(String k) {
+        Result r = null
+        try {
+            switch (k) {
+                case ['STARTED', 'RESTARTED', 'COMPLETED']: break;
+                case 'ABORTED_SAFE':
+                    r = Result.fromString('ABORTED')
+                    break
+                default:
+                    r = Result.fromString(k)
+                    break
+            }
+        } catch (Throwable ignored) {
+            r = null
+        }
+        return r
+    }
+
+    /** Helper to treat {@code null} {@link Integer} values as zeroes for counting */
+    @NonCPS
+    static Integer intNullZero(Integer i) {
+        if (i == null) { return 0 } else { return i }
+    }
+
+    /** Take {@code blcSet[]} which is a Set of Sets (equivalent to field
+     * {@link Dynamatrix#buildLabelCombosFlat} in the class), with contents like this:
+     * <pre>
+     * [ [ARCH_BITS=64 ARCH64=amd64, COMPILER=CLANG CLANGVER=9, OS_DISTRO=openindiana],
+     *   [ARCH_BITS=32 ARCH32=armv7l, COMPILER=GCC GCCVER=4.9, OS_DISTRO=debian] ]
+     * </pre>
+     * ...and convert into a Map where keys are agent label expression strings.
+     */
+    // WARNING: NOT @NonCPS here, some code treats args as ArrayList and CPS helps it find this implementation
+    static Map<String, Set> mapBuildLabelExpressions(Set<Set> blcSet) {
+        /** Equivalent to buildLabelsAgents in the class */
+        Map<String, Set> blaMap = [:]
+        blcSet.each() {Set combo ->
+            // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
+            // ble == build label expression
+            String ble = String.join('&&', combo).replaceAll('\\s+', '&&')
+            blaMap[ble] = combo
+        }
+        return blaMap
+    }
 }
