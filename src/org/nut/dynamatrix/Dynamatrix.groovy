@@ -2854,7 +2854,9 @@ def parallelStages = prepareDynamatrix(
                                         String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
                                         String msg = "'${buildType}' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
                                         script.infra.reportGithubStageStatus(stashName,
-                                                msg, 'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
+                                                msg,
+                                                (Utils.isRetryableException(t) ? 'FAILURE' : 'PENDING'),
+                                                "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
                                         parstageCompleted = true
                                     }
@@ -2903,7 +2905,8 @@ def parallelStages = prepareDynamatrix(
                                         "'${dsbc.dsbcResultInterim}' but a " +
                                         "Throwable was caught: ${Utils.castString(t)}"
 
-                                    if (!(dsbc.dsbcResultInterim in [null, 'SUCCESS'])) {
+                                    if (!(dsbc.dsbcResultInterim in [null, 'SUCCESS']) && !(Utils.isRetryableException(t))) {
+                                        // Retryable: are shellcheck retried faults in this reporting category or above?
                                         try {
                                             String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
                                             script.infra.reportGithubStageStatus(stashName,
