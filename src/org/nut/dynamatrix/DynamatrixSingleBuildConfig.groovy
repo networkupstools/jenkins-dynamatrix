@@ -206,11 +206,13 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         // we propagate that exception
         Result r = Result.fromString(k)
 
+/* // NonCPS!
         if (this.shouldDebugTrace()) {
             script.println (
                 "[TRACE] Old worst result for this DSBC was: ${this.dsbcResult}" +
                 "; new assignment is string '${k}' => Result '${r}'")
         }
+ */
 
         if (this.dsbcResult == null) {
             this.dsbcResult = r
@@ -218,10 +220,12 @@ class DynamatrixSingleBuildConfig implements Cloneable {
             this.dsbcResult = this.dsbcResult.combine(r)
         }
 
+/* // NonCPS!
         if (this.shouldDebugTrace()) {
             script.println (
                 "[TRACE] New worst result for this DSBC is: ${this.dsbcResult}")
         }
+ */
 
         return this.dsbcResult
     }
@@ -262,7 +266,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         String sn = buildLabelExpression;
 
         if (Utils.isListNotEmpty(virtualLabelSet)) {
-            // Same as we do in Dynamatrix.mapBuildLabelExpressions() for one combo
+            // Same as we do in Utils.mapBuildLabelExpressions() for one combo
             sn += " && " + String.join('&&', virtualLabelSet).replaceAll('\\s+', '&&')
         }
 

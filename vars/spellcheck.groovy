@@ -26,39 +26,53 @@ def call(Map dynacfgPipeline = [:]) {
         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                 'awaiting spellcheck results',
                 'PENDING', "spellcheck")
-        node(infra.labelDocumentationWorker()) {
-            withEnvOptional(dynacfgPipeline.defaultTools) {
-                unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 
-                if (dynacfgPipeline?.spellcheck_prepconf != null) {
-                    if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_prepconf)) {
-                        sh """ ${dynacfgPipeline.spellcheck_prepconf} """
-                    } // else: pipeline author wants this skipped
-                } else {
-                    if (dynacfgPipeline?.buildPhases?.prepconf) {
-                        sh """ ${dynacfgPipeline.buildPhases.prepconf} """
-                    }
-                }
+        Boolean succeeded = null
+        while (!succeeded) {
+            try {
+                node(infra.labelDocumentationWorker()) {
+                    withEnvOptional(dynacfgPipeline.defaultTools) {
+                        unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 
-                if (dynacfgPipeline?.spellcheck_configure != null) {
-                    if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_configure)) {
-                        sh """ ${dynacfgPipeline.spellcheck_configure} """
-                    } // else: pipeline author wants this skipped
-                } else {
-                    if (dynacfgPipeline?.buildPhases?.configure) {
-                        sh """ ${dynacfgPipeline.buildPhases.configure} """
-                    }
-                }
+                        if (dynacfgPipeline?.spellcheck_prepconf != null) {
+                            if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_prepconf)) {
+                                sh """ ${dynacfgPipeline.spellcheck_prepconf} """
+                            } // else: pipeline author wants this skipped
+                        } else {
+                            if (dynacfgPipeline?.buildPhases?.prepconf) {
+                                sh """ ${dynacfgPipeline.buildPhases.prepconf} """
+                            }
+                        }
 
-                try {
-                    sh """ ${dynacfgPipeline.spellcheck} """
-                    infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
+                        if (dynacfgPipeline?.spellcheck_configure != null) {
+                            if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_configure)) {
+                                sh """ ${dynacfgPipeline.spellcheck_configure} """
+                            } // else: pipeline author wants this skipped
+                        } else {
+                            if (dynacfgPipeline?.buildPhases?.configure) {
+                                sh """ ${dynacfgPipeline.buildPhases.configure} """
+                            }
+                        }
+
+                        sh """ ${dynacfgPipeline.spellcheck} """
+                        succeeded = true
+                        infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                             'spellcheck passed for this commit',
                             'SUCCESS', "spellcheck")
-                } catch (Throwable t) {
+                    }
+                }
+            } catch (Throwable t) {
+                if (Utils.isRetryableException(t)) {
+                    echo "[DEBUG]: spellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
+                        " finished with a verdict classified as " +
+                        "a retryable build agent failure - " +
+                        "will re-schedule: ${t.toString()}"
+                    succeeded = false
+                } else {
                     infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
-                            'spellcheck failed for this commit',
-                            'FAILURE', "spellcheck")
+                        'spellcheck failed for this commit',
+                        'FAILURE', "spellcheck")
+                    // Let the pipeline fault path take over
                     throw t
                 }
             }
