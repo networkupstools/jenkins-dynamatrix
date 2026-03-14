@@ -24,7 +24,6 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     Closure stageNameFunc = null
 
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
-    public boolean enableDebugTraceResolver = dynamatrixGlobalState.enableDebugTraceResolver
     public boolean enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
     public boolean enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
 
@@ -179,11 +178,6 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     @NonCPS
     public boolean shouldDebugTrace() {
         return ( this.enableDebugTrace && this.script != null)
-    }
-
-    @NonCPS
-    public boolean shouldDebugTraceResolver() {
-        return ( this.enableDebugTraceResolver && this.script != null)
     }
 
     @NonCPS
