@@ -2763,7 +2763,8 @@ def parallelStages = prepareDynamatrix(
                                         // Calculated above in this method.
                                         // Or try variant from buildMatrixCellCI:
                                         String MATRIX_TAG = Utils.prepare_MATRIX_TAG(matrixTag, stageName)
-                                        String msg = "'slow build' stage for ${MATRIX_TAG} passed after re-run: ${dsbc.dsbcResultInterim}"
+                                        String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
+                                        String msg = "'${buildType}' stage for ${MATRIX_TAG} passed after re-run: ${dsbc.dsbcResultInterim}"
                                         // Only actually report if this context was previously
                                         // known by GitHub (as any state)
                                         script.infra.updateGithubStageStatus(stashName,
@@ -2918,8 +2919,9 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     try {
+                                        String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
                                         script.infra.reportGithubStageStatus(stashName,
-                                            "'slow build' stage for ${MATRIX_TAG} finished " +
+                                            "'${buildType}' stage for ${MATRIX_TAG} finished " +
                                             "with unclassified verdict: ${dsbc.dsbcResultInterim}",
                                             'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                             dsbc.getLatestDsbcResultLogUrl())
