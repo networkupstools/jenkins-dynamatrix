@@ -299,9 +299,15 @@ class DynamatrixStash {
 
                                     // https://gist.github.com/pditommaso/263721865d84dee6ebaf
                                     field = extension.class.getDeclaredField("reference")
-                                    Field modifiersField = Field.class.getDeclaredField("modifiers")
-                                    modifiersField.setAccessible(true)
-                                    modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
+                                    try {
+                                        // This trickery was done with Java 8, but the field does not exist
+                                        // in modern Java (trick prohibited since Java 9)
+                                        Field modifiersField = Field.class.getDeclaredField("modifiers");
+                                        modifiersField.setAccessible(true);
+                                        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+                                    } catch (NoSuchFieldException e) {
+                                        // no-op, just skip modifying it
+                                    }
                                     field.setAccessible(true)
                                     field.set(extension, refrepo)
                                 }
