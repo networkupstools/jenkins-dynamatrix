@@ -1327,7 +1327,7 @@ def parallelStages = prepareDynamatrix(
         //  ]        //###  ignored one node that did not declare any ARCH
         // ]
 
-        this.buildLabelCombosFlat = []
+        this.buildLabelCombosFlat = new HashSet()
         this.buildLabelCombos.each() {def nodeResults ->
             nodeResults.each() {def nodeAxisCombos ->
                 // this nodeResults contains the set of sets of label values
