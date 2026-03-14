@@ -931,6 +931,7 @@ exit \$RET
                     } // withEnv for checking/populating original workspace
                       // just using refrepo (if usable in the end)
                 }
+                script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: finished using exclusive lock (${lockName}) on node '${script?.env?.NODE_NAME}' about possibly shared git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
             } // unlock
         } catch (Throwable t) {
             script.echo "checkoutCleanSrcRefrepoWS: failed to use git refrepo on node '${script?.env?.NODE_NAME}', falling back if we can"
