@@ -211,7 +211,7 @@ class Dynamatrix implements Cloneable {
         Result r = null
         try {
             switch (k) {
-                case ['STARTED', 'RESTARTED', 'COMPLETED']: break;
+                case ['STARTED', 'RESTARTED', 'COMPLETED']: break
                 case 'ABORTED_SAFE':
                     r = Result.fromString('ABORTED')
                     break
@@ -1019,11 +1019,11 @@ def parallelStages = prepareDynamatrix(
             if (Utils.isListNotEmpty(dynacfg.requiredNodelabels)) {
                 if (dynacfg.requiredNodelabels != dynacfgOrig.requiredNodelabels) {
                     // Different set than before
-                    return true;
+                    return true
                 }
             } else {
                 // There was no constraint before
-                return true;
+                return true
             }
         } // there is no else: if original dynamatrix had the constraint, we do not clear it
 
@@ -1031,11 +1031,11 @@ def parallelStages = prepareDynamatrix(
             if (Utils.isListNotEmpty(dynacfg.excludedNodelabels)) {
                 if (dynacfg.excludedNodelabels != dynacfgOrig.excludedNodelabels) {
                     // Different set than before
-                    return true;
+                    return true
                 }
             } else {
                 // There was no constraint before
-                return true;
+                return true
             }
         } // there is no else: if original dynamatrix had the constraint, we do not clear it
 
@@ -1043,11 +1043,11 @@ def parallelStages = prepareDynamatrix(
             if (Utils.isListNotEmpty(dynacfg.dynamatrixAxesLabels)) {
                 if (dynacfg.dynamatrixAxesLabels != dynacfgOrig.dynamatrixAxesLabels) {
                     // Different set than before
-                    return true;
+                    return true
                 }
             } else {
                 // There was no constraint before? Should not get here...
-                return true;
+                return true
             }
         } // there is no else: if original dynamatrix had the constraint, we do not clear it
 
@@ -1055,11 +1055,11 @@ def parallelStages = prepareDynamatrix(
             if (Utils.isStringNotEmpty(dynacfg.commonLabelExpr)) {
                 if (dynacfg.commonLabelExpr != dynacfgOrig.commonLabelExpr) {
                     // Different set than before
-                    return true;
+                    return true
                 }
             } else {
                 // There was no constraint before? Should not get here...
-                return true;
+                return true
             }
         } // there is no else: if original dynamatrix had the constraint, we do not clear it
 
@@ -1512,7 +1512,7 @@ def parallelStages = prepareDynamatrix(
         //debugMilestonesDetails = this.shouldDebugMilestonesDetails()
 
         if (true) { // scope
-            def countCombos = 1;
+            def countCombos = 1
             if (buildLabelsAgentsBuild.size() > 0) {
                 countCombos *= buildLabelsAgentsBuild.size()
             }
@@ -1620,7 +1620,7 @@ def parallelStages = prepareDynamatrix(
                 if (debugMilestones)
                     this.script.println "[DEBUG] generateBuildConfigSet(): quick pass over excludeCombos[] removed ${removed} direct hits from original axis values"
 
-                def countCombos = 1;
+                def countCombos = 1
                 if (buildLabelsAgentsBuild.size() > 0) {
                     countCombos *= buildLabelsAgentsBuild.size()
                 }
@@ -2276,8 +2276,8 @@ def parallelStages = prepareDynamatrix(
                 payload = {
                     def printStackTraceStderrOptional = { Throwable t ->
                         if (enableDebugSysprint) {
-                            StringWriter errors = new StringWriter();
-                            t.printStackTrace(new PrintWriter(errors));
+                            StringWriter errors = new StringWriter()
+                            t.printStackTrace(new PrintWriter(errors))
                             System.err.println("[${script?.env?.BUILD_TAG}] " +
                                 "[DEBUG]: DSBC requested " +
                                 "for stage '${stageName}'" + sbName +
@@ -2352,8 +2352,8 @@ def parallelStages = prepareDynamatrix(
                                 if (fexres == null) {
                                     fexres = 'SUCCESS'
                                 } else {
-                                    StringWriter errors = new StringWriter();
-                                    fex.printStackTrace(new PrintWriter(errors));
+                                    StringWriter errors = new StringWriter()
+                                    fex.printStackTrace(new PrintWriter(errors))
                                     if (errors.toString().contains("RemovedNodeListener")
                                      || fex.getMessage() ==~ /.*(Timeout waiting for agent to come back).*/
                                     ) {
@@ -2442,7 +2442,7 @@ def parallelStages = prepareDynamatrix(
                                         String hexAres = "hudson.AbortException: " +
                                             "Message: " + hexA.getMessage() +
                                             "; Cause: " + hexA.getCause() +
-                                            "; toString: " + hexA.toString();
+                                            "; toString: " + hexA.toString()
                                         dsbc.thisDynamatrix?.countStagesIncrement('FAILURE', stageName + sbName) // could be unstable, learn how to differentiate?
                                         dsbc.dsbcResultInterim = 'hudson.AbortException'
 
@@ -2455,8 +2455,8 @@ def parallelStages = prepareDynamatrix(
 
                                         if (dsbc.enableDebugTraceFailures) {
                                             dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-FAILURE: ' + hexAres, stageName + sbName) // for debug
-                                            StringWriter errors = new StringWriter();
-                                            hexA.printStackTrace(new PrintWriter(errors));
+                                            StringWriter errors = new StringWriter()
+                                            hexA.printStackTrace(new PrintWriter(errors))
                                             script.echo "[DEBUG] " + msgEx +
                                                 "\nDetailed trace: " + errors.toString()
                                         } else {
@@ -2491,7 +2491,7 @@ def parallelStages = prepareDynamatrix(
                                 String raeRes = "hudson.remoting.RequestAbortedException: " +
                                     "Message: " + rae.getMessage() +
                                     "; Cause: " + rae.getCause() +
-                                    "; toString: " + rae.toString();
+                                    "; toString: " + rae.toString()
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'hudson.remoting.RequestAbortedException'
 
@@ -2504,8 +2504,8 @@ def parallelStages = prepareDynamatrix(
 
                                 if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + raeRes, stageName + sbName) // for debug
-                                    StringWriter errors = new StringWriter();
-                                    rae.printStackTrace(new PrintWriter(errors));
+                                    StringWriter errors = new StringWriter()
+                                    rae.printStackTrace(new PrintWriter(errors))
                                     script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
                                 } else {
@@ -2536,7 +2536,7 @@ def parallelStages = prepareDynamatrix(
                                 String rseRes = "hudson.remoting.RemotingSystemException: " +
                                     "Message: " + rse.getMessage() +
                                     "; Cause: " + rse.getCause() +
-                                    "; toString: " + rse.toString();
+                                    "; toString: " + rse.toString()
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'hudson.remoting.RemotingSystemException'
 
@@ -2549,8 +2549,8 @@ def parallelStages = prepareDynamatrix(
 
                                 if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + rseRes, stageName + sbName) // for debug
-                                    StringWriter errors = new StringWriter();
-                                    rse.printStackTrace(new PrintWriter(errors));
+                                    StringWriter errors = new StringWriter()
+                                    rse.printStackTrace(new PrintWriter(errors))
                                     script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
                                 } else {
@@ -2588,7 +2588,7 @@ def parallelStages = prepareDynamatrix(
                                 String jioeRes = "java.io.IOException: " +
                                     "Message: " + jioe.getMessage() +
                                     "; Cause: " + jioe.getCause() +
-                                    "; toString: " + jioe.toString();
+                                    "; toString: " + jioe.toString()
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'java.io.IOException'
 
@@ -2601,8 +2601,8 @@ def parallelStages = prepareDynamatrix(
 
                                 if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jioeRes, stageName + sbName) // for debug
-                                    StringWriter errors = new StringWriter();
-                                    jioe.printStackTrace(new PrintWriter(errors));
+                                    StringWriter errors = new StringWriter()
+                                    jioe.printStackTrace(new PrintWriter(errors))
                                     script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
                                 } else {
@@ -2630,7 +2630,7 @@ def parallelStages = prepareDynamatrix(
                                 String jlieRes = "java.lang.InterruptedException: " +
                                     "Message: " + jlie.getMessage() +
                                     "; Cause: " + jlie.getCause() +
-                                    "; toString: " + jlie.toString();
+                                    "; toString: " + jlie.toString()
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'java.lang.InterruptedException'
 
@@ -2643,8 +2643,8 @@ def parallelStages = prepareDynamatrix(
 
                                 if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + jlieRes, stageName + sbName) // for debug
-                                    StringWriter errors = new StringWriter();
-                                    jlie.printStackTrace(new PrintWriter(errors));
+                                    StringWriter errors = new StringWriter()
+                                    jlie.printStackTrace(new PrintWriter(errors))
                                     script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
                                 } else {
@@ -2683,7 +2683,7 @@ def parallelStages = prepareDynamatrix(
                                 String gexRes = "java.io.IOException: " +
                                     "Message: " + gex.getMessage() +
                                     "; Cause: " + gex.getCause() +
-                                    "; toString: " + gex.toString();
+                                    "; toString: " + gex.toString()
                                 dsbc.thisDynamatrix?.countStagesIncrement('UNKNOWN', stageName + sbName) // FAILURE technically, but one we could not classify exactly
                                 dsbc.dsbcResultInterim = 'java.io.IOException'
 
@@ -2696,8 +2696,8 @@ def parallelStages = prepareDynamatrix(
 
                                 if (dsbc.enableDebugTraceFailures) {
                                     dsbc.thisDynamatrix?.countStagesIncrement('DEBUG-EXC-UNKNOWN: ' + gexRes, stageName + sbName) // for debug
-                                    StringWriter errors = new StringWriter();
-                                    gex.printStackTrace(new PrintWriter(errors));
+                                    StringWriter errors = new StringWriter()
+                                    gex.printStackTrace(new PrintWriter(errors))
                                     script.echo "[DEBUG] " + msgEx +
                                         "\nDetailed trace: " + errors.toString()
                                 } else {
@@ -2724,7 +2724,7 @@ def parallelStages = prepareDynamatrix(
                         String tRes = "Got a Throwable not classified specifically: " +
                             "Message: " + t.getMessage() +
                             "; Cause: " + t.getCause() +
-                            "; toString: " + Utils.castString(t);
+                            "; toString: " + Utils.castString(t)
 
                         def msgEx =
                             "[DEBUG] A DSBC stage running on node " +
@@ -2734,8 +2734,8 @@ def parallelStages = prepareDynamatrix(
                             tRes
 
                         if (dsbc.enableDebugTraceFailures) {
-                            StringWriter errors = new StringWriter();
-                            t.printStackTrace(new PrintWriter(errors));
+                            StringWriter errors = new StringWriter()
+                            t.printStackTrace(new PrintWriter(errors))
                             script.echo "[DEBUG] " + msgEx +
                                 "\nDetailed trace: " + errors.toString()
                         } else {
