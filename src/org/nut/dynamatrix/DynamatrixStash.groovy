@@ -855,8 +855,8 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 // May be passed by caller like dynacfgPipeline.stashnameSrc='nut-ci-src'
                 refrepoName = stashName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
                 if (!refrepoName) {
-                    // e.g. "nut/nut/master" or "nut/nut/PR-683" for MBR pipelines
-                    refrepoName = script?.env?.JOB_NAME?.replaceFirst(/\\/PR-[0-9]+$/, '')
+                    // e.g. "nut/nut/master" or "nut/nut/PR-683" => shared "nut/nut" for MBR pipelines
+                    refrepoName = script?.env?.JOB_NAME?.replaceFirst(/\/(PR-[0-9]+|master|main|trunk)$/, '')
                 }
                 if (!refrepoName) {
                     refrepoName = scmURL.replaceFirst(/\\.git$/, '')
