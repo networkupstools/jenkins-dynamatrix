@@ -85,6 +85,9 @@ class DynamatrixStash {
      *  (current directory!), including possible {@code @tmp}
      *  and {@code @script} satellites). */
     static void deleteWS(def script) {
+        Date start = new Date()
+        script.echo "[DEBUG] deleteWS(): clearing away '${script?.pwd()}' on '${script?.env?.NODE_NAME}' and any possible satellites - STARTING"
+
         /* clean up our workspace (current directory) */
         script.deleteDir()
 
@@ -97,6 +100,9 @@ class DynamatrixStash {
         script.dir("${script.workspace}@script") {
             script.deleteDir()
         }
+
+        Date finish = new Date()
+        script.echo "[DEBUG] deleteWS(): clearing away '${script?.pwd()}' on '${script?.env?.NODE_NAME}' and any possible satellites - FINISHED after ${((finish.getTime() - start.getTime()) / 1000)} seconds"
     } // deleteWS()
 
     /** Determine if we should use a git refrepo for this workspace
