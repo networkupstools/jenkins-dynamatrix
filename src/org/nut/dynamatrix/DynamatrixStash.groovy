@@ -81,6 +81,8 @@ class DynamatrixStash {
      */
     private static Map stashSCMVars = [:]
 
+    /** Delete directories associated with this workspace
+     *  (also {@code @tmp} and {@code @script} satellites) */
     static void deleteWS(def script) {
         /* clean up our workspace (current directory) */
         script.deleteDir()
@@ -96,10 +98,24 @@ class DynamatrixStash {
         }
     } // deleteWS()
 
+    /** Determine if we should use a git refrepo for this workspace
+     *
+     * @param script
+     * @return  true if {@link dynamatrixGlobalState#useGitRefrepoDirWS} is true,
+     *          or if {@code script.env} defines a {@code GIT_REFERENCE_REPO_DIR}
+     *          envvar with value {@code "WS"} (hack in {@link #checkoutCleanSrcRefrepoWS}.
+     */
     static Boolean useGitRefrepoDirWS(def script) {
         return (dynamatrixGlobalState?.useGitRefrepoDirWS || "WS" == script?.env?.GIT_REFERENCE_REPO_DIR)
     }
 
+    /** Determine the path to git refrepo dir for this workspace
+     *
+     * @param script
+     * @return  null if {@link #useGitRefrepoDirWS} returns false,
+     *          otherwise returns the path to git refrepo dir (currently
+     *          hard-coded as {@code "${WORKSPACE}/../.gitcache-dynamatrix")
+     */
     static String getGitRefrepoDirWSbase(def script) {
         // TODO: Find a way to know build agent workdir - that
         //  is what we want; "path relative to workspace" may lie
