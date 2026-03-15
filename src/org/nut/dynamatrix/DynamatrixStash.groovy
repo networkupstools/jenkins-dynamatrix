@@ -82,7 +82,8 @@ class DynamatrixStash {
     private static Map stashSCMVars = [:]
 
     /** Delete directories associated with this workspace
-     *  (also {@code @tmp} and {@code @script} satellites) */
+     *  (current directory!), including {@code @tmp} and
+     *  {@code @script} satellites). */
     static void deleteWS(def script) {
         /* clean up our workspace (current directory) */
         script.deleteDir()
@@ -358,7 +359,7 @@ class DynamatrixStash {
 
     /**
      * Per https://plugins.jenkins.io/workflow-scm-step/ the common
-     * "scm" is a Map maintained by the pipeline, so we can tweak it
+     * "scm" is a Map maintained by the pipeline, so we can tweak it.
      * Per other observations, it can be e.g. a GitSCM object instead.<br/>
      *
      * In any case, use a clone to avoid manipulating options of the
