@@ -490,6 +490,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                     dynamatrix.mustAbort = false
                                 }
 
+                                dynamatrix.dynamatrixGithubNotificationContext = "slowbuild-run"
                                 dynamatrix.saveDynacfg()
                                 infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                                         'Discover slow build matrix',
