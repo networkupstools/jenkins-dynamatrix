@@ -858,12 +858,12 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     refrepoName = script?.env?.JOB_NAME?.replaceFirst(/\/(PR-[0-9]+|master|main|trunk)$/, '')
                 }
                 if (!refrepoName) {
-                    refrepoName = scmURL.replaceFirst(/\\.git$/, '')
+                    refrepoName = scmURL.replaceFirst(/\.git$/, '')
                     String rOld = null
                     // Chop off URL components until repo base name remains:
                     while (rOld != refrepoName) {
                         rOld = refrepoName
-                        refrepoName = refrepoName - ~/^.*\\//
+                        refrepoName = refrepoName - ~/^.*\//
                     }
                     refrepoName = refrepoName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
                 }
