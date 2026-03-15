@@ -81,7 +81,13 @@ class DynamatrixStash {
      */
     private static Map stashSCMVars = [:]
 
+    /** Delete directories associated with this workspace
+     *  (current directory!), including possible {@code @tmp}
+     *  and {@code @script} satellites). */
     static void deleteWS(def script) {
+        Date start = new Date()
+        script.echo "[DEBUG] deleteWS(): clearing away '${script?.pwd()}' on '${script?.env?.NODE_NAME}' and any possible satellites - STARTING"
+
         /* clean up our workspace (current directory) */
         script.deleteDir()
 
@@ -94,16 +100,34 @@ class DynamatrixStash {
         script.dir("${script.workspace}@script") {
             script.deleteDir()
         }
+
+        Date finish = new Date()
+        script.echo "[DEBUG] deleteWS(): clearing away '${script?.pwd()}' on '${script?.env?.NODE_NAME}' and any possible satellites - FINISHED after ${((finish.getTime() - start.getTime()) / 1000)} seconds"
     } // deleteWS()
 
+    /** Determine if we should use a git refrepo for this workspace
+     *
+     * @param script
+     * @return  true if {@link dynamatrixGlobalState#useGitRefrepoDirWS} is true,
+     *          or if {@code script.env} defines a {@code GIT_REFERENCE_REPO_DIR}
+     *          envvar with value {@code "WS"} (hack in {@link #checkoutCleanSrcRefrepoWS}.
+     */
     static Boolean useGitRefrepoDirWS(def script) {
         return (dynamatrixGlobalState?.useGitRefrepoDirWS || "WS" == script?.env?.GIT_REFERENCE_REPO_DIR)
     }
 
+    /** Determine the path to git refrepo dir for this workspace
+     *
+     * @param script
+     * @return  null if we can not resolve {@code script.env.WORKSPACE}
+     *          or if {@link #useGitRefrepoDirWS} returns false,
+     *          otherwise returns the path to git refrepo dir (currently
+     *          hard-coded as {@code "${WORKSPACE}/../.gitcache-dynamatrix")
+     */
     static String getGitRefrepoDirWSbase(def script) {
         // TODO: Find a way to know build agent workdir - that
         //  is what we want; "path relative to workspace" may lie
-        if (!useGitRefrepoDirWS(script)) return null
+        if (!(Utils.isStringNotEmpty(script?.env?.WORKSPACE)) || !useGitRefrepoDirWS(script)) return null
         return "${script.env.WORKSPACE}/../.gitcache-dynamatrix"
     }
 
@@ -341,7 +365,7 @@ class DynamatrixStash {
 
     /**
      * Per https://plugins.jenkins.io/workflow-scm-step/ the common
-     * "scm" is a Map maintained by the pipeline, so we can tweak it
+     * "scm" is a Map maintained by the pipeline, so we can tweak it.
      * Per other observations, it can be e.g. a GitSCM object instead.<br/>
      *
      * In any case, use a clone to avoid manipulating options of the
@@ -380,22 +404,28 @@ class DynamatrixStash {
     } // cloneSCM()
 
     /** Variant of {@code checkoutCleanSrc()} with {@code scmCommit=null}
-     *  and {@code untieRefrepoNow=true}.
-     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Closure) */
+     *  and {@code untieRefrepoNow=true} and {@code requestDeleteWS=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Boolean, Closure) */
     static def checkoutCleanSrc(def script, String stashName, Closure scmbody) {
-        return checkoutCleanSrc(script, stashName, null, true, scmbody)
+        return checkoutCleanSrc(script, stashName, null, true, true, scmbody)
     } // checkoutCleanSrc() wrapper
 
-    /** Variant of {@code checkoutCleanSrc()} with {@code untieRefrepoNow=true}.
-     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Closure) */
+    /** Variant of {@code checkoutCleanSrc()} with {@code untieRefrepoNow=true} and {@code requestDeleteWS=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Boolean, Closure) */
     static def checkoutCleanSrc(def script, String stashName, String scmCommit, Closure scmbody) {
-        return checkoutCleanSrc(script, stashName, scmCommit, true, scmbody)
+        return checkoutCleanSrc(script, stashName, scmCommit, true, true, scmbody)
     } // checkoutCleanSrc() wrapper
 
-    /** Variant of {@code checkoutCleanSrc()} with {@code scmCommit=null}.
-     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Closure) */
+    /** Variant of {@code checkoutCleanSrc()} with {@code scmCommit=null} and {@code requestDeleteWS=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Boolean, Closure) */
     static def checkoutCleanSrc(def script, String stashName, Boolean untieRefrepoNow, Closure scmbody) {
-        return checkoutCleanSrc(script, stashName, null, untieRefrepoNow, scmbody)
+        return checkoutCleanSrc(script, stashName, null, untieRefrepoNow, true, scmbody)
+    } // checkoutCleanSrc() wrapper
+
+    /** Variant of {@code checkoutCleanSrc()} with {@code requestDeleteWS=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Boolean, Closure) */
+    static def checkoutCleanSrc(def script, String stashName, String scmCommit, Boolean untieRefrepoNow, Closure scmbody) {
+        return checkoutCleanSrc(script, stashName, scmCommit, untieRefrepoNow, true, scmbody)
     } // checkoutCleanSrc() wrapper
 
     /**
@@ -414,8 +444,19 @@ class DynamatrixStash {
      * @see #checkoutCleanSrcNamed
      * @see #checkoutCleanSrcRefrepoWS
      */
-    static def checkoutCleanSrc(def script, String stashName = null, String scmCommit = null, Boolean untieRefrepoNow = true, Closure scmbody = null) {
-        deleteWS(script)
+    static def checkoutCleanSrc(
+        def script,
+        String stashName = null,
+        String scmCommit = null,
+        Boolean untieRefrepoNow = true,
+        Boolean requestDeleteWS = true,
+        Closure scmbody = null
+    ) {
+        if (requestDeleteWS) {
+            // Can be time-consuming; best done in advance outside
+            // shared lock context of checkoutCleanSrcRefrepoWS()
+            deleteWS(script)
+        }
 
         def scm = cloneSCM(script)
         def res = null
@@ -690,7 +731,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
      *
      * @see #checkoutCleanSrc(Object, String, String, Boolean, Closure)
      */
-    synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName) {
+    synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName, Boolean requestDeleteWS = true) {
         def scm = cloneSCM(script)
 
         if (!(Utils.isMap(scm)
@@ -708,7 +749,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
         // TODO: Less shell-scripting below, more groovy, to alleviate this:
         if (!script.isUnix()) {
-            script.echo "checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' is not Unix (can't shell-script git), falling back"
+            script.echo "checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': is not Unix (can't shell-script git), falling back"
             return false
         }
 
@@ -726,7 +767,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 scmURL    = stashSCMVars[stashName]?.GIT_URL
             }
 
-            script.echo "checkoutCleanSrcRefrepoWS: on node '${script?.env?.NODE_NAME}' checking refrepo for '${stashName}'"
+            script.echo "checkoutCleanSrcRefrepoWS: on node '${script?.env?.NODE_NAME}': checking refrepo for '${stashName}'"
             //script.sh "hostname; set | sort -n"
             if (scm instanceof GitSCM) {
                 // GitSCM object
@@ -813,13 +854,19 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 lockName = 'gitcache-dynamatrix:defaultLock'
             }
 
-            script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' waiting for exclusive use (${lockName}) of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
+            script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': waiting for exclusive use (${lockName}) of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
             script.lock (resource: lockName, quantity: 1) {
                 // NOTE: Currently this means one lock for all git ops of the CI
-                // farm. An apparent bottleneck to optimize (smartly!) later.
+                // farm per hypervisor via DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME
+                // (or overall, if we default).
+                // An apparent bottleneck to optimize (smartly!) later.
 
+                // Location under which we can have git reference repositories
                 String refrepoBase = null
+                // Possible subdirectory relative to refrepoBase,
+                // for a refrepo relevant to (re-runs of) this job
                 String refrepoName = null
+                // Ultimate `script.pwd()` inside dir(refrepoBase + '/' + refrepoName) {}
                 String refrepoPath = null
 
                 script.withEnv(["GIT_REFERENCE_REPO_DIR=WS"]) {
@@ -828,17 +875,19 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     refrepoBase = getGitRefrepoDirWSbase(script)
                 } // hacky withEnv for checking/populating refrepo in a workspace
 
+                // May be passed by caller like dynacfgPipeline.stashnameSrc='nut-ci-src'
                 refrepoName = stashName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
                 if (!refrepoName) {
-                    // e.g. "nut/nut/master" or "nut/nut/PR-683" for MBR pipelines
-                    refrepoName = script?.env?.JOB_NAME?.replaceFirst(/\\/PR-[0-9]+$/, '')
+                    // e.g. "nut/nut/master" or "nut/nut/PR-683" => shared "nut/nut" for MBR pipelines
+                    refrepoName = script?.env?.JOB_NAME?.replaceFirst(/\/(PR-[0-9]+|master|main|trunk)$/, '')
                 }
                 if (!refrepoName) {
-                    refrepoName = scmURL.replaceFirst(/\\.git$/, '')
+                    refrepoName = scmURL.replaceFirst(/\.git$/, '')
                     String rOld = null
+                    // Chop off URL components until repo base name remains:
                     while (rOld != refrepoName) {
                         rOld = refrepoName
-                        refrepoName = refrepoName - ~/^.*\\//
+                        refrepoName = refrepoName - ~/^.*\//
                     }
                     refrepoName = refrepoName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
                 }
@@ -849,7 +898,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': determined individual refrepo dir path: '" + refrepoBase + "'/'" + refrepoName + "'"
                 script.dir (refrepoBase + "/" + refrepoName) {
                     refrepoPath = script.pwd()
-                    script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' exclusively using git cache dir ${refrepoPath}"
+                    script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': exclusively using git cache dir ${refrepoPath}"
 
                     // Update (maybe init) the refrepo dir itself
                     // (currently does not use git-plugin so does not really
@@ -859,7 +908,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     //script.withEnv(["GIT_REFERENCE_REPO_DIR="]) {
                         // check if git is there at all (error out if can't init)
                         script.sh (label:"Ensuring git workspace presence in refrepo path",
-                            script: "if [ -e .git ] || grep -qw bare config ; then true ; else git init --bare && git config gc.auto 0 || exit ; fi; test -e .git || grep -qw bare config")
+                            script: "if [ -e .git ] || grep -qw bare config ; then true ; else git init --bare && git config gc.auto 0 || exit; test -e .git || grep -qw bare config ; fi")
 
                         // check if commit is there (non-fatal)
                         // TODO: generic SCM revision check? Specific GitSCM trick?
@@ -933,7 +982,7 @@ exit \$RET
                         // "false" says to not "untie" refrepo in the build agent;
                         // we only request specific scmCommit if it is a known Git
                         // SHA hash (not a symbolic branch/tag/PR/... name):
-                        ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), false, stashCode[stashName])
+                        ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), false, requestDeleteWS, stashCode[stashName])
                     } // withEnv for checking/populating original workspace
                       // just using refrepo (if usable in the end)
                 }
@@ -1005,9 +1054,14 @@ exit \$RET
                     // using this refrepo. Use locking!
                     // Do benefit from local reference repo, if any (untie=false)
 
+                    // Can be time-consuming; best done in advance outside
+                    // shared lock context of checkoutCleanSrcRefrepoWS()
+                    deleteWS(script)
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
-                    if (checkoutCleanSrcRefrepoWS(script, stashName) == false) {
+                    if (checkoutCleanSrcRefrepoWS(script, stashName, false) == false) {
                         script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but failed on node '${script?.env?.NODE_NAME}'. Falling back to 'scm'."
+                        // Note this defaults to requestDeleteWS=true so any
+                        // sins of checkoutCleanSrcRefrepoWS() are forgotten:
                         if (checkoutCleanSrc(script, stashName, false, stashCode[stashName]))
                             return
                     } else {
