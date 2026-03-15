@@ -837,8 +837,12 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 // (or overall, if we default).
                 // An apparent bottleneck to optimize (smartly!) later.
 
+                // Location under which we can have git reference repositories
                 String refrepoBase = null
+                // Possible subdirectory relative to refrepoBase,
+                // for a refrepo relevant to (re-runs of) this job
                 String refrepoName = null
+                // Ultimate `script.pwd()` inside dir(refrepoBase + '/' + refrepoName) {}
                 String refrepoPath = null
 
                 script.withEnv(["GIT_REFERENCE_REPO_DIR=WS"]) {
@@ -847,6 +851,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     refrepoBase = getGitRefrepoDirWSbase(script)
                 } // hacky withEnv for checking/populating refrepo in a workspace
 
+                // May be passed by caller like dynacfgPipeline.stashnameSrc='nut-ci-src'
                 refrepoName = stashName?.replaceAll(/[^A-Za-z0-9_+-]+/, /_/)
                 if (!refrepoName) {
                     // e.g. "nut/nut/master" or "nut/nut/PR-683" for MBR pipelines
@@ -855,6 +860,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 if (!refrepoName) {
                     refrepoName = scmURL.replaceFirst(/\\.git$/, '')
                     String rOld = null
+                    // Chop off URL components until repo base name remains:
                     while (rOld != refrepoName) {
                         rOld = refrepoName
                         refrepoName = refrepoName - ~/^.*\\//
