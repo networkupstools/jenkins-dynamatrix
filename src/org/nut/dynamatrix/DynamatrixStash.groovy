@@ -884,7 +884,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                     //script.withEnv(["GIT_REFERENCE_REPO_DIR="]) {
                         // check if git is there at all (error out if can't init)
                         script.sh (label:"Ensuring git workspace presence in refrepo path",
-                            script: "if [ -e .git ] || grep -qw bare config ; then true ; else git init --bare && git config gc.auto 0 || exit ; fi; test -e .git || grep -qw bare config")
+                            script: "if [ -e .git ] || grep -qw bare config ; then true ; else git init --bare && git config gc.auto 0 || exit; test -e .git || grep -qw bare config ; fi")
 
                         // check if commit is there (non-fatal)
                         // TODO: generic SCM revision check? Specific GitSCM trick?
