@@ -44,6 +44,8 @@ class Dynamatrix implements Cloneable {
     /** Have some defaults, if only to have all expected fields defined */
     private DynamatrixConfig dynacfgSaved = null
     /** Have some defaults, if only to have all expected fields defined */
+    private String dynamatrixGithubNotificationContextSaved = null
+    /** Have some defaults, if only to have all expected fields defined */
     private def script
     /** Prepared String with identifier of this object */
     private final String objectID = Integer.toHexString(hashCode())
@@ -666,6 +668,7 @@ class Dynamatrix implements Cloneable {
     public boolean saveDynacfg() {
         this.dynacfgSaved = null // GC
         this.dynacfgSaved = this.dynacfg.clone()
+        this.dynamatrixGithubNotificationContextSaved = this.dynamatrixGithubNotificationContext
         return true
     }
 
@@ -677,6 +680,7 @@ class Dynamatrix implements Cloneable {
         if (this.dynacfgSaved != null) {
             this.dynacfg = null // GC
             this.dynacfg = this.dynacfgSaved.clone()
+            this.dynamatrixGithubNotificationContext = this.dynamatrixGithubNotificationContextSaved
             return true
         }
         return false
