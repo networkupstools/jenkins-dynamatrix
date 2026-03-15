@@ -82,8 +82,8 @@ class DynamatrixStash {
     private static Map stashSCMVars = [:]
 
     /** Delete directories associated with this workspace
-     *  (current directory!), including {@code @tmp} and
-     *  {@code @script} satellites). */
+     *  (current directory!), including possible {@code @tmp}
+     *  and {@code @script} satellites). */
     static void deleteWS(def script) {
         /* clean up our workspace (current directory) */
         script.deleteDir()
