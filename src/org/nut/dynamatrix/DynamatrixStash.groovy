@@ -834,7 +834,9 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
             script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' waiting for exclusive use (${lockName}) of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
             script.lock (resource: lockName, quantity: 1) {
                 // NOTE: Currently this means one lock for all git ops of the CI
-                // farm. An apparent bottleneck to optimize (smartly!) later.
+                // farm per hypervisor via DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME
+                // (or overall, if we default).
+                // An apparent bottleneck to optimize (smartly!) later.
 
                 String refrepoBase = null
                 String refrepoName = null
