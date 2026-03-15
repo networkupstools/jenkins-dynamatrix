@@ -271,8 +271,11 @@ class Utils {
      * May return {@code null} for states which do not map into
      * a Jenkins standard Result value.
      * @param k A String key, with either one of Jenkins standard
-     *  {@link hudson.model.Result} values, or a dynamatrix state machine value:
-     *  ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE']
+     *  {@link hudson.model.Result} values, or a dynamatrix state machine
+     *  and/or enhanced-debugging value:
+     *  ['STARTED', 'RESTARTED', 'COMPLETED', 'AGENT_DISCONNECTED', 'AGENT_TIMEOUT'] as {@code null},
+     *  ['ABORTED_SAFE'] as {@link Result#ABORTED},
+     *  ['DEBUG-EXC-(FAILURE|UNKNOWN):.*', '.*Exception', 'UNKNOWN', 'Throwable'] as {@link Result#FAILURE}.
      * @return  A {@link hudson.model.Result} constant, or {@code null}.
      *
      * @see Dynamatrix#getWorstResult
@@ -283,12 +286,27 @@ class Utils {
     static Result resultFromString(String k) {
         Result r = null
         try {
+            // To maintain, search this code base for strings passed via:
+            //   dsbcResultInterim =
+            //   countStagesIncrement
+            //   setWorstResult
             switch (k) {
-                case ['STARTED', 'RESTARTED', 'COMPLETED']: break;
+                case ['STARTED', 'RESTARTED', 'COMPLETED', 'AGENT_DISCONNECTED', 'AGENT_TIMEOUT']: break;
                 case 'ABORTED_SAFE':
                     r = Result.fromString('ABORTED')
                     break
+                case ['UNKNOWN', 'Throwable']:
+                    r = Result.FAILURE
+                    break
+                case ~/^DEBUG-EXC-(FAILURE|UNKNOWN):.*/:
+                    r = Result.FAILURE
+                    break
+                case ~/.*Exception$/:
+                    r = Result.FAILURE
+                    break
                 default:
+                    // Note: It seems that any values not recognized by the Result
+                    //  class are implicitly cast into a FAILURE!
                     r = Result.fromString(k)
                     break
             }
