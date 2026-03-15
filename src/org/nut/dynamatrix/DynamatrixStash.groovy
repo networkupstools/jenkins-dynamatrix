@@ -726,7 +726,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
 
         // TODO: Less shell-scripting below, more groovy, to alleviate this:
         if (!script.isUnix()) {
-            script.echo "checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' is not Unix (can't shell-script git), falling back"
+            script.echo "checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': is not Unix (can't shell-script git), falling back"
             return false
         }
 
@@ -744,7 +744,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 scmURL    = stashSCMVars[stashName]?.GIT_URL
             }
 
-            script.echo "checkoutCleanSrcRefrepoWS: on node '${script?.env?.NODE_NAME}' checking refrepo for '${stashName}'"
+            script.echo "checkoutCleanSrcRefrepoWS: on node '${script?.env?.NODE_NAME}': checking refrepo for '${stashName}'"
             //script.sh "hostname; set | sort -n"
             if (scm instanceof GitSCM) {
                 // GitSCM object
@@ -831,7 +831,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 lockName = 'gitcache-dynamatrix:defaultLock'
             }
 
-            script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' waiting for exclusive use (${lockName}) of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
+            script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': waiting for exclusive use (${lockName}) of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
             script.lock (resource: lockName, quantity: 1) {
                 // NOTE: Currently this means one lock for all git ops of the CI
                 // farm per hypervisor via DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME
@@ -875,7 +875,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': determined individual refrepo dir path: '" + refrepoBase + "'/'" + refrepoName + "'"
                 script.dir (refrepoBase + "/" + refrepoName) {
                     refrepoPath = script.pwd()
-                    script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}' exclusively using git cache dir ${refrepoPath}"
+                    script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': exclusively using git cache dir ${refrepoPath}"
 
                     // Update (maybe init) the refrepo dir itself
                     // (currently does not use git-plugin so does not really
