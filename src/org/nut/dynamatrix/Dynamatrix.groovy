@@ -492,6 +492,14 @@ class Dynamatrix implements Cloneable {
         return res
     }
 
+    /** Pretty string like {@code "quick test"} (if
+     *  {@link #dynamatrixGithubNotificationContext}
+     *  is {@code "quickbuild-run"},
+     *  or {@code "slow build"} otherwise. */
+    String getBuildTypeFromGHNContext() {
+        return (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
+    }
+
     /**
      * Roll a text entry in the "yellow boxes" of the left column (job build
      * current+history list) in the classic Jenkins user interface - page for
@@ -2773,7 +2781,7 @@ def parallelStages = prepareDynamatrix(
                                         // Calculated above in this method.
                                         // Or try variant from buildMatrixCellCI:
                                         String MATRIX_TAG = Utils.prepare_MATRIX_TAG(matrixTag, stageName)
-                                        String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
+                                        String buildType = this.getBuildTypeFromGHNContext()
                                         String msg = "'${buildType}' stage for ${MATRIX_TAG} passed after re-run: ${dsbc.dsbcResultInterim}"
                                         // Only actually report if this context was previously
                                         // known by GitHub (as any state)
@@ -2791,7 +2799,7 @@ def parallelStages = prepareDynamatrix(
                                         // Or try variant from buildMatrixCellCI:
                                         String MATRIX_TAG = Utils.prepare_MATRIX_TAG(matrixTag, stageName)
 
-                                        String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
+                                        String buildType = this.getBuildTypeFromGHNContext()
                                         String msg = "'${buildType}' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
                                         script.infra.reportGithubStageStatus(stashName,
                                                 msg,
@@ -2842,7 +2850,7 @@ def parallelStages = prepareDynamatrix(
                                     if (!(dsbc.dsbcResultInterim in [null, 'SUCCESS']) && !(Utils.isRetryableException(t))) {
                                         // Retryable: are shellcheck retried faults in this reporting category or above?
                                         try {
-                                            String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
+                                            String buildType = this.getBuildTypeFromGHNContext()
                                             script.infra.reportGithubStageStatus(stashName,
                                                 "'${buildType}' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}",
                                                 'FAILURE', "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
@@ -2876,7 +2884,7 @@ def parallelStages = prepareDynamatrix(
 
                                     if (!(dsbc.dsbcResultInterim in ['STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE'])) {
                                         try {
-                                            String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
+                                            String buildType = this.getBuildTypeFromGHNContext()
                                             script.infra.reportGithubStageStatus(stashName,
                                                 "'${buildType}' stage for ${MATRIX_TAG} finished somehow " +
                                                 "with unexpected verdict: ${dsbc.dsbcResultInterim}",
@@ -2898,7 +2906,7 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     try {
-                                        String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
+                                        String buildType = this.getBuildTypeFromGHNContext()
                                         script.infra.reportGithubStageStatus(stashName,
                                             "'${buildType}' stage for ${MATRIX_TAG} finished " +
                                             "with abortion verdict: ${dsbc.dsbcResultInterim}",
@@ -2929,7 +2937,7 @@ def parallelStages = prepareDynamatrix(
                                         "Throwable was caught: ${Utils.castString(t)}"
 
                                     try {
-                                        String buildType = (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
+                                        String buildType = this.getBuildTypeFromGHNContext()
                                         script.infra.reportGithubStageStatus(stashName,
                                             "'${buildType}' stage for ${MATRIX_TAG} finished " +
                                             "with unclassified verdict: ${dsbc.dsbcResultInterim}",
