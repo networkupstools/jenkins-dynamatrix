@@ -113,14 +113,15 @@ class DynamatrixStash {
     /** Determine the path to git refrepo dir for this workspace
      *
      * @param script
-     * @return  null if {@link #useGitRefrepoDirWS} returns false,
+     * @return  null if we can not resolve {@code script.env.WORKSPACE}
+     *          or if {@link #useGitRefrepoDirWS} returns false,
      *          otherwise returns the path to git refrepo dir (currently
      *          hard-coded as {@code "${WORKSPACE}/../.gitcache-dynamatrix")
      */
     static String getGitRefrepoDirWSbase(def script) {
         // TODO: Find a way to know build agent workdir - that
         //  is what we want; "path relative to workspace" may lie
-        if (!useGitRefrepoDirWS(script)) return null
+        if (!(Utils.isStringNotEmpty(script?.env?.WORKSPACE)) || !useGitRefrepoDirWS(script)) return null
         return "${script.env.WORKSPACE}/../.gitcache-dynamatrix"
     }
 
