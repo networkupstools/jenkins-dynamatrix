@@ -404,22 +404,28 @@ class DynamatrixStash {
     } // cloneSCM()
 
     /** Variant of {@code checkoutCleanSrc()} with {@code scmCommit=null}
-     *  and {@code untieRefrepoNow=true}.
-     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Closure) */
+     *  and {@code untieRefrepoNow=true} and {@code requestDeleteWS=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Boolean, Closure) */
     static def checkoutCleanSrc(def script, String stashName, Closure scmbody) {
-        return checkoutCleanSrc(script, stashName, null, true, scmbody)
+        return checkoutCleanSrc(script, stashName, null, true, true, scmbody)
     } // checkoutCleanSrc() wrapper
 
-    /** Variant of {@code checkoutCleanSrc()} with {@code untieRefrepoNow=true}.
-     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Closure) */
+    /** Variant of {@code checkoutCleanSrc()} with {@code untieRefrepoNow=true} and {@code requestDeleteWS=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Boolean, Closure) */
     static def checkoutCleanSrc(def script, String stashName, String scmCommit, Closure scmbody) {
-        return checkoutCleanSrc(script, stashName, scmCommit, true, scmbody)
+        return checkoutCleanSrc(script, stashName, scmCommit, true, true, scmbody)
     } // checkoutCleanSrc() wrapper
 
-    /** Variant of {@code checkoutCleanSrc()} with {@code scmCommit=null}.
-     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Closure) */
+    /** Variant of {@code checkoutCleanSrc()} with {@code scmCommit=null} and {@code requestDeleteWS=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Boolean, Closure) */
     static def checkoutCleanSrc(def script, String stashName, Boolean untieRefrepoNow, Closure scmbody) {
-        return checkoutCleanSrc(script, stashName, null, untieRefrepoNow, scmbody)
+        return checkoutCleanSrc(script, stashName, null, untieRefrepoNow, true, scmbody)
+    } // checkoutCleanSrc() wrapper
+
+    /** Variant of {@code checkoutCleanSrc()} with {@code requestDeleteWS=true}.
+     *  @see #checkoutCleanSrc(Object, String, String, Boolean, Boolean, Closure) */
+    static def checkoutCleanSrc(def script, String stashName, String scmCommit, Boolean untieRefrepoNow, Closure scmbody) {
+        return checkoutCleanSrc(script, stashName, scmCommit, untieRefrepoNow, true, scmbody)
     } // checkoutCleanSrc() wrapper
 
     /**
@@ -438,8 +444,19 @@ class DynamatrixStash {
      * @see #checkoutCleanSrcNamed
      * @see #checkoutCleanSrcRefrepoWS
      */
-    static def checkoutCleanSrc(def script, String stashName = null, String scmCommit = null, Boolean untieRefrepoNow = true, Closure scmbody = null) {
-        deleteWS(script)
+    static def checkoutCleanSrc(
+        def script,
+        String stashName = null,
+        String scmCommit = null,
+        Boolean untieRefrepoNow = true,
+        Boolean requestDeleteWS = true,
+        Closure scmbody = null
+    ) {
+        if (requestDeleteWS) {
+            // Can be time-consuming; best done in advance outside
+            // shared lock context of checkoutCleanSrcRefrepoWS()
+            deleteWS(script)
+        }
 
         def scm = cloneSCM(script)
         def res = null
@@ -714,7 +731,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
      *
      * @see #checkoutCleanSrc(Object, String, String, Boolean, Closure)
      */
-    synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName) {
+    synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName, Boolean requestDeleteWS = true) {
         def scm = cloneSCM(script)
 
         if (!(Utils.isMap(scm)
@@ -965,7 +982,7 @@ exit \$RET
                         // "false" says to not "untie" refrepo in the build agent;
                         // we only request specific scmCommit if it is a known Git
                         // SHA hash (not a symbolic branch/tag/PR/... name):
-                        ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), false, stashCode[stashName])
+                        ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), false, requestDeleteWS, stashCode[stashName])
                     } // withEnv for checking/populating original workspace
                       // just using refrepo (if usable in the end)
                 }
@@ -1037,9 +1054,14 @@ exit \$RET
                     // using this refrepo. Use locking!
                     // Do benefit from local reference repo, if any (untie=false)
 
+                    // Can be time-consuming; best done in advance outside
+                    // shared lock context of checkoutCleanSrcRefrepoWS()
+                    deleteWS(script)
                     //script.echo "[D] unstashCleanSrc(): ${useMethod}: calling checkoutCleanSrcRefrepoWS"
-                    if (checkoutCleanSrcRefrepoWS(script, stashName) == false) {
+                    if (checkoutCleanSrcRefrepoWS(script, stashName, false) == false) {
                         script.echo "WARNING: unstashCleanSrc() asked to use 'scm-ws' but failed on node '${script?.env?.NODE_NAME}'. Falling back to 'scm'."
+                        // Note this defaults to requestDeleteWS=true so any
+                        // sins of checkoutCleanSrcRefrepoWS() are forgotten:
                         if (checkoutCleanSrc(script, stashName, false, stashCode[stashName]))
                             return
                     } else {
