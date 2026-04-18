@@ -471,14 +471,14 @@ if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
 
 find test* -type f -name '*.log' -o -name '*.trs' | sed 's,^\\./,,' \\
 | while read F ; do
-    echo "$F" >> .ci-tarball-log-list.tmp
+    echo "\$F" >> .ci-tarball-log-list.tmp
     N="`echo "\$F" | tr '/' '_'`"
     if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.check.'"\$N"'.gz' || true ; fi
 done
 
 find . -type f -name config.log -o -name config.nut_report_feature.log -o -name 'cppcheck*.xml' | sed 's,^\\./,,' \\
 | while read F ; do
-    echo "$F" >> .ci-tarball-log-list.tmp
+    echo "\$F" >> .ci-tarball-log-list.tmp
     N="`echo "\$F" | tr '/' '_'`"
     if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$N"'.gz' || true ; fi
 done
