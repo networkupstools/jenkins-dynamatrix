@@ -467,7 +467,7 @@ done
         // similar to analysis above allows for out-of-tree builds etc.
         sh label: 'Compress collected logs', script: """
 ls -1 .ci.*.log > .ci-tarball-log-list.tmp || true
-if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
+if [ -n "`ls -1 .ci.*.log`" ]; then gzip -k .ci.*.log; fi
 
 find test* -type f -name '*.log' -o -name '*.trs' | sed 's,^\\./,,' \\
 | while read F ; do
@@ -484,7 +484,7 @@ find . -type f -name config.log -o -name config.nut_report_feature.log -o -name 
 done
 
 tar czf '.ci.${archPrefix}.all-logs.tgz' `cat .ci-tarball-log-list.tmp`
-rm -f .ci-tarball-log-list.tmp || true
+rm -f .ci-tarball-log-list.tmp .ci.*.log || true
 """
         dsbc?.dsbcResultLogs[".ci.${archPrefix}.all-logs.tgz"] =
             (lastErr ? (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE) : Result.SUCCESS)
