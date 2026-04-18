@@ -40,6 +40,9 @@ void call(Map dynacfgPipeline = [:], DynamatrixSingleBuildConfig dsbc = null, St
     // (more precisely, the ID must match the regular expression `\p{Alnum}[\p{Alnum}-_]*`
     String id = ""
 
+    // If true, list "all-logs.tgz" last so we use it as the GH notification URL
+    Boolean failedInTests = false
+
         String msg = "Building with "
         if (env?.COMPILER) {
             id = env.COMPILER.toUpperCase().trim()
@@ -384,6 +387,7 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                 dsbc?.dsbcResultLogs[phaseLog] = null
                 def res = sh (script: cmdCommon + cmdTest1, returnStatus: true, label: (cmdCommonLabel + cmdTest1Label.trim()))
                 if (res != 0) {
+                    failedInTests = true
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
                     def phaseRes = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
@@ -416,6 +420,7 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
                 dsbc?.dsbcResultLogs[phaseLog] = null
                 def res = sh (script: cmdCommon + cmdTest2, returnStatus: true, label: (cmdCommonLabel + cmdTest2Label.trim()))
                 if (res != 0) {
+                    failedInTests = true
                     shRes = res
                     dsbc?.setWorstResult('UNSTABLE')
                     dsbc?.dsbcResultLogs[phaseLog] = (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE)
@@ -444,6 +449,7 @@ set | grep -E '^[^ ]*=' | sort -n ) > ".ci.${archPrefix}.parsedEnvvars.log" ; ""
             ")" + (dsbc == null ? "" : " this build configuration: " + dsbc.toString()) +
             (env?.CI_SLOW_BUILD_FILTERNAME ? " :: as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}" : "")
 
+        // Prepare a version of the logs for warnings-ng plugin analysis.
         // Strip workspace paths and relative-to-rootfs (../../../usr/include)
         // from inspected logs, by sed or by some tool args?..
         sh label: 'Sanitize paths in build log files', script: """
@@ -460,20 +466,29 @@ done
         // NOTE: Subdirs support for cppcheck*.xml and config.log here,
         // similar to analysis above allows for out-of-tree builds etc.
         sh label: 'Compress collected logs', script: """
+ls -1 .ci.*.log > .ci-tarball-log-list.tmp || true
 if [ -n "`ls -1 .ci.*.log`" ]; then gzip .ci.*.log; fi
 
 find test* -type f -name '*.log' -o -name '*.trs' | sed 's,^\\./,,' \\
 | while read F ; do
+    echo "$F" >> .ci-tarball-log-list.tmp
     N="`echo "\$F" | tr '/' '_'`"
     if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.check.'"\$N"'.gz' || true ; fi
 done
 
 find . -type f -name config.log -o -name config.nut_report_feature.log -o -name 'cppcheck*.xml' | sed 's,^\\./,,' \\
 | while read F ; do
+    echo "$F" >> .ci-tarball-log-list.tmp
     N="`echo "\$F" | tr '/' '_'`"
     if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$N"'.gz' || true ; fi
 done
+
+tar czf '.ci.${archPrefix}.all-logs.tgz' `cat .ci-tarball-log-list.tmp`
+rm -f .ci-tarball-log-list.tmp || true
 """
+        dsbc?.dsbcResultLogs[".ci.${archPrefix}.all-logs.tgz"] =
+            (lastErr ? (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE) : Result.SUCCESS)
+
         archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
 
         // Log scan analyses, once finely grained per tool/config,
@@ -628,6 +643,9 @@ done
                 sumtxt += "<ul>"
                 boolean lastLogPosted = false
                 try {
+                    if (!failedInTests)
+                        phaseLogs << ".ci.${archPrefix}.all-logs.tgz".toString()
+
                     for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config", "config.nut_report_feature"]) {
                         phaseLogs << ".ci.${archPrefix}.${F}.log.gz".toString()
                     }
@@ -645,6 +663,13 @@ done
                             phaseLogs << phaseLog
                         }
                     }
+
+                    // Last in list, so we getLatestDsbcResultLog() this collection
+                    // of test logs, test-runner traces, etc. and the build setup,
+                    // to put into the GH notification URL; otherwise we prefer the
+                    // last failed phase (config/build/... with a written log file):
+                    if (failedInTests)
+                        phaseLogs << ".ci.${archPrefix}.all-logs.tgz".toString()
 
                     String buildArtifactUrlPrefix = "${env.BUILD_URL?.replaceFirst(/\/+$/, '')}/artifact"
                     phaseLogs.each { String phaseLog ->
