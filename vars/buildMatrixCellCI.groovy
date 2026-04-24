@@ -467,7 +467,11 @@ done
         // similar to analysis above allows for out-of-tree builds etc.
         sh label: 'Compress collected logs', script: """
 ls -1 .ci.*.log > .ci-tarball-log-list.tmp || true
-if [ -n "`ls -1 .ci.*.log`" ]; then gzip -k .ci.*.log; fi
+cat .ci-tarball-log-list.tmp | while read F ; do
+    if [ -e "$F" ] ; then
+        gzip < "$F" > "$F.gz"
+    fi
+done
 
 find test* -type f -name '*.log' -o -name '*.trs' | sed 's,^\\./,,' \\
 | while read F ; do
