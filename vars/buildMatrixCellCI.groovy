@@ -468,8 +468,8 @@ done
         sh label: 'Compress collected logs', script: """
 ls -1 .ci.*.log > .ci-tarball-log-list.tmp || true
 cat .ci-tarball-log-list.tmp | while read F ; do
-    if [ -e "$F" ] ; then
-        gzip < "$F" > "$F.gz"
+    if [ -e "\$F" ] ; then
+        gzip < "\$F" > "\$F.gz"
     fi
 done
 
