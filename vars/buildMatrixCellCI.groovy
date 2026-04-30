@@ -487,7 +487,12 @@ find . -type f -name config.log -o -name config.nut_report_feature.log -o -name 
     if [ -s "\$F" ]; then gzip < "\$F" > '.ci.${archPrefix}.'"\$N"'.gz' || true ; fi
 done
 
-tar czf '.ci.${archPrefix}.all-logs.tar.gz' `cat .ci-tarball-log-list.tmp`
+# We expect at least some lo"g" files here
+if cat .ci-tarball-log-list.tmp | grep g > /dev/null ; then
+    tar czf '.ci.${archPrefix}.all-logs.tar.gz' `cat .ci-tarball-log-list.tmp`
+else
+    echo 'WARNING: It seems very odd, but we found no log files in .ci-tarball-log-list.tmp to place into a .ci.${archPrefix}.all-logs.tar.gz archive'
+fi
 rm -f .ci-tarball-log-list.tmp .ci.*.log || true
 """
         dsbc?.dsbcResultLogs[".ci.${archPrefix}.all-logs.tar.gz"] =
