@@ -549,7 +549,7 @@ rm -f .ci-tarball-log-list.tmp .ci.*.log || true
                 ]
                 break
         }
-        if (0 == sh (returnStatus:true, script: """ test -n "`find . -name 'cppcheck*.xml' 2>/dev/null`" && echo "Found cppcheck XML reports" """)) {
+        if (0 == sh (returnStatus:true, script: """ test x != x"`find . -name 'cppcheck*.xml' 2>/dev/null`" && echo "Found cppcheck XML reports" """)) {
             // Note: warningsNgId starts with e.g. "_gnu17..."
             // so no trailing punctuation after "CppCheck" string:
             cppcheck = scanForIssues tool: cppCheck(id: "CppCheck" + warningsNgId, pattern: '**/cppcheck*.xml'),
@@ -847,7 +847,7 @@ EOF
 cmdOrig: ${cmd}
 ...for stageName: ${stageName}
 EOF
-    if [ -n "${CI_SLOW_BUILD_FILTERNAME}" ] && [ "null" != "${CI_SLOW_BUILD_FILTERNAME}" ]; then
+    if [ x != x'${CI_SLOW_BUILD_FILTERNAME}' ] && [ xnull != x'${CI_SLOW_BUILD_FILTERNAME}' ]; then
   cat << 'EOF'
 ...as part of slowBuild filter: ${env.CI_SLOW_BUILD_FILTERNAME}
 EOF
@@ -856,25 +856,25 @@ EOF
 ...logged into: ${logfile} => ${env.BUILD_URL}/artifact/${logfile}.gz
 EOF
   echo "NOTE: Saved big job artifacts for this single build scenario usually have same identifier in the middle of file name"
-  if [ -s config.log ] || [ -n "`ls -1 .ci.${archPrefix}.config.log.gz .ci.${archPrefix}.*_config.log.gz 2>/dev/null`" ]; then
+  if [ -s config.log ] || [ x != x"`ls -1 .ci.${archPrefix}.config.log.gz .ci.${archPrefix}.*_config.log.gz 2>/dev/null`" ]; then
     echo "...e.g. a (renamed, compressed) copy of config.log for this build"
-    if [ -n "${archPrefix}" ] && [ "${archPrefix}" != null ] ; then
+    if [ x != x'${archPrefix}' ] && [ xnull != x'${archPrefix}' ] ; then
         CONFIG_LOG_URLS=""
         for C in .ci.${archPrefix}.config.log.gz .ci.${archPrefix}.*_config.log.gz ; do
             [ -s "\$C" ] && CONFIG_LOG_URLS="\$CONFIG_LOG_URLS ${env.BUILD_URL}/artifact/\$C"
         done
-        [ -n "\$CONFIG_LOG_URLS" ] || CONFIG_LOG_URLS="${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz"
+        [ x != x"\$CONFIG_LOG_URLS" ] || CONFIG_LOG_URLS="${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.log.gz"
         echo "...like \${CONFIG_LOG_URLS}"
     fi
   fi
-  if [ -s config.nut_report_feature.log ] || [ -n "`ls -1 .ci.${archPrefix}.config.nut_report_feature.log.gz .ci.${archPrefix}.*_config_nut_report_feature.log.gz 2>/dev/null`" ]; then
+  if [ -s config.nut_report_feature.log ] || [ x != x"`ls -1 .ci.${archPrefix}.config.nut_report_feature.log.gz .ci.${archPrefix}.*_config_nut_report_feature.log.gz 2>/dev/null`" ]; then
     echo "...e.g. a (renamed, compressed) copy of config.nut_report_feature.log for this build"
-    if [ -n "${archPrefix}" ] && [ "${archPrefix}" != null ] ; then
+    if [ x != x'${archPrefix}' ] && [ xnull != x'${archPrefix}' ] ; then
         CONFIG_LOG_URLS=""
         for C in .ci.${archPrefix}.config.nut_report_feature.log.gz .ci.${archPrefix}.*_config_nut_report_feature.log.gz ; do
             [ -s "\$C" ] && CONFIG_LOG_URLS="\$CONFIG_LOG_URLS ${env.BUILD_URL}/artifact/\$C"
         done
-        [ -n "\$CONFIG_LOG_URLS" ] || CONFIG_LOG_URLS="${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.nut_report_feature.log.gz"
+        [ x != x"\$CONFIG_LOG_URLS" ] || CONFIG_LOG_URLS="${env.BUILD_URL}/artifact/.ci.${archPrefix}.config.nut_report_feature.log.gz"
         echo "...like \${CONFIG_LOG_URLS}"
     fi
   fi
