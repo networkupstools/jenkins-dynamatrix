@@ -489,15 +489,13 @@ done
 
 # We expect at least some lo"g" files here
 if cat .ci-tarball-log-list.tmp | grep g > /dev/null ; then
-    # ZIP is surprisingly more portable:
-    # tar czf '.ci.${archPrefix}.all-logs.tar.gz' `cat .ci-tarball-log-list.tmp`
-    zip -@ '.ci.${archPrefix}.all-logs.zip' < .ci-tarball-log-list.tmp
+    tar czf '.ci.${archPrefix}.all-logs.tar.gz' `cat .ci-tarball-log-list.tmp`
 else
-    echo 'WARNING: It seems very odd, but we found no log files in .ci-tarball-log-list.tmp to place into a .ci.${archPrefix}.all-logs.zip archive'
+    echo 'WARNING: It seems very odd, but we found no log files in .ci-tarball-log-list.tmp to place into a .ci.${archPrefix}.all-logs.tar.gz archive'
 fi
 rm -f .ci-tarball-log-list.tmp .ci.*.log || true
 """
-        dsbc?.dsbcResultLogs[".ci.${archPrefix}.all-logs.zip"] =
+        dsbc?.dsbcResultLogs[".ci.${archPrefix}.all-logs.tar.gz"] =
             (lastErr ? (dsbc?.isAllowedFailure ? Result.UNSTABLE : Result.FAILURE) : Result.SUCCESS)
 
         archiveArtifacts (artifacts: ".ci.${archPrefix}*", allowEmptyArchive: true)
@@ -655,7 +653,7 @@ rm -f .ci-tarball-log-list.tmp .ci.*.log || true
                 boolean lastLogPosted = false
                 try {
                     if (!failedInTests)
-                        phaseLogs << ".ci.${archPrefix}.all-logs.zip".toString()
+                        phaseLogs << ".ci.${archPrefix}.all-logs.tar.gz".toString()
 
                     for (String F in ["origEnvvars", "parsedEnvvars", "configureEnvvars", "config", "config.nut_report_feature"]) {
                         phaseLogs << ".ci.${archPrefix}.${F}.log.gz".toString()
@@ -680,7 +678,7 @@ rm -f .ci-tarball-log-list.tmp .ci.*.log || true
                     // to put into the GH notification URL; otherwise we prefer the
                     // last failed phase (config/build/... with a written log file):
                     if (failedInTests)
-                        phaseLogs << ".ci.${archPrefix}.all-logs.zip".toString()
+                        phaseLogs << ".ci.${archPrefix}.all-logs.tar.gz".toString()
 
                     String buildArtifactUrlPrefix = "${env.BUILD_URL?.replaceFirst(/\/+$/, '')}/artifact"
                     phaseLogs.each { String phaseLog ->

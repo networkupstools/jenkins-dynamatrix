@@ -1220,7 +1220,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         // TODO: refactor with dsbc.dsbcResultLogs map contents
                                         txt += "\n<p>See build artifacts keyed with: '${archPrefix}' e.g. similar to:<ul>\n"
                                         for (String url in [
-                                            "${buildArtifactUrlPrefix}/.ci.${archPrefix}.all-logs.zip",
+                                            "${buildArtifactUrlPrefix}/.ci.${archPrefix}.all-logs.tar.gz",
                                             "${buildArtifactUrlPrefix}/.ci.${archPrefix}.config.log.gz",
                                             "${buildArtifactUrlPrefix}/.ci.${archPrefix}.config.nut_report_feature.log.gz",
                                             "${buildArtifactUrlPrefix}/.ci.${archPrefix}.build.log.gz",
