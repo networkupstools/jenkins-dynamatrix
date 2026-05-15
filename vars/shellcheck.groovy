@@ -166,7 +166,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                         } // stage(prep)
 
                         switch (bigStageResult) {
-                            case 'FAILURE': if (true) {
+                            case 'FAILURE': if (true) {	// scoping
                                     currentBuild.result = bigStageResult
                                     String msg = "prep for shellcheck for ${MATRIX_TAG} failed"
                                     infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
@@ -175,13 +175,14 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                     MATRIX_DSBC.setWorstResult('FAILURE')
                                     MATRIX_DSBC.dsbcResultInterim = 'FAILURE'
                                     echo msg
+
+                                    manager.buildFailure()
+                                    //error msg
+                                    unstable(msg)
                                 }
-                                manager.buildFailure()
-                                //error msg
-                                unstable(msg)
                                 return false
 
-                            case ['SUCCESS', null]: if (true) {
+                            case ['SUCCESS', null]: if (true) {	// scoping
                                     String msg = "prep for shellcheck for ${MATRIX_TAG} succeeded"
                                     if (!infra.updateGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                         'SUCCESS', "shellcheck-${MATRIX_TAG}"))
@@ -350,7 +351,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                     // it can not get any better. So we can just assign.
                     currentBuild.result = bigStageResult
                     switch (bigStageResult) {
-                        case 'FAILURE': if (true) {
+                        case 'FAILURE': if (true) {	// scoping
                                 String msg = "shellcheck for ${MATRIX_TAG} failed in at least one sub-test"
                                 infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                     'FAILURE', "shellcheck-${MATRIX_TAG}")
@@ -358,13 +359,14 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                 MATRIX_DSBC.setWorstResult('FAILURE')
                                 MATRIX_DSBC.dsbcResultInterim = 'FAILURE'
                                 echo msg
+
+                                manager.buildFailure()
+                                //error msg
+                                unstable(msg)
                             }
-                            manager.buildFailure()
-                            //error msg
-                            unstable(msg)
                             break
 
-                        case ['SUCCESS', null]: if (true) {
+                        case ['SUCCESS', null]: if (true) {	// scoping
                                 String msg = "shellcheck for ${MATRIX_TAG} succeeded in all tests"
                                 if (!infra.updateGithubStageStatus(dynacfgPipeline.get("stashnameSrc"), msg,
                                     'SUCCESS', "shellcheck-${MATRIX_TAG}"))
