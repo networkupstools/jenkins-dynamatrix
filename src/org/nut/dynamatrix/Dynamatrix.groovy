@@ -2526,7 +2526,7 @@ def parallelStages = prepareDynamatrix(
                         }
                         printStackTraceStderrOptional(rse)
                         throw rse
-                    } catch (IOException | ProxyException | AgentOfflineException | java.nio.file.DirectoryNotEmptyException | jenkins.util.io.CompositeIOException jioe) {
+                    } catch (IOException | ProxyException | AgentOfflineException /* | java.nio.file.DirectoryNotEmptyException | jenkins.util.io.CompositeIOException */ jioe) {
                         // Tends to happen with networking lags or agent crash, e.g.:
                         //   java.io.IOException: Unable to create live FilePath for agentName
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
