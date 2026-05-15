@@ -2526,7 +2526,7 @@ def parallelStages = prepareDynamatrix(
                         }
                         printStackTraceStderrOptional(rse)
                         throw rse
-                    } catch (IOException | ProxyException | AgentOfflineException jioe) {
+                    } catch (IOException | ProxyException | AgentOfflineException | java.nio.file.DirectoryNotEmptyException | jenkins.util.io.CompositeIOException jioe) {
                         // Tends to happen with networking lags or agent crash, e.g.:
                         //   java.io.IOException: Unable to create live FilePath for agentName
                         dsbc.thisDynamatrix?.countStagesIncrement('COMPLETED', stageName + sbName)
@@ -2536,7 +2536,7 @@ def parallelStages = prepareDynamatrix(
                         } else {
                             // Involve localization?..
                             // Note we seek some of these strings in other Exceptions above as well, just to cover more bases.
-                            if (jioe.toString() ==~ /.*(Unable to create live FilePath for|No space left on device|Stale NFS file handle|was marked offline|Connection was broken|ChannelClosedException|ClosedChannelException|The channel is closing down or has closed down|Agent was removed|Node is being removed|Unexpected termination of the channel|ProxyException|RequestAbortedException|Channel.close|SlaveComputer.closeChannel|Channel.terminate|Request.abort).*/
+                            if (jioe.toString() ==~ /.*(Unable to create live FilePath for|No space left on device|Unable to remove directory|Unable to delete|Stale NFS file handle|was marked offline|Connection was broken|ChannelClosedException|ClosedChannelException|The channel is closing down or has closed down|Agent was removed|Node is being removed|Unexpected termination of the channel|ProxyException|RequestAbortedException|Channel.close|SlaveComputer.closeChannel|Channel.terminate|Request.abort|DirectoryNotEmptyException|CompositeIOException).*/
                             ) {
                                 // Note: "No space left" is not exactly a disconnection, but is
                                 // a cause to retry the stage on another agent (or even same one
