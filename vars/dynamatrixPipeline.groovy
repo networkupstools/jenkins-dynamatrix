@@ -1161,6 +1161,24 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                 String txtCounts = dynamatrix.toStringStageCountBestEffort(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
+                String countStagesStats = "Stats about counted slow-build stages for this run ${env?.BUILD_URL} after running the bigger dynamatrix (${stagesBinBuild.size() - 1} stages) with overall result ${currentBuild.result}:\n\n"
+                countStagesStats += "Account specific stage results: ${txtCounts}\n\n"
+                try {
+                    countStagesStats += "Overall non-zero stage counts: " + dynamatrix.toStringStageCountDumpNonZero(true)
+                } catch (Throwable t) {
+                    countStagesStats += "FAILED to collect dynamatrix.toStringStageCountDumpNonZero(): ${t}"
+                }
+                try {
+                    countStagesStats += "\n\nNon-zero stats per build node:\n\n" + dynamatrix.toStringStageCountPerNodeDumpNonZero(true)
+                } catch (Throwable t) {
+                    countStagesStats += "\n\nFAILED to collect dynamatrix.toStringStageCountPerNodeDumpNonZero(): ${t}"
+                }
+                if (dynamatrix.mustAbort) {
+                    countStagesStats += "\n\nWARNING: 'Must Abort' flag was raised by at least one slowBuild stage"
+                }
+                writeFile(file: ".ci.slowBuildStages-stats.txt", text: countStagesStats)
+                archiveArtifacts (artifacts: ".ci.slowBuildStages-stats.txt", allowEmptyArchive: true)
+
                 if (!reportedNonSuccess && currentBuild.result in [null, 'SUCCESS']) {
                     // Report success as a badge too, so interrupted incomplete
                     // builds (Jenkins/server restart etc.) are more visible
