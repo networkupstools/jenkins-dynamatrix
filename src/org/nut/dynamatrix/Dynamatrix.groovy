@@ -654,8 +654,15 @@ class Dynamatrix implements Cloneable {
 
         if (!this.reportedTooManyRestarts && countStages['RESTARTED'] > this.thresholdTooManyRestarts) {
             this.reportedTooManyRestarts = true
-            if (Utils.isClosure(this.dynacfg?.notifyHandlerAlert)) {
-                this.dynacfg.notifyHandlerAlert.call("Too many RESTARTED cells (more than ${this.thresholdTooManyRestarts}), is some CI agent broken?")
+            try {
+                // Can depend on plugins not available at this Jenkins
+                // instance, e.g. instant-messaging and IRC plugins
+                if (Utils.isClosure(this.dynacfg?.notifyHandlerAlert)) {
+                    this.dynacfg.notifyHandlerAlert.call("Too many RESTARTED cells (more than ${this.thresholdTooManyRestarts}), is some CI agent broken?")
+                }
+            } catch (Throwable t) {
+                this.script?.echo "WARNING: Tried to notify about too many restarts by user-provided method, and failed to"
+                if (dynamatrixGlobalState.enableDebugTrace) this.script?.echo t.toString()
             }
         }
 
