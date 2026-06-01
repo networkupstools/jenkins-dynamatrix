@@ -68,6 +68,10 @@ class Dynamatrix implements Cloneable {
     /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugSysprint = dynamatrixGlobalState.enableDebugSysprint
 
+    private boolean reportedTooManyRestarts = false
+    /** Can be changed via {@link #prepareDynamatrix()} */
+    private int thresholdTooManyRestarts = 20
+
     /**
      * Store values populated by {@link #prepareDynamatrix} so that a further
      * {@link #generateBuild} and practical {@link #generateBuildConfigSet} calls
@@ -596,6 +600,13 @@ class Dynamatrix implements Cloneable {
         if (res == null || resSummary == false) res = resSummary
 */
 
+        if (!this.reportedTooManyRestarts && countStages['RESTARTED'] > this.thresholdTooManyRestarts) {
+            this.reportedTooManyRestarts = true
+            if (Utils.isClosure(this.dynacfg?.notifyHandlerAlert)) {
+                this.dynacfg.notifyHandlerAlert.call("Too many RESTARTED cells (more than ${this.thresholdTooManyRestarts}), is some CI agent broken?")
+            }
+        }
+
         return res
     }
 
@@ -1121,6 +1132,16 @@ def parallelStages = prepareDynamatrix(
 
         if (dynacfgOrig.containsKey('dynamatrixGithubNotificationContext')) {
             this.dynamatrixGithubNotificationContext = dynacfgOrig.dynamatrixGithubNotificationContext
+        }
+
+        this.reportedTooManyRestarts = false
+        if (dynacfgOrig.containsKey('thresholdTooManyRestarts')) {
+            try {
+                Integer i = "${dynacfgOrig.thresholdTooManyRestarts}".toInteger()
+                if (i > 0) {
+                    this.thresholdTooManyRestarts = i
+                }
+            } catch (Throwable ignored) {}
         }
 
         //if (debugErrors) this.script.println "[WARNING] NOT FULLY IMPLEMENTED: Dynamatrix.prepareDynamatrix()"
