@@ -162,7 +162,7 @@ class Dynamatrix implements Cloneable {
     }
 
     /**
-     * Count each type of verdict.<br/>
+     * We account each type of verdict in various contexts.<br/>
      * Predefine the Map so its print-out happens in same order as in
      * the {@code toString*()} methods defined in the class.
      *
@@ -170,8 +170,9 @@ class Dynamatrix implements Cloneable {
      * @see #toStringStageCountNonZero
      * @see #toStringStageCountDump
      * @see #toStringStageCountDumpNonZero
+     * @see #countStagesPerNode
      */
-    private ConcurrentHashMap<String, Integer> countStages = [
+    private static final ConcurrentHashMap<String, Integer> countStagesTemplate = [
         'STARTED': 0,
         'RESTARTED': 0,
         'COMPLETED': 0,
@@ -181,7 +182,37 @@ class Dynamatrix implements Cloneable {
         'UNSTABLE': 0,
         'ABORTED': 0,
         'NOT_BUILT': 0
-        ]
+    ]
+
+    /**
+     * Count each type of verdict globally for this dynamatrix.<br/>
+     *
+     * Predefine the Map as a clone of {@link #countStagesTemplate},
+     * so its print-out happens in same order as in
+     * the {@code toString*()} methods defined in the class.
+     *
+     * @see #toStringStageCount
+     * @see #toStringStageCountNonZero
+     * @see #toStringStageCountDump
+     * @see #toStringStageCountDumpNonZero
+     * @see #countStagesPerNode
+     */
+    private ConcurrentHashMap<String, Integer> countStages
+
+    /**
+     * Count each type of verdict per NODE_NAME, so we can identify bottlenecks.<br/>
+     *
+     * Predefine the Map as a clone of {@link #countStagesTemplate},
+     * so its print-out happens in same order as in
+     * the {@code toString*()} methods defined in the class.
+     *
+     * @see #toStringStageCount
+     * @see #toStringStageCountNonZero
+     * @see #toStringStageCountDump
+     * @see #toStringStageCountDumpNonZero
+     * @see #countStagesPerNode
+     */
+    private ConcurrentHashMap<String, Map<String, Integer>> countStagesPerNode
 
     /**
      * Used for regular updates of reportGithubStageStatus() during the run.
@@ -411,6 +442,27 @@ class Dynamatrix implements Cloneable {
             } else {
                 this.@countStages[k] = 1
             }
+
+            // NOTE: For troubleshooting, string value "null" is fair game
+            String NODE_NAME = "${this.script?.env?.NODE_NAME}"
+            if (NODE_NAME) {
+                if (!(this.@countStagesPerNode.containsKey(NODE_NAME))) {
+                    // Replicate countStagesTemplate to have the common
+                    // baseline set and order of reported values
+                    // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
+                    // Groovy and Java should support it, but...
+                    this.@countStagesPerNode[NODE_NAME] = new ConcurrentHashMap<String, Integer>()
+                    this.@countStagesPerNode[NODE_NAME].putAll(countStagesTemplate)
+                }
+                if (this.@countStagesPerNode[NODE_NAME].containsKey(k)
+                 && this.@countStagesPerNode[NODE_NAME][k] >= 0
+                ) {
+                    this.@countStagesPerNode[NODE_NAME][k] += 1
+                } else {
+                    this.@countStagesPerNode[NODE_NAME][k] = 1
+                }
+            }
+
             return this.@countStages[k]
         }
     }
@@ -614,6 +666,12 @@ class Dynamatrix implements Cloneable {
 
     public Dynamatrix(Object script, String dynamatrixComment = null) {
         this.script = script
+
+        // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
+        // Groovy and Java should support it, but...
+        this.@countStages = new ConcurrentHashMap<String, Integer>()
+        this.@countStagesPerNode = new ConcurrentHashMap<String, Map<String, Integer>>()
+
         this.dynamatrixComment = dynamatrixComment
         this.dynacfg = new DynamatrixConfig(script)
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
@@ -798,7 +856,27 @@ class Dynamatrix implements Cloneable {
     }
 
     /**
-     * Returns a clone of current {@link #countStages} map contents.
+     * Report amounts of stages per NODE_NAME which have certain verdicts,
+     * greater than zero, in debug-friendly wording (using
+     * key names from {@link #countStagesPerNode} map and its sub-maps similar
+     * to {@link #countStages} map).
+     */
+    public String toStringStageCountPerNodeDumpNonZero(Boolean recurse = false) {
+        Map<String, Map<String, Integer>> m = [:]
+        this.getCountStagesPerNode(recurse).each {String node, Map<String, Integer> map ->
+            if (map.size() > 0) {
+                m[node] = new HashMap<String, Integer>()
+                map.each { String k, Integer v ->
+                    if (v > 0) m[node][k] = v
+                }
+            }
+        }
+        return m.toString()
+    }
+
+    /**
+     * Returns a clone of current {@link #countStages} map contents
+     * (always returns a non-null, but possibly empty, map).
      * If {@code recursive} mode is enabled, also add info from clones
      * made from this {@link Dynamatrix} object.
      */
@@ -817,6 +895,46 @@ class Dynamatrix implements Cloneable {
                         mapres[s] += c
                     } else {
                         mapres[s] = c
+                    }
+                }
+            }
+        }
+
+        return mapres
+    }
+
+    /**
+     * Returns a clone of current {@link #countStagesPerNode} map contents
+     * (always returns a non-null, but possibly empty, map).
+     * If {@code recursive} mode is enabled, also add info from clones
+     * made from this {@link Dynamatrix} object.
+     */
+    @NonCPS
+    synchronized public Map<String, Map<String, Integer>> getCountStagesPerNode(Boolean recurse = false) {
+        // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
+        // Groovy and Java should support it, but...
+        Map<String, Map<String, Integer>> mapres = new ConcurrentHashMap<String, Map<String, Integer>>()
+        if (Utils.isMapNotEmpty(this.@countStagesPerNode)) {
+            this.@countStagesPerNode.each { String node, Map map ->
+                mapres[node] = new ConcurrentHashMap<String, Integer>()
+                mapres[node].putAll(map)
+            }
+        }
+
+        if (recurse && this.knownClones.size() > 0) {
+            this.knownClones.each {
+                it.getCountStagesPerNode(true).each { String node, Map map ->
+                    if (mapres.containsKey(node)) {
+                        map.each { String s, Integer c ->
+                            if (mapres[node].containsKey(s)) {
+                                mapres[node][s] += c
+                            } else {
+                                mapres[node][s] = c
+                            }
+                        }
+                    } else {
+                        mapres[node] = new ConcurrentHashMap<String, Integer>()
+                        mapres[node].putAll(map)
                     }
                 }
             }
@@ -887,6 +1005,15 @@ class Dynamatrix implements Cloneable {
             return this.getCountStages(recurse).toString()
         } else {
             return this.@countStages?.toString()
+        }
+    }
+
+    /** Returns stringification of current {@link #countStagesPerNode} map contents. */
+    public String toStringStageCountPerNodeDump(Boolean recurse = false) {
+        if (recurse) {
+            return this.getCountStagesPerNode(recurse).toString()
+        } else {
+            return this.@countStagesPerNode?.toString()
         }
     }
 
