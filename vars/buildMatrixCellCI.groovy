@@ -699,7 +699,13 @@ rm -f .ci-tarball-log-list.tmp .ci.*.log || true
                 if (!lastLogPosted)
                     sumtxt += "<li><a href='${env.BUILD_URL}/artifact/${lastLog}.gz'>${lastLog}.gz</a></li></ul>"
 
-                createSummary(text: sumtxt, icon: suming_prefix + sumimg + suming_suffix)
+                try {
+                    // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                    addSummary(text: sumtxt, icon: suming_prefix + sumimg + suming_suffix)
+                } catch (Throwable olderBadge) {
+                    // Older Badge API
+                    createSummary(text: sumtxt, icon: suming_prefix + sumimg + suming_suffix)
+                }
             } catch (Throwable ignored) {} // no-op, possibly missing badge plugin
         }
 

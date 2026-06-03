@@ -535,7 +535,15 @@ class Dynamatrix implements Cloneable {
         if (this.script && Utils.isStringNotEmpty(txt)) {
             String txtBadgeId = "Build-progress-summary@" + (objId == null ? this.objectID : objId)
             try {
-                this.script.createSummary(icon: icon, text: txt, id: txtBadgeId)
+                try {
+                    // Badge API v2.x
+                    // TOTHINK: Use ioicons not images URI (e.g. "info" argument
+                    // processed into URI or ioicon ID in different code paths)?
+                    this.script.addSummary(icon: icon, text: txt, id: txtBadgeId)
+                } catch (Throwable olderBadge) {
+                    // Older Badge API
+                    this.script.createSummary(icon: icon, text: txt, id: txtBadgeId)
+                }
                 if (res == null) res = true
             } catch (Throwable t) {
                 //this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
@@ -2417,7 +2425,7 @@ def parallelStages = prepareDynamatrix(
                             "on a previous attempt"
                         script.echo msgRestart
                         if (enableDebugSysprint) System.out.println("[${script?.env?.BUILD_TAG}] " + msgRestart)
-                        createSummary(msgRestart, null, "${dsbc.objectID}-restarted-${dsbc.startCount}")
+                        this.createSummary(msgRestart, null, "${dsbc.objectID}-restarted-${dsbc.startCount}")
                         dsbc.thisDynamatrix?.countStagesIncrement('RESTARTED', stageName + sbName)
                         dsbc.dsbcResultInterim = null
                     }
@@ -2582,7 +2590,7 @@ def parallelStages = prepareDynamatrix(
                                             script.echo "[ERROR] " + msgEx
                                         }
 
-                                        createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                        this.createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                                         break
                                 }
                             }
@@ -2631,7 +2639,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                this.createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         printStackTraceStderrOptional(rae)
@@ -2676,7 +2684,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                this.createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         printStackTraceStderrOptional(rse)
@@ -2728,7 +2736,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                this.createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         printStackTraceStderrOptional(jioe)
@@ -2770,7 +2778,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                this.createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         printStackTraceStderrOptional(jlie)
@@ -2823,7 +2831,7 @@ def parallelStages = prepareDynamatrix(
                                     script.echo "[ERROR] " + msgEx
                                 }
 
-                                createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
+                                this.createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
                             }
                         }
                         printStackTraceStderrOptional(gex)
@@ -2861,7 +2869,7 @@ def parallelStages = prepareDynamatrix(
                             script.echo "[ERROR] " + msgEx
                         }
 
-                        createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
+                        this.createSummary(msgEx, badgeImageDSBCcaughtException, "${dsbc.objectID}-exception-${dsbc.startCount}")
 
                         printStackTraceStderrOptional(t)
                         throw t

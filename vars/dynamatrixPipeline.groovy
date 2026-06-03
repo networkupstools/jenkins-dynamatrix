@@ -679,10 +679,16 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
 
                                         try {
-                                            createSummary(text: "Saved the list of slowBuild stages into a text artifact " +
-                                                "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>",
-                                                icon: '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
-                                                )
+                                            def sumText = "Saved the list of slowBuild stages into a text artifact " +
+                                                "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>"
+                                            def sumIcon = '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
+                                            try {
+                                                // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                                                addSummary(text: sumText, icon: sumIcon)
+                                            } catch (Throwable olderBadge) {
+                                                // Older Badge API
+                                                createSummary(text: sumText, icon: sumIcon)
+                                            }
                                         } catch (Throwable ts) {
                                             echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                                             if (dynamatrixGlobalState.enableDebugTrace) echo ts.toString()
@@ -737,10 +743,16 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         // Note: replace goes by regex so '\*'
                                         sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<p>Detailed hit counts:<ul>') + '</li></ul></p>'
                                     }
-                                    createSummary(
-                                        text: sbSummary + sbSummaryCount,
-                                        icon: '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
-                                        )
+
+                                    def sumText = sbSummary + sbSummaryCount
+                                    def sumIcon = '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
+                                    try {
+                                        // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                                        addSummary(text: sumText, icon: sumIcon)
+                                    } catch (Throwable olderBadge) {
+                                        // Older Badge API
+                                        createSummary(text: sumText, icon: sumIcon)
+                                    }
                                 } catch (Throwable t) {
                                     echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
                                     if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -839,10 +851,15 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     } catch (Throwable ignored) {
                         manager.addShortText(txt)
                     }
-                    createSummary(
-                            text: txt,
-                            icon: '/images/svgs/warning.svg'    // '/images/48x48/warning.png'
-                    )
+
+                    def sumIcon = '/images/svgs/warning.svg'    // '/images/48x48/warning.png'
+                    try {
+                        // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                        addSummary(text: txt, icon: sumIcon)
+                    } catch (Throwable olderBadge) {
+                        // Older Badge API
+                        createSummary(text: txt, icon: sumIcon)
+                    }
                 } catch (Throwable t) {
                     echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                     if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -1017,11 +1034,17 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 String txt = "Only started ${mapCountStages.STARTED} (restarted ${mapCountStages.RESTARTED}) " +
                                         "and completed ${mapCountStages.COMPLETED} dynamatrix 'slowBuild' stages, " +
                                         "while we should have had ${stagesBinBuild.size() - 1} builds"
+
+                                def sumText = "Build seems not finished: " + txt
+                                def sumIcon = '/images/svgs/error.svg'	// '/images/48x48/error.png'
                                 try {
-                                    createSummary(
-                                        text: "Build seems not finished: " + txt,
-                                        icon: '/images/svgs/error.svg'	// '/images/48x48/error.png'
-                                        )
+                                    try {
+                                        // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                                        addSummary(text: sumText, icon: sumIcon)
+                                    } catch (Throwable olderBadge) {
+                                        // Older Badge API
+                                        createSummary(text: sumText, icon: sumIcon)
+                                    }
                                 } catch (Throwable ignored) {} // no-op
                                 error txt
                             }
@@ -1192,10 +1215,16 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         } catch (Throwable ignored) {
                             manager.addShortText(txtOK)
                         }
-                        createSummary(
-                            text: txtOK + ": " + txtCounts,
-                            icon: '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
-                            )
+
+                        def sumText = txtOK + ": " + txtCounts
+                        def sumIcon = '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
+                        try {
+                            // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                            addSummary(text: sumText, icon: sumIcon)
+                        } catch (Throwable olderBadge) {
+                            // Older Badge API
+                            createSummary(text: sumText, icon: sumIcon)
+                        }
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
@@ -1215,10 +1244,15 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         } catch (Throwable ignored) {
                             manager.addShortText(txt)
                         }
-                        createSummary(
-                            text: txt,
-                            icon: '/images/svgs/warning.svg'	// '/images/48x48/warning.png'
-                        )
+
+                        def sumIcon = '/images/svgs/warning.svg'	// '/images/48x48/warning.png'
+                        try {
+                            // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                            addSummary(text: txt, icon: sumIcon)
+                        } catch (Throwable olderBadge) {
+                            // Older Badge API
+                            createSummary(text: txt, icon: sumIcon)
+                        }
 
                         // returns Map<Result, Set<String>>
                         Map<Result, Set<String>> mapres = dynamatrix.reportStageResults(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
@@ -1251,10 +1285,15 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                     txt += "</li>\n"
                                 }
                                 txt += "</nl>\n"
-                                createSummary(
-                                    text: txt,
-                                    icon: '/images/svgs/warning.svg'	// '/images/48x48/warning.png'
-                                )
+
+                                // NOTE: Using warnings sumIcon defined above
+                                try {
+                                    // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                                    addSummary(text: txt, icon: sumIcon)
+                                } catch (Throwable olderBadge) {
+                                    // Older Badge API
+                                    createSummary(text: txt, icon: sumIcon)
+                                }
                             }
                         }
                     } catch (Throwable t) {
