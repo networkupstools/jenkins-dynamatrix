@@ -1192,7 +1192,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     countStagesStats += "FAILED to collect dynamatrix.toStringStageCountDumpNonZero(): ${t}"
                 }
                 try {
-                    countStagesStats += "\n\nNon-zero stats per build node:\n\n" + dynamatrix.toStringStageCountPerNodeDumpNonZero(true)
+                    countStagesStats += "\n\nNon-zero stats per build node:\n\n" + dynamatrix.toStringStageCountPerNodeDumpNonZero(true, true)
                 } catch (Throwable t) {
                     countStagesStats += "\n\nFAILED to collect dynamatrix.toStringStageCountPerNodeDumpNonZero(): ${t}"
                 }

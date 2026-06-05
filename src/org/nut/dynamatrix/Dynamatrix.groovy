@@ -876,7 +876,7 @@ class Dynamatrix implements Cloneable {
      * key names from {@link #countStagesPerNode} map and its sub-maps similar
      * to {@link #countStages} map).
      */
-    public String toStringStageCountPerNodeDumpNonZero(Boolean recurse = false) {
+    public String toStringStageCountPerNodeDumpNonZero(Boolean recurse = false, Boolean linePerNode = false) {
         Map<String, Map<String, Integer>> m = [:]
         this.getCountStagesPerNode(recurse).each {String node, Map<String, Integer> map ->
             if (map.size() > 0) {
@@ -886,7 +886,18 @@ class Dynamatrix implements Cloneable {
                 }
             }
         }
-        return m.toString()
+
+        if (linePerNode) {
+            String s = ""
+            m.each { String node, Map<String, Integer> map ->
+                if (!s.empty())
+                    s += ",\n"
+                s += "  \"${node}\": ${map}"
+            }
+            return "[\n${s}\n]"
+        } else {
+            return m.toString()
+        }
     }
 
     /**
