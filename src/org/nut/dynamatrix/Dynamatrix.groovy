@@ -108,6 +108,30 @@ class Dynamatrix implements Cloneable {
 ///////////////////////////////// RESULTS ACCOUNTING ///////////////////
 
     /**
+     * Object of a last-created badge (colored box on build list pane)
+     * per `objId`; primarily of interest with Badge plugin v2.x and newer.
+     *
+     * @see #progressStatus
+     * @see #updateProgressBadge()
+     */
+    private static Map<String, Object> progressBadge = null
+
+    /**
+     * Object of a last-created status (paragraph on build page)
+     * per `objId`; primarily of interest with Badge plugin v2.x and newer.
+     *
+     * @see #progressBadge
+     * @see #createStatus()
+     */
+    private static Map<String, Object> progressStatus = null
+
+    /**
+     * Set upon success of new-style calls, sowe can update existing
+     * badge or status objects rather than delete and recreate them.
+     */
+    private static Boolean badgeAPIv2Works = null
+
+    /**
      * Similar to Jenkins parallel() step's support for aborting builds if
      * a stage fails, but this implementation allows to let already running
      * stages complete. Technically depends on the limited amount of build
@@ -533,25 +557,35 @@ class Dynamatrix implements Cloneable {
         Boolean res = null
 
         if (this.script && Utils.isStringNotEmpty(txt)) {
-            String txtBadgeId = "Build-progress-summary@" + (objId == null ? this.objectID : objId)
+            String txtSummaryId = "Build-progress-summary@" + (objId == null ? this.objectID : objId)
             try {
                 try {
                     // Badge API v2.x
                     // TOTHINK: Use ioicons not images URI (e.g. "info" argument
                     // processed into URI or ioicon ID in different code paths)?
-                    this.script.addSummary(icon: icon, text: txt, id: txtBadgeId)
+                    if (badgeAPIv2Works && progressSummary.get(txtSummaryId) != null) {
+                        progressSummary[txtSummaryId].setText(txt)
+                    } else {
+                        progressSummary[txtSummaryId] = this.script.addSummary(icon: icon, text: txt, id: txtSummaryId)
+                        // Did not throw? Good!
+                        if (badgeAPIv2Works == null)
+                            badgeAPIv2Works = true
+                    }
                 } catch (Throwable olderBadge) {
                     // Older Badge API
-                    this.script.createSummary(icon: icon, text: txt, id: txtBadgeId)
+                    progressSummary[txtSummaryId] = this.script.createSummary(icon: icon, text: txt, id: txtSummaryId)
+                    if (badgeAPIv2Works == null)
+                        badgeAPIv2Works = false
                 }
                 if (res == null) res = true
             } catch (Throwable t) {
                 //this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-                this.script.echo "WARNING: Tried to createSummary() for '${txtBadgeId}', but failed to; is the jenkins-badge-plugin installed?"
+                this.script.echo "WARNING: Tried to createSummary() for '${txtSummaryId}', but failed to; is the jenkins-badge-plugin installed?"
                 if (this.shouldDebugTrace()) {
                     this.script.echo (t.toString())
                 }
                 res = false
+                progressSummary[txtSummaryId] = null
             }
         }
 
@@ -590,32 +624,47 @@ class Dynamatrix implements Cloneable {
     // Must be CPS - calls pipeline script steps; this
     // precludes use of at least synchronized{} blocks
     synchronized
-    Boolean updateProgressBadge(Boolean removeOnly = false, Boolean recurse = false) {
+    Boolean updateProgressBadge(Boolean removeOnly = false, Boolean recurse = false, Boolean updateStatusPage = true) {
         if (!this.script)
             return null
 
+        String txtBadgeId = "Build-progress-badge@" + this.objectID
+
         try {
-            this.script.removeBadges(id: "Build-progress-badge@" + this.objectID)
+            if (!badgeAPIv2Works || removeOnly) {
+                this.script.removeBadges(id: txtBadgeId)
+                progressBadge[txtBadgeId] = null
+            }
             //this.script.reportBuildCause()
         } catch (Throwable tOK) { // ok if missing
-            this.script.echo "WARNING: Tried to removeBadges() for 'Build-progress-badge@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+            this.script.echo "WARNING: Tried to removeBadges() for '${txtBadgeId}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
             if (this.shouldDebugTrace()) {
                 this.script.echo (tOK.toString())
             }
         }
 
+        // Before Badge 2.x, it seems there was only removeBadges() and we
+        // could not "remove" a summary entry, despite what the docs said.
+        // At least with Badge API v2.x, a removeSummaries() method is offered.
+        // Hope we can eventually *change* a summary wherever it is in the page.
 /*
-        // Seems we can not "remove" a summary entry, despite what the docs say
-        try {
-            this.script.removeBadges(id: "Build-progress-summary@" + this.objectID)
-            //this.script.reportBuildCause()
-        } catch (Throwable tOK) { // ok if missing
-            this.script.echo "WARNING: Tried to removeBadges() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-            if (this.shouldDebugTrace()) {
-                this.script.echo (t.toString())
+        if (updateStatusPage) {
+            String txtSummaryId = "Build-progress-summary@" + this.objectID
+            try {
+                if (!badgeAPIv2Works || removeOnly) {
+                    this.script.removeSummaries(id: txtSummaryId)
+                    progressSummary[txtSummaryId] = null
+                }
+                //this.script.reportBuildCause()
+            } catch (Throwable tOK) { // ok if missing
+                this.script.echo "WARNING: Tried to removeSummaries() for '${txtSummaryId}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
+                if (this.shouldDebugTrace()) {
+                    this.script.echo (t.toString())
+                }
             }
         }
 */
+
         if (removeOnly) return true
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
@@ -626,25 +675,37 @@ class Dynamatrix implements Cloneable {
                 (this.dynamatrixComment == null ? "" : " with comment: ${this.dynamatrixComment}")
 
         Boolean res = null
-        String txtBadgeId = "Build-progress-badge@" + this.objectID
         try {
             // Note: not "addInfoBadge()" which is rolled-up and small (no text except when hovered)
             // Update: although this seems to have same effect, not that of addShortText (that has no "id")
             // Update2: checking with a "null" icon if that would work as addShortText in effect (seems so by build.xml markup)
-            try {
-                // Retry removal in case another parallel branch already
-                // added its message while we were preparing the string
-                this.script.removeBadges(id: txtBadgeId)
-                //this.script.reportBuildCause()
-            } catch (Throwable ignore) {} // ok if missing
+            if (!badgeAPIv2Works) {
+                try {
+                    // Retry removal in case another parallel branch already
+                    // added its message while we were preparing the string
+                    this.script.removeBadges(id: txtBadgeId)
+                    progressBadge[txtBadgeId] = null
+                    //this.script.reportBuildCause()
+                } catch (Throwable ignore) {} // ok if missing
+            }
 
             try {
                 // Badge v2.x API, with style
-                this.script.addBadge(icon: null, text: txt, id: txtBadgeId,
-                    cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-BuildProgressBadge"
-                )
+                if (badgeAPIv2Works && progressBadge.get(txtBadgeId) != null) {
+                    progressBadge[txtBadgeId].setText(txt)
+                } else {
+                    progressBadge[txtBadgeId] = this.script.addBadge(icon: null, text: txt, id: txtBadgeId,
+                        cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-BuildProgressBadge"
+                    )
+                    // Did not throw? Good!
+                    if (badgeAPIv2Works == null)
+                        badgeAPIv2Works = true
+                }
             } catch (Throwable ignore) {
-                this.script.addBadge(icon: null, text: txt, id: txtBadgeId)
+                // Retry without style
+                progressBadge[txtBadgeId] = this.script.addBadge(icon: null, text: txt, id: txtBadgeId)
+                if (badgeAPIv2Works == null)
+                    badgeAPIv2Works = false
             }
             res = true
         } catch (Throwable t) {
@@ -653,25 +714,30 @@ class Dynamatrix implements Cloneable {
                 this.script.echo (t.toString())
             }
             res = false
+            progressBadge[txtBadgeId] = null
         }
-
-/*
-        def resSummary = this.createSummary(txt)
-        if (res == null || resSummary == false) res = resSummary
-*/
 
         if (!this.reportedTooManyRestarts && countStages['RESTARTED'] > this.thresholdTooManyRestarts) {
             this.reportedTooManyRestarts = true
             try {
                 // Can depend on plugins not available at this Jenkins
                 // instance, e.g. instant-messaging and IRC plugins
+                def msgAlert = "Too many RESTARTED cells (more than ${this.thresholdTooManyRestarts}), is some CI agent broken?"
+                txt += "<br/>${msgAlert}"
                 if (Utils.isClosure(this.dynacfg?.notifyHandlerAlert)) {
-                    this.dynacfg.notifyHandlerAlert.call("Too many RESTARTED cells (more than ${this.thresholdTooManyRestarts}), is some CI agent broken?")
+                    this.dynacfg.notifyHandlerAlert.call(msgAlert)
                 }
             } catch (Throwable t) {
                 this.script?.echo "WARNING: Tried to notify about too many restarts by user-provided method, and failed to"
                 if (dynamatrixGlobalState.enableDebugTrace) this.script?.echo t.toString()
             }
+        }
+
+        if (updateStatusPage) {
+            txt += "<br/><pre>Non-zero stats per build node:\n\n${this.toStringStageCountPerNodeDumpNonZero(true, true)}</pre>"
+            def resSummary = this.createSummary(txt)
+            if (res == null || resSummary == false)
+                res = resSummary
         }
 
         return res
