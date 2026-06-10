@@ -1020,7 +1020,7 @@ class Dynamatrix implements Cloneable {
         if (linePerNode) {
             String s = ""
             m.each { String node, Map<String, Integer> map ->
-                if (!s.empty())
+                if (!s.isEmpty())
                     s += ",\n"
                 s += "  \"${node}\": ${map}"
             }
