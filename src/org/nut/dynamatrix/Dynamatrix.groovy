@@ -680,7 +680,13 @@ class Dynamatrix implements Cloneable {
         if (removeOnly) return true
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
-        String txt = "Build in progress: " + this.toStringStageCountBestEffort(recurse)
+        String txt = "Build in progress: "
+        String strCount = this.toStringStageCountBestEffort(recurse)
+        if (strCount in [null, "null", "", "{}", "[]", "[:]"]) {
+            txt += "No work started yet"
+        } else {
+            txt += strCount
+        }
         if (this.shouldDebugTrace())
             txt +=
                 " in Dynamatrix@${this.objectID}" +
@@ -754,7 +760,8 @@ class Dynamatrix implements Cloneable {
         }
 
         if (updateStatusPage) {
-            txt += "<br/><pre>Non-zero stats per build node:\n\n${this.toStringStageCountPerNodeDumpNonZero(true, true)}</pre>"
+            if (countStagesPerNode.size() > 0)
+                txt += "<br/><pre>Non-zero stats per build node:\n\n${this.toStringStageCountPerNodeDumpNonZero(true, true)}</pre>"
             def resSummary = this.createSummary(txt)
             if (res == null || resSummary == false)
                 res = resSummary
