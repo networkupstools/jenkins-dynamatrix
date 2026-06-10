@@ -111,7 +111,7 @@ class Dynamatrix implements Cloneable {
      * Object of a last-created badge (colored box on build list pane)
      * per `objId`; primarily of interest with Badge plugin v2.x and newer.
      *
-     * @see #progressStatus
+     * @see #progressSummary
      * @see #updateProgressBadge()
      */
     private final static Map<String, Object> progressBadge = new HashMap<String, Object>()
@@ -121,9 +121,9 @@ class Dynamatrix implements Cloneable {
      * per `objId`; primarily of interest with Badge plugin v2.x and newer.
      *
      * @see #progressBadge
-     * @see #createStatus()
+     * @see #createSummary()
      */
-    private final static Map<String, Object> progressStatus = new HashMap<String, Object>()
+    private final static Map<String, Object> progressSummary = new HashMap<String, Object>()
 
     /**
      * Set upon success of new-style calls, sowe can update existing
