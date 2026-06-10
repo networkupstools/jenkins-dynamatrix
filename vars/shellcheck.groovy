@@ -79,6 +79,10 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
         // instance (inside step), though hopefully same
         // cached NodeCaps array reused
         if (debugTrace) this.script.println "[DEBUG] Discovering stagesShellcheck: calling prepareDynamatrix() step..."
+
+        // NOTE: This likely involves a clone of the
+        //  original Dynamatrix object that would be
+        //  attached to the generated build stages.
         stagesShellcheck_arr = prepareDynamatrix([
             dynamatrixAxesLabels: dynacfgPipeline.shellcheck.dynamatrixAxesLabels,
             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],

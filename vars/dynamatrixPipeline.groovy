@@ -393,10 +393,12 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             echo "FAILED calling infra.neuterKnownUnsuccessfulGithubStatuses(): ${t}"
         }
 
-        // Prepare the badge and especially the build-page status report
-        // objects early, so the latter is seen on top when browsing into
-        // the build report
-        dynamatrix.updateProgressBadge(false, dynacfgPipeline?.recurseIntoDynamatrixCloneStats, true)
+        // Prepare the build-page status report object early, so it is
+        // seen on top when browsing into the build report. Note this
+        // involves a different Dynamatrix object than used in e.g.
+        // shellcheck fanout, so we don't want the badge too early.
+        //dynamatrix.updateProgressBadge(false, dynacfgPipeline?.recurseIntoDynamatrixCloneStats, true)
+        dynamatrix.createSummary("Placeholder for main build phase summary")
 
         stage("Initial discovery") {
             parallel (
