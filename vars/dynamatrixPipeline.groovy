@@ -689,14 +689,20 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                             def sumIcon = '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
                                             try {
                                                 // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                                                if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                                    echo "[DEBUG] main pipeline: calling addSummary: ${sumText}"
                                                 addSummary(text: sumText, icon: sumIcon)
                                             } catch (Throwable olderBadge) {
                                                 // Older Badge API
+                                                if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                                    echo "[DEBUG] main pipeline: caught: ${olderBadge}"
+                                                    echo "[DEBUG] main pipeline: calling createSummary: ${sumText}"
+                                                }
                                                 createSummary(text: sumText, icon: sumIcon)
                                             }
                                         } catch (Throwable ts) {
                                             echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
-                                            if (dynamatrixGlobalState.enableDebugTrace) echo ts.toString()
+                                            if (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge) echo ts.toString()
                                         }
 
                                     } catch (Throwable t) {
@@ -722,6 +728,8 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                     // featured jenkins-badge-plugin step
                                     try {
                                         // Badge v2.x API, with style
+                                        if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                            echo "[DEBUG] main pipeline: calling addInfoBadge: ${sbSummary}"
                                         addInfoBadge(text: sbSummary, id: "Discovery-counter",
                                             cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-DiscoveryCounter"
                                         )
@@ -735,6 +743,10 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                             // FIXME: While we add temporarily and remove one badge,
                                             //  GPBP is okay (for some reason, Badge plugin leaves
                                             //  ugly formatting in job's main page with list of builds):
+                                            if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                                echo "[DEBUG] main pipeline: caught: ${ignored}"
+                                                echo "[DEBUG] main pipeline: calling manager.addInfoBadge: ${sumText}"
+                                            }
                                             manager.addInfoBadge(sbSummary)
 /*
                                         }
@@ -753,23 +765,35 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                     def sumIcon = '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
                                     try {
                                         // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                                        if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                            echo "[DEBUG] main pipeline: calling addSummary: ${sumText}"
                                         addSummary(text: sumText, icon: sumIcon)
                                     } catch (Throwable olderBadge) {
                                         // Older Badge API
+                                        if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                            echo "[DEBUG] main pipeline: caught: ${olderBadge}"
+                                            echo "[DEBUG] main pipeline: calling createSummary: ${sumText}"
+                                        }
                                         createSummary(text: sumText, icon: sumIcon)
                                     }
                                 } catch (Throwable t) {
                                     echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
-                                    if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                                    if (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge) echo t.toString()
                                 }
 
                                 try {
                                     // Badge v2.x API, with style
+                                    if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                        echo "[DEBUG] main pipeline: calling addBadge: ${sbSummary}"
                                     addBadge(text: sbSummary + "; waiting for quick-tests to complete",
                                         cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-WaitingCompletion"
                                     )
                                 } catch (Throwable ignored) {
                                     try {
+                                        if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                            echo "[DEBUG] main pipeline: caught: ${ignored}"
+                                            echo "[DEBUG] main pipeline: calling manager.addShortText: ${sbSummary}"
+                                        }
                                         manager.addShortText(sbSummary + "; waiting for quick-tests to complete")
                                     } catch (Throwable ignore) {}   // no-op
                                 }
@@ -783,10 +807,16 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                             echo qtxt
                             try {
                                 // Badge v2.x API, with style
+                                if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                    echo "[DEBUG] main pipeline: calling addBadge: ${qtxt}"
                                 addBadge(text: qtxt,
                                     cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-Planned"
                                 )
                             } catch (Throwable ignore0) {
+                                if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                    echo "[DEBUG] main pipeline: caught: ${ignore0}"
+                                    echo "[DEBUG] main pipeline: calling manager.addShortText: ${qtxt}"
+                                }
                                 manager.addShortText(qtxt)
                             }
                         } catch (Throwable ignore) {}   // no-op
@@ -846,28 +876,41 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     if (!(curres in [null, 'null', 'SUCCESS']))
                         txt += " (${curres})"
                     // DO NOT remove badges - let last words be seen!
+                    // if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling manager.removeBadges() because ${txt}"
                     // manager.removeBadges()
                     // reportBuildCause()
                     try {
                         // Badge v2.x API, with style
+                        if (dynamatrixGlobalState.enableDebugTraceBadge)
+                            echo "[DEBUG] main pipeline: calling addBadge: ${txt}"
                         addBadge(text: txt,
                             cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-FAILURE"
                         )
                     } catch (Throwable ignored) {
+                        if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                            echo "[DEBUG] main pipeline: caught: ${ignored}"
+                            echo "[DEBUG] main pipeline: calling manager.addShortText: ${txt}"
+                        }
                         manager.addShortText(txt)
                     }
 
                     def sumIcon = '/images/svgs/warning.svg'    // '/images/48x48/warning.png'
                     try {
                         // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                        if (dynamatrixGlobalState.enableDebugTraceBadge)
+                            echo "[DEBUG] main pipeline: calling addSummary: ${txt}"
                         addSummary(text: txt, icon: sumIcon)
                     } catch (Throwable olderBadge) {
                         // Older Badge API
+                        if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                            echo "[DEBUG] main pipeline: caught: ${olderBadge}"
+                            echo "[DEBUG] main pipeline: calling createSummary: ${txt}"
+                        }
                         createSummary(text: txt, icon: sumIcon)
                     }
                 } catch (Throwable t) {
                     echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-                    if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                    if (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge) echo t.toString()
                 }
 
                 if (Utils.isClosure(dynacfgPipeline?.notifyHandler)) {
@@ -889,20 +932,27 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             try {
                 String txt = "No 'slow build' dynamatrix stages discovered"
                 //removeBadges(id: "Discovery-counter")
+                if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling manager.removeBadges() because ${txt}"
                 manager.removeBadges()
                 reportBuildCause()
                 try {
                     // Badge v2.x API, with style
+                    if (dynamatrixGlobalState.enableDebugTraceBadge)
+                        echo "[DEBUG] main pipeline: calling addBadge: ${txt}"
                     addBadge(text: txt,
                         cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-NoStagesDiscovered"
                     )
                 } catch (Throwable ignored) {
+                    if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                        echo "[DEBUG] main pipeline: caught: ${ignored}"
+                        echo "[DEBUG] main pipeline: calling manager.addShortText: ${txt}"
+                    }
                     manager.addShortText(txt)
                 }
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
             } catch (Throwable t) {
                 echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-                if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                if (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge) echo t.toString()
             }
 
             // TODO: `unstable` this?
@@ -918,21 +968,28 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                         txt, "PENDING", "slowbuild-run")
 
+                if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling manager.removeBadges() because ${txt}"
                 //removeBadges(id: "Discovery-counter")
                 manager.removeBadges()
                 reportBuildCause()
                 try {
                     // Badge v2.x API, with style
+                    if (dynamatrixGlobalState.enableDebugTraceBadge)
+                        echo "[DEBUG] main pipeline: calling addBadge: ${txt}"
                     addBadge(text: txt,
                         cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-Running"
                     )
                 } catch (Throwable ignored) {
+                    if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                        echo "[DEBUG] main pipeline: caught: ${ignored}"
+                        echo "[DEBUG] main pipeline: calling manager.addShortText: ${txt}"
+                    }
                     manager.addShortText(txt)
                 }
                 //currentBuild.rawBuild.getActions().add(org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildAction.createShortText(txt))
             } catch (Throwable t) {
                 echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-                if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                if (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge) echo t.toString()
             }
 
             if (dynacfgPipeline?.useMilestones && env?.BRANCH_NAME) {
@@ -1045,9 +1102,15 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 try {
                                     try {
                                         // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                                        if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                            echo "[DEBUG] main pipeline: calling addSummary: ${sumText}"
                                         addSummary(text: sumText, icon: sumIcon)
                                     } catch (Throwable olderBadge) {
                                         // Older Badge API
+                                        if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                            echo "[DEBUG] main pipeline: caught: ${olderBadge}"
+                                            echo "[DEBUG] main pipeline: calling createSummary: ${sumText}"
+                                        }
                                         createSummary(text: sumText, icon: sumIcon)
                                     }
                                 } catch (Throwable ignored) {} // no-op
@@ -1214,10 +1277,16 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         String txtOK = "Build completed successfully"
                         try {
                             // Badge v2.x API, with style
+                            if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                echo "[DEBUG] main pipeline: calling addBadge: ${txtOK}"
                             addBadge(text: txtOK,
                                 cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-SUCCESS"
                             )
                         } catch (Throwable ignored) {
+                            if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                echo "[DEBUG] main pipeline: caught: ${ignored}"
+                                echo "[DEBUG] main pipeline: calling manager.addShortText: ${txtOK}"
+                            }
                             manager.addShortText(txtOK)
                         }
 
@@ -1225,14 +1294,20 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         def sumIcon = '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
                         try {
                             // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                            if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                echo "[DEBUG] main pipeline: calling addSummary: ${sumText}"
                             addSummary(text: sumText, icon: sumIcon)
                         } catch (Throwable olderBadge) {
                             // Older Badge API
+                            if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                echo "[DEBUG] main pipeline: caught: ${olderBadge}"
+                                echo "[DEBUG] main pipeline: calling createSummary: ${sumText}"
+                            }
                             createSummary(text: sumText, icon: sumIcon)
                         }
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                        if (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge) echo t.toString()
                     }
                 } else {
                     try {
@@ -1243,19 +1318,31 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 (dynamatrix.dynamatrixComment == null ? "" : " with comment: ${dynamatrix.dynamatrixComment}")
                         try {
                             // Badge v2.x API, with style
+                            if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                echo "[DEBUG] main pipeline: calling addBadge: ${txt}"
                             addBadge(text: txt,
                                 cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-NotWell"
                             )
                         } catch (Throwable ignored) {
+                            if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                echo "[DEBUG] main pipeline: caught: ${ignored}"
+                                echo "[DEBUG] main pipeline: calling manager.addShortText: ${txt}"
+                            }
                             manager.addShortText(txt)
                         }
 
                         def sumIcon = '/images/svgs/warning.svg'	// '/images/48x48/warning.png'
                         try {
                             // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                            if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                echo "[DEBUG] main pipeline: calling addSummary: ${txt}"
                             addSummary(text: txt, icon: sumIcon)
                         } catch (Throwable olderBadge) {
                             // Older Badge API
+                            if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                echo "[DEBUG] main pipeline: caught: ${olderBadge}"
+                                echo "[DEBUG] main pipeline: calling createSummary: ${txt}"
+                            }
                             createSummary(text: txt, icon: sumIcon)
                         }
 
@@ -1294,16 +1381,22 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 // NOTE: Using warnings sumIcon defined above
                                 try {
                                     // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                                    if (dynamatrixGlobalState.enableDebugTraceBadge)
+                                        echo "[DEBUG] main pipeline: calling addSummary: ${txt}"
                                     addSummary(text: txt, icon: sumIcon)
                                 } catch (Throwable olderBadge) {
                                     // Older Badge API
+                                    if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                                        echo "[DEBUG] main pipeline: caught: ${olderBadge}"
+                                        echo "[DEBUG] main pipeline: calling createSummary: ${txt}"
+                                    }
                                     createSummary(text: txt, icon: sumIcon)
                                 }
                             }
                         }
                     } catch (Throwable t) {
                         echo "WARNING: Tried to addShortText() and createSummary(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-                        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+                        if (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge) echo t.toString()
                     }
                 }
 
@@ -1344,15 +1437,21 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             txt += " ${curres}"
             try {
                 // Badge v2.x API, with style
+                if (dynamatrixGlobalState.enableDebugTraceBadge)
+                    echo "[DEBUG] main pipeline: calling addBadge: ${txt}"
                 addBadge(text: txt,
                     cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-${curres}"
                 )
             } catch (Throwable ignored) {
+                if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                    echo "[DEBUG] main pipeline: caught: ${ignored}"
+                    echo "[DEBUG] main pipeline: calling manager.addShortText: ${txt}"
+                }
                 manager.addShortText(txt)
             }
         } catch (Throwable t) {
             echo "WARNING: Tried to addShortText(), but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-            if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+            if (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge) echo t.toString()
         }
 
     } // node to manage the pipeline

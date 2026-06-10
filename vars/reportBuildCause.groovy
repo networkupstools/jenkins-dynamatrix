@@ -106,6 +106,8 @@ def call() {
         try {
             // https://plugins.jenkins.io/badge/ with API v2.x
             // https://www.jenkins.io/doc/pipeline/steps/badge/#addbadge-add-badge
+            if (dynamatrixGlobalState.enableDebugTraceBadge)
+                echo "[DEBUG] reportBuildCause(): calling addBadge: ${msg}"
             addBadge([
                 text: msg,
                 cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-ReportBuildCause"
@@ -117,6 +119,10 @@ def call() {
                 // addShortText(text, color, background, border, borderColor) -
                 //   puts a badge with a short text, using the specified format.
                 //   Supports html color names.
+                if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                    echo "[DEBUG] reportBuildCause(): caught: ${t0}"
+                    echo "[DEBUG] reportBuildCause(): calling manager.addShortText: ${msg}"
+                }
                 manager.addShortText(
                     msg,
                     '#000000',
@@ -131,6 +137,10 @@ def call() {
                     // addShortText(text: <text>, background: <background>,
                     //              border: <border>, borderColor: <borderColor>,
                     //              color: <color>, link: <link>)
+                    if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                        echo "[DEBUG] reportBuildCause(): caught: ${t1}"
+                        echo "[DEBUG] reportBuildCause(): calling addShortText: ${msg}"
+                    }
                     addShortText([
                         text: msg,
                         color:       '#000000',
@@ -142,8 +152,8 @@ def call() {
                     echo "WARNING: Tried to addShortText(), but failed to; " +
                         "are the Groovy Postbuild plugin and/or " +
                         "jenkins-badge-plugin installed?" +
-                        "\n" + (dynamatrixGlobalState.enableDebugTrace ? t1.toString() : t1.getMessage()) +
-                        "\n" + (dynamatrixGlobalState.enableDebugTrace ? t2.toString() : t2.getMessage()) +
+                        "\n" + (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge ? t1.toString() : t1.getMessage()) +
+                        "\n" + (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge ? t2.toString() : t2.getMessage()) +
                         "\nMeant to say: " + msg
                 }
             }

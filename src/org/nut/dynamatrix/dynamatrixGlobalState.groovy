@@ -48,6 +48,10 @@ class dynamatrixGlobalState {
     static Boolean enableDebugTraceResolver = false
     /** @see #enableDebugTrace */
     static Boolean enableDebugTraceFailures = true
+    /**
+     *  Show progress through badge or build status reporting methods.
+     *  @see #enableDebugTrace */
+    static Boolean enableDebugTraceBadge = true
     /** @see #enableDebugTrace */
     static Boolean enableDebugErrors = true
     /** @see #enableDebugTrace */

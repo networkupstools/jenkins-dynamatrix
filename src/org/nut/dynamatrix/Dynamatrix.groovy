@@ -56,6 +56,8 @@ class Dynamatrix implements Cloneable {
     /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
     /** Have some defaults, if only to have all expected fields defined */
+    public boolean enableDebugTraceBadge = dynamatrixGlobalState.enableDebugTraceBadge
+    /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTraceResolver = dynamatrixGlobalState.enableDebugTraceResolver
     /** Have some defaults, if only to have all expected fields defined */
     public boolean enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
@@ -564,21 +566,21 @@ class Dynamatrix implements Cloneable {
                     // TOTHINK: Use ioicons not images URI (e.g. "info" argument
                     // processed into URI or ioicon ID in different code paths)?
                     if (badgeAPIv2Works && progressSummary.get(txtSummaryId) != null) {
-                        if (this.shouldDebugTrace())
-                            this.script.echo "[DEBUG] createSummary(): try to update existing summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works})"
+                        if (this.shouldDebugTraceBadge())
+                            this.script.echo "[DEBUG] createSummary(): try to update existing summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) with text: ${txt} (was: ${progressSummary?.txtSummaryId?.getText()})"
                         progressSummary[txtSummaryId].setText(txt)
                     } else {
-                        if (this.shouldDebugTrace())
-                            this.script.echo "[DEBUG] createSummary(): try to create new summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works})"
+                        if (this.shouldDebugTraceBadge())
+                            this.script.echo "[DEBUG] createSummary(): try to create new summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) with text: ${txt}"
                         progressSummary[txtSummaryId] = this.script.addSummary(icon: icon, text: txt, id: txtSummaryId)
                         // Did not throw? Good!
                         if (badgeAPIv2Works == null)
                             badgeAPIv2Works = true
                     }
                 } catch (Throwable olderBadge) {
-                    if (this.shouldDebugTrace()) {
+                    if (this.shouldDebugTraceBadge()) {
                         this.script.echo("[DEBUG] createSummary(): FAILED due to older API? " + olderBadge.toString())
-                        this.script.echo "[DEBUG] createSummary(): try to create new summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) with Badge APIv1"
+                        this.script.echo "[DEBUG] createSummary(): try to create new summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) with Badge APIv1 and text: ${txt}"
                     }
                     // Older Badge API
                     progressSummary[txtSummaryId] = this.script.createSummary(icon: icon, text: txt, id: txtSummaryId)
@@ -589,15 +591,15 @@ class Dynamatrix implements Cloneable {
             } catch (Throwable t) {
                 //this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                 this.script.echo "WARNING: Tried to createSummary() for '${txtSummaryId}', but failed to; is the jenkins-badge-plugin installed?"
-                if (this.shouldDebugTrace()) {
+                if (this.shouldDebugTrace() || this.shouldDebugTraceBadge()) {
                     this.script.echo (t.toString())
                 }
                 res = false
                 progressSummary[txtSummaryId] = null
+            }
 
-                if (this.shouldDebugTrace()) {
-                    this.script.echo("Known summaries: ${progressSummary}")
-                }
+            if (this.shouldDebugTraceBadge()) {
+                this.script.echo("[DEBUG] createSummary(): Known summaries: ${progressSummary}")
             }
         }
 
@@ -644,18 +646,18 @@ class Dynamatrix implements Cloneable {
 
         try {
             if (!badgeAPIv2Works || removeOnly) {
-                if (this.shouldDebugTrace())
+                if (this.shouldDebugTraceBadge())
                     this.script.echo "[DEBUG] updateProgressBadge(): try to remove badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works} removeOnly:${removeOnly})"
                 this.script.removeBadges(id: txtBadgeId)
                 progressBadge[txtBadgeId] = null
             } else {
-                if (this.shouldDebugTrace())
+                if (this.shouldDebugTraceBadge())
                     this.script.echo "[DEBUG] updateProgressBadge(): DO NOT try to remove badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works} removeOnly:${removeOnly})"
             }
             //this.script.reportBuildCause()
         } catch (Throwable tOK) { // ok if missing
             this.script.echo "WARNING: Tried to removeBadges() for '${txtBadgeId}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-            if (this.shouldDebugTrace()) {
+            if (this.shouldDebugTrace() || this.shouldDebugTraceBadge()) {
                 this.script.echo (tOK.toString())
             }
         }
@@ -669,25 +671,29 @@ class Dynamatrix implements Cloneable {
             String txtSummaryId = "Build-progress-summary@" + this.objectID
             try {
                 if (!badgeAPIv2Works || removeOnly) {
-                    if (this.shouldDebugTrace())
+                    if (this.shouldDebugTraceBadge())
                         this.script.echo "[DEBUG] updateProgressBadge(): try to remove summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works} removeOnly:${removeOnly})"
                     this.script.removeSummaries(id: txtSummaryId)
                     progressSummary[txtSummaryId] = null
                 } else {
-                    if (this.shouldDebugTrace())
+                    if (this.shouldDebugTraceBadge())
                         this.script.echo "[DEBUG] updateProgressBadge(): DO NOT try to remove summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works} removeOnly:${removeOnly})"
                 }
                 //this.script.reportBuildCause()
             } catch (Throwable tOK) { // ok if missing
                 this.script.echo "WARNING: Tried to removeSummaries() for '${txtSummaryId}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-                if (this.shouldDebugTrace()) {
+                if (this.shouldDebugTrace() || this.shouldDebugTraceBadge()) {
                     this.script.echo (t.toString())
                 }
             }
         }
 */
 
-        if (removeOnly) return true
+        if (removeOnly) {
+            if (this.shouldDebugTraceBadge())
+                this.script.echo ("[DEBUG] updateProgressBadge(): called only to remove badges") // and statuses
+            return true
+        }
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
         String txt = "Build in progress: "
@@ -697,7 +703,7 @@ class Dynamatrix implements Cloneable {
         } else {
             txt += strCount
         }
-        if (this.shouldDebugTrace())
+        if (this.shouldDebugTrace() || this.shouldDebugTraceBadge())
             txt +=
                 " in Dynamatrix@${this.objectID}" +
                 (this.dynamatrixComment == null ? "" : " with comment: ${this.dynamatrixComment}")
@@ -711,7 +717,7 @@ class Dynamatrix implements Cloneable {
                 try {
                     // Retry removal in case another parallel branch already
                     // added its message while we were preparing the string
-                    if (this.shouldDebugTrace())
+                    if (this.shouldDebugTraceBadge())
                         this.script.echo "[DEBUG] updateProgressBadge(): try to remove badge '${txtBadgeId}' before publication (badgeAPIv2Works:${badgeAPIv2Works})"
                     this.script.removeBadges(id: txtBadgeId)
                     progressBadge[txtBadgeId] = null
@@ -722,12 +728,12 @@ class Dynamatrix implements Cloneable {
             try {
                 // Badge v2.x API, with style
                 if (badgeAPIv2Works && progressBadge.get(txtBadgeId) != null) {
-                    if (this.shouldDebugTrace())
-                        this.script.echo "[DEBUG] updateProgressBadge(): try to update existing badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works})"
+                    if (this.shouldDebugTraceBadge())
+                        this.script.echo "[DEBUG] updateProgressBadge(): try to update existing badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) with text: ${txt} (was: ${progressBadge?.txtBadgeId?.getText()})"
                     progressBadge[txtBadgeId].setText(txt)
                 } else {
-                    if (this.shouldDebugTrace())
-                        this.script.echo "[DEBUG] updateProgressBadge(): try to create badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) with Badge APIv2"
+                    if (this.shouldDebugTraceBadge())
+                        this.script.echo "[DEBUG] updateProgressBadge(): try to create new badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) with Badge APIv2 and text: ${txt}"
                     progressBadge[txtBadgeId] = this.script.addBadge(icon: null, text: txt, id: txtBadgeId,
                         cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-BuildProgressBadge"
                     )
@@ -737,9 +743,9 @@ class Dynamatrix implements Cloneable {
                 }
             } catch (Throwable olderBadge) {
                 // Retry without style
-                if (this.shouldDebugTrace()) {
+                if (this.shouldDebugTraceBadge()) {
                     this.script?.echo("[DEBUG] updateProgressBadge(): Failed due to old API? " + olderBadge.toString())
-                    this.script.echo "[DEBUG] updateProgressBadge(): try to create badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) with Badge APIv1"
+                    this.script.echo "[DEBUG] updateProgressBadge(): try to create badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) with Badge APIv1 and text: ${txt}"
                 }
 
                 progressBadge[txtBadgeId] = this.script.addBadge(icon: null, text: txt, id: txtBadgeId)
@@ -749,15 +755,14 @@ class Dynamatrix implements Cloneable {
             res = true
         } catch (Throwable t) {
             this.script.echo "WARNING: Tried to addBadge() for '${txtBadgeId}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-            if (this.shouldDebugTrace()) {
+            if (this.shouldDebugTrace() || this.shouldDebugTraceBadge()) {
                 this.script.echo (t.toString())
             }
             res = false
             progressBadge[txtBadgeId] = null
-
-            if (this.shouldDebugTrace())
-                this.script.echo ("Known badges: ${progressBadge}")
         }
+        if (this.shouldDebugTraceBadge())
+            this.script.echo ("[DEBUG] updateProgressBadge(): Known badges: ${progressBadge}")
 
         if (!this.reportedTooManyRestarts && countStages['RESTARTED'] > this.thresholdTooManyRestarts) {
             this.reportedTooManyRestarts = true
@@ -771,7 +776,7 @@ class Dynamatrix implements Cloneable {
                 }
             } catch (Throwable t) {
                 this.script?.echo "WARNING: Tried to notify about too many restarts by user-provided method, and failed to"
-                if (dynamatrixGlobalState.enableDebugTrace)
+                if (dynamatrixGlobalState.enableDebugTrace || this.shouldDebugTrace() || this.shouldDebugTraceBadge())
                     this.script?.echo t.toString()
             }
         }
@@ -1176,6 +1181,11 @@ class Dynamatrix implements Cloneable {
     @NonCPS
     public boolean shouldDebugTrace() {
         return (this.enableDebugTrace && this.script != null)
+    }
+
+    @NonCPS
+    public boolean shouldDebugTraceBadge() {
+        return (this.enableDebugTraceBadge && this.script != null)
     }
 
     @NonCPS

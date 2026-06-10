@@ -83,12 +83,19 @@ def reportMilestone(Map stats) {
 
         try {
             // Badge v2.x API, with style
+            if (dynamatrixGlobalState.enableDebugTraceBadge)
+                echo "[DEBUG] wrapMilestone(): calling addBadge: ${stats.msg}"
             addBadge([
                 text: "${stats.msg}".toString(),
                 cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-SlowBuild-NOT_BUILT"
             ])
         } catch (Throwable ignored) {
             try {
+                if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                    echo "[DEBUG] wrapMilestone(): caught: ${ignored}"
+                    echo "[DEBUG] wrapMilestone(): calling manager.addShortText: ${stats.msg}"
+                }
+
                 // https://plugins.jenkins.io/groovy-postbuild/
                 // addShortText(text, color, background, border, borderColor)
                 manager.addShortText(
@@ -101,6 +108,11 @@ def reportMilestone(Map stats) {
             } catch (Throwable ignored2) {
                 try {
                     // https://plugins.jenkins.io/badge/ API before v2.x
+                    if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                        echo "[DEBUG] wrapMilestone(): caught: ${ignored2}"
+                        echo "[DEBUG] wrapMilestone(): calling addShortText: ${stats.msg}"
+                    }
+
                     addShortText([
                         text: "${stats.msg}".toString(),
                         color: '#000000',
@@ -109,8 +121,8 @@ def reportMilestone(Map stats) {
                         borderColor: '#00C0A0'
                     ])
                 } catch (Throwable t2) {
-                    echo "WARNING: Tried to addInfoBadge(), but failed to; is the jenkins-badge-plugin installed?"
-                    if (dynamatrixGlobalState.enableDebugTrace) {
+                    echo "WARNING: wrapMilestone(): Tried to addBadge() or addShortText(), but failed to; is the jenkins-badge-plugin installed?"
+                    if (dynamatrixGlobalState.enableDebugTrace || dynamatrixGlobalState.enableDebugTraceBadge) {
                         echo t2.toString()
                     }
                 }

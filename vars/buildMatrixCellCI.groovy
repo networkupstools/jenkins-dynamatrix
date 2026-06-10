@@ -701,9 +701,15 @@ rm -f .ci-tarball-log-list.tmp .ci.*.log || true
 
                 try {
                     // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                    if (dynamatrixGlobalState.enableDebugTraceBadge)
+                        echo "[DEBUG] buildMatrixCellCI(): calling addSummary: ${sumtxt}"
                     addSummary(text: sumtxt, icon: suming_prefix + sumimg + suming_suffix)
                 } catch (Throwable olderBadge) {
                     // Older Badge API
+                    if (dynamatrixGlobalState.enableDebugTraceBadge) {
+                        echo "[DEBUG] buildMatrixCellCI(): caught: ${olderBadge}"
+                        echo "[DEBUG] buildMatrixCellCI(): calling createSummary: ${sumtxt}"
+                    }
                     createSummary(text: sumtxt, icon: suming_prefix + sumimg + suming_suffix)
                 }
             } catch (Throwable ignored) {} // no-op, possibly missing badge plugin
