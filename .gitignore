@@ -3,6 +3,7 @@
 
 /.gradle/
 /build/
+/target/
 
 *.bak*
 *.tmp
