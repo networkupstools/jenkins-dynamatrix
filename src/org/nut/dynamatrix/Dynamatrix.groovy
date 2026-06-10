@@ -564,14 +564,17 @@ class Dynamatrix implements Cloneable {
                     // TOTHINK: Use ioicons not images URI (e.g. "info" argument
                     // processed into URI or ioicon ID in different code paths)?
                     if (badgeAPIv2Works && progressSummary.get(txtSummaryId) != null) {
+                        this.script.echo "[DEBUG] createSummary(): try to update existing summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works})"
                         progressSummary[txtSummaryId].setText(txt)
                     } else {
+                        this.script.echo "[DEBUG] createSummary(): try to create new summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works})"
                         progressSummary[txtSummaryId] = this.script.addSummary(icon: icon, text: txt, id: txtSummaryId)
                         // Did not throw? Good!
                         if (badgeAPIv2Works == null)
                             badgeAPIv2Works = true
                     }
                 } catch (Throwable olderBadge) {
+                    this.script.echo (olderBadge.toString())
                     // Older Badge API
                     progressSummary[txtSummaryId] = this.script.createSummary(icon: icon, text: txt, id: txtSummaryId)
                     if (badgeAPIv2Works == null)
@@ -581,11 +584,14 @@ class Dynamatrix implements Cloneable {
             } catch (Throwable t) {
                 //this.script.echo "WARNING: Tried to createSummary() for 'Build-progress-summary@${this.objectID}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
                 this.script.echo "WARNING: Tried to createSummary() for '${txtSummaryId}', but failed to; is the jenkins-badge-plugin installed?"
-                if (this.shouldDebugTrace()) {
+                //if (this.shouldDebugTrace()) {
                     this.script.echo (t.toString())
-                }
+                //}
                 res = false
                 progressSummary[txtSummaryId] = null
+
+
+                this.script.echo ("Known summaries: ${progressSummary}")
             }
         }
 
@@ -632,15 +638,18 @@ class Dynamatrix implements Cloneable {
 
         try {
             if (!badgeAPIv2Works || removeOnly) {
+                this.script.echo "[DEBUG] updateProgressBadge(): try to remove badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works} removeOnly:${removeOnly})"
                 this.script.removeBadges(id: txtBadgeId)
                 progressBadge[txtBadgeId] = null
+            } else {
+                this.script.echo "[DEBUG] updateProgressBadge(): DO NOT try to remove badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works} removeOnly:${removeOnly})"
             }
             //this.script.reportBuildCause()
         } catch (Throwable tOK) { // ok if missing
             this.script.echo "WARNING: Tried to removeBadges() for '${txtBadgeId}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-            if (this.shouldDebugTrace()) {
+            //if (this.shouldDebugTrace()) {
                 this.script.echo (tOK.toString())
-            }
+            //}
         }
 
         // Before Badge 2.x, it seems there was only removeBadges() and we
@@ -652,8 +661,11 @@ class Dynamatrix implements Cloneable {
             String txtSummaryId = "Build-progress-summary@" + this.objectID
             try {
                 if (!badgeAPIv2Works || removeOnly) {
+                    this.script.echo "[DEBUG] updateProgressBadge(): try to remove summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works} removeOnly:${removeOnly})"
                     this.script.removeSummaries(id: txtSummaryId)
                     progressSummary[txtSummaryId] = null
+                } else {
+                    this.script.echo "[DEBUG] updateProgressBadge(): DO NOT try to remove summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works} removeOnly:${removeOnly})"
                 }
                 //this.script.reportBuildCause()
             } catch (Throwable tOK) { // ok if missing
@@ -683,6 +695,7 @@ class Dynamatrix implements Cloneable {
                 try {
                     // Retry removal in case another parallel branch already
                     // added its message while we were preparing the string
+                    this.script.echo "[DEBUG] updateProgressBadge(): try to remove badge '${txtBadgeId}' before publication (badgeAPIv2Works:${badgeAPIv2Works})"
                     this.script.removeBadges(id: txtBadgeId)
                     progressBadge[txtBadgeId] = null
                     //this.script.reportBuildCause()
@@ -692,8 +705,10 @@ class Dynamatrix implements Cloneable {
             try {
                 // Badge v2.x API, with style
                 if (badgeAPIv2Works && progressBadge.get(txtBadgeId) != null) {
+                    this.script.echo "[DEBUG] updateProgressBadge(): try to update existing badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works})"
                     progressBadge[txtBadgeId].setText(txt)
                 } else {
+                    this.script.echo "[DEBUG] updateProgressBadge(): try to create badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) with Badge APIv2"
                     progressBadge[txtBadgeId] = this.script.addBadge(icon: null, text: txt, id: txtBadgeId,
                         cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-BuildProgressBadge"
                     )
@@ -703,6 +718,8 @@ class Dynamatrix implements Cloneable {
                 }
             } catch (Throwable ignore) {
                 // Retry without style
+                this.script?.echo ignore.toString()
+                this.script.echo "[DEBUG] updateProgressBadge(): try to create badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) with Badge APIv1"
                 progressBadge[txtBadgeId] = this.script.addBadge(icon: null, text: txt, id: txtBadgeId)
                 if (badgeAPIv2Works == null)
                     badgeAPIv2Works = false
@@ -710,11 +727,13 @@ class Dynamatrix implements Cloneable {
             res = true
         } catch (Throwable t) {
             this.script.echo "WARNING: Tried to addBadge() for '${txtBadgeId}', but failed to; are the Groovy Postbuild plugin and jenkins-badge-plugin installed?"
-            if (this.shouldDebugTrace()) {
+            //if (this.shouldDebugTrace()) {
                 this.script.echo (t.toString())
-            }
+            //}
             res = false
             progressBadge[txtBadgeId] = null
+
+            this.script.echo ("Known badges: ${progressBadge}")
         }
 
         if (!this.reportedTooManyRestarts && countStages['RESTARTED'] > this.thresholdTooManyRestarts) {
@@ -729,7 +748,8 @@ class Dynamatrix implements Cloneable {
                 }
             } catch (Throwable t) {
                 this.script?.echo "WARNING: Tried to notify about too many restarts by user-provided method, and failed to"
-                if (dynamatrixGlobalState.enableDebugTrace) this.script?.echo t.toString()
+                //if (dynamatrixGlobalState.enableDebugTrace)
+                    this.script?.echo t.toString()
             }
         }
 
