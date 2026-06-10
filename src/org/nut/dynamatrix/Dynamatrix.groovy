@@ -114,7 +114,7 @@ class Dynamatrix implements Cloneable {
      * @see #progressStatus
      * @see #updateProgressBadge()
      */
-    private static Map<String, Object> progressBadge = null
+    private final static Map<String, Object> progressBadge = new HashMap<String, Object>()
 
     /**
      * Object of a last-created status (paragraph on build page)
@@ -123,7 +123,7 @@ class Dynamatrix implements Cloneable {
      * @see #progressBadge
      * @see #createStatus()
      */
-    private static Map<String, Object> progressStatus = null
+    private final static Map<String, Object> progressStatus = new HashMap<String, Object>()
 
     /**
      * Set upon success of new-style calls, sowe can update existing
