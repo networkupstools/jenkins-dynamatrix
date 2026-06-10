@@ -128,7 +128,7 @@ class Dynamatrix implements Cloneable {
     private final static Map<String, Object> progressSummary = new HashMap<String, Object>()
 
     /**
-     * Set upon success of new-style calls, sowe can update existing
+     * Set upon success of new-style calls, so we can update existing
      * badge or status objects rather than delete and recreate them.
      */
     private static Boolean badgeAPIv2Works = null
@@ -577,6 +577,8 @@ class Dynamatrix implements Cloneable {
                         if (badgeAPIv2Works == null)
                             badgeAPIv2Works = true
                     }
+                    if (this.shouldDebugTraceBadge())
+                        this.script.echo "[DEBUG] createSummary(): summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) created or updated with text: ${progressSummary?.txtSummaryId?.getText()}"
                 } catch (Throwable olderBadge) {
                     if (this.shouldDebugTraceBadge()) {
                         this.script.echo("[DEBUG] createSummary(): FAILED due to older API? " + olderBadge.toString())
@@ -586,6 +588,8 @@ class Dynamatrix implements Cloneable {
                     progressSummary[txtSummaryId] = this.script.createSummary(icon: icon, text: txt, id: txtSummaryId)
                     if (badgeAPIv2Works == null)
                         badgeAPIv2Works = false
+                    if (this.shouldDebugTraceBadge())
+                        this.script.echo "[DEBUG] createSummary(): summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) created with text: ${progressSummary?.txtSummaryId?.getText()}"
                 }
                 if (res == null) res = true
             } catch (Throwable t) {
@@ -741,6 +745,8 @@ class Dynamatrix implements Cloneable {
                     if (badgeAPIv2Works == null)
                         badgeAPIv2Works = true
                 }
+                if (this.shouldDebugTraceBadge())
+                    this.script.echo "[DEBUG] updateProgressBadge(): badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) created or updated with text: ${progressBadge?.txtBadgeId?.getText()}"
             } catch (Throwable olderBadge) {
                 // Retry without style
                 if (this.shouldDebugTraceBadge()) {
@@ -751,6 +757,9 @@ class Dynamatrix implements Cloneable {
                 progressBadge[txtBadgeId] = this.script.addBadge(icon: null, text: txt, id: txtBadgeId)
                 if (badgeAPIv2Works == null)
                     badgeAPIv2Works = false
+
+                if (this.shouldDebugTraceBadge())
+                    this.script.echo "[DEBUG] updateProgressBadge(): badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) created with text: ${progressBadge?.txtBadgeId?.getText()}"
             }
             res = true
         } catch (Throwable t) {
@@ -782,11 +791,17 @@ class Dynamatrix implements Cloneable {
         }
 
         if (updateStatusPage) {
-            if (countStagesPerNode.size() > 0)
-                txt += "<br/><pre>Non-zero stats per build node:\n\n${this.toStringStageCountPerNodeDumpNonZero(true, true)}</pre>"
-            def resSummary = this.createSummary(txt)
-            if (res == null || resSummary == false)
-                res = resSummary
+            try {
+                if (countStagesPerNode.size() > 0)
+                    txt += "<br/><pre>Non-zero stats per build node:\n\n${this.toStringStageCountPerNodeDumpNonZero(true, true)}</pre>"
+                def resSummary = this.createSummary(txt)
+                if (res == null || resSummary == false)
+                    res = resSummary
+            } catch (Throwable t) {
+                this.script?.echo "WARNING: Tried to create or update summary on the build page, and failed to"
+                if (dynamatrixGlobalState.enableDebugTrace || this.shouldDebugTrace() || this.shouldDebugTraceBadge())
+                    this.script?.echo t.toString()
+            }
         }
 
         return res
