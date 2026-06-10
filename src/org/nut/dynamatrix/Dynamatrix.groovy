@@ -773,7 +773,7 @@ class Dynamatrix implements Cloneable {
         if (this.shouldDebugTraceBadge())
             this.script.echo ("[DEBUG] updateProgressBadge(): Known badges: ${progressBadge}")
 
-        if (!this.reportedTooManyRestarts && countStages['RESTARTED'] > this.thresholdTooManyRestarts) {
+        if (!this.reportedTooManyRestarts && countStages.get('RESTARTED')?:0 > this.thresholdTooManyRestarts) {
             this.reportedTooManyRestarts = true
             try {
                 // Can depend on plugins not available at this Jenkins
