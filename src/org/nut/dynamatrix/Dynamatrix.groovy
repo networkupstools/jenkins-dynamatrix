@@ -584,7 +584,7 @@ class Dynamatrix implements Cloneable {
                             badgeAPIv2Works = true
                     }
                     if (this.shouldDebugTraceBadge())
-                        this.script.echo "[DEBUG] createSummary(): summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) created or updated with text: ${progressSummary?.txtSummaryId?.getText()}"
+                        this.script.echo "[DEBUG] createSummary(): summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) created or updated with text: ${progressSummary[txtSummaryId].getText()}"
                 } catch (Throwable olderBadge) {
                     if (this.shouldDebugTraceBadge()) {
                         this.script.echo("[DEBUG] createSummary(): FAILED due to older API? " + olderBadge.toString())
@@ -595,7 +595,7 @@ class Dynamatrix implements Cloneable {
                     if (badgeAPIv2Works == null)
                         badgeAPIv2Works = false
                     if (this.shouldDebugTraceBadge())
-                        this.script.echo "[DEBUG] createSummary(): summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) created with text: ${progressSummary?.txtSummaryId?.getText()}"
+                        this.script.echo "[DEBUG] createSummary(): summary '${txtSummaryId}' (badgeAPIv2Works:${badgeAPIv2Works}) created with text: ${progressSummary[txtSummaryId].getText()}"
                 }
                 if (res == null) res = true
             } catch (Throwable t) {
@@ -752,7 +752,7 @@ class Dynamatrix implements Cloneable {
                         badgeAPIv2Works = true
                 }
                 if (this.shouldDebugTraceBadge())
-                    this.script.echo "[DEBUG] updateProgressBadge(): badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) created or updated with text: ${progressBadge?.txtBadgeId?.getText()}"
+                    this.script.echo "[DEBUG] updateProgressBadge(): badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) created or updated with text: ${progressBadge[txtBadgeId].getText()}"
             } catch (Throwable olderBadge) {
                 // Retry without style
                 if (this.shouldDebugTraceBadge()) {
@@ -765,7 +765,7 @@ class Dynamatrix implements Cloneable {
                     badgeAPIv2Works = false
 
                 if (this.shouldDebugTraceBadge())
-                    this.script.echo "[DEBUG] updateProgressBadge(): badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) created with text: ${progressBadge?.txtBadgeId?.getText()}"
+                    this.script.echo "[DEBUG] updateProgressBadge(): badge '${txtBadgeId}' (badgeAPIv2Works:${badgeAPIv2Works}) created with text: ${progressBadge[txtBadgeId].getText()}"
             }
             res = true
         } catch (Throwable t) {
