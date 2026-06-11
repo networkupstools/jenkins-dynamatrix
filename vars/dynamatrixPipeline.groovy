@@ -847,7 +847,8 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     String curres = "${currentBuild.result}".toString()
                     if (!(curres in [null, 'null', 'SUCCESS']))
                         txt += " (${curres})"
-                    // DO NOT remove badges - let last words be seen!
+                    // WARNING: AVOID GPBP manager.removeBadges() because it nukes status page entries too!
+                    // Actually, DO NOT remove badges - let last words be seen!
                     // if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling manager.removeBadges() because ${txt}"
                     // manager.removeBadges()
                     // reportBuildCause()
@@ -892,8 +893,11 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             try {
                 String txt = "No 'slow build' dynamatrix stages discovered"
                 //removeBadges(id: "Discovery-counter")
-                if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling manager.removeBadges() because ${txt}"
-                manager.removeBadges()
+                // WARNING: AVOID GPBP manager.removeBadges() because it nukes status page entries too!
+                //if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling manager.removeBadges() because ${txt}"
+                //manager.removeBadges()
+                if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling removeBadges() because ${txt}"
+                removeBadges()
                 reportBuildCause()
                 try {
                     // Badge v2.x API, with style
@@ -922,9 +926,12 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                         txt, "PENDING", "slowbuild-run")
 
-                if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling manager.removeBadges() because ${txt}"
+                // WARNING: AVOID GPBP manager.removeBadges() because it nukes status page entries too!
                 //removeBadges(id: "Discovery-counter")
-                manager.removeBadges()
+                //if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling manager.removeBadges() because ${txt}"
+                //manager.removeBadges()
+                if (dynamatrixGlobalState.enableDebugTraceBadge) echo "[DEBUG] Calling removeBadges() because ${txt}"
+                removeBadges()
                 reportBuildCause()
                 try {
                     // Badge v2.x API, with style
