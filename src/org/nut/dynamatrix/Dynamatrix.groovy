@@ -799,7 +799,9 @@ class Dynamatrix implements Cloneable {
         if (updateStatusPage) {
             try {
                 if (countStagesPerNode.size() > 0)
-                    txt += "<br/><pre>Non-zero stats per build node:\n\n${this.toStringStageCountPerNodeDumpNonZero(true, true)}</pre>"
+                    txt += "<br/>Non-zero stats per build node:<br/><pre>${this.toStringStageCountPerNodeDumpNonZero(true, true)}</pre>"
+                if (Utils.isStringNotEmpty(this.dynamatrixGithubNotificationContext))
+                    txt = "[${this.dynamatrixGithubNotificationContext}] ${txt}"
                 def resSummary = this.createSummary(txt)
                 if (res == null || resSummary == false)
                     res = resSummary
