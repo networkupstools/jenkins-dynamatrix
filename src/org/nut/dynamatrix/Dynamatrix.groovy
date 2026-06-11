@@ -112,6 +112,9 @@ class Dynamatrix implements Cloneable {
     /**
      * Object of a last-created badge (colored box on build list pane)
      * per `objId`; primarily of interest with Badge plugin v2.x and newer.
+     * Likely {@link com.jenkinsci.plugins.badge.action.AbstractBadgeAction}
+     * => {@link com.jenkinsci.plugins.badge.action.BadgeAction}
+     * (not formally imported in case the plugin is not loaded).
      *
      * @see #progressSummary
      * @see #updateProgressBadge()
@@ -121,6 +124,9 @@ class Dynamatrix implements Cloneable {
     /**
      * Object of a last-created status (paragraph on build page)
      * per `objId`; primarily of interest with Badge plugin v2.x and newer.
+     * Likely {@link com.jenkinsci.plugins.badge.action.AbstractBadgeAction}
+     * => {@link com.jenkinsci.plugins.badge.action.BadgeSummaryAction}
+     * (not formally imported in case the plugin is not loaded).
      *
      * @see #progressBadge
      * @see #createSummary()
@@ -553,8 +559,8 @@ class Dynamatrix implements Cloneable {
      * like we can with {@link #updateProgressBadge}
      * for "yellow boxes".
      */
-    // Must be CPS - calls pipeline script steps
-    synchronized
+    // Must be CPS - calls pipeline script steps; this
+    // precludes use of at least synchronized{} blocks
     Boolean createSummary(String txt, String icon = 'info.gif', String objId = null) {
         Boolean res = null
 
