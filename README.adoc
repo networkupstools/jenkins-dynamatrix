@@ -378,7 +378,35 @@ Troubleshooting
 The library includes a `dynamatrixGlobalState` class with numerous Boolean
 toggles which can be enabled to print more debug info in a replayed run,
 such as the combos it goes through to create the matrices, or suppressed
-stack traces from exceptions.
+stack traces from exceptions. For example, the NUT `Jenkinsfile-dynamatrix`
+ends with the following lines to help replay jobs with debugging traces
+(beware that it can amount to even gigabytes of log text per run):
+
+```groovy
+...
+//if (true)  // <<< (Un-)comment away in select runs/branches
+//if (false) // <<< (Un-)comment away in select runs/branches
+if ( env?.BRANCH_NAME ==~ /.*verbose.*/ )
+{
+    dynamatrixGlobalState.enableDebugTrace = true
+    // WARNING: Too verbose for common debugging needs:
+    //dynamatrixGlobalState.enableDebugTraceResolver = true
+    dynamatrixGlobalState.enableDebugErrors = true
+    dynamatrixGlobalState.enableDebugMilestones = true
+    dynamatrixGlobalState.enableDebugMilestonesDetails = true
+    dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights = true
+}
+
+//if (true)  // <<< (Un-)comment away in select runs/branches
+//if (false) // <<< (Un-)comment away in select runs/branches
+if ( env?.BRANCH_NAME ==~ /.*fightwarn.*/ )
+{
+    dynamatrixGlobalState.enableDebugTraceGithubStatusHighlights = true
+    dynamatrixGlobalState.enableDebugTraceBadge = true
+}
+
+dynamatrixPipeline(dynacfgBase, dynacfgPipeline)
+```
 
 You can also paste `resources/gist-queue-stats.groovy` into your Jenkins
 instance scripting console at `${JENKINS_URL}/script` to help analyze
