@@ -10,10 +10,15 @@ println "TOTAL: ${ queue.items.size()}"
 /////////////////////////////////////
 
 def countsByLabel = [:].withDefault { 0 }
+def oldestByLabel = [:]
 
 queue.items.each { item ->
     def label = item.assignedLabel?.name ?: "any"
     countsByLabel[label]++
+
+    Integer ageSec = (System.currentTimeMillis() - item.inQueueSince) / 1000
+
+    oldestByLabel[label] = Math.max(oldestByLabel.get(label, 0), ageSec)
 }
 
 def extractField = { label, field ->
@@ -66,15 +71,16 @@ rows.sort { a, b ->
 }
 
 println "=== Output 2 - detailed by requested node labels"
-println String.format("%-8s %-20s %-3s %-12s %4s  %s",
-    "OS_FAM", "OS_DISTRO", "BIT", "ARCH", "QLEN", "LABEL")
+println String.format("%-8s %-20s %-3s %-12s %4s  %8s  %s",
+    "OS_FAM", "OS_DISTRO", "BIT", "ARCH", "QLEN", "OLDEST", "LABEL")
 rows.each { r ->
-    println String.format("%-8s %-20s %-3s %-12s %4d  %s",
+    println String.format("%-8s %-20s %-3s %-12s %4d  %8ds  %s",
         r.osFamily,
         r.osDistro,
         r.archBits,
         r.arch,
         r.count,
+        oldestByLabel[r.label],
         r.label)
 }
 
