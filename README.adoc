@@ -371,3 +371,20 @@ which are executed in either a temporary Jenkins environment provided by a
 `JenkinsRule` environment (from `jenkins-test-harness` project) or by a more
 dedicated server behind a `RealJenkinsRule`. They can be executed by an IDE
 (e.g. press `F9` in IntelliJ IDEA) or by `./gradlew integrationTest`.
+
+Troubleshooting
+~~~~~~~~~~~~~~~
+
+The library includes a `dynamatrixGlobalState` class with numerous Boolean
+toggles which can be enabled to print more debug info in a replayed run,
+such as the combos it goes through to create the matrices, or suppressed
+stack traces from exceptions.
+
+You can also paste `resources/gist-queue-stats.groovy` into your Jenkins
+instance scripting console at `${JENKINS_URL}/script` to help analyze
+the Jenkins-Dynamatrix queue pressure during long CI runs (how many items
+are waiting for particular build agents due to particular node label
+expressions at this moment). This can be used to identify bottlenecks
+that can be addressed by either having a more careful specification
+of the dynamatrix configuration (which cases are you really interested
+in for testing) or adding workers for the heavily stressed platforms.
