@@ -584,7 +584,19 @@ if [ x"\${REFREPO}" = xnull ] || [ x"\${REFREPO}" = x ] || [ ! -d "\${REFREPO}" 
     fi
 fi
 
-for R in \$REFREPO `git remote` ; do
+if [ x"\${REFREPO}" != x ] ; then
+    for R in \$REFREPO ; do
+        if git remote -v | awk '{print \$2}' | grep -E "^\${R}\$" ; then
+            continue
+        fi
+
+        # Register the refrepo as an origin for this workspace
+        RN="refrepo-`echo \"\${R}\" | sed 's,[/: \\\\s.],_,g'`"
+        git remote add "\${RN}" "\${R}"
+    done
+done
+
+for R in `git remote` ; do
     # Start by branching from a locally known replica, if any
     git log -1 "\$R/master" && git branch master "\$R/master" && exit
 
