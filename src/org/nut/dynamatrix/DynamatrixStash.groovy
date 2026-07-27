@@ -143,7 +143,7 @@ class DynamatrixStash {
         // Does the current build agent's set of envvars declare the path?
         if (script?.env?.GIT_REFERENCE_REPO_DIR && "WS" != script?.env?.GIT_REFERENCE_REPO_DIR) {
             refrepo = "${script.env.GIT_REFERENCE_REPO_DIR}"
-            script.echo "Got GIT_REFERENCE_REPO_DIR='${refrepo}'"
+            script.echo "Got GIT_REFERENCE_REPO_DIR='${refrepo}' from envvars"
             if (refrepo != "") {
                 return refrepo
             }
@@ -154,12 +154,15 @@ class DynamatrixStash {
         refrepo = getGitRefrepoDirWSbase(script)
         if (refrepo) {
             script.dir(refrepo) {}
-            return refrepo + '/${GIT_SUBMODULES}'
+            refrepo += '/${GIT_SUBMODULES}'
+            script.echo "Got GIT_REFERENCE_REPO_DIR='${refrepo}' from WS base"
+            return refrepo
         }
 
         // Query Jenkins global config for defaults?..
 
         // Final answer
+        script.echo "Got no GIT_REFERENCE_REPO_DIR hints"
         return null
     } // getGitRefrepoDir()
 
