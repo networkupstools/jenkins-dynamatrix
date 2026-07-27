@@ -574,7 +574,7 @@ class DynamatrixStash {
 git log -1 master && exit
 
 REFREPO='${getGitRefrepoDir(script)}'
-if [ x"\${REFREPO}" == xnull ] || [ x"\${REFREPO}" == x ] || [ ! -d "\${REFREPO}" ] ; then
+if [ x"\${REFREPO}" = xnull ] || [ x"\${REFREPO}" = x ] || [ ! -d "\${REFREPO}" ] ; then
     REFREPO=""
 fi
 
@@ -603,7 +603,7 @@ git log -1 "\${CHANGE_TARGET}" && exit
 git log -1 "\${SHORT_TARGET}" && exit
 
 REFREPO='${getGitRefrepoDir(script)}'
-if [ x"\${REFREPO}" == xnull ] || [ x"\${REFREPO}" == x ] || [ ! -d "\${REFREPO}" ] ; then
+if [ x"\${REFREPO}" = xnull ] || [ x"\${REFREPO}" = x ] || [ ! -d "\${REFREPO}" ] ; then
     REFREPO=""
 fi
 
