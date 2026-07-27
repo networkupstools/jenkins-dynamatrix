@@ -575,7 +575,13 @@ git log -1 master && exit
 
 REFREPO='${getGitRefrepoDir(script)}'
 if [ x"\${REFREPO}" = xnull ] || [ x"\${REFREPO}" = x ] || [ ! -d "\${REFREPO}" ] ; then
+    # It may end with literal '.../${GIT_SUBMODULES}' interpreted by Jenkins git-client-plugin
     REFREPO=""
+    # See if we have a record in metadata
+    if [ -s '.git/objects/info/alternates' ] ; then
+        # Can there be several entries here?
+        REFREPO="`cat .git/objects/info/alternates`"
+    fi
 fi
 
 for R in \$REFREPO `git remote` ; do
