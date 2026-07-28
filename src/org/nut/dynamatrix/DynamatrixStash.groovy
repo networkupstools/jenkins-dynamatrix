@@ -594,7 +594,7 @@ if [ x"\${REFREPO}" != x ] ; then
         RN="refrepo-`echo \"\${R}\" | sed 's,[/: \\\\s.],_,g'`"
         git remote add "\${RN}" "\${R}"
     done
-done
+fi
 
 for R in `git remote` ; do
     # Start by branching from a locally known replica, if any
