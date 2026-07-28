@@ -591,7 +591,7 @@ if [ x"\${REFREPO}" != x ] ; then
         fi
 
         # Register the refrepo as an origin for this workspace
-        RN="refrepo-`echo \"\${R}\" | sed 's,[/: \\\\s.],_,g'`"
+        RN="local_refrepo_`echo \"\${R}\" | sed 's,[/: \\.],_,g'`"
         git remote add "\${RN}" "\${R}"
     done
 fi
