@@ -678,8 +678,9 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                                     try {
                                         // TODO: Something similar but with each stage's
-                                        // own buildResult verdicts after the build...
-                                        String txt = "${sbSummary}\nfor this run ${env?.BUILD_URL}:\n\n"
+                                        //  own buildResult verdicts after the build...
+                                        String txt = "${sbSummary}\nfor this run ${env?.BUILD_URL} :\n\n"
+                                        // This maps String (stage name) to Closure, list these names:
                                         stagesBinBuild.keySet().sort().each { txt += "${it}\n\n" }
                                         txt += sbSummaryCount
                                         writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
