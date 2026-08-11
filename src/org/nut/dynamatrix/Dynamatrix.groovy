@@ -3299,7 +3299,7 @@ def parallelStages = prepareDynamatrix(
             }
 
             // record the new parallelStages[] entry
-            parallelStages << [parstageName, parstageCode]
+            parallelStages << [parstageName, parstageCode, dsbc]
         }
 
         return parallelStages
