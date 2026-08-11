@@ -10,6 +10,7 @@
 // package org.nut.dynamatrix;
 
 import org.nut.dynamatrix.dynamatrixGlobalState;
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
 import org.nut.dynamatrix.*;
 
 import com.cloudbees.groovy.cps.NonCPS;
@@ -620,30 +621,60 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         // in the dynamatrix
                                         //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
                                         withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().trim() : "N/A" )]) {
-                                            sb.mapParStages = [:]
+                                            // First we collect tuples, so we remember the DSBC details
+                                            // mapped to the stage name and closure, to dedup later:
+                                            sb.tuplesParStages = []
+
                                             // Use unique clones of "dynamatrix.dynacfg" below,
                                             // to avoid polluting their applied dynacfg based
-                                            // just on order of slowBuild scenario parsing:
+                                            // just on order of slowBuild scenario parsing;
+                                            // typical sb.getParStages{} calls dynamatrix.generateBuild():
                                             dynamatrix.restoreDynacfg()
                                             if (Utils.isClosure(sb?.bodyParStages)) {
                                                 // body may be empty {}, if user wants so
-                                                sb.mapParStages = sb.getParStages.call(dynamatrix, sb.bodyParStages)
+                                                sb.tuplesParStages = sb.getParStages.call(dynamatrix, true, sb.bodyParStages)
                                             } else {
                                                 if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                                                    sb.mapParStages = sb.getParStages.call(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                                                    sb.tuplesParStages = sb.getParStages.call(dynamatrix, true, dynacfgPipeline.slowBuildDefaultBody)
                                                 } else {
-                                                    sb.mapParStages = sb.getParStages.call(dynamatrix, null)
+                                                    sb.tuplesParStages = sb.getParStages.call(dynamatrix, true, null)
                                                 }
                                             }
-                                            stagesBinBuild += sb.mapParStages
                                         }
+
+                                        sb.mapParStages = [:]
+                                        sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
                                     } else { // if not getParStages
+                                        sb.tuplesParStages = null
                                         sb.mapParStages = null
                                         if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                                             echo "SKIP: No (valid) slow build filter definition in this entry" + (sb?.name ? ": " + sb.name : "")
                                         countFiltersSkipped++
                                     }
                                 } // dynacfgPipeline.slowBuild.each { sb -> ... }
+
+                                // TODO: Analyze collected scenarios for effective duplicates, remove extras
+
+                                // Update the ultimate `parallel stagesBinBuild` contents:
+                                Map stageNameToDSBC = [:]
+                                dynacfgPipeline.slowBuild.each { Map sb ->
+                                    if (!(sb?.mapParStages))
+                                        return // continue
+
+                                    stagesBinBuild += sb.mapParStages
+
+                                    try {
+                                        sb.tuplesParStages?.each { List tup ->
+                                            String stageName = (String) (tup[0])
+                                            if (!(stageNameToDSBC.containsKey(stageName))) {
+                                                stageNameToDSBC[stageName] = new HashSet<>()
+                                            }
+                                            stageNameToDSBC[stageName] << (DynamatrixSingleBuildConfig)tup[2]
+                                        }
+                                    } catch (Throwable t) {
+                                        echo "FAILED to collect stageNameToDSBC, ignoring: ${t}"
+                                    }
+                                }
 
                                 String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
                                     "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
@@ -681,7 +712,12 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         //  own buildResult verdicts after the build...
                                         String txt = "${sbSummary}\nfor this run ${env?.BUILD_URL} :\n\n"
                                         // This maps String (stage name) to Closure, list these names:
-                                        stagesBinBuild.keySet().sort().each { txt += "${it}\n\n" }
+                                        stagesBinBuild.keySet().sort().each {
+                                            txt += "${it}"
+                                            if (stageNameToDSBC.containsKey(it))
+                                                txt += " ; DSBC details : ${stageNameToDSBC[it]}"
+                                            txt += "\n\n"
+                                        }
                                         txt += sbSummaryCount
                                         writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
                                         archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
