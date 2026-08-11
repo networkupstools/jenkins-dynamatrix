@@ -42,12 +42,12 @@ class DynamatrixGithubNotifier {
      *  commit.  Since there can be crafted replays for just the failed
      *  build agents etc., we do not reset known successful reports.<br/>
      *
-     *  Maps [repo][sha][context]=>state<br/>
+     *  Maps [repo][sha][context]=>{GHCommitState "state", Date "updatedAt"}<br/>
      *
      *  We currently claim statuses whose URL links back to this JENKINS_URL,
      *  or context matches {@link #patternOurGithubStatusContexts}, as our own.
      */
-    final Map<GHRepository, Map<String, Map<String, GHCommitState>>> preexistingGithubStatusContexts = new HashMap<>()
+    final Map<GHRepository, Map<String, Map<String, Map>>> preexistingGithubStatusContexts = new HashMap<>()
 
     /** Used for {@link #preexistingGithubStatusContexts}<br/>
      *
@@ -512,19 +512,34 @@ class DynamatrixGithubNotifier {
 
                     if (!submapExists) {
                         if (!(preexistingGithubStatusContexts.containsKey(ghRepo))) {
-                            Map<String, Map<String, GHCommitState>> subMap = new HashMap<>()
+                            Map<String, Map<String, Map>> subMap = new HashMap<>()
                             preexistingGithubStatusContexts[ghRepo] = subMap
                         }
 
                         if (!(preexistingGithubStatusContexts[ghRepo].containsKey(notificationContext.scmCommit))) {
-                            Map<String, GHCommitState> subMap = new HashMap<>()
+                            Map<String, Map> subMap = new HashMap<>()
                             preexistingGithubStatusContexts[ghRepo][notificationContext.scmCommit] = subMap
                         }
 
                         submapExists = true
                     }
 
-                    preexistingGithubStatusContexts[ghRepo][notificationContext.scmCommit][context] = status.getState()
+                    // NOTE: GitHub tends to store *ALL* notifications
+                    // (until some allowance is hit) and then chooses
+                    // to display only the newest ones. We should too.
+                    if (preexistingGithubStatusContexts[ghRepo][notificationContext.scmCommit].containsKey(context)
+                     && preexistingGithubStatusContexts[ghRepo][notificationContext.scmCommit][context].containsKey('updatedAt')
+                     && preexistingGithubStatusContexts[ghRepo][notificationContext.scmCommit][context]['updatedAt'] >= status.getUpdatedAt()
+                    ) {
+                        if (doDebug)
+                            echo "[DEBUG] fetchKnownGithubStatuses: skip older status than we already have: '${status}'"
+                    } else {
+                        // Create or update the entry
+                        preexistingGithubStatusContexts[ghRepo][notificationContext.scmCommit][context] = [
+                            state     : status.getState(),      // GHCommitState
+                            updatedAt : status.getUpdatedAt()   // Date
+                        ]
+                    }
                 }
             }
         }
@@ -539,9 +554,10 @@ class DynamatrixGithubNotifier {
             fetchKnownGithubStatuses()
         }
 
-        preexistingGithubStatusContexts.each { GHRepository repo, Map<String, Map<String, GHCommitState>> repoCommitMap ->
-            repoCommitMap.each { String commitSha, Map<String, GHCommitState> commitStates ->
-                commitStates.each { String context, GHCommitState state ->
+        preexistingGithubStatusContexts.each { GHRepository repo, Map<String, Map<String, Map>> repoCommitMap ->
+            repoCommitMap.each { String commitSha, Map<String, Map> commitStates ->
+                commitStates.each { String context, Map stateEntry ->
+                    GHCommitState state = stateEntry['state'] as GHCommitState
                     if (state in [GHCommitState.ERROR, GHCommitState.FAILURE]) {
                         reportGithubStageStatus(null, "Should retry", "PENDING", context, null)
                     }
@@ -572,10 +588,10 @@ class DynamatrixGithubNotifier {
             )
 
             Boolean wasKnown = false
-            preexistingGithubStatusContexts.each { GHRepository repo, Map<String, Map<String, GHCommitState>> repoCommitMap ->
+            preexistingGithubStatusContexts.each { GHRepository repo, Map<String, Map<String, Map>> repoCommitMap ->
                 if (wasKnown)
                     return //continue
-                repoCommitMap.each { String commitSha, Map<String, GHCommitState> commitStates ->
+                repoCommitMap.each { String commitSha, Map<String, Map> commitStates ->
                     if (commitStates.containsKey(messageContext)) {
                         wasKnown = true
                     }
