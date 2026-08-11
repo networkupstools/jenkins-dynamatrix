@@ -647,7 +647,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                             sb.tuplesParStages = null
                                             sb.mapParStages = null
                                             if (psRet != null) {
-                                                if (psRet instanceof List) {
+                                                if (psRet instanceof Set) {
                                                     sb.tuplesParStages = psRet
                                                     sb.mapParStages = [:]
                                                     sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
