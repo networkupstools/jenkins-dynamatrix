@@ -624,26 +624,46 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                             // First we collect tuples, so we remember the DSBC details
                                             // mapped to the stage name and closure, to dedup later:
                                             sb.tuplesParStages = []
+                                            Boolean defaultBak = dynamatrix.generateBuildReturnSetDefault
+                                            dynamatrix.generateBuildReturnSetDefault = true
 
                                             // Use unique clones of "dynamatrix.dynacfg" below,
                                             // to avoid polluting their applied dynacfg based
                                             // just on order of slowBuild scenario parsing;
                                             // typical sb.getParStages{} calls dynamatrix.generateBuild():
                                             dynamatrix.restoreDynacfg()
+                                            def psRet
                                             if (Utils.isClosure(sb?.bodyParStages)) {
                                                 // body may be empty {}, if user wants so
-                                                sb.tuplesParStages = sb.getParStages.call(dynamatrix, true, sb.bodyParStages)
+                                                psRet = sb.getParStages.call(dynamatrix, true, sb.bodyParStages)
                                             } else {
                                                 if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                                                    sb.tuplesParStages = sb.getParStages.call(dynamatrix, true, dynacfgPipeline.slowBuildDefaultBody)
+                                                    psRet = sb.getParStages.call(dynamatrix, true, dynacfgPipeline.slowBuildDefaultBody)
                                                 } else {
-                                                    sb.tuplesParStages = sb.getParStages.call(dynamatrix, true, null)
+                                                    psRet = sb.getParStages.call(dynamatrix, true, null)
                                                 }
                                             }
-                                        }
+                                            dynamatrix.generateBuildReturnSetDefault = defaultBak
 
-                                        sb.mapParStages = [:]
-                                        sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
+                                            if (psRet != null) {
+                                                if (psRet instanceof List) {
+                                                    sb.tuplesParStages = psRet
+                                                    sb.mapParStages = [:]
+                                                    sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
+                                                } else if (psRet instanceof Map) {
+                                                    sb.tuplesParStages = null
+                                                    sb.mapParStages = psRet
+                                                } else {
+                                                    echo "WARNING: sb.getParStages{} returned an unexpected type"
+                                                    sb.tuplesParStages = null
+                                                    sb.mapParStages = null
+                                                }
+                                            } else {
+                                                echo "WARNING: sb.getParStages{} returned null"
+                                                sb.tuplesParStages = null
+                                                sb.mapParStages = null
+                                            }
+                                        }
                                     } else { // if not getParStages
                                         sb.tuplesParStages = null
                                         sb.mapParStages = null

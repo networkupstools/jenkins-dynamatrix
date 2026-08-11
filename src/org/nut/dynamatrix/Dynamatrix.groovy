@@ -107,6 +107,9 @@ class Dynamatrix implements Cloneable {
      */
     private Map<String, Set> buildLabelsAgents = [:]
 
+    /** If #generateBuild() is called without a returnSet parameter, what would it default to? */
+    public boolean generateBuildReturnSetDefault = false
+
 ///////////////////////////////// RESULTS ACCOUNTING ///////////////////
 
     /**
@@ -2323,17 +2326,17 @@ def parallelStages = prepareDynamatrix(
 
     /**
      * Generate a build with returnSet=false and rememberClones=false.
-     * @see #generateBuild(Map, boolean, Boolean, Closure)
+     * @see #generateBuild(Map, Boolean, Boolean, Closure)
      */
     def generateBuild(Map dynacfgOrig = [:], Closure bodyOrig = null) {
-        return generateBuild(dynacfgOrig, false, false, bodyOrig)
+        return generateBuild(dynacfgOrig, this.generateBuildReturnSetDefault, false, bodyOrig)
     }
 
     /**
      * Generate a build with rememberClones=false.
-     * @see #generateBuild(Map, boolean, Boolean, Closure)
+     * @see #generateBuild(Map, Boolean, Boolean, Closure)
      */
-    def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Closure bodyOrig = null) {
+    def generateBuild(Map dynacfgOrig = [:], Boolean returnSet, Closure bodyOrig = null) {
         return generateBuild(dynacfgOrig, returnSet, false, bodyOrig)
     }
 
@@ -2344,11 +2347,13 @@ def parallelStages = prepareDynamatrix(
      * see "returnSet" parameter.
      */
 //    @NonCPS
-    def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Boolean rememberClones, Closure bodyOrig = null) {
+    def generateBuild(Map dynacfgOrig = [:], Boolean returnSet, Boolean rememberClones, Closure bodyOrig = null) {
         //boolean debugErrors = this.shouldDebugErrors()
         //boolean debugTrace = this.shouldDebugTrace()
         //boolean debugMilestones = this.shouldDebugMilestones()
         boolean debugMilestonesDetails = this.shouldDebugMilestonesDetails()
+        if (returnSet == null)
+            returnSet = this.generateBuildReturnSetDefault
 
         if (needsPrepareDynamatrixClone(dynacfgOrig)) {
             if (debugMilestonesDetails
