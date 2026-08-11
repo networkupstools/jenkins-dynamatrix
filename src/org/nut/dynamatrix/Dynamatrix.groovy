@@ -3101,6 +3101,7 @@ def parallelStages = prepareDynamatrix(
                                 " starting...")
 
                             parstageCodeTmp()
+                            // We might throw above, if not - handle the graceful end of stage here:
 
                             if (enableDebugSysprint)
                               System.err.println("[${script?.env?.BUILD_TAG}] " +
@@ -3138,7 +3139,7 @@ def parallelStages = prepareDynamatrix(
                                         String msg = "'${buildType}' stage for ${MATRIX_TAG} did not pass: ${dsbc.dsbcResultInterim}"
                                         script.infra.reportGithubStageStatus(stashName,
                                                 msg,
-                                                (Utils.isRetryableException(t) ? 'FAILURE' : 'PENDING'),
+                                                (/*Utils.isRetryableException(XXXXX) ? 'PENDING' : */'FAILURE'),
                                                 "${this.dynamatrixGithubNotificationContext}/${MATRIX_TAG}",
                                                 dsbc.getLatestDsbcResultLogUrl())
                                         parstageCompleted = true
