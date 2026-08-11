@@ -634,12 +634,12 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                             def psRet
                                             if (Utils.isClosure(sb?.bodyParStages)) {
                                                 // body may be empty {}, if user wants so
-                                                psRet = sb.getParStages.call(dynamatrix, true, sb.bodyParStages)
+                                                psRet = sb.getParStages.call(dynamatrix, sb.bodyParStages)
                                             } else {
                                                 if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                                                    psRet = sb.getParStages.call(dynamatrix, true, dynacfgPipeline.slowBuildDefaultBody)
+                                                    psRet = sb.getParStages.call(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
                                                 } else {
-                                                    psRet = sb.getParStages.call(dynamatrix, true, null)
+                                                    psRet = sb.getParStages.call(dynamatrix, null)
                                                 }
                                             }
                                             dynamatrix.generateBuildReturnSetDefault = defaultBak
