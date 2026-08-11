@@ -2157,7 +2157,8 @@ def parallelStages = prepareDynamatrix(
 
         // For delegation to closure and beyond
         def script = this.script
-        body.delegate.script = this.script
+        if (body != null)
+            body.delegate.script = this.script
 
         // echo's below are not debug-decorated, in these cases they are the payload
 //CLS//
