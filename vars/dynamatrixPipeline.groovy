@@ -621,9 +621,8 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         // in the dynamatrix
                                         //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
                                         withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ( (sb?.name) ? sb.name.toString().trim() : "N/A" )]) {
-                                            // First we collect tuples, so we remember the DSBC details
+                                            // First we aim to collect tuples, so we remember the DSBC details
                                             // mapped to the stage name and closure, to dedup later:
-                                            sb.tuplesParStages = []
                                             Boolean defaultBak = dynamatrix.generateBuildReturnSetDefault
                                             dynamatrix.generateBuildReturnSetDefault = true
 
@@ -645,23 +644,16 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                             }
                                             dynamatrix.generateBuildReturnSetDefault = defaultBak
 
+                                            sb.tuplesParStages = null
+                                            sb.mapParStages = null
                                             if (psRet != null) {
                                                 if (psRet instanceof List) {
                                                     sb.tuplesParStages = psRet
                                                     sb.mapParStages = [:]
                                                     sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
                                                 } else if (psRet instanceof Map) {
-                                                    sb.tuplesParStages = null
                                                     sb.mapParStages = psRet
-                                                } else {
-                                                    echo "WARNING: sb.getParStages{} returned an unexpected type"
-                                                    sb.tuplesParStages = null
-                                                    sb.mapParStages = null
                                                 }
-                                            } else {
-                                                echo "WARNING: sb.getParStages{} returned null"
-                                                sb.tuplesParStages = null
-                                                sb.mapParStages = null
                                             }
                                         }
                                     } else { // if not getParStages
