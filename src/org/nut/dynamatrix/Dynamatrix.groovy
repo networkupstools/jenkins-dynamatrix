@@ -2331,7 +2331,8 @@ def parallelStages = prepareDynamatrix(
     }
 
     /**
-     * Returns a Map of stages generated according to "dynacfgOrig".
+     * Returns a Map of stages (which can be passed right into the
+     * {@code parallel} step) generated according to "dynacfgOrig".
      * Or a Set, if called from inside a pipeline stage (CPS code) --
      * see "returnSet" parameter.
      */
@@ -2378,6 +2379,8 @@ def parallelStages = prepareDynamatrix(
         }
     } // generateBuild()
 
+    /** Return a Set of entries each with a parstage Name, Closure, and DSBC tuple (as a List).
+     * Used in generateBuild() to return right away or produce the parallelStages_map, depending on returnSet argument. */
     Set<List> generateBuildParallelStages(Map dynacfgOrig, Boolean rememberClones, Closure bodyOrig) {
         boolean debugErrors = this.shouldDebugErrors()
         boolean debugTrace = this.shouldDebugTrace()
@@ -2386,7 +2389,7 @@ def parallelStages = prepareDynamatrix(
 
         Set<DynamatrixSingleBuildConfig> dsbcSet = generateBuildConfigSet(dynacfgOrig)
         Dynamatrix thisDynamatrix = this
-        this.script.println "[DEBUG] generateBuild(): current thisDynamatrix.failFast setting when generating parallelStages: ${thisDynamatrix.failFast}"
+        this.script.println "[DEBUG] generateBuildParallelStages(): current thisDynamatrix.failFast setting when generating parallelStages: ${thisDynamatrix.failFast}"
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
@@ -2403,7 +2406,7 @@ def parallelStages = prepareDynamatrix(
                 //|| debugMilestones
                 //|| debugTrace
                 ) {
-                    this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName} marked isExcluded, skipping"
+                    this.script.println "[DEBUG] generateBuildParallelStages(): selected combo stageName: ${stageName} marked isExcluded, skipping"
                 }
                 return // continue
             }
@@ -2461,7 +2464,7 @@ def parallelStages = prepareDynamatrix(
             //|| debugMilestones
             //|| debugTrace
             ) {
-                this.script.println "[DEBUG] generateBuild(): selected combo stageName: ${stageName}"
+                this.script.println "[DEBUG] generateBuildParallelStages(): selected combo stageName: ${stageName}"
             }
 
             // Named closure to call below
