@@ -2321,12 +2321,18 @@ def parallelStages = prepareDynamatrix(
         }
     }
 
-    /** @see #generateBuild(Map, boolean, boolean, Closure) */
+    /**
+     * Generate a build with returnSet=false and rememberClones=false.
+     * @see #generateBuild(Map, boolean, Boolean, Closure)
+     */
     def generateBuild(Map dynacfgOrig = [:], Closure bodyOrig = null) {
         return generateBuild(dynacfgOrig, false, false, bodyOrig)
     }
 
-    /** @see #generateBuild(Map, boolean, boolean, Closure) */
+    /**
+     * Generate a build with rememberClones=false.
+     * @see #generateBuild(Map, boolean, Boolean, Closure)
+     */
     def generateBuild(Map dynacfgOrig = [:], boolean returnSet, Closure bodyOrig = null) {
         return generateBuild(dynacfgOrig, returnSet, false, bodyOrig)
     }
