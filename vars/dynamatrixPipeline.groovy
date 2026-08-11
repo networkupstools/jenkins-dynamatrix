@@ -715,7 +715,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                         stagesBinBuild.keySet().sort().each {
                                             txt += "${it}"
                                             if (stageNameToDSBC.containsKey(it))
-                                                txt += " ; DSBC details : ${stageNameToDSBC[it]}"
+                                                txt += "\nDSBC details : ${stageNameToDSBC[it]}"
                                             txt += "\n\n"
                                         }
                                         txt += sbSummaryCount
