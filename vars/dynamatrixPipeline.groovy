@@ -471,16 +471,17 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         // This Map has contents needed for `parallel` step.
                         // Note it is not constrained as Map<String, Closure>
                         // (may have "failFast" and possibly other data)!
-                        Map par1 = shellcheck.makeMap(stagesShellcheck_arr)
-
-                        // Nothing gets added (empty [:] ignored) if not enabled:
-                        par1 += spellcheck.makeMap(dynacfgPipeline)
-                        par1 += stylecheck.makeMap(dynacfgPipeline)
-
-                        // For this stage, we do not want parallel build scenarios
-                        // aborted if stuff breaks in one codepath, it is relatively
-                        // small and fast anyway:
-                        par1.failFast = false
+                        // To ease interactive graph viewing and optimize for
+                        // time, first we schedule discovery (if enabled) and
+                        // spellcheck and stylecheck, which are all just a few
+                        // graph nodes, and only then the large shellcheck
+                        // fanout across many nodes and shell interpreters.
+                        Map par1 = [
+                            // For this stage, we do not want parallel build scenarios
+                            // aborted if stuff breaks in one codepath, it is relatively
+                            // small and fast anyway:
+                            failFast: false
+                        ]
 
                         if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
                             par1["Discover slow build matrix"] = {
@@ -828,6 +829,11 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 echo "NOTE: If this is the last line you see in job console log for a long time, then we are waiting for some build agents for shellcheck/spellcheck; slowBuild stage discovery is completed"
                             } // stage item: par1["Discover slow build matrix"]
                         } // if slowBuild...
+
+                        // Nothing gets added (empty [:] ignored) if not enabled:
+                        par1 += spellcheck.makeMap(stagesShellcheck_arr)
+                        par1 += stylecheck.makeMap(dynacfgPipeline)
+                        par1 += shellcheck.makeMap(dynacfgPipeline)
 
                         try {
                             String qtxt = "Quick-test phase planned parallel stages (overall, not only dynamatrix): " + par1.values().count { it instanceof Closure }
