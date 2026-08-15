@@ -503,9 +503,9 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     ]
 
                     // Nothing gets added (empty [:] ignored) if not enabled:
-                    par1 += spellcheck.makeMap(stagesShellcheck_arr)
+                    par1 += spellcheck.makeMap(dynacfgPipeline)
                     par1 += stylecheck.makeMap(dynacfgPipeline)
-                    par1 += shellcheck.makeMap(dynacfgPipeline)
+                    par1 += shellcheck.makeMap(stagesShellcheck_arr)
 
                     try {
                         String qtxt = "Quick-test phase planned parallel stages (overall, not only dynamatrix): " + par1.values().count { it instanceof Closure }
