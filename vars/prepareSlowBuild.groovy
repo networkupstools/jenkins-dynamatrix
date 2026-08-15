@@ -15,8 +15,9 @@ import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** This is a stage payload used by dynamatrixPipeline to generate the slow build matrix.
- *  It takes several objects and maps as input and modifies then as sees fit. */
-def call(Dynamatrix dynamatrix, Map dynacfgPipeline, Map stagesBinBuild) {
+ *  It takes several objects and maps as input and modifies some as sees fit. */
+Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
+    Map stagesBinBuild = [:]
     Integer countFiltersSeen = 0
     Integer countFiltersSkipped = 0
     // The "slowBuild" is a set of Maps, each of them describes
@@ -360,4 +361,6 @@ def call(Dynamatrix dynamatrix, Map dynacfgPipeline, Map stagesBinBuild) {
         echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
         if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
     }
+
+    return stagesBinBuild
 }

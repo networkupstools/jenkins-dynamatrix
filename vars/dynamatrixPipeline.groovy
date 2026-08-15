@@ -433,8 +433,8 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
             if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
                 parInitial["Discover slow build matrix"] = {
-                    // It takes several objects and maps as input and modifies then as sees fit:
-                    prepareSlowBuild(dynamatrix, dynacfgPipeline, stagesBinBuild)
+                    // It takes several objects and maps as input and modifies some as sees fit:
+                    stagesBinBuild.putAll(prepareSlowBuild(dynamatrix, dynacfgPipeline, changedFiles))
 
                     try {
                         // Badge v2.x API, with style
