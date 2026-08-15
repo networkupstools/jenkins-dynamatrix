@@ -181,12 +181,26 @@ def call(Dynamatrix dynamatrix, Map dynacfgPipeline, Map stagesBinBuild) {
                 sb.mapParStages = null
                 if (psRet != null) {
                     if (psRet instanceof Set) {
+                        if (psRet.empty)
+                            echo "WARNING: sb.getParStages{} returned an empty Set" + (sb?.name ? " for: " + sb.name : "")
+                        else
+                            echo "INFO: sb.getParStages{} returned a Set with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
+
                         sb.tuplesParStages = psRet
                         sb.mapParStages = [:]
                         sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
                     } else if (psRet instanceof Map) {
+                        if (psRet.empty)
+                            echo "WARNING: sb.getParStages{} returned an empty Map" + (sb?.name ? " for: " + sb.name : "")
+                        else
+                            echo "INFO: sb.getParStages{} returned a Map with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
+
                         sb.mapParStages = psRet
+                    } else {
+                        echo "WARNING: sb.getParStages{} returned an unexpected type" + (sb?.name ? " for: " + sb.name : "")
                     }
+                } else {
+                    echo "WARNING: sb.getParStages{} returned null" + (sb?.name ? " for: " + sb.name : "")
                 }
             }
         } else { // if not getParStages
