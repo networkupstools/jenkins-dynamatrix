@@ -404,7 +404,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
         stage("Initial discovery") {
             Map parInitial = [:]
 
-            parInitial["Stash source for workers"] = {
+            def stashSrcClosure = {
 /*
  * NOTE: For quicker builds, it is recommended to set up the pipeline job
  * using this Jenkinsfile to refer to a local copy of the Git repository
@@ -429,8 +429,13 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 }
 
                 echo "This build involves the following changedFiles list: ${changedFiles.toString()}"
+            }
 
-                if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
+            if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
+                parInitial["Stash source for workers and discover slow build matrix"] = {
+                    stage("Stash source for workers") {
+                        stashSrcClosure()
+                    }
                     stage("Discover slow build matrix") {
                         // It takes several objects and maps as input and modifies some as sees fit:
                         stagesBinBuild.putAll(prepareSlowBuild(dynamatrix, dynacfgPipeline, changedFiles))
@@ -443,14 +448,16 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                         } catch (Throwable ignored) {
                             try {
                                 manager.addShortText(sbSummary + "; waiting for quick-tests to complete")
-                            } catch (Throwable ignore) {}   // no-op
+                            } catch (Throwable ignore) {
+                            }   // no-op
                         }
 
                         echo "NOTE: If this is the last line you see in job console log for a long time, then we are waiting for some build agents for shellcheck/spellcheck; slowBuild stage discovery is completed"
                     } // stage item: par1["Discover slow build matrix"]
-                } // if slowBuild...
-
-            } // stage - stash
+                } // stage - stash
+            } else {
+                parInitial["Stash source for workers"] = stashSrcClosure
+            } // if slowBuild...
 
             parInitial["Quick builds"] = {
                 stage("Discover quick build matrix") {
