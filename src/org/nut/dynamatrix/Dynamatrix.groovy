@@ -1682,7 +1682,7 @@ def parallelStages = prepareDynamatrix(
         // have e.g. matching tool kits, but not the third-party prerequisite
         // packages preinstalled for a particular project.
         if (Utils.isStringNotEmpty(dynacfg.commonLabelExpr)) {
-            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): appending '(${dynacfg.commonLabelExpr}) && ' to buildLabelsAgents combos..."
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): appending ' && (${dynacfg.commonLabelExpr})' to buildLabelsAgents combos..."
             Map<String, Set> tmp = [:]
             this.buildLabelsAgents.keySet().each() {String ble ->
                 // Note, we only append to the key (node label string for
