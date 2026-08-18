@@ -45,173 +45,174 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                 echo "Inspecting a slow build filter configuration: ${sb.name}"
             }
 
-            if (Utils.isClosureNotEmpty(sb?.getParStages)) {
-                countFiltersSeen++
-                if (sb?.disabled) {
+            sb.tuplesParStages = null
+            sb.mapParStages = null
+            if (!(Utils.isClosureNotEmpty(sb?.getParStages))) {
+                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                    echo "SKIP: No (valid) slow build filter definition in this entry" + (sb?.name ? ": " + sb.name : "")
+                countFiltersSkipped++
+                return // continue
+            }
+
+            // else: if getParStages is useful:
+            countFiltersSeen++
+            if (sb?.disabled) {
+                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                    echo "SKIP: This slow build filter configuration is marked as disabled for this run" + (sb?.name ? ": " + sb.name : "")
+                countFiltersSkipped++
+                return // continue
+            }
+
+            if (Utils.isRegex(sb?.branchRegexSource) && Utils.isStringNotEmpty(env?.BRANCH_NAME)) {
+                // TOTHINK: For PR builds, the BRANCH_NAME
+                // is `PR-[0-9]+` while there is also a
+                // CHANGE_BRANCH with the original value.
+                if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                        echo "SKIP: This slow build filter configuration is marked as disabled for this run" + (sb?.name ? ": " + sb.name : "")
+                        echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ~/${sb.branchRegexSource}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                    countFiltersSkipped++
+                    return // continue
+                }
+            }
+
+            if (Utils.isRegex(sb?.branchRegexTarget)) {
+                if (Utils.isStringNotEmpty(env?.CHANGE_TARGET)
+                && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
+                ) {
+                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                        echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                    countFiltersSkipped++
+                    return // continue
+                } // else: CHANGE_TARGET is empty (probably not
+                // building a PR), or regex matches, so go on
+
+                String _CHANGE_TARGET = null
+                try {
+                    // May be not defined
+                    _CHANGE_TARGET = CHANGE_TARGET
+                } catch (Throwable ignored) {
+                    try {
+                        // May be not defined
+                        _CHANGE_TARGET = env.CHANGE_TARGET
+                    } catch (Throwable ignore) {
+                    }
+                }
+
+                if (Utils.isStringNotEmpty(_CHANGE_TARGET)
+                && (!(_CHANGE_TARGET ==~ sb.branchRegexTarget))
+                ) {
+                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                        echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                     countFiltersSkipped++
                     return // continue
                 }
 
-                if (Utils.isRegex(sb?.branchRegexSource) && Utils.isStringNotEmpty(env?.BRANCH_NAME)) {
-                    // TOTHINK: For PR builds, the BRANCH_NAME
-                    // is `PR-[0-9]+` while there is also a
-                    // CHANGE_BRANCH with the original value.
-                    if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
+                if (!Utils.isStringNotEmpty(env?.CHANGE_TARGET)
+                &&  !Utils.isStringNotEmpty(_CHANGE_TARGET)
+                ) {
+                    // If callers want some setup only for PR
+                    // builds, they can use the source branch
+                    // regex set to /^PR-\d+$/
+                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                        echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ~/${sb.branchRegexTarget}/ set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                    // NOT a "skip", just a "FYI"!
+                }
+            } // if branchRegexTarget
+
+            // By default we run all otherwise not disabled
+            // scenarios... but really, some test cases do
+            // not make sense for certain changes and are a
+            // waste of round-trip time and compute resources.
+            if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo "[DEBUG] Analysing the changedFiles=${changedFiles.toString()} list against the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' ..."
+
+                if (changedFiles.size() > 0) {
+                    Boolean skip = true
+
+                    for (String cf in changedFiles) {
+                        if (cf ==~ sb.appliesToChangedFilesRegex) {
+                            // A changed file name did match
+                            // the regex for files covered by a
+                            // scenario, so this scenario should
+                            // apply to this changeset and not
+                            // skipped
+                            skip = false
+                            break
+                        }
+                    }
+
+                    if (skip) {
                         if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                            echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ~/${sb.branchRegexSource}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                            echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
                         countFiltersSkipped++
                         return // continue
+                    } else {
+                        if (dynamatrixGlobalState.enableDebugTrace)
+                            echo "[DEBUG] Changeset did include some file name(s) which matched the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                    }
+                } else {
+                    if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
+                        echo "WARNING: while handling appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' " +
+                            "for this slow build filter configuration, " +
+                            "the listChangedFiles() call returned an " +
+                            "empty list, thus either we had no changes " +
+                            "(would a re-run do that?) or had some error?.. " +
+                            "So build everything to be safe" + (sb?.name ? ": " + sb.name : ".")
+                }
+            } // if appliesToChangedFilesRegex
+
+            echo "Did not rule out this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+            // This magic envvar is mapped into stage name
+            // in the dynamatrix
+            //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
+            withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ((sb?.name) ? sb.name.toString().trim() : "N/A")]) {
+                // First we aim to collect tuples, so we remember the DSBC details
+                // mapped to the stage name and closure, to dedup later:
+                Boolean defaultBak = dynamatrix.generateBuildReturnSetDefault
+                dynamatrix.generateBuildReturnSetDefault = true
+
+                // Use unique clones of "dynamatrix.dynacfg" below,
+                // to avoid polluting their applied dynacfg based
+                // just on order of slowBuild scenario parsing;
+                // typical sb.getParStages{} calls dynamatrix.generateBuild():
+                dynamatrix.restoreDynacfg()
+                def psRet
+                if (Utils.isClosure(sb?.bodyParStages)) {
+                    // body may be empty {}, if user wants so
+                    psRet = sb.getParStages.call(dynamatrix, sb.bodyParStages)
+                } else {
+                    if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
+                        psRet = sb.getParStages.call(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                    } else {
+                        psRet = sb.getParStages.call(dynamatrix, null)
                     }
                 }
+                dynamatrix.generateBuildReturnSetDefault = defaultBak
 
-                if (Utils.isRegex(sb?.branchRegexTarget)) {
-                    if (Utils.isStringNotEmpty(env?.CHANGE_TARGET)
-                        && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
-                    ) {
-                        if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                            echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                        countFiltersSkipped++
-                        return // continue
-                    } // else: CHANGE_TARGET is empty (probably not
-                    // building a PR), or regex matches, so go on
+                if (psRet != null) {
+                    if (psRet instanceof Set) {
+                        if (psRet.empty)
+                            echo "WARNING: sb.getParStages{} returned an empty Set" + (sb?.name ? " for: " + sb.name : "")
+                        else
+                            echo "INFO: sb.getParStages{} returned a Set with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
 
-                    String _CHANGE_TARGET = null
-                    try {
-                        // May be not defined
-                        _CHANGE_TARGET = CHANGE_TARGET
-                    } catch (Throwable ignored) {
-                        try {
-                            // May be not defined
-                            _CHANGE_TARGET = env.CHANGE_TARGET
-                        } catch (Throwable ignore) {
-                        }
-                    }
+                        sb.tuplesParStages = psRet
+                        sb.mapParStages = [:]
+                        sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
+                    } else if (psRet instanceof Map) {
+                        if (psRet.empty)
+                            echo "WARNING: sb.getParStages{} returned an empty Map" + (sb?.name ? " for: " + sb.name : "")
+                        else
+                            echo "INFO: sb.getParStages{} returned a Map with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
 
-                    if (Utils.isStringNotEmpty(_CHANGE_TARGET)
-                        && (!(_CHANGE_TARGET ==~ sb.branchRegexTarget))
-                    ) {
-                        if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                            echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                        countFiltersSkipped++
-                        return // continue
-                    }
-
-                    if (!Utils.isStringNotEmpty(env?.CHANGE_TARGET)
-                        && !Utils.isStringNotEmpty(_CHANGE_TARGET)
-                    ) {
-                        // If callers want some setup only for PR
-                        // builds, they can use the source branch
-                        // regex set to /^PR-\d+$/
-                        if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                            echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ~/${sb.branchRegexTarget}/ set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                        // NOT a "skip", just a "FYI"!
-                    }
-                } // if branchRegexTarget
-
-                // By default we run all otherwise not disabled
-                // scenarios... but really, some test cases do
-                // not make sense for certain changes and are a
-                // waste of round-trip time and compute resources.
-                if (Utils.isRegex(sb?.appliesToChangedFilesRegex)) {
-                    if (dynamatrixGlobalState.enableDebugTrace)
-                        echo "[DEBUG] Analysing the changedFiles=${changedFiles.toString()} list against the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' ..."
-                    if (changedFiles.size() > 0) {
-                        Boolean skip = true
-
-                        for (String cf in changedFiles) {
-                            if (cf ==~ sb.appliesToChangedFilesRegex) {
-                                // A changed file name did match
-                                // the regex for files covered by a
-                                // scenario, so this scenario should
-                                // apply to this changeset and not
-                                // skipped
-                                skip = false
-                                break
-                            }
-                        }
-
-                        if (skip) {
-                            if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                                echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                            countFiltersSkipped++
-                            return // continue
-                        } else {
-                            if (dynamatrixGlobalState.enableDebugTrace)
-                                echo "[DEBUG] Changeset did include some file name(s) which matched the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                        }
+                        sb.mapParStages = psRet
                     } else {
-                        if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                            echo "WARNING: while handling appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' " +
-                                "for this slow build filter configuration, " +
-                                "the listChangedFiles() call returned an " +
-                                "empty list, thus either we had no changes " +
-                                "(would a re-run do that?) or had some error?.. " +
-                                "So build everything to be safe" + (sb?.name ? ": " + sb.name : ".")
+                        echo "WARNING: sb.getParStages{} returned an unexpected type" + (sb?.name ? " for: " + sb.name : "")
                     }
-                } // if appliesToChangedFilesRegex
-
-                echo "Did not rule out this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
-                // This magic envvar is mapped into stage name
-                // in the dynamatrix
-                //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
-                withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ((sb?.name) ? sb.name.toString().trim() : "N/A")]) {
-                    // First we aim to collect tuples, so we remember the DSBC details
-                    // mapped to the stage name and closure, to dedup later:
-                    Boolean defaultBak = dynamatrix.generateBuildReturnSetDefault
-                    dynamatrix.generateBuildReturnSetDefault = true
-
-                    // Use unique clones of "dynamatrix.dynacfg" below,
-                    // to avoid polluting their applied dynacfg based
-                    // just on order of slowBuild scenario parsing;
-                    // typical sb.getParStages{} calls dynamatrix.generateBuild():
-                    dynamatrix.restoreDynacfg()
-                    def psRet
-                    if (Utils.isClosure(sb?.bodyParStages)) {
-                        // body may be empty {}, if user wants so
-                        psRet = sb.getParStages.call(dynamatrix, sb.bodyParStages)
-                    } else {
-                        if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                            psRet = sb.getParStages.call(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
-                        } else {
-                            psRet = sb.getParStages.call(dynamatrix, null)
-                        }
-                    }
-                    dynamatrix.generateBuildReturnSetDefault = defaultBak
-
-                    sb.tuplesParStages = null
-                    sb.mapParStages = null
-                    if (psRet != null) {
-                        if (psRet instanceof Set) {
-                            if (psRet.empty)
-                                echo "WARNING: sb.getParStages{} returned an empty Set" + (sb?.name ? " for: " + sb.name : "")
-                            else
-                                echo "INFO: sb.getParStages{} returned a Set with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
-
-                            sb.tuplesParStages = psRet
-                            sb.mapParStages = [:]
-                            sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
-                        } else if (psRet instanceof Map) {
-                            if (psRet.empty)
-                                echo "WARNING: sb.getParStages{} returned an empty Map" + (sb?.name ? " for: " + sb.name : "")
-                            else
-                                echo "INFO: sb.getParStages{} returned a Map with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
-
-                            sb.mapParStages = psRet
-                        } else {
-                            echo "WARNING: sb.getParStages{} returned an unexpected type" + (sb?.name ? " for: " + sb.name : "")
-                        }
-                    } else {
-                        echo "WARNING: sb.getParStages{} returned null" + (sb?.name ? " for: " + sb.name : "")
-                    }
+                } else {
+                    echo "WARNING: sb.getParStages{} returned null" + (sb?.name ? " for: " + sb.name : "")
                 }
-            } else { // if not getParStages
-                sb.tuplesParStages = null
-                sb.mapParStages = null
-                if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                    echo "SKIP: No (valid) slow build filter definition in this entry" + (sb?.name ? ": " + sb.name : "")
-                countFiltersSkipped++
             }
         } // stage for one SBF Cfg
     } // dynacfgPipeline.slowBuild.each { sb -> ... }
