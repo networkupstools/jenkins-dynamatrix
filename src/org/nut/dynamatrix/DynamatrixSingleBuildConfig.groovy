@@ -622,6 +622,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return "${sn}shellcheck"
     }
 
+    /** @see #matchesConstraintsCombo(Set) */
     public boolean matchesConstraintsCombo (ArrayList combo) {
         return matchesConstraintsCombo(new LinkedHashSet(combo))
     }
@@ -726,6 +727,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return res
     } // matchesConstraintsCombo (Set)
 
+    /** @see #matchesConstraints(Set) */
     public boolean matchesConstraints (ArrayList combos) {
         return matchesConstraints(new LinkedHashSet(combos))
     }
