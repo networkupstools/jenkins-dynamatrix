@@ -389,18 +389,20 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             env['GIT_COMMITTER_DATE'] = now
         }
 
-        try {
-            infra.neuterKnownUnsuccessfulGithubStatuses() // dynacfgPipeline.get("stashnameSrc"))
-        } catch (Throwable t) {
-            echo "FAILED calling infra.neuterKnownUnsuccessfulGithubStatuses(): ${t}"
-        }
+        stage ('Neuter known unsuccessful Github statuses') {
+            try {
+                infra.neuterKnownUnsuccessfulGithubStatuses() // dynacfgPipeline.get("stashnameSrc"))
+            } catch (Throwable t) {
+                echo "FAILED calling infra.neuterKnownUnsuccessfulGithubStatuses(): ${t}"
+            }
 
-        // Prepare the build-page status report object early, so it is
-        // seen on top when browsing into the build report. Note this
-        // involves a different Dynamatrix object than used in e.g.
-        // shellcheck fanout, so we don't want the badge too early.
-        //dynamatrix.updateProgressBadge(false, dynacfgPipeline?.recurseIntoDynamatrixCloneStats, true)
-        dynamatrix.createSummary("Placeholder for main build phase summary")
+            // Prepare the build-page status report object early, so it is
+            // seen on top when browsing into the build report. Note this
+            // involves a different Dynamatrix object than used in e.g.
+            // shellcheck fanout, so we don't want the badge too early.
+            //dynamatrix.updateProgressBadge(false, dynacfgPipeline?.recurseIntoDynamatrixCloneStats, true)
+            dynamatrix.createSummary("Placeholder for main build phase summary")
+        }
 
         stage("Initial discovery") {
             Map parInitial = [:]
@@ -432,12 +434,14 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 echo "This build involves the following changedFiles list: ${changedFiles.toString()}"
             }
 
-            // Have some defaults, if only to have all
-            // expected fields defined and node caps cached
-            // before we generate the quick and slow matrices
-            dynamatrix.prepareDynamatrix(dynacfgBase + [
-                dynamatrixGithubNotificationContext: "quickbuild-run"
-            ])
+            stage('Investigate Node caps and prepare Dynamatrix object') {
+                // Have some defaults, if only to have all
+                // expected fields defined and node caps cached
+                // before we generate the quick and slow matrices
+                dynamatrix.prepareDynamatrix(dynacfgBase + [
+                    dynamatrixGithubNotificationContext: "quickbuild-run"
+                ])
+            }
 
             if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
                 parInitial["Stash source for workers and discover slow build matrix"] = {
