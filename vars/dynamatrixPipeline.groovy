@@ -431,6 +431,13 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 echo "This build involves the following changedFiles list: ${changedFiles.toString()}"
             }
 
+            // Have some defaults, if only to have all
+            // expected fields defined and node caps cached
+            // before we generate the quick and slow matrices
+            dynamatrix.prepareDynamatrix(dynacfgBase + [
+                dynamatrixGithubNotificationContext: "quickbuild-run"
+            ])
+
             if (dynacfgPipeline?.slowBuild && dynacfgPipeline.slowBuild.size() > 0) {
                 parInitial["Stash source for workers and discover slow build matrix"] = {
                     stage("Stash source for workers") {
@@ -466,12 +473,6 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     // involved, so that part happens in parallel to
                     // this shellcheck and also optional spellcheck and/or
                     // stylecheck, which presumably can be prepared quickly):
-
-                    // Have some defaults, if only to have all
-                    // expected fields defined and node caps cached
-                    dynamatrix.prepareDynamatrix(dynacfgBase + [
-                        dynamatrixGithubNotificationContext: "quickbuild-run"
-                    ])
 
                     // In outer layer, select all suitable builders;
                     // In inner layer, unpack+config the source on
