@@ -217,153 +217,156 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
     } // dynacfgPipeline.slowBuild.each { sb -> ... }
 
     // TODO: Analyze collected scenarios for effective duplicates, remove extras
+    // stage('Dedup effectively same scenarios') { ... }
 
-    // Update the ultimate `parallel stagesBinBuild` contents:
-    Map stageNameToDSBC = [:]
-    dynacfgPipeline.slowBuild.each { Map sb ->
-        if (!(sb?.mapParStages))
-            return // continue
-
-        stagesBinBuild += sb.mapParStages
-
-        try {
-            sb.tuplesParStages?.each { List tup ->
-                String stageName = (String) (tup[0])
-                if (!(stageNameToDSBC.containsKey(stageName))) {
-                    stageNameToDSBC[stageName] = new HashSet<>()
-                }
-                stageNameToDSBC[stageName] << (DynamatrixSingleBuildConfig)tup[2]
-            }
-        } catch (Throwable t) {
-            echo "FAILED to collect stageNameToDSBC, ignoring: ${t}"
-        }
-    }
-
-    String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
-        "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
-    String sbSummary = null
-    String sbSummaryCount = "" // non-null string in any case
-    if (stagesBinBuild.size() == 0) {
-        sbSummary = "Did not discover any ${sbSummarySuffix}"
-        // Limited by 140 chars
-        infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
-            "Did not discover any " +
-                "'slow build' configurations over " +
-                "${countFiltersSeen} filter " +
-                "definition(s) tried",
-            "SUCCESS", // nothing blew up?.. //( (stagesBinBuild.size() == 0) ? 'FAILURE' : 'SUCCESS'),
-            "slowbuild-discover")
-    } else {
-        sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
-        infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
-            "Discovered ${stagesBinBuild.size()} " +
-                "'slow build' configurations over " +
-                "${countFiltersSeen} filter " +
-                "definition(s) tried",
-            "SUCCESS",
-            "slowbuild-discover")
+    stage('Produce final result') {
+        // Update the ultimate `parallel stagesBinBuild` contents:
+        Map stageNameToDSBC = [:]
         dynacfgPipeline.slowBuild.each { Map sb ->
-            if (sb?.mapParStages) {
-                // Note: Char sequence at start of string is parsed for badge markup below
-                sbSummaryCount += "\n\t* ${sb.mapParStages.size()} hits for: " +
-                    (Utils.isStringNotEmpty(sb?.name) ? sb.name : Utils.castString(sb))
-            }
-        }
+            if (!(sb?.mapParStages))
+                return // continue
 
-        try {
-            // TODO: Something similar but with each stage's
-            //  own buildResult verdicts after the build...
-            String txt = "${sbSummary}\nfor this run ${env?.BUILD_URL} :\n\n"
-            // This maps String (stage name) to Closure, list these names:
-            stagesBinBuild.keySet().sort().each {
-                txt += "${it}"
-                if (stageNameToDSBC.containsKey(it))
-                    txt += "\nDSBC details : ${stageNameToDSBC[it]}"
-                txt += "\n\n"
-            }
-            txt += sbSummaryCount
-            writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
-            archiveArtifacts (artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
+            stagesBinBuild += sb.mapParStages
 
             try {
-                def sumText = "Saved the list of slowBuild stages into a text artifact " +
-                    "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>"
-                def sumIcon = '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
-                try {
-                    // Badge API v2.x; TOTHINK: Use ioicons not images URI?
-                    addSummary(text: sumText, icon: sumIcon)
-                } catch (Throwable ignored) {
-                    // Older Badge API
-                    createSummary(text: sumText, icon: sumIcon)
+                sb.tuplesParStages?.each { List tup ->
+                    String stageName = (String) (tup[0])
+                    if (!(stageNameToDSBC.containsKey(stageName))) {
+                        stageNameToDSBC[stageName] = new HashSet<>()
+                    }
+                    stageNameToDSBC[stageName] << (DynamatrixSingleBuildConfig) tup[2]
                 }
-            } catch (Throwable ts) {
-                echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
-                if (dynamatrixGlobalState.enableDebugTrace) echo ts.toString()
+            } catch (Throwable t) {
+                echo "FAILED to collect stageNameToDSBC, ignoring: ${t}"
+            }
+        }
+
+        String sbSummarySuffix = "'slow build' configurations over ${countFiltersSeen} filter definition(s) tried " +
+            "(${countFiltersSkipped} dynacfgPipeline.slowBuild elements were skipped due to build circumstances or as invalid)"
+        String sbSummary = null
+        String sbSummaryCount = "" // non-null string in any case
+        if (stagesBinBuild.size() == 0) {
+            sbSummary = "Did not discover any ${sbSummarySuffix}"
+            // Limited by 140 chars
+            infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
+                "Did not discover any " +
+                    "'slow build' configurations over " +
+                    "${countFiltersSeen} filter " +
+                    "definition(s) tried",
+                "SUCCESS", // nothing blew up?.. //( (stagesBinBuild.size() == 0) ? 'FAILURE' : 'SUCCESS'),
+                "slowbuild-discover")
+        } else {
+            sbSummary = "Discovered ${stagesBinBuild.size()} ${sbSummarySuffix}"
+            infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
+                "Discovered ${stagesBinBuild.size()} " +
+                    "'slow build' configurations over " +
+                    "${countFiltersSeen} filter " +
+                    "definition(s) tried",
+                "SUCCESS",
+                "slowbuild-discover")
+            dynacfgPipeline.slowBuild.each { Map sb ->
+                if (sb?.mapParStages) {
+                    // Note: Char sequence at start of string is parsed for badge markup below
+                    sbSummaryCount += "\n\t* ${sb.mapParStages.size()} hits for: " +
+                        (Utils.isStringNotEmpty(sb?.name) ? sb.name : Utils.castString(sb))
+                }
             }
 
+            try {
+                // TODO: Something similar but with each stage's
+                //  own buildResult verdicts after the build...
+                String txt = "${sbSummary}\nfor this run ${env?.BUILD_URL} :\n\n"
+                // This maps String (stage name) to Closure, list these names:
+                stagesBinBuild.keySet().sort().each {
+                    txt += "${it}"
+                    if (stageNameToDSBC.containsKey(it))
+                        txt += "\nDSBC details : ${stageNameToDSBC[it]}"
+                    txt += "\n\n"
+                }
+                txt += sbSummaryCount
+                writeFile(file: ".ci.slowBuildStages-list.txt", text: txt)
+                archiveArtifacts(artifacts: ".ci.slowBuildStages-list.txt", allowEmptyArchive: true)
+
+                try {
+                    def sumText = "Saved the list of slowBuild stages into a text artifact " +
+                        "<a href='${env.BUILD_URL}/artifact/.ci.slowBuildStages-list.txt'>.ci.slowBuildStages-list.txt</a>"
+                    def sumIcon = '/images/svgs/notepad.svg'    // '/images/48x48/notepad.png'
+                    try {
+                        // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                        addSummary(text: sumText, icon: sumIcon)
+                    } catch (Throwable ignored) {
+                        // Older Badge API
+                        createSummary(text: sumText, icon: sumIcon)
+                    }
+                } catch (Throwable ts) {
+                    echo "WARNING: Tried to createSummary(), but failed to; is the jenkins-badge-plugin installed?"
+                    if (dynamatrixGlobalState.enableDebugTrace) echo ts.toString()
+                }
+
+            } catch (Throwable t) {
+                echo "WARNING: Tried to save the list of slowBuild stages into a text artifact '.ci.slowBuildStages-list.txt', but failed to"
+                if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
+            }
+
+            // Note: adds one more point to stagesBinBuild.size() checked below:
+            if (dynacfgPipeline?.failFastSafe) {
+                stagesBinBuild.failFast = false
+            } else {
+                stagesBinBuild.failFast = dynacfgPipeline.failFast
+            }
+        }
+        echo sbSummary + sbSummaryCount
+
+        try {
+            // Note: we also report "Running..." more or less
+            // the same message below; but with CI farm contention
+            // much time can be spent before getting to that line
+            // Note we are not using "manager" leading to Groovy
+            // PostBuild Plugin implementation, but the better
+            // featured jenkins-badge-plugin step
+            try {
+                // Badge v2.x API, with style
+                addInfoBadge(text: sbSummary, id: "Discovery-counter",
+                    cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-DiscoveryCounter"
+                )
+            } catch (Throwable ignored) {
+/*
+                try {
+                    addInfoBadge(text: sbSummary, id: "Discovery-counter")
+                } catch (Throwable ignored2) {
+                    // NOTE: Was temporarily used INSTEAD of badge plugin (1.x) code
+*/
+                    // FIXME: While we add temporarily and remove one badge,
+                    //  GPBP is okay (for some reason, Badge plugin leaves
+                    //  ugly formatting in job's main page with list of builds):
+                    manager.addInfoBadge(sbSummary)
+/*
+                }
+*/
+            }
+
+            // Add a line to the build's info page too (note the
+            // path here is somewhat relative to /static/hexhash/
+            // that Jenkins adds):
+            if (sbSummaryCount != "") {
+                // Note: replace goes by regex so '\*'
+                sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<p>Detailed hit counts:<ul>') + '</li></ul></p>'
+            }
+
+            def sumText = sbSummary + sbSummaryCount
+            def sumIcon = '/images/svgs/notepad.svg'    // '/images/48x48/notepad.png'
+            try {
+                // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                addSummary(text: sumText, icon: sumIcon)
+            } catch (Throwable ignored) {
+                // Older Badge API
+                createSummary(text: sumText, icon: sumIcon)
+            }
         } catch (Throwable t) {
-            echo "WARNING: Tried to save the list of slowBuild stages into a text artifact '.ci.slowBuildStages-list.txt', but failed to"
+            echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
             if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
         }
-
-        // Note: adds one more point to stagesBinBuild.size() checked below:
-        if (dynacfgPipeline?.failFastSafe) {
-            stagesBinBuild.failFast = false
-        } else {
-            stagesBinBuild.failFast = dynacfgPipeline.failFast
-        }
-    }
-    echo sbSummary + sbSummaryCount
-
-    try {
-        // Note: we also report "Running..." more or less
-        // the same message below; but with CI farm contention
-        // much time can be spent before getting to that line
-        // Note we are not using "manager" leading to Groovy
-        // PostBuild Plugin implementation, but the better
-        // featured jenkins-badge-plugin step
-        try {
-            // Badge v2.x API, with style
-            addInfoBadge(text: sbSummary, id: "Discovery-counter",
-                cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-DiscoveryCounter"
-            )
-        } catch (Throwable ignored) {
-/*
-            try {
-                addInfoBadge(text: sbSummary, id: "Discovery-counter")
-            } catch (Throwable ignored2) {
-                // NOTE: Was temporarily used INSTEAD of badge plugin (1.x) code
-*/
-                // FIXME: While we add temporarily and remove one badge,
-                //  GPBP is okay (for some reason, Badge plugin leaves
-                //  ugly formatting in job's main page with list of builds):
-                manager.addInfoBadge(sbSummary)
-/*
-            }
-*/
-        }
-
-        // Add a line to the build's info page too (note the
-        // path here is somewhat relative to /static/hexhash/
-        // that Jenkins adds):
-        if (sbSummaryCount != "") {
-            // Note: replace goes by regex so '\*'
-            sbSummaryCount = sbSummaryCount.replaceAll('\n\t\\* ', '</li><li>').replaceFirst('</li>', '<p>Detailed hit counts:<ul>') + '</li></ul></p>'
-        }
-
-        def sumText = sbSummary + sbSummaryCount
-        def sumIcon = '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
-        try {
-            // Badge API v2.x; TOTHINK: Use ioicons not images URI?
-            addSummary(text: sumText, icon: sumIcon)
-        } catch (Throwable ignored) {
-            // Older Badge API
-            createSummary(text: sumText, icon: sumIcon)
-        }
-    } catch (Throwable t) {
-        echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
-        if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
-    }
+    } // stage('Produce final result')
 
     return stagesBinBuild
 }
