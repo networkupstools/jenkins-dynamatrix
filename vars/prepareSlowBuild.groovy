@@ -367,6 +367,18 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
             echo "WARNING: Tried to addInfoBadge() and createSummary(), but failed to; is the jenkins-badge-plugin installed?"
             if (dynamatrixGlobalState.enableDebugTrace) echo t.toString()
         }
+
+        try {
+            // Badge v2.x API, with style
+            addBadge(text: sbSummary + "; waiting for quick-tests to complete",
+                cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-WaitingCompletion"
+            )
+        } catch (Throwable ignored) {
+            try {
+                manager.addShortText(sbSummary + "; waiting for quick-tests to complete")
+            } catch (Throwable ignore) {
+            }   // no-op
+        }
     } // stage('Produce final result')
 
     return stagesBinBuild

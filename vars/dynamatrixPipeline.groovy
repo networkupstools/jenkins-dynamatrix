@@ -10,6 +10,7 @@
 // package org.nut.dynamatrix;
 
 import org.nut.dynamatrix.dynamatrixGlobalState;
+import org.nut.dynamatrix.Dynamatrix;
 import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
 import org.nut.dynamatrix.*;
 
@@ -446,18 +447,6 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     stage("Discover slow build matrix") {
                         // It takes several objects and maps as input and modifies some as sees fit:
                         stagesBinBuild.putAll(prepareSlowBuild(dynamatrix, dynacfgPipeline, changedFiles))
-
-                        try {
-                            // Badge v2.x API, with style
-                            addBadge(text: sbSummary + "; waiting for quick-tests to complete",
-                                cssClass: "badge-jenkins-dynamatrix-Baseline badge-jenkins-dynamatrix-QuickTest-WaitingCompletion"
-                            )
-                        } catch (Throwable ignored) {
-                            try {
-                                manager.addShortText(sbSummary + "; waiting for quick-tests to complete")
-                            } catch (Throwable ignore) {
-                            }   // no-op
-                        }
 
                         echo "NOTE: If this is the last line you see in job console log for a long time, then we are waiting for some build agents for shellcheck/spellcheck; slowBuild stage discovery is completed"
                     } // stage item: par1["Discover slow build matrix"]
