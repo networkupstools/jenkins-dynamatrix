@@ -1727,7 +1727,8 @@ def parallelStages = prepareDynamatrix(
         // by workers themselves (nodeCaps), others may be required
         // additionally by the callers at their discretion, and then
         // filtered with excludeCombos in the end:
-        Map buildLabelsAgentsBuild = this.buildLabelsAgents
+        Map buildLabelsAgentsBuild = [:]
+        buildLabelsAgentsBuild += this.buildLabelsAgents
         if (dynacfgBuild.dynamatrixRequiredLabelCombos.size() > 0) {
             // dynamatrixRequiredLabelCombos: convert from a Set of
             // key=value pairs into a Map, to process similar to
