@@ -14,18 +14,23 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** This is a stage payload used by dynamatrixPipeline to generate the slow build matrix.
- *  It takes several objects and maps as input and modifies some as sees fit. */
+/** This is a stage payload used by dynamatrixPipeline to
+ *  generate the slow build matrix.
+ *  It takes a {@link Dynamatrix} object and a configuration
+ *  map as input and modifies some as sees fit (e.g. adds
+ *  discovered stage sets into each map "sb" entry).<br/>
+ *
+ * The "slowBuild" is a set of Maps, each of them describes
+ * a dynamatrix selection filter. Having a series of those
+ * with conditions known to developer of the pipeline (and
+ * project it represents) can be more efficient than making
+ * a huge matrix of virtual or agent-driven labels and then
+ * filtering away lots of "excludeCombos" from that.
+ */
 Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
     Map stagesBinBuild = [:]
     Integer countFiltersSeen = 0
     Integer countFiltersSkipped = 0
-    // The "slowBuild" is a set of Maps, each of them describes
-    // a dynamatrix selection filter. Having a series of those
-    // with conditions known to developer of the pipeline (and
-    // project it represents) can be more efficient than making
-    // a huge matrix of virtual or agent-driven labels and then
-    // filtering away lots of "excludeCombos" from that.
 
     if (dynacfgPipeline?.failFastSafe) {
         dynamatrix.failFast = (dynacfgPipeline?.failFast ? true : false)
