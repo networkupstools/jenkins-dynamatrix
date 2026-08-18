@@ -130,6 +130,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     public DynamatrixSingleBuildConfig (script) {
         this.script = script
+
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
         this.enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors

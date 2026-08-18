@@ -47,6 +47,11 @@ class NodeCaps implements Cloneable {
      */
     public NodeCaps(script, String nodeLabelExpr = null, Boolean debugTrace = null, Boolean debugErrors = null, Boolean debugTraceResolver = null) {
         this.script = script
+
+        this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+        this.enableDebugTraceResolver = dynamatrixGlobalState.enableDebugTraceResolver
+        this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+
         if (debugTrace != null) {
             this.enableDebugTrace = debugTrace
         }

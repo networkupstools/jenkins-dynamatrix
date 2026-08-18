@@ -830,9 +830,14 @@ class Dynamatrix implements Cloneable {
 
         this.dynamatrixComment = dynamatrixComment
         this.dynacfg = new DynamatrixConfig(script)
+
         this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+        this.enableDebugTraceBadge = dynamatrixGlobalState.enableDebugTraceBadge
+        this.enableDebugTraceResolver = dynamatrixGlobalState.enableDebugTraceResolver
         this.enableDebugTraceFailures = dynamatrixGlobalState.enableDebugTraceFailures
         this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
+        this.enableDebugMilestones = dynamatrixGlobalState.enableDebugMilestones
+        this.enableDebugMilestonesDetails = dynamatrixGlobalState.enableDebugMilestonesDetails
         this.enableDebugSysprint = dynamatrixGlobalState.enableDebugSysprint
 
         if (this.shouldDebugTrace()) {

@@ -349,6 +349,9 @@ def parallelStages = prepareDynamatrix(
 
     public DynamatrixConfig(Object script) {
         this.script = script
+
+        this.enableDebugTrace = dynamatrixGlobalState.enableDebugTrace
+        this.enableDebugErrors = dynamatrixGlobalState.enableDebugErrors
     }
 
     @NonCPS
