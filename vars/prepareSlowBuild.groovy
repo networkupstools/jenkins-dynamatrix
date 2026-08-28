@@ -43,7 +43,8 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
         'Discover slow build matrix',
         'PENDING', "slowbuild-discover")
     dynacfgPipeline.slowBuild.each { Map sb ->
-        stage("Inspect SBF Cfg" + (sb?.name ? ": " + sb.name : "")) {
+        String sbNameSuffix = (sb?.name ? ": " + sb.name : "")
+        stage("Inspect SBF Cfg" + sbNameSuffix) {
             if (dynamatrixGlobalState.enableDebugTrace) {
                 echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
             } else if (sb?.name) {
@@ -54,7 +55,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
             sb.mapParStages = null
             if (!(Utils.isClosureNotEmpty(sb?.getParStages))) {
                 if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                    echo "SKIP: No (valid) slow build filter definition in this entry" + (sb?.name ? ": " + sb.name : "")
+                    echo "SKIP: No (valid) slow build filter definition in this entry" + sbNameSuffix
                 countFiltersSkipped++
                 return // continue
             }
@@ -63,7 +64,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
             countFiltersSeen++
             if (sb?.disabled) {
                 if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                    echo "SKIP: This slow build filter configuration is marked as disabled for this run" + (sb?.name ? ": " + sb.name : "")
+                    echo "SKIP: This slow build filter configuration is marked as disabled for this run" + sbNameSuffix
                 countFiltersSkipped++
                 return // continue
             }
@@ -74,7 +75,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                 // CHANGE_BRANCH with the original value.
                 if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                        echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ~/${sb.branchRegexSource}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                        echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ~/${sb.branchRegexSource}/ for this slow build filter configuration" + sbNameSuffix
                     countFiltersSkipped++
                     return // continue
                 }
@@ -85,7 +86,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                 && (!(env.CHANGE_TARGET ==~ sb.branchRegexTarget))
                 ) {
                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                        echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                        echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + sbNameSuffix
                     countFiltersSkipped++
                     return // continue
                 } // else: CHANGE_TARGET is empty (probably not
@@ -107,7 +108,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                 && (!(_CHANGE_TARGET ==~ sb.branchRegexTarget))
                 ) {
                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                        echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                        echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + sbNameSuffix
                     countFiltersSkipped++
                     return // continue
                 }
@@ -119,7 +120,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                     // builds, they can use the source branch
                     // regex set to /^PR-\d+$/
                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                        echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ~/${sb.branchRegexTarget}/ set for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                        echo "NOTE: Target branch name is not set for this build (not a PR?), so ignoring the pattern ~/${sb.branchRegexTarget}/ set for this slow build filter configuration" + sbNameSuffix
                     // NOT a "skip", just a "FYI"!
                 }
             } // if branchRegexTarget
@@ -149,12 +150,12 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
 
                     if (skip) {
                         if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
-                            echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                            echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + sbNameSuffix
                         countFiltersSkipped++
                         return // continue
                     } else {
                         if (dynamatrixGlobalState.enableDebugTrace)
-                            echo "[DEBUG] Changeset did include some file name(s) which matched the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+                            echo "[DEBUG] Changeset did include some file name(s) which matched the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + sbNameSuffix
                     }
                 } else {
                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
@@ -167,7 +168,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                 }
             } // if appliesToChangedFilesRegex
 
-            echo "Did not rule out this slow build filter configuration" + (sb?.name ? ": " + sb.name : "")
+            echo "Did not rule out this slow build filter configuration" + sbNameSuffix
             // This magic envvar is mapped into stage name
             // in the dynamatrix
             //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
