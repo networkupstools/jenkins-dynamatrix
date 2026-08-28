@@ -406,6 +406,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
         stage("Initial discovery") {
             Map parInitial = [:]
+            Boolean stashAndChangedFilesKnown = false
 
             def stashSrcClosure = {
 /*
@@ -432,6 +433,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 }
 
                 echo "This build involves the following changedFiles list: ${changedFiles.toString()}"
+                stashAndChangedFilesKnown = true
             }
 
             stage('Investigate Node caps and prepare Dynamatrix object') {
@@ -521,6 +523,12 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                             manager.addShortText(qtxt)
                         }
                     } catch (Throwable ignore) {}   // no-op
+
+                    if (!stashAndChangedFilesKnown) {
+                        echo "WAITING until 'Stash source for workers' part is done and we also know the list of changed files..."
+                        waitUntil { stashAndChangedFilesKnown }
+                        echo "PROCEEDING with quick-test phase after 'Stash source for workers' part is done and we also know the list of changed files"
+                    }
 
                     // Walk the plank
                     try {
