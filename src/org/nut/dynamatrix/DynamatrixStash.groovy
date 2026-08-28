@@ -607,7 +607,11 @@ for R in `git remote` ; do
     && git fetch "\$R" "refs/heads/master:refs/heads/master"
 done
 
-git log -1 "\$R/master" && git branch master "\$R/master" && exit
+# We may have just registered the local branch metadata by "git fetch" above:
+git log -1 "\$R/master" \\
+&& ( git log -1 master 2>/dev/null || ( git branch master "\$R/master" && git log -1 master ) ) \\
+&& exit
+
 echo "FAILED to fetch a master branch; some build nuances may misbehave" >&2
 """
         }
