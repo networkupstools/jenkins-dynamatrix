@@ -90,6 +90,8 @@ Set<String> listChangedFilesGitWorkspace() {
 
     // Is this a Git-driven build? And a PR at that?
     if (env?.CHANGE_TARGET) {
+        sh ''' echo "Try to learn the list of files changed by PR in `hostname`:`pwd` workspace:" '''
+
         // A series of try/catch blocks below, as even with `returnStdout: true`
         // these steps tend to be the last in a failed stage, if something did
         // not work out well.

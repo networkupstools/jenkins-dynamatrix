@@ -571,6 +571,7 @@ class DynamatrixStash {
             // source and target branches be known, but not
             // master that is used for some ChangeLogs, etc.
             script.sh label:"Learn the recent history of master branch", script:"""
+echo "Try to learn the recent history of master branch in `hostname`:`pwd` workspace, or register it:"
 git log -1 master && exit
 
 REFREPO='${getGitRefrepoDir(script)}'
