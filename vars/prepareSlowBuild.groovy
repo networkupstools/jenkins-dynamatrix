@@ -31,6 +31,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
     Map stagesBinBuild = [:]
     Integer countFiltersSeen = 0
     Integer countFiltersSkipped = 0
+    Integer countSBEntriesSeen = 0
 
     if (dynacfgPipeline?.failFastSafe) {
         dynamatrix.failFast = (dynacfgPipeline?.failFast ? true : false)
@@ -43,8 +44,10 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
         'Discover slow build matrix',
         'PENDING', "slowbuild-discover")
     dynacfgPipeline.slowBuild.each { Map sb ->
+        countSBEntriesSeen++
         String sbNameSuffix = (sb?.name ? ": " + sb.name : "")
-        stage("Inspect SBF Cfg" + sbNameSuffix) {
+        String sbStageName = "Inspect SBF Cfg" + (Utils.isStringNotEmpty(sbNameSuffix) ? sbNameSuffix : " #countSBEntriesSeen")
+        stage(sbStageName) {
             if (dynamatrixGlobalState.enableDebugTrace) {
                 echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
             } else if (sb?.name) {
