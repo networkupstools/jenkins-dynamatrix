@@ -46,12 +46,14 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
     dynacfgPipeline.slowBuild.each { Map sb ->
         countSBEntriesSeen++
         String sbNameSuffix = (sb?.name ? ": " + sb.name : "")
-        String sbStageName = "Inspect SBF Cfg" + (Utils.isStringNotEmpty(sbNameSuffix) ? sbNameSuffix : " #countSBEntriesSeen")
+        String sbEntryNum = "#countSBEntriesSeen"
+        String sbStageName = "Inspect SBF Cfg" + (Utils.isStringNotEmpty(sbNameSuffix) ? sbNameSuffix : " ${sbEntryNum}")
+
         stage(sbStageName) {
             if (dynamatrixGlobalState.enableDebugTrace) {
-                echo "Inspecting a slow build filter configuration: " + Utils.castString(sb)
+                echo "Inspecting a slow build filter configuration ${sbEntryNum}: ${Utils.castString(sb)}"
             } else if (sb?.name) {
-                echo "Inspecting a slow build filter configuration: ${sb.name}"
+                echo "Inspecting a slow build filter configuration ${sbEntryNum}: ${sb.name}"
             }
 
             sb.tuplesParStages = null
