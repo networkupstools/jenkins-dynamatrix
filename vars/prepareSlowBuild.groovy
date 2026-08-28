@@ -49,7 +49,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
     dynacfgPipeline.slowBuild.each { Map sb ->
         countSBEntriesSeen++
         String sbNameSuffix = (sb?.name ? ": " + sb.name : "")
-        String sbEntryNum = "#countSBEntriesSeen"
+        String sbEntryNum = "#${countSBEntriesSeen}"
         String sbStageName = "Inspect SBF Cfg" + (Utils.isStringNotEmpty(sbNameSuffix) ? sbNameSuffix : " ${sbEntryNum}")
 
         parSBFStages[sbStageName] = {
