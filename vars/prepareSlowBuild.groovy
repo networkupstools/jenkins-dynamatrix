@@ -29,9 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
     Map stagesBinBuild = [:]
-    Integer countFiltersSeen = 0
-    Integer countFiltersSkipped = 0
+    Map mapCountFiltersSeen = [:]
+    Map mapCountFiltersSkipped = [:]
     Integer countSBEntriesSeen = 0
+    String lockName = "zzz-ephemeral:prepareSlowBuild:${env.BUILD_URL}"
+    Map parSBFStages = [failFast: false]
 
     if (dynacfgPipeline?.failFastSafe) {
         dynamatrix.failFast = (dynacfgPipeline?.failFast ? true : false)
@@ -43,13 +45,14 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
     infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
         'Discover slow build matrix',
         'PENDING', "slowbuild-discover")
+
     dynacfgPipeline.slowBuild.each { Map sb ->
         countSBEntriesSeen++
         String sbNameSuffix = (sb?.name ? ": " + sb.name : "")
         String sbEntryNum = "#countSBEntriesSeen"
         String sbStageName = "Inspect SBF Cfg" + (Utils.isStringNotEmpty(sbNameSuffix) ? sbNameSuffix : " ${sbEntryNum}")
 
-        stage(sbStageName) {
+        parSBFStages[sbStageName] = {
             if (dynamatrixGlobalState.enableDebugTrace) {
                 echo "Inspecting a slow build filter configuration ${sbEntryNum}: ${Utils.castString(sb)}"
             } else if (sb?.name) {
@@ -61,16 +64,16 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
             if (!(Utils.isClosureNotEmpty(sb?.getParStages))) {
                 if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                     echo "SKIP: No (valid) slow build filter definition in this entry" + sbNameSuffix
-                countFiltersSkipped++
+                mapCountFiltersSkipped[sbStageName] = sbEntryNum
                 return // continue
             }
 
-            // else: if getParStages is useful:
-            countFiltersSeen++
+            // else: if getParStages is at least useful:
+            mapCountFiltersSeen[sbStageName] = sbEntryNum
             if (sb?.disabled) {
                 if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                     echo "SKIP: This slow build filter configuration is marked as disabled for this run" + sbNameSuffix
-                countFiltersSkipped++
+                mapCountFiltersSkipped[sbStageName] = sbEntryNum
                 return // continue
             }
 
@@ -81,7 +84,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                 if (!(env.BRANCH_NAME ==~ sb.branchRegexSource)) {
                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                         echo "SKIP: Source branch name '${env.BRANCH_NAME}' did not match the pattern ~/${sb.branchRegexSource}/ for this slow build filter configuration" + sbNameSuffix
-                    countFiltersSkipped++
+                    mapCountFiltersSkipped[sbStageName] = sbEntryNum
                     return // continue
                 }
             }
@@ -92,7 +95,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                 ) {
                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                         echo "SKIP: Target branch name '${env.CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + sbNameSuffix
-                    countFiltersSkipped++
+                    mapCountFiltersSkipped[sbStageName] = sbEntryNum
                     return // continue
                 } // else: CHANGE_TARGET is empty (probably not
                 // building a PR), or regex matches, so go on
@@ -114,7 +117,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                 ) {
                     if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                         echo "SKIP: Target branch name '${_CHANGE_TARGET}' did not match the pattern ~/${sb.branchRegexTarget}/ for this slow build filter configuration" + sbNameSuffix
-                    countFiltersSkipped++
+                    mapCountFiltersSkipped[sbStageName] = sbEntryNum
                     return // continue
                 }
 
@@ -156,7 +159,7 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
                     if (skip) {
                         if (dynamatrixGlobalState.enableDebugTrace || sb?.name)
                             echo "SKIP: Changeset did not include file names which match the pattern appliesToChangedFilesRegex='${sb.appliesToChangedFilesRegex.toString()}' for this slow build filter configuration" + sbNameSuffix
-                        countFiltersSkipped++
+                        mapCountFiltersSkipped[sbStageName] = sbEntryNum
                         return // continue
                     } else {
                         if (dynamatrixGlobalState.enableDebugTrace)
@@ -174,59 +177,67 @@ Map call(Dynamatrix dynamatrix, Map dynacfgPipeline, Set<String> changedFiles) {
             } // if appliesToChangedFilesRegex
 
             echo "Did not rule out this slow build filter configuration" + sbNameSuffix
-            // This magic envvar is mapped into stage name
-            // in the dynamatrix
-            //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
-            withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ((sb?.name) ? sb.name.toString().trim() : "N/A")]) {
-                // First we aim to collect tuples, so we remember the DSBC details
-                // mapped to the stage name and closure, to dedup later:
-                Boolean defaultBak = dynamatrix.generateBuildReturnSetDefault
-                dynamatrix.generateBuildReturnSetDefault = true
+            lock(lockName) {
+                echo "Proceeding with slow build filter configuration analysis" + sbNameSuffix
+                // This magic envvar is mapped into stage name
+                // in the dynamatrix
+                //### .replaceAll("'", '').replaceAll('"', '').replaceAll(/\s/, '_')
+                withEnv(["CI_SLOW_BUILD_FILTERNAME=" + ((sb?.name) ? sb.name.toString().trim() : "N/A")]) {
+                    // First we aim to collect tuples, so we remember the DSBC details
+                    // mapped to the stage name and closure, to dedup later:
+                    Boolean defaultBak = dynamatrix.generateBuildReturnSetDefault
+                    dynamatrix.generateBuildReturnSetDefault = true
 
-                // Use unique clones of "dynamatrix.dynacfg" below,
-                // to avoid polluting their applied dynacfg based
-                // just on order of slowBuild scenario parsing;
-                // typical sb.getParStages{} calls dynamatrix.generateBuild():
-                dynamatrix.restoreDynacfg()
-                def psRet
-                if (Utils.isClosure(sb?.bodyParStages)) {
-                    // body may be empty {}, if user wants so
-                    psRet = sb.getParStages.call(dynamatrix, sb.bodyParStages)
-                } else {
-                    if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
-                        psRet = sb.getParStages.call(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                    // Use unique clones of "dynamatrix.dynacfg" below,
+                    // to avoid polluting their applied dynacfg based
+                    // just on order of slowBuild scenario parsing;
+                    // typical sb.getParStages{} calls dynamatrix.generateBuild():
+                    dynamatrix.restoreDynacfg()
+                    def psRet
+                    if (Utils.isClosure(sb?.bodyParStages)) {
+                        // body may be empty {}, if user wants so
+                        psRet = sb.getParStages.call(dynamatrix, sb.bodyParStages)
                     } else {
-                        psRet = sb.getParStages.call(dynamatrix, null)
+                        if (Utils.isClosure(dynacfgPipeline?.slowBuildDefaultBody)) {
+                            psRet = sb.getParStages.call(dynamatrix, dynacfgPipeline.slowBuildDefaultBody)
+                        } else {
+                            psRet = sb.getParStages.call(dynamatrix, null)
+                        }
+                    }
+                    dynamatrix.generateBuildReturnSetDefault = defaultBak
+
+                    if (psRet != null) {
+                        if (psRet instanceof Set) {
+                            if (psRet.empty)
+                                echo "WARNING: sb.getParStages{} returned an empty Set" + (sb?.name ? " for: " + sb.name : "")
+                            else
+                                echo "INFO: sb.getParStages{} returned a Set with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
+
+                            sb.tuplesParStages = psRet
+                            sb.mapParStages = [:]
+                            sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
+                        } else if (psRet instanceof Map) {
+                            if (psRet.empty)
+                                echo "WARNING: sb.getParStages{} returned an empty Map" + (sb?.name ? " for: " + sb.name : "")
+                            else
+                                echo "INFO: sb.getParStages{} returned a Map with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
+
+                            sb.mapParStages = psRet
+                        } else {
+                            echo "WARNING: sb.getParStages{} returned an unexpected type" + (sb?.name ? " for: " + sb.name : "")
+                        }
+                    } else {
+                        echo "WARNING: sb.getParStages{} returned null" + (sb?.name ? " for: " + sb.name : "")
                     }
                 }
-                dynamatrix.generateBuildReturnSetDefault = defaultBak
-
-                if (psRet != null) {
-                    if (psRet instanceof Set) {
-                        if (psRet.empty)
-                            echo "WARNING: sb.getParStages{} returned an empty Set" + (sb?.name ? " for: " + sb.name : "")
-                        else
-                            echo "INFO: sb.getParStages{} returned a Set with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
-
-                        sb.tuplesParStages = psRet
-                        sb.mapParStages = [:]
-                        sb.tuplesParStages.each { List tup -> sb.mapParStages[(String) (tup[0])] = (Closure) (tup[1]) }
-                    } else if (psRet instanceof Map) {
-                        if (psRet.empty)
-                            echo "WARNING: sb.getParStages{} returned an empty Map" + (sb?.name ? " for: " + sb.name : "")
-                        else
-                            echo "INFO: sb.getParStages{} returned a Map with ${psRet.size()} entries" + (sb?.name ? " for: " + sb.name : "")
-
-                        sb.mapParStages = psRet
-                    } else {
-                        echo "WARNING: sb.getParStages{} returned an unexpected type" + (sb?.name ? " for: " + sb.name : "")
-                    }
-                } else {
-                    echo "WARNING: sb.getParStages{} returned null" + (sb?.name ? " for: " + sb.name : "")
-                }
-            }
+            } // lock
         } // stage for one SBF Cfg
     } // dynacfgPipeline.slowBuild.each { sb -> ... }
+
+    parallel parSBFStages
+
+    Integer countFiltersSeen = mapCountFiltersSeen.size()
+    Integer countFiltersSkipped = mapCountFiltersSkipped.size()
 
     // TODO: Analyze collected scenarios for effective duplicates, remove extras
     // stage('Dedup effectively same scenarios') { ... }
