@@ -90,32 +90,48 @@ Set<String> listChangedFilesGitWorkspace() {
 
     // Is this a Git-driven build? And a PR at that?
     if (env?.CHANGE_TARGET) {
+        // A series of try/catch blocks below, as even with `returnStdout: true`
+        // these steps tend to be the last in a failed stage, if something did
+        // not work out well.
         if (env?.GIT_COMMIT) {
             // Inspired by https://issues.jenkins.io/browse/JENKINS-54285?focusedCommentId=353839
             // ...and assumes running in the fetched unpacked workspace dir
-            changedFiles = sh(
-                script: "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_COMMIT}",
-                returnStdout: true
-            ).split('\n').each { it.trim() }
-            if (changedFiles.size() > 0)
-                return changedFiles
+            // NOTE: These envvars may well be about this JSL, not the tested project!
+            try {
+                changedFiles = sh(
+                    script: "git diff --name-only origin/${env.CHANGE_TARGET}...${env.GIT_COMMIT}",
+                    returnStdout: true
+                ).split('\n').each { it.trim() }
+                if (changedFiles.size() > 0)
+                    return changedFiles
+            } catch (Throwable ignored) {
+                changedFiles = []
+            }
         }
 
         // GIT_COMMIT is not an ubiquitously available variable,
         // so fall back to reporting the current workspace state
-        changedFiles = sh(
-            script: "git diff --name-only origin/${env.CHANGE_TARGET}...HEAD",
-            returnStdout: true
-        ).split('\n').each { it.trim() }
-        if (changedFiles.size() > 0)
-            return changedFiles
+        try {
+            changedFiles = sh(
+                script: "git diff --name-only origin/${env.CHANGE_TARGET}...HEAD",
+                returnStdout: true
+            ).split('\n').each { it.trim() }
+            if (changedFiles.size() > 0)
+                return changedFiles
+        } catch (Throwable ignored) {
+            changedFiles = []
+        }
 
-        changedFiles = sh(
-            script: "git diff --name-only origin/${env.CHANGE_TARGET}",
-            returnStdout: true
-        ).split('\n').each { it.trim() }
-        if (changedFiles.size() > 0)
-            return changedFiles
+        try {
+            changedFiles = sh(
+                script: "git diff --name-only origin/${env.CHANGE_TARGET}",
+                returnStdout: true
+            ).split('\n').each { it.trim() }
+            if (changedFiles.size() > 0)
+                return changedFiles
+        } catch (Throwable ignored) {
+            changedFiles = []
+        }
     }
 
     // empty if here
