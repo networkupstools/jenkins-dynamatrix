@@ -235,6 +235,27 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     // dynacfgBase = Base configuration for Dynamatrix for this pipeline
     // dynacfgPipeline = Step-dependent setup in sub-maps
 
+    // Multibranch Pipeline => PR
+    if (env.CHANGE_URL && env.CHANGE_TITLE && env.CHANGE_ID) {
+        def topPostText = "PR #${env.CHANGE_ID}: ${env.CHANGE_TITLE}"
+        def topPostIcon = '/images/svgs/info.svg'
+        try {
+            try {
+                // Badge API v2.x; TOTHINK: Use ioicons not images URI?
+                if ("${env.CHANGE_URL}".toLowerCase().contains('github')) {
+                    topPostIcon = 'symbol-logo-github plugin-ionicons-api'
+                }
+                addSummary(text: topPostText, icon: topPostIcon,
+                    link: env.CHANGE_URL, target: '_blank')
+            } catch (Throwable olderBadge) {
+                // Assume older Badge API
+                topPostText = "<a href='${env.CHANGE_URL}' target='_blank'>${topPostText}</a>"
+                createSummary(text: topPostText, icon: topPostIcon)
+            }
+        } catch (Throwable ignored) {
+        } // no-op
+    }
+
     // Avoid NPEs (TBD: and changing the original Map's entries unexpectedly
     // commented away currently - this may misbehave vs. generateBuild() =>
     // use of script delegate => caller's original dynacfgPipeline when
