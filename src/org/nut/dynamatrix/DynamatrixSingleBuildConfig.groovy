@@ -451,6 +451,12 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                 labelMap[(String)(label)] = null
         }
 
+        if (labelMap.containsKey("PYTHONVER") && !labelMap.containsKey("PYTHON")) {
+            labelMap["PYTHON"] = labelMap["PYTHONVER"]
+        } else if (labelMap.containsKey("PYTHON") && !labelMap.containsKey("PYTHONVER")) {
+            labelMap["PYTHONVER"] = labelMap["PYTHON"]
+        }
+
         if (debugTrace) {
             script.println("Collected labelMap=${Utils.castString(labelMap)}\n" +
                 "  from labelSet=${Utils.castString(labelSet)}\n" +

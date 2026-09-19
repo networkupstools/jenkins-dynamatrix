@@ -2017,6 +2017,46 @@ def parallelStages = prepareDynamatrix(
                 dsbcBleSet = dsbcBleSetTmp
             }
 
+            // Resolve any extreme compiler/interpreter versions (MAX/MIN) and export PYTHON="$it"
+            dsbcBleSet.each() { DynamatrixSingleBuildConfig dsbcBleTmp ->
+                if (dsbcBleTmp.buildLabelSet != null) {
+                    Set newBuildLabelSet = [] as Set
+                    String newBle = dsbcBleTmp.buildLabelExpression
+                    dsbcBleTmp.buildLabelSet.each() { def label ->
+                        if (label instanceof String && (label =~ ~/^([^=]+)=(MAX|MIN)$/)) {
+                            def m = (label =~ ~/^([^=]+)=(MAX|MIN)$/)
+                            String cKey = m[0][1]
+                            String mode = m[0][2].toUpperCase()
+                            Set candidateVersions = this.nodeCaps.resolveAxisValues(cKey, false)
+                            Set standardConstraints = []
+                            if (dsbcBleTmp.virtualLabelSet != null) {
+                                dsbcBleTmp.virtualLabelSet.each() { if (it?.toString()?.startsWith("CSTDVERSION")) standardConstraints << it }
+                            }
+                            String chosenVer = Utils.resolveExtremeVersion(cKey, mode, candidateVersions, standardConstraints, dynacfgBuild.excludeCombos)
+                            if (chosenVer != null) {
+                                newBuildLabelSet << "${cKey}=${chosenVer}"
+                                if (newBle != null) newBle = newBle.replace((String)label, "${cKey}=${chosenVer}")
+                            } else {
+                                newBuildLabelSet << label
+                            }
+                        } else {
+                            newBuildLabelSet << label
+                        }
+                    }
+                    dsbcBleTmp.buildLabelSet = newBuildLabelSet
+                    dsbcBleTmp.buildLabelExpression = newBle
+                }
+
+                // Export chosen PYTHON="$it" into dsbcBleTmp.envvarSet
+                Map<String, String> kvMap = dsbcBleTmp.getKVMap(false)
+                if (kvMap.containsKey("PYTHONVER") || kvMap.containsKey("PYTHON")) {
+                    String pyVer = kvMap.get("PYTHON") ?: kvMap.get("PYTHONVER")
+                    if (dsbcBleTmp.envvarSet == null) dsbcBleTmp.envvarSet = [] as Set
+                    dsbcBleTmp.envvarSet.removeIf { it?.toString()?.startsWith("PYTHON=") }
+                    dsbcBleTmp.envvarSet.add("PYTHON=${pyVer}")
+                }
+            }
+
             if (debugMilestonesDetails) {
                 this.script.println "[DEBUG] generateBuildConfigSet(): BEFORE EXCLUSIONS: collected ${dsbcBleSet.size()} combos for individual builds with agent build label expression '${ble}'"
                 dsbcBleSet.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->

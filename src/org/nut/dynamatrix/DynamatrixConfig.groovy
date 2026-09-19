@@ -632,6 +632,31 @@ def parallelStages = prepareDynamatrix(
                 dynacfgOrig.remove('dsbcStageTimeoutSettings')
             }
 
+            // Handle requests for extreme compiler/interpreter versions like GCCVER: 'MAX', PYTHONVER: 'MIN', etc.
+            def extremeKeys = []
+            dynacfgOrig.keySet().each { def k ->
+                def v = dynacfgOrig[k]
+                if (v instanceof String && (k.toString().endsWith('VER') || k.toString() == 'PYTHON') && (v.equalsIgnoreCase('MAX') || v.equalsIgnoreCase('MIN'))) {
+                    extremeKeys << k
+                }
+            }
+            extremeKeys.each { def k ->
+                String v = dynacfgOrig[k].toString().toUpperCase()
+                // If dynamatrixAxesLabels is a list, substitute the axis
+                if (this.dynamatrixAxesLabels instanceof List) {
+                    List newAxes = []
+                    this.dynamatrixAxesLabels.each { def axis ->
+                        if (axis == k || axis == "\${${k}}" || (k.toString().endsWith('VER') && axis == '${COMPILER}VER')) {
+                            newAxes << (axis.toString() + "=${v}")
+                        } else {
+                            newAxes << axis
+                        }
+                    }
+                    this.dynamatrixAxesLabels = newAxes
+                }
+                dynacfgOrig.remove(k)
+            }
+
         }
 
         String errs = ""
