@@ -31,6 +31,18 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     public boolean keepWs = false
 
     /**
+     * Set (and reset per attempt) around the node{} allocation in
+     * Dynamatrix.generateParstageWithAgentBLE()/generateParstageWithAgentAnon()
+     * once the normal post-build workspace cleanup in buildMatrixCellCI()
+     * has been attempted (regardless of whether it actually succeeded).
+     * Lets the emergency cleanup safety net there know it does not need
+     * to try again for stages that reached their normal cleanup code -
+     * only for ones that never got that far (e.g. a stage timeout or an
+     * exception classified as AGENT_DISCONNECTED before reaching it).
+     */
+    public boolean wsCleanupAttempted = false
+
+    /**
      * Most of our builds require a build agent, usually one with
      * specific capabilities as selected by label expression below,
      * to run some programs in that OS. For generality's sake, there
