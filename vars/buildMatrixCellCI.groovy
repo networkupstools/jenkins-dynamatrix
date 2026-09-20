@@ -717,13 +717,24 @@ rm -f .ci-tarball-log-list.tmp .ci.*.log || true
 
         if (!(dsbc?.keepWs)) {
             // Avoid wasting space on workers; the dynamatrix is not too
-            // well suited for inspecting the builds post-mortem reliably
+            // well suited for inspecting the builds post-mortem reliably.
+            // Never let a cleanup failure (e.g. disk already full, or the
+            // agent going away) escape and mask the real build verdict
+            // below - the node{} wrapper in Dynamatrix.groovy makes its
+            // own best-effort cleanup attempt as a safety net for stages
+            // that never reach this point at all (stage timeout, lost
+            // agent, etc.)
             try {
                 cleanWs()
-            } catch (Throwable ignored) {
-                deleteDir()
+            } catch (Throwable ignoredCleanWs) {
+                try {
+                    deleteDir()
+                } catch (Throwable ignoredDeleteDir) {
+                    echo "[WARNING] buildMatrixCellCI(): failed to clean up workspace on '${env.NODE_NAME}' for stage '${stageName}': ${ignoredDeleteDir}"
+                }
             }
         }
+        if (dsbc != null) dsbc.wsCleanupAttempted = true
 
         if (shRes == 0) {
             dsbc?.setWorstResult('SUCCESS')

@@ -2017,6 +2017,46 @@ def parallelStages = prepareDynamatrix(
                 dsbcBleSet = dsbcBleSetTmp
             }
 
+            // Resolve any extreme compiler/interpreter versions (MAX/MIN) and export PYTHON="$it"
+            dsbcBleSet.each() { DynamatrixSingleBuildConfig dsbcBleTmp ->
+                if (dsbcBleTmp.buildLabelSet != null) {
+                    Set newBuildLabelSet = [] as Set
+                    String newBle = dsbcBleTmp.buildLabelExpression
+                    dsbcBleTmp.buildLabelSet.each() { def label ->
+                        if (label instanceof String && (label =~ ~/^([^=]+)=(MAX|MIN)$/)) {
+                            def m = (label =~ ~/^([^=]+)=(MAX|MIN)$/)
+                            String cKey = m[0][1]
+                            String mode = m[0][2].toUpperCase()
+                            Set candidateVersions = this.nodeCaps.resolveAxisValues(cKey, false)
+                            Set standardConstraints = []
+                            if (dsbcBleTmp.virtualLabelSet != null) {
+                                dsbcBleTmp.virtualLabelSet.each() { if (it?.toString()?.startsWith("CSTDVERSION")) standardConstraints << it }
+                            }
+                            String chosenVer = Utils.resolveExtremeVersion(cKey, mode, candidateVersions, standardConstraints, dynacfgBuild.excludeCombos)
+                            if (chosenVer != null) {
+                                newBuildLabelSet << "${cKey}=${chosenVer}"
+                                if (newBle != null) newBle = newBle.replace((String)label, "${cKey}=${chosenVer}")
+                            } else {
+                                newBuildLabelSet << label
+                            }
+                        } else {
+                            newBuildLabelSet << label
+                        }
+                    }
+                    dsbcBleTmp.buildLabelSet = newBuildLabelSet
+                    dsbcBleTmp.buildLabelExpression = newBle
+                }
+
+                // Export chosen PYTHON="$it" into dsbcBleTmp.envvarSet
+                Map<String, String> kvMap = dsbcBleTmp.getKVMap(false)
+                if (kvMap.containsKey("PYTHONVER") || kvMap.containsKey("PYTHON")) {
+                    String pyVer = kvMap.get("PYTHON") ?: kvMap.get("PYTHONVER")
+                    if (dsbcBleTmp.envvarSet == null) dsbcBleTmp.envvarSet = [] as Set
+                    dsbcBleTmp.envvarSet.removeIf { it?.toString()?.startsWith("PYTHON=") }
+                    dsbcBleTmp.envvarSet.add("PYTHON=${pyVer}")
+                }
+            }
+
             if (debugMilestonesDetails) {
                 this.script.println "[DEBUG] generateBuildConfigSet(): BEFORE EXCLUSIONS: collected ${dsbcBleSet.size()} combos for individual builds with agent build label expression '${ble}'"
                 dsbcBleSet.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->
@@ -2309,7 +2349,12 @@ def parallelStages = prepareDynamatrix(
             if (dsbc.enableDebugTrace) script.echo "Requesting a node by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
             script.node (dsbc.buildLabelExpression) {
                 if (dsbc.enableDebugTrace) script.echo "Starting on node '${script.env?.NODE_NAME}' requested by label expression '${dsbc.buildLabelExpression}' for stage '${stageName}'" + sbName
-                payload()
+                dsbc.wsCleanupAttempted = false
+                try {
+                    payload()
+                } finally {
+                    attemptEmergencyWorkspaceCleanup(script, dsbc, stageName, sbName)
+                }
             } // node
         }
     }
@@ -2325,8 +2370,52 @@ def parallelStages = prepareDynamatrix(
             if (dsbc.enableDebugTrace) script.echo "Requesting any node for stage '${stageName}'" + sbName
             script.node {
                 if (dsbc.enableDebugTrace) script.echo "Starting on node '${script.env?.NODE_NAME}' requested as 'any' for stage '${stageName}'" + sbName
-                payload()
+                dsbc.wsCleanupAttempted = false
+                try {
+                    payload()
+                } finally {
+                    attemptEmergencyWorkspaceCleanup(script, dsbc, stageName, sbName)
+                }
             } // node
+        }
+    }
+
+    /**
+     * Best-effort emergency workspace cleanup, run from a {@code finally}
+     * block wrapped around the {@code payload()} call inside {@code node{}}
+     * in generateParstageWithAgentBLE()/generateParstageWithAgentAnon() -
+     * so it runs after a successful build, a failed one, AND one aborted by
+     * dsbc.stageTimeoutSettings (FlowInterruptedException), which otherwise
+     * never reaches the normal cleanup code in buildMatrixCellCI() (that
+     * code lives at the tail of a "Results" stage which a mid-build timeout
+     * skips entirely).
+     *
+     * Skips already-cleaned or intentionally-kept workspaces via
+     * dsbc.wsCleanupAttempted / dsbc.keepWs. Any failure here (e.g. the
+     * agent is already disconnected, or so out of space that even the
+     * cleanup itself can't run) is logged and swallowed rather than
+     * propagated: node-bound commands like cleanWs()/deleteDir() may
+     * simply be unreachable by this point, and that must not mask or
+     * replace whatever real build/timeout verdict already got recorded.
+     */
+    void attemptEmergencyWorkspaceCleanup(def script, DynamatrixSingleBuildConfig dsbc, String stageName, String sbName) {
+        if (dsbc == null || dsbc.keepWs || dsbc.wsCleanupAttempted) {
+            return
+        }
+        try {
+            if (dsbc.enableDebugTrace) script.echo "[DEBUG] Emergency workspace cleanup for stage '${stageName}'" + sbName + " on node '${script.env?.NODE_NAME}' (normal post-build cleanup was not reached)"
+            try {
+                script.cleanWs()
+            } catch (Throwable ignoredCleanWs) {
+                script.deleteDir()
+            }
+            dsbc.wsCleanupAttempted = true
+        } catch (Throwable ignored) {
+            // Agent may already be disconnected, or disk so full that even
+            // a wipe attempt fails - nothing more we can do here; the next
+            // job to reuse this workspace slot gets another shot at it via
+            // DynamatrixStash.deleteWS() during its checkout.
+            script.echo "[WARNING] Emergency workspace cleanup for stage '${stageName}'" + sbName + " could not complete on node '${script.env?.NODE_NAME}': ${ignored}"
         }
     }
 

@@ -318,8 +318,109 @@ class Utils {
 
     /** Helper to treat {@code null} {@link Integer} values as zeroes for counting */
     @NonCPS
-    static Integer intNullZero(Integer i) {
+    public static Integer intNullZero(Integer i) {
         if (i == null) { return 0 } else { return i }
+    }
+
+    /**
+     * Parse a version string (like "19", "19.1", "4.4.4", "gcc-4.4.4-illumos")
+     * into a list of integers for semver comparison.
+     * Assume missing numeric components are zeroes (e.g. "19" = 19.0.0, "19.1" = 19.1.0).
+     * Suffixes like "gcc-4.4.4-illumos" are ignored (in practice they do not
+     * collide with other installed compilers => treated for now as "4.4.4").
+     */
+    @NonCPS
+    public static List<Integer> parseSemVer(String ver) {
+        if (!isStringNotEmpty(ver)) return [0, 0, 0]
+        // Suffixes and prefixes like "gcc-4.4.4-illumos" are ignored with a comment
+        // that they do not in practice collide with other installed compilers =>
+        // treated for now as "4.4.4" (or "gcc version 4.4.4").
+        def matcher = ver =~ /(\d+(?:\.\d+)*)/
+        if (matcher.find()) {
+            String verNum = matcher.group(1)
+            List<Integer> parts = verNum.split('\\.').collect { it.isInteger() ? it.toInteger() : 0 }
+            while (parts.size() < 3) {
+                parts.add(0)
+            }
+            return parts
+        }
+        return [0, 0, 0]
+    }
+
+    /**
+     * Compare two semantic versions according to semver rules.
+     * Missing numeric components are zeroes, e.g. "19" (19.0.0) < "19.1" (19.1.0).
+     */
+    @NonCPS
+    public static int compareSemVer(String v1, String v2) {
+        List<Integer> p1 = parseSemVer(v1)
+        List<Integer> p2 = parseSemVer(v2)
+        int maxLen = Math.max(p1.size(), p2.size())
+        for (int i = 0; i < maxLen; i++) {
+            int c1 = i < p1.size() ? p1[i] : 0
+            int c2 = i < p2.size() ? p2[i] : 0
+            if (c1 != c2) {
+                return c1 <=> c2
+            }
+        }
+        return 0
+    }
+
+    /**
+     * Sort a collection of version strings according to semantic versioning.
+     */
+    @NonCPS
+    public static List<String> sortSemVer(Collection versions, boolean ascending = true) {
+        if (versions == null) return []
+        List<String> list = new ArrayList<String>(versions.collect { it?.toString() }.findAll { isStringNotEmpty(it) })
+        list.sort { String a, String b ->
+            int cmp = compareSemVer(a, b)
+            return ascending ? cmp : -cmp
+        }
+        return list
+    }
+
+    /**
+     * Resolve MIN or MAX semantic version for a compiler or interpreter key,
+     * taking into account C or CXX standard version constraints and exclusion combos.
+     */
+    @NonCPS
+    public static String resolveExtremeVersion(
+        String compilerKey,
+        String mode,
+        Collection candidateVersions,
+        Collection standardConstraints = [],
+        Collection excludeCombos = []
+    ) {
+        if (!isListNotEmpty(candidateVersions)) return null
+        List<String> versions = candidateVersions.collect { it?.toString()?.trim() }.findAll { isStringNotEmpty(it) }
+        if (versions.isEmpty()) return null
+
+        List<String> validVersions = []
+        if (isListNotEmpty(standardConstraints) && isListNotEmpty(excludeCombos)) {
+            versions.each { String ver ->
+                boolean isExcluded = false
+                // Check if this compiler version with standard constraints hits any excludeCombos
+                DynamatrixSingleBuildConfig testDsbc = new DynamatrixSingleBuildConfig(null)
+                testDsbc.buildLabelSet = ["${compilerKey}=${ver}"] as Set
+                testDsbc.virtualLabelSet = (standardConstraints as Set)
+                if (testDsbc.matchesConstraints(excludeCombos as Set)) {
+                    isExcluded = true
+                }
+                if (!isExcluded) {
+                    validVersions << ver
+                }
+            }
+        }
+
+        List<String> targetList = (!validVersions.isEmpty()) ? validVersions : versions
+        List<String> sorted = sortSemVer(targetList, true)
+        if (sorted.isEmpty()) return null
+        if ("MIN".equalsIgnoreCase(mode)) {
+            return sorted[0]
+        } else {
+            return sorted[sorted.size() - 1]
+        }
     }
 
     /** Take {@code blcSet[]} which is a Set of Sets (equivalent to field
