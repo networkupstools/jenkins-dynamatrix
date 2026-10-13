@@ -21,8 +21,27 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 // Note that this code relies on more data points than just
 // dynacfgPipeline.stylecheck.*
 
+/**
+ * Check whether stylecheck is enabled in dynacfgPipeline configuration
+ */
+Boolean isEnabled(Map dynacfgPipeline = [:]) {
+    if (dynacfgPipeline == null) return false
+    if (!dynacfgPipeline.containsKey('stylecheck')) return false
+    def sc = dynacfgPipeline['stylecheck']
+    if (sc == null || sc == false || "${sc}".trim().equalsIgnoreCase("false")) return false
+    if (sc == true || "${sc}".trim().equalsIgnoreCase("true")) return true
+    if (Utils.isString(sc)) return Utils.isStringNotEmpty(sc)
+    if (Utils.isMap(sc)) {
+        if (sc.containsKey('enabled')) {
+            return (sc.enabled != false && !"${sc.enabled}".trim().equalsIgnoreCase("false"))
+        }
+        return !sc.isEmpty()
+    }
+    return (Boolean)sc
+}
+
 def call(Map dynacfgPipeline = [:]) {
-    if (dynacfgPipeline?.stylecheck) {
+    if (isEnabled(dynacfgPipeline)) {
         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                 'awaiting stylecheck results',
                 'PENDING', "stylecheck")
@@ -85,7 +104,7 @@ def call(Map dynacfgPipeline = [:]) {
  */
 Map makeMap(Map dynacfgPipeline = [:]) {
     Map par = [:]
-    if (dynacfgPipeline?.stylecheck != null) {
+    if (isEnabled(dynacfgPipeline)) {
         par["stylecheck"] = {
             stylecheck(dynacfgPipeline)
         } // stylecheck

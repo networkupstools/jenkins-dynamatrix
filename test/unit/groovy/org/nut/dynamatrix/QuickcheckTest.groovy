@@ -93,4 +93,85 @@ class QuickcheckTest {
         assertTrue(map.containsKey("quickcheck for ubuntu-x86_64"))
         assertTrue(map.containsKey("quickcheck for debian-arm64"))
     }
+
+    @Test
+    void testQuickcheckIsEnabled() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class quickcheckClass = gcl.parseClass(new File("vars/quickcheck.groovy"))
+        def quickcheckInstance = quickcheckClass.getDeclaredConstructor().newInstance()
+
+        assertFalse(quickcheckInstance.isEnabled(null))
+        assertFalse(quickcheckInstance.isEnabled([:]))
+        assertFalse(quickcheckInstance.isEnabled([quickcheck: false]))
+        assertFalse(quickcheckInstance.isEnabled([quickcheck: 'false']))
+        assertFalse(quickcheckInstance.isEnabled([quickcheck: [:]]))
+        assertFalse(quickcheckInstance.isEnabled([quickcheck: [enabled: false]]))
+        assertFalse(quickcheckInstance.isEnabled([quickcheck: [shellcheck: null, spellcheck: false, stylecheck: null]]))
+
+        assertTrue(quickcheckInstance.isEnabled([quickcheck: true]))
+        assertTrue(quickcheckInstance.isEnabled([quickcheck: 'true']))
+        assertTrue(quickcheckInstance.isEnabled([quickcheck: [enabled: true]]))
+        assertTrue(quickcheckInstance.isEnabled([quickcheck: [shellcheck: true]]))
+        assertTrue(quickcheckInstance.isEnabled([quickcheck: [spellcheck: 'make spellcheck']]))
+        assertTrue(quickcheckInstance.isEnabled([quickcheck: [stylecheck: 'make stylecheck']]))
+    }
+
+    @Test
+    void testSpellcheckIsEnabled() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class spellcheckClass = gcl.parseClass(new File("vars/spellcheck.groovy"))
+        def spellcheckInstance = spellcheckClass.getDeclaredConstructor().newInstance()
+
+        assertFalse(spellcheckInstance.isEnabled(null))
+        assertFalse(spellcheckInstance.isEnabled([:]))
+        assertFalse(spellcheckInstance.isEnabled([spellcheck: false]))
+        assertFalse(spellcheckInstance.isEnabled([spellcheck: 'false']))
+        assertFalse(spellcheckInstance.isEnabled([spellcheck: '']))
+        assertFalse(spellcheckInstance.isEnabled([spellcheck: [enabled: false]]))
+
+        assertTrue(spellcheckInstance.isEnabled([spellcheck: true]))
+        assertTrue(spellcheckInstance.isEnabled([spellcheck: 'true']))
+        assertTrue(spellcheckInstance.isEnabled([spellcheck: 'make spellcheck']))
+        assertTrue(spellcheckInstance.isEnabled([spellcheck: [enabled: true]]))
+    }
+
+    @Test
+    void testStylecheckIsEnabled() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class stylecheckClass = gcl.parseClass(new File("vars/stylecheck.groovy"))
+        def stylecheckInstance = stylecheckClass.getDeclaredConstructor().newInstance()
+
+        assertFalse(stylecheckInstance.isEnabled(null))
+        assertFalse(stylecheckInstance.isEnabled([:]))
+        assertFalse(stylecheckInstance.isEnabled([stylecheck: false]))
+        assertFalse(stylecheckInstance.isEnabled([stylecheck: 'false']))
+        assertFalse(stylecheckInstance.isEnabled([stylecheck: '']))
+        assertFalse(stylecheckInstance.isEnabled([stylecheck: [enabled: false]]))
+
+        assertTrue(stylecheckInstance.isEnabled([stylecheck: true]))
+        assertTrue(stylecheckInstance.isEnabled([stylecheck: 'true']))
+        assertTrue(stylecheckInstance.isEnabled([stylecheck: 'make stylecheck']))
+        assertTrue(stylecheckInstance.isEnabled([stylecheck: [enabled: true]]))
+    }
+
+    @Test
+    void testShellcheckIsEnabled() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class shellcheckClass = gcl.parseClass(new File("vars/shellcheck.groovy"))
+        def shellcheckInstance = shellcheckClass.getDeclaredConstructor().newInstance()
+
+        assertFalse(shellcheckInstance.isEnabled(null))
+        assertFalse(shellcheckInstance.isEnabled([:]))
+        assertFalse(shellcheckInstance.isEnabled([shellcheck: false]))
+        assertFalse(shellcheckInstance.isEnabled([shellcheck: 'false']))
+        assertFalse(shellcheckInstance.isEnabled([shellcheck: '']))
+        assertFalse(shellcheckInstance.isEnabled([shellcheck: [enabled: false]]))
+        assertFalse(shellcheckInstance.isEnabled([shellcheck: [single: null, multi: null]]))
+
+        assertTrue(shellcheckInstance.isEnabled([shellcheck: true]))
+        assertTrue(shellcheckInstance.isEnabled([shellcheck: 'true']))
+        assertTrue(shellcheckInstance.isEnabled([shellcheck: 'make shellcheck']))
+        assertTrue(shellcheckInstance.isEnabled([shellcheck: [single: 'make shellcheck']]))
+        assertTrue(shellcheckInstance.isEnabled([shellcheck: [multi: 'make shellcheck']]))
+    }
 }

@@ -41,6 +41,36 @@ def stageNameFunc_Quickcheck(DynamatrixSingleBuildConfig dsbc) {
  */
 
 /**
+ * Check whether quickcheck is enabled in dynacfgPipeline configuration
+ */
+Boolean isEnabled(Map dynacfgPipeline = [:]) {
+    if (dynacfgPipeline == null) return false
+    if (!dynacfgPipeline.containsKey('quickcheck')) return false
+    def qc = dynacfgPipeline['quickcheck']
+    if (qc == null || qc == false || "${qc}".trim().equalsIgnoreCase("false")) return false
+    if (qc == true || "${qc}".trim().equalsIgnoreCase("true")) return true
+    if (Utils.isMap(qc)) {
+        if (qc.containsKey('enabled')) {
+            if (qc.enabled == false || "${qc.enabled}".trim().equalsIgnoreCase("false")) {
+                return false
+            }
+            if (qc.enabled == true || "${qc.enabled}".trim().equalsIgnoreCase("true")) {
+                return true
+            }
+        }
+        boolean hasCheck = (qc.shellcheck != null && qc.shellcheck != false && !"${qc.shellcheck}".trim().equalsIgnoreCase("false")) ||
+                           (qc.spellcheck != null && qc.spellcheck != false && !"${qc.spellcheck}".trim().equalsIgnoreCase("false")) ||
+                           (qc.stylecheck != null && qc.stylecheck != false && !"${qc.stylecheck}".trim().equalsIgnoreCase("false"))
+        if (hasCheck) return true
+        if (qc.containsKey('shellcheck') || qc.containsKey('spellcheck') || qc.containsKey('stylecheck')) {
+            return false
+        }
+        return !qc.isEmpty()
+    }
+    return (Boolean)qc
+}
+
+/**
  * Returns a Set of tuples that a later stage can convert
  * into a Map for `parallel` test running with {@link #makeMap}
  * (avoid having a long-lived Map object which can upset CPS
@@ -56,20 +86,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
 
     Boolean debugTrace = (dynacfgPipeline?.enableDebugTrace || dynacfgPipeline?.quickcheck?.enableDebugTrace)
 
-    // Check if quickcheck is enabled (either map or boolean)
-    boolean isQuickcheckEnabled = false
-    if (dynacfgPipeline?.quickcheck) {
-        if (Utils.isMap(dynacfgPipeline.quickcheck)) {
-            isQuickcheckEnabled = (dynacfgPipeline.quickcheck.shellcheck != null ||
-                                   dynacfgPipeline.quickcheck.spellcheck != null ||
-                                   dynacfgPipeline.quickcheck.stylecheck != null ||
-                                   dynacfgPipeline.quickcheck.enabled != false)
-        } else if ("${dynacfgPipeline.quickcheck}".trim().equals("true")) {
-            isQuickcheckEnabled = true
-        }
-    }
-
-    if (isQuickcheckEnabled) {
+    // Check if quickcheck is enabled
+    if (isEnabled(dynacfgPipeline)) {
         if (debugTrace) this.script.println "[DEBUG] Discovering stagesQuickcheck: calling prepareDynamatrix() step..."
 
         stagesQuickcheck_arr = prepareDynamatrix([
