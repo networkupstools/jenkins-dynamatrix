@@ -317,8 +317,8 @@ class NodeCaps implements Cloneable {
                 }
             }
 
-            // Check if asking for literal "MAX" or "MIN"
-            def extremeMatcher = axis =~ /^([^=]+)=(MAX|MIN)$/
+            // Check if asking for literal "MAX", "MIN", "NOT_MAX", "!MAX", "NOT_MIN", "!MIN", "EXTREME", "EXTREMES", "MIN_MAX", "!EXTREME", "!EXTREMES", "!MIN_MAX", "NOT_EXTREME", "NOT_EXTREMES", "NOT_MIN_MAX"
+            def extremeMatcher = axis =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/
             if (extremeMatcher.find()) {
                 String targetKey = extremeMatcher[0][1]
                 String mode = extremeMatcher[0][2]
@@ -328,7 +328,7 @@ class NodeCaps implements Cloneable {
                     if (label == null) return
                     label = label.trim()
                     if (label.equals("")) return
-                    if (targetKey == 'PYTHONVER' || targetKey == 'PYTHON') {
+                    if (targetKey in ['PYTHONVER', 'PYTHON']) {
                         if (label.startsWith("PYTHONVER=")) {
                             String v = label.substring("PYTHONVER=".length()).trim()
                             if (v != "") verToLabel[v] = label
@@ -344,13 +344,14 @@ class NodeCaps implements Cloneable {
                     }
                 }
                 if (!verToLabel.isEmpty()) {
-                    List<String> sortedVers = Utils.sortSemVer(verToLabel.keySet(), true)
-                    String chosenVer = (mode.equalsIgnoreCase("MIN")) ? sortedVers[0] : sortedVers[sortedVers.size() - 1]
-                    String chosenLabel = verToLabel[chosenVer]
-                    if (returnAssignments) {
-                        res << (labelFixed + chosenLabel)
-                    } else {
-                        res << chosenVer
+                    List<String> chosenVers = Utils.resolveExtremeVersions(targetKey, mode, verToLabel.keySet())
+                    chosenVers.each { String chosenVer ->
+                        String chosenLabel = verToLabel[chosenVer]
+                        if (returnAssignments) {
+                            res << (labelFixed + chosenLabel)
+                        } else {
+                            res << chosenVer
+                        }
                     }
                     return res.flatten()
                 }
@@ -398,10 +399,10 @@ class NodeCaps implements Cloneable {
                 ) {
                     if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
                     hit = true
-                } else if (axis == 'PYTHONVER' || axis == 'PYTHON') {
+                } else if (axis in ['PYTHONVER', 'PYTHON']) {
                     if (returnAssignments && val == null && (label.startsWith("PYTHONVER=") || label.startsWith("PYTHON="))) {
                         hit = true
-                    } else if (!returnAssignments && (label == 'PYTHON' || label == 'PYTHONVER') && val != null) {
+                    } else if (!returnAssignments && (label in ['PYTHON', 'PYTHONVER']) && val != null) {
                         hit = true
                     }
                 } else {

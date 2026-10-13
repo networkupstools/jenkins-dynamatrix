@@ -585,22 +585,25 @@ class DynamatrixConfig implements Cloneable {
                 dynacfgOrig.remove('dsbcStageTimeoutSettings')
             }
 
-            // Handle requests for extreme compiler/interpreter versions like GCCVER: 'MAX', PYTHONVER: 'MIN', etc.
+            // Handle requests for extreme compiler/interpreter versions like GCCVER: 'MAX', PYTHONVER: 'MIN', COMPILERVER: 'NOT_MAX', etc.
             def extremeKeys = []
             dynacfgOrig.keySet().each { def k ->
                 def v = dynacfgOrig[k]
-                if (v instanceof String && (k.toString().endsWith('VER') || k.toString() == 'PYTHON') && (v.equalsIgnoreCase('MAX') || v.equalsIgnoreCase('MIN'))) {
+                if (v instanceof String && (k.toString().endsWith('VER') || k.toString() == 'PYTHON') && (
+                    v in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
+                )) {
                     extremeKeys << k
                 }
             }
             extremeKeys.each { def k ->
-                String v = dynacfgOrig[k].toString().toUpperCase()
-                // If dynamatrixAxesLabels is a list, substitute the axis
-                if (this.dynamatrixAxesLabels instanceof List) {
+                String v = dynacfgOrig[k].toString()
+                // If dynamatrixAxesLabels is a collection/list, substitute the axis
+                if (Utils.isList(this.dynamatrixAxesLabels) || this.dynamatrixAxesLabels instanceof Collection) {
                     List newAxes = []
                     this.dynamatrixAxesLabels.each { def axis ->
-                        if (axis == k || axis == "\${${k}}" || (k.toString().endsWith('VER') && axis == '${COMPILER}VER')) {
-                            newAxes << (axis.toString() + "=${v}")
+                        String axisStr = axis?.toString()
+                        if (axisStr == k.toString() || axisStr == "\${${k}}" || (k.toString().endsWith('VER') && (axisStr in ['${COMPILER}VER', '${COMPILERVER}']))) {
+                            newAxes << (axisStr + "=${v}")
                         } else {
                             newAxes << axis
                         }
@@ -688,7 +691,9 @@ class DynamatrixConfig implements Cloneable {
             this.sanitycheckDynamatrixAxesLabels()
         }
 
-        return (Set)(this.@dynamatrixAxesLabels)
+        if (this.@dynamatrixAxesLabels == null) return [] as Set
+        if (this.@dynamatrixAxesLabels instanceof Set) return (Set)(this.@dynamatrixAxesLabels)
+        return (this.@dynamatrixAxesLabels as Set)
     }
 
     /**
