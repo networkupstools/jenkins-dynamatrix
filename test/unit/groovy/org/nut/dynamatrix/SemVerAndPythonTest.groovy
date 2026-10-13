@@ -41,10 +41,40 @@ class SemVerAndPythonTest {
         List<String> gccVersions = ["4.4.4", "4.8.0", "4.8.2", "4.9", "7", "10"]
         assertEquals("4.4.4", Utils.resolveExtremeVersion("GCCVER", "MIN", gccVersions))
         assertEquals("10", Utils.resolveExtremeVersion("GCCVER", "MAX", gccVersions))
+        assertEquals(["4.4.4"], Utils.resolveExtremeVersions("GCCVER", "MIN", gccVersions))
+        assertEquals(["10"], Utils.resolveExtremeVersions("GCCVER", "MAX", gccVersions))
+
+        // NOT_MIN / !MIN
+        assertEquals(["4.8.0", "4.8.2", "4.9", "7", "10"], Utils.resolveExtremeVersions("GCCVER", "NOT_MIN", gccVersions))
+        assertEquals(["4.8.0", "4.8.2", "4.9", "7", "10"], Utils.resolveExtremeVersions("GCCVER", "!MIN", gccVersions))
+
+        // NOT_MAX / !MAX
+        assertEquals(["4.4.4", "4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "NOT_MAX", gccVersions))
+        assertEquals(["4.4.4", "4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "!MAX", gccVersions))
 
         List<String> pyVersions = ["2.7", "3.8", "3.9", "3.10", "3.12"]
         assertEquals("2.7", Utils.resolveExtremeVersion("PYTHONVER", "MIN", pyVersions))
         assertEquals("3.12", Utils.resolveExtremeVersion("PYTHONVER", "MAX", pyVersions))
+        assertEquals(["3.8", "3.9", "3.10", "3.12"], Utils.resolveExtremeVersions("PYTHONVER", "NOT_MIN", pyVersions))
+        assertEquals(["3.8", "3.9", "3.10", "3.12"], Utils.resolveExtremeVersions("PYTHONVER", "!MIN", pyVersions))
+        assertEquals(["2.7", "3.8", "3.9", "3.10"], Utils.resolveExtremeVersions("PYTHONVER", "NOT_MAX", pyVersions))
+        assertEquals(["2.7", "3.8", "3.9", "3.10"], Utils.resolveExtremeVersions("PYTHONVER", "!MAX", pyVersions))
+    }
+
+    @Test
+    void testSingleVersionAgentExtremeResolution() {
+        // Single-Version Agents: If an agent only has one version of a compiler installed (e.g., only GCC 14 exists),
+        // that single version is simultaneously MIN and MAX. It must not be tagged as NOT_MAX or NOT_MIN.
+        List<String> singleGcc = ["14"]
+        assertEquals("14", Utils.resolveExtremeVersion("GCCVER", "MIN", singleGcc))
+        assertEquals("14", Utils.resolveExtremeVersion("GCCVER", "MAX", singleGcc))
+        assertEquals(["14"], Utils.resolveExtremeVersions("GCCVER", "MIN", singleGcc))
+        assertEquals(["14"], Utils.resolveExtremeVersions("GCCVER", "MAX", singleGcc))
+
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_MIN", singleGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!MIN", singleGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_MAX", singleGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!MAX", singleGcc))
     }
 
     @Test
@@ -64,6 +94,20 @@ class SemVerAndPythonTest {
         // MAX version with C++11 constraint should still be 10
         String maxC11 = Utils.resolveExtremeVersion("GCCVER", "MAX", gccVersions, ["CSTDVERSION=11"], cfg.excludeCombos)
         assertEquals("10", maxC11)
+
+        // NOT_MIN / NOT_MAX with C++11 constraint (viable candidates: 4.8.2, 4.9, 7, 10)
+        List<String> notMinC11 = Utils.resolveExtremeVersions("GCCVER", "NOT_MIN", gccVersions, ["CSTDVERSION=11"], cfg.excludeCombos)
+        assertEquals(["4.9", "7", "10"], notMinC11)
+
+        List<String> notMaxC11 = Utils.resolveExtremeVersions("GCCVER", "NOT_MAX", gccVersions, ["CSTDVERSION=11"], cfg.excludeCombos)
+        assertEquals(["4.8.2", "4.9", "7"], notMaxC11)
+
+        // C++17 constraint has only GCC 10 as viable candidate: single version -> NOT_MIN and NOT_MAX should be empty!
+        List<String> notMinC17 = Utils.resolveExtremeVersions("GCCVER", "NOT_MIN", gccVersions, ["CSTDVERSION=17"], cfg.excludeCombos)
+        assertEquals([], notMinC17)
+
+        List<String> notMaxC17 = Utils.resolveExtremeVersions("GCCVER", "NOT_MAX", gccVersions, ["CSTDVERSION=17"], cfg.excludeCombos)
+        assertEquals([], notMaxC17)
     }
 
     @Test
@@ -111,6 +155,99 @@ class SemVerAndPythonTest {
 
         Set minPy = nc.resolveAxisValues("PYTHONVER=MIN", "test-node", false)
         assertEquals(["2.7"] as Set, minPy)
+
+        // Test NOT_MIN / !MIN and NOT_MAX / !MAX resolution for GCCVER
+        Set notMinGcc = nc.resolveAxisValues("GCCVER=NOT_MIN", "test-node", false)
+        assertEquals(["4.9", "10"] as Set, notMinGcc)
+
+        Set notMinGccExcl = nc.resolveAxisValues("GCCVER=!MIN", "test-node", false)
+        assertEquals(["4.9", "10"] as Set, notMinGccExcl)
+
+        Set notMaxGcc = nc.resolveAxisValues("GCCVER=NOT_MAX", "test-node", false)
+        assertEquals(["4.4.4", "4.9"] as Set, notMaxGcc)
+
+        Set notMaxGccExcl = nc.resolveAxisValues("GCCVER=!MAX", "test-node", false)
+        assertEquals(["4.4.4", "4.9"] as Set, notMaxGccExcl)
+
+        // Test with returnAssignments = true and fixed prefix
+        Set notMaxAssigns = nc.resolveAxisValues("COMPILER=GCC GCCVER=NOT_MAX", "test-node", true)
+        assertEquals(["COMPILER=GCC GCCVER=4.4.4", "COMPILER=GCC GCCVER=4.9"] as Set, notMaxAssigns)
+
+        // Test single-version agent in NodeCaps
+        NodeData ndSingle = new NodeData()
+        ndSingle.nodeName = "single-node"
+        ndSingle.labelMap = [
+            'COMPILER': ['GCC'] as TreeSet,
+            'COMPILER=GCC': null,
+            'GCCVER': ['14'] as TreeSet,
+            'GCCVER=14': null
+        ]
+        nc.nodeData["single-node"] = ndSingle
+
+        assertEquals(["14"] as Set, nc.resolveAxisValues("GCCVER=MAX", "single-node", false))
+        assertEquals(["14"] as Set, nc.resolveAxisValues("GCCVER=MIN", "single-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=NOT_MAX", "single-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=!MAX", "single-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=NOT_MIN", "single-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=!MIN", "single-node", false))
+    }
+
+    @Test
+    void testDynamatrixConfigExtremeVersionSubstitution() {
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'COMPILERVER': 'NOT_MAX'
+        ])
+        assertTrue(cfg.dynamatrixAxesLabels.contains('${COMPILER}VER=NOT_MAX'))
+
+        DynamatrixConfig cfg2 = new DynamatrixConfig(null)
+        cfg2.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'COMPILERVER': '!MAX'
+        ])
+        assertTrue(cfg2.dynamatrixAxesLabels.contains('${COMPILER}VER=!MAX'))
+
+        DynamatrixConfig cfg3 = new DynamatrixConfig(null)
+        cfg3.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'GCCVER': 'NOT_MIN'
+        ])
+        assertTrue(cfg3.dynamatrixAxesLabels.contains('${COMPILER}VER=NOT_MIN'))
+    }
+
+    @Test
+    void testCompilerFamilyAxisExpansionWithNotMax() {
+        NodeData nd = new NodeData()
+        nd.nodeName = "multi-compiler-node"
+        nd.labelMap = [
+            'COMPILER': ['GCC', 'CLANG'] as TreeSet,
+            'COMPILER=GCC': null,
+            'COMPILER=CLANG': null,
+            'GCCVER': ['10', '12', '14'] as TreeSet,
+            'GCCVER=10': null,
+            'GCCVER=12': null,
+            'GCCVER=14': null,
+            'CLANGVER': ['16', '17', '18'] as TreeSet,
+            'CLANGVER=16': null,
+            'CLANGVER=17': null,
+            'CLANGVER=18': null
+        ]
+
+        NodeCaps nc = new NodeCaps(null)
+        nc.nodeData = ["multi-compiler-node": nd]
+        nc.isInitialized = true
+
+        // Scope of Axis: Rule applies across compiler families (${COMPILER}VER=NOT_MAX matching both GCCVER=NOT_MAX and CLANGVER=NOT_MAX)
+        Set resolvedAxes = nc.resolveAxisName('${COMPILER}VER=NOT_MAX')
+        assertTrue(resolvedAxes.contains('COMPILER=GCC GCCVER=NOT_MAX'))
+        assertTrue(resolvedAxes.contains('COMPILER=CLANG CLANGVER=NOT_MAX'))
+
+        Set gccNotMax = nc.resolveAxisValues("COMPILER=GCC GCCVER=NOT_MAX", "multi-compiler-node", true)
+        assertEquals(["COMPILER=GCC GCCVER=10", "COMPILER=GCC GCCVER=12"] as Set, gccNotMax)
+
+        Set clangNotMax = nc.resolveAxisValues("COMPILER=CLANG CLANGVER=NOT_MAX", "multi-compiler-node", true)
+        assertEquals(["COMPILER=CLANG CLANGVER=16", "COMPILER=CLANG CLANGVER=17"] as Set, clangNotMax)
     }
 
     @Test

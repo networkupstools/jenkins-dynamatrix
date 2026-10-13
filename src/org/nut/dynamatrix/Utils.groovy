@@ -381,20 +381,23 @@ class Utils {
     }
 
     /**
-     * Resolve MIN or MAX semantic version for a compiler or interpreter key,
+     * Resolve MIN, MAX, NOT_MIN, !MIN, NOT_MAX, or !MAX semantic versions for a compiler or interpreter key,
      * taking into account C or CXX standard version constraints and exclusion combos.
+     * Returns a list of matching versions (empty list if none match).
+     * If an agent only has one version installed, that single version is simultaneously MIN and MAX,
+     * and is not tagged as NOT_MAX or NOT_MIN.
      */
     @NonCPS
-    public static String resolveExtremeVersion(
+    public static List<String> resolveExtremeVersions(
         String compilerKey,
         String mode,
         Collection candidateVersions,
         Collection standardConstraints = [],
         Collection excludeCombos = []
     ) {
-        if (!isListNotEmpty(candidateVersions)) return null
+        if (!isListNotEmpty(candidateVersions)) return []
         List<String> versions = candidateVersions.collect { it?.toString()?.trim() }.findAll { isStringNotEmpty(it) }
-        if (versions.isEmpty()) return null
+        if (versions.isEmpty()) return []
 
         List<String> validVersions = []
         if (isListNotEmpty(standardConstraints) && isListNotEmpty(excludeCombos)) {
@@ -413,14 +416,52 @@ class Utils {
             }
         }
 
-        List<String> targetList = (!validVersions.isEmpty()) ? validVersions : versions
+        List<String> targetList = (isListNotEmpty(standardConstraints) && isListNotEmpty(excludeCombos)) ? validVersions : versions
         List<String> sorted = sortSemVer(targetList, true)
-        if (sorted.isEmpty()) return null
-        if ("MIN".equalsIgnoreCase(mode)) {
-            return sorted[0]
-        } else {
-            return sorted[sorted.size() - 1]
+        if (sorted.isEmpty()) return []
+
+        String m = mode ? mode.trim().toUpperCase() : "MAX"
+        if (sorted.size() <= 1) {
+            // Single-version case: the only version is simultaneously MIN and MAX.
+            // It must not be tagged as NOT_MAX or NOT_MIN.
+            if ("MIN".equalsIgnoreCase(m)) {
+                return sorted
+            } else if ("MAX".equalsIgnoreCase(m)) {
+                return sorted
+            } else {
+                // NOT_MIN / !MIN / NOT_MAX / !MAX
+                return []
+            }
         }
+
+        if ("MIN".equalsIgnoreCase(m)) {
+            return [sorted[0]]
+        } else if ("MAX".equalsIgnoreCase(m)) {
+            return [sorted[sorted.size() - 1]]
+        } else if ("NOT_MIN".equalsIgnoreCase(m) || "!MIN".equalsIgnoreCase(m)) {
+            return sorted.subList(1, sorted.size())
+        } else if ("NOT_MAX".equalsIgnoreCase(m) || "!MAX".equalsIgnoreCase(m)) {
+            return sorted.subList(0, sorted.size() - 1)
+        } else {
+            return [sorted[sorted.size() - 1]]
+        }
+    }
+
+    /**
+     * Resolve MIN, MAX, NOT_MIN, !MIN, NOT_MAX, or !MAX semantic version for a compiler or interpreter key,
+     * taking into account C or CXX standard version constraints and exclusion combos.
+     */
+    @NonCPS
+    public static String resolveExtremeVersion(
+        String compilerKey,
+        String mode,
+        Collection candidateVersions,
+        Collection standardConstraints = [],
+        Collection excludeCombos = []
+    ) {
+        List<String> vers = resolveExtremeVersions(compilerKey, mode, candidateVersions, standardConstraints, excludeCombos)
+        if (vers.isEmpty()) return null
+        return vers[0]
     }
 
     /** Take {@code blcSet[]} which is a Set of Sets (equivalent to field

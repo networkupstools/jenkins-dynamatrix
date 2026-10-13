@@ -317,11 +317,11 @@ class NodeCaps implements Cloneable {
                 }
             }
 
-            // Check if asking for literal "MAX" or "MIN"
-            def extremeMatcher = axis =~ /^([^=]+)=(MAX|MIN)$/
+            // Check if asking for literal "MAX", "MIN", "NOT_MAX", "!MAX", "NOT_MIN", "!MIN"
+            def extremeMatcher = axis =~ ~/(?i)^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN)$/
             if (extremeMatcher.find()) {
                 String targetKey = extremeMatcher[0][1]
-                String mode = extremeMatcher[0][2]
+                String mode = extremeMatcher[0][2].toUpperCase()
                 // Collect all version candidates for targetKey on this node
                 Map<String, String> verToLabel = [:]
                 this.nodeData[node].labelMap.keySet().each { String label ->
@@ -344,13 +344,14 @@ class NodeCaps implements Cloneable {
                     }
                 }
                 if (!verToLabel.isEmpty()) {
-                    List<String> sortedVers = Utils.sortSemVer(verToLabel.keySet(), true)
-                    String chosenVer = (mode.equalsIgnoreCase("MIN")) ? sortedVers[0] : sortedVers[sortedVers.size() - 1]
-                    String chosenLabel = verToLabel[chosenVer]
-                    if (returnAssignments) {
-                        res << (labelFixed + chosenLabel)
-                    } else {
-                        res << chosenVer
+                    List<String> chosenVers = Utils.resolveExtremeVersions(targetKey, mode, verToLabel.keySet())
+                    chosenVers.each { String chosenVer ->
+                        String chosenLabel = verToLabel[chosenVer]
+                        if (returnAssignments) {
+                            res << (labelFixed + chosenLabel)
+                        } else {
+                            res << chosenVer
+                        }
                     }
                     return res.flatten()
                 }
