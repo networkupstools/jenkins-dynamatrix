@@ -621,6 +621,30 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return "${sn}shellcheck"
     }
 
+    /**
+     * Stage naming functions for Quickcheck (grabbed by OS distro + CPU arch, regardless of bitness):
+     * <pre>
+     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&QuickcheckPlatform_StageNameTagFunc
+     * </pre>
+     */
+    @NonCPS
+    public static String QuickcheckPlatform_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
+        return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.QuickcheckPlatform_StageNameTagValue(dsbc) + '"'
+    }
+
+    @NonCPS
+    public static String QuickcheckPlatform_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
+        Map<String, String> labelMap = dsbc.getKVMap(false)
+        String sn = ""
+        if (labelMap.containsKey("OS_FAMILY"))
+            sn += labelMap.OS_FAMILY + "-"
+        if (labelMap.containsKey("OS_DISTRO"))
+            sn += labelMap.OS_DISTRO + "-"
+        if (labelMap.containsKey("ARCH"))
+            sn += labelMap.ARCH + "-"
+        return "${sn}quickcheck"
+    }
+
     /** Use if a particular shell (or several) has been chosen for one test stage... */
     @NonCPS
     public static String Shellcheck_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {

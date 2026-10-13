@@ -221,6 +221,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     dynacfgPipeline = stylecheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = spellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
     dynacfgPipeline = shellcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
+    dynacfgPipeline = quickcheck.sanityCheckDynacfgPipeline(dynacfgPipeline)
 
     String dynamatrixComment = "dynamatrixPipeline() step"
     Dynamatrix dynamatrix = new Dynamatrix(this, dynamatrixComment +
@@ -237,6 +238,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
     // (generated inside CPS code) as a Set of tuples, then
     // convert into a Map just for `parallel`. Go figure...
     Set<List> stagesShellcheck_arr = []
+    Set<List> stagesQuickcheck_arr = []
 
     // This is passed into `parallel` step, and is hopefully
     // safer than initially passing a Map when called *not*
@@ -405,6 +407,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     // that chosen host once, and use that workspace
                     // for distinct test stages with different shells.
                     stagesShellcheck_arr = shellcheck(dynacfgPipeline, true)
+                    stagesQuickcheck_arr = quickcheck(dynacfgPipeline, true)
 
                     /* As noted above, any relatively heavy axis filters,
                      * which need many seconds to process just to decide
@@ -441,6 +444,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     par1 += spellcheck.makeMap(dynacfgPipeline)
                     par1 += stylecheck.makeMap(dynacfgPipeline)
                     par1 += shellcheck.makeMap(stagesShellcheck_arr)
+                    par1 += quickcheck.makeMap(stagesQuickcheck_arr)
 
                     try {
                         String qtxt = "Quick-test phase planned parallel stages (overall, not only dynamatrix): " + par1.values().count { it instanceof Closure }
@@ -468,6 +472,11 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 'awaiting shellcheck results',
                                 'PENDING', "shellcheck")
                         }
+                        if (stagesQuickcheck_arr?.size() > 0) {
+                            infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
+                                'awaiting quickcheck results',
+                                'PENDING', "quickcheck")
+                        }
                         parallel par1
 
                         // If we are here - nothing crashed in parallel stages
@@ -475,6 +484,11 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                             infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                                 'shellcheck passed for this commit',
                                 'SUCCESS', "shellcheck")
+                        }
+                        if (stagesQuickcheck_arr?.size() > 0) {
+                            infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
+                                'quickcheck passed for this commit',
+                                'SUCCESS', "quickcheck")
                         }
                     } catch (Throwable t) {
                         // FIXME: Find a way to query parallel-stage node status
