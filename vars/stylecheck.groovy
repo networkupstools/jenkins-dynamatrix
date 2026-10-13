@@ -49,7 +49,7 @@ def call(Map dynacfgPipeline = [:]) {
         Boolean succeeded = null
         while (!succeeded) {
             try {
-                node(infra.labelDocumentationWorker()) {
+                node(infra.labelCodeStyleWorker()) {
                     withEnvOptional(dynacfgPipeline?.defaultTools) {
                         unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 

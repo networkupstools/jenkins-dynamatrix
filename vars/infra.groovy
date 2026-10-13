@@ -95,6 +95,33 @@ String labelDocumentationSpellchecker() {
 }
 
 /**
+ * Returns the Jenkins agent label (expression) for a worker that
+ * can be used to check/ensure code style etc. as defined by a project.<br/>
+ *
+ * As a fallback (if not specified in the
+ * {@link dynamatrixGlobalState#labelCodeStyleWorker} setting,
+ * looks for {@code 'code-styler'} in currently defined build agents.
+ *
+ * @see infra#labelDefaultWorker
+ * @see dynamatrixGlobalState#labelCodeStyleWorker
+ */
+String labelCodeStyleWorker() {
+    // Global/modifiable config point:
+    if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelCodeStyleWorker)) {
+        return dynamatrixGlobalState.labelCodeStyleWorker
+    }
+
+    // Do any nodes declare a capability to check and/or enforce
+    // a code style that the hosted projects might need?
+    String fallback = 'code-styler'
+    def nodeList = nodesByLabel (label: fallback, offline: true)
+    if (nodeList.size() > 0)
+        return fallback
+
+    return labelDefaultWorker()
+}
+
+/**
  * Returns the default "stable branch" name for SCM operations, from
  * settings or a hard-coded default.
  * @see dynamatrixGlobalState#branchDefaultStable
