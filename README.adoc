@@ -123,29 +123,182 @@ implements the pipeline in a reusable fashion.
 Example configuration
 ~~~~~~~~~~~~~~~~~~~~~
 
-In the illustrative example below, two workers are provisioned and
-based on their installed tools, they declare the following agent
-labels relevant to the dynamatrix:
+In the illustrative example below, workers are provisioned and
+based on their installed tools, they declare agent labels relevant
+to the dynamatrix:
 
 * "testoi":
 ----
 COMPILER=CLANG COMPILER=GCC
 CLANGVER=8 CLANGVER=9
 GCCVER=10 GCCVER=4.4.4 GCCVER=4.9 GCCVER=6 GCCVER=7
-OS=openindiana
-ARCH=x86_64 ARCH=x86
+OS_FAMILY=illumos OS_DISTRO=openindiana
+ARCH_BITS=64 ARCH_BITS=32
+ARCH64=amd64 ARCH32=i86pc
 nut-builder zmq-builder
 ----
 * "testdeb":
 ----
 COMPILER=GCC
 GCCVER=4.8 GCCVER=4.9 GCCVER=5 GCCVER=7
-OS=linux
-ARCH=x86_64 ARCH=x86 ARCH=armv7l
+OS_FAMILY=linux OS_DISTRO=debian-10
+ARCH_BITS=64 ARCH_BITS=32
+ARCH64=x86_64 ARCH32=x86 ARCH32=armv7l
 nut-builder zmq-builder linux-kernel-builder
 ----
 
-A Jenkinsfile in a project using this library would look like:
+Real-world Jenkinsfile pipeline setup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A modern Jenkinsfile using `jenkins-dynamatrix` orchestrates builds
+by defining two configuration maps:
+
+* `dynacfgBase` -- base properties for node label discovery and default
+  axis definitions across the dynamatrix;
+* `dynacfgPipeline` -- pipeline steps, quick build stages (spellcheck,
+  shellcheck, stylecheck), build system configuration (`autotools` or
+  `ci_build`), stage timeouts, notification handlers, and matrix
+  definitions for `slowBuild` stages.
+
+Here is a real-world example modeled after
+link:https://github.com/networkupstools/nut/blob/master/Jenkinsfile-dynamatrix[NUT `Jenkinsfile-dynamatrix`]:
+
+[source,groovy]
+----
+@Library('jenkins-dynamatrix') _
+import org.nut.dynamatrix.dynamatrixGlobalState;
+import org.nut.dynamatrix.*;
+
+def dynacfgBase = [:]
+def dynacfgPipeline = [:]
+
+// Base configuration
+dynacfgBase['commonLabelExpr'] = 'nut-builder'
+dynacfgBase['dynamatrixAxesLabels'] = ['OS_FAMILY', 'OS_DISTRO', '${COMPILER}VER', 'ARCH${ARCH_BITS}']
+dynacfgBase['dynamatrixAxesCommonEnv'] = [ ['LANG=C', 'LC_ALL=C', 'TZ=UTC'] ]
+
+dynacfgPipeline.stashnameSrc = 'nut-ci-src'
+dynacfgPipeline.buildSystem = 'ci_build.sh'
+dynacfgPipeline.failFast = false
+dynacfgPipeline.delayedIssueAnalysis = true
+dynacfgPipeline.dsbcStageTimeoutSettings = [ time: 2, unit: 'HOURS' ]
+
+// Quick stages configuration
+dynacfgPipeline['spellcheck_prepconf'] = false
+dynacfgPipeline['spellcheck_configure'] = false
+dynacfgPipeline['spellcheck'] = '(BUILD_TYPE=default-spellcheck-quick ./ci_build.sh)'
+
+dynacfgPipeline['shellcheck'] = [
+    requiredNodelabels: ["nut-builder"],
+    dynamatrixAxesLabels: ['OS_FAMILY', 'OS_DISTRO', 'MAKE'],
+    single: '( if [ -z "${MAKE-}" ]; then MAKE=make; fi; ${MAKE} -j 4 shellcheck )',
+    multi: '(cd tests && SERVICE_FRAMEWORK="selftest" SHELL_PROGS="$SHELL_PROGS" ./nut-driver-enumerator-test.sh )',
+    multiLabel: 'SHELL_PROGS',
+    skipShells: [ 'zsh', 'tcsh', 'csh' ]
+]
+
+// Common axis matching filters for reuse
+dynacfgPipeline.axisCombos_ARCH32x64 = [~/BITS=32/, ~/ARCH_BITS=64/]
+dynacfgPipeline.axisCombos_ARCH64x32 = [~/BITS=64/, ~/ARCH_BITS=32/]
+dynacfgPipeline.axisCombos_STRICT_C  = [~/CSTDVARIANT=c/]
+
+dynacfgPipeline.excludeCombos_DEFAULT = [
+    dynacfgPipeline.axisCombos_ARCH32x64,
+    dynacfgPipeline.axisCombos_ARCH64x32
+]
+
+// Default build execution body for matrix cells
+dynacfgPipeline.slowBuildDefaultBody_ci_build = { def delegate -> setDelegate(delegate)
+    String stageNameClone = "${stageName}"
+    def dsbcClone = dsbc.clone()
+
+    withEnvOptional(dynacfgPipeline.defaultTools) {
+        stage('Unstash sources') {
+            unstashCleanSrc(dynacfgPipeline.stashnameSrc)
+        }
+        buildMatrixCellCI(dynacfgPipeline, dsbcClone, stageNameClone)
+    }
+}
+
+// Matrix definitions for slowBuild
+dynacfgPipeline.slowBuild = [
+    [
+        name: 'CI build with various C/C++ standards and bitness',
+        getParStages: { dynamatrix, Closure body ->
+            return dynamatrix.generateBuild([
+                dynamatrixAxesVirtualLabelsMap: [
+                    'BITS': [64, 32],
+                    'CSTDVERSION_${KEY}': [ ['c': '99', 'cxx': '11'], ['c': '11', 'cxx': '14'] ],
+                    'CSTDVARIANT': ['gnu', 'c']
+                ],
+                dynamatrixAxesCommonEnv: [
+                    ['LANG=C', 'LC_ALL=C', 'TZ=UTC',
+                     'BUILD_TYPE=default-all-errors',
+                     'BUILD_WARNFATAL=yes', 'BUILD_WARNOPT=hard']
+                ],
+                allowedFailure: [
+                    dynacfgPipeline.axisCombos_STRICT_C
+                ],
+                runAllowedFailure: true,
+                mergeMode: [
+                    'excludeCombos': 'merge',
+                    'dynamatrixAxesCommonEnv': 'replace',
+                    'dynamatrixAxesVirtualLabelsMap': 'merge'
+                ],
+                excludeCombos: dynacfgPipeline.excludeCombos_DEFAULT
+            ], body)
+        },
+        bodyParStages: dynacfgPipeline.slowBuildDefaultBody_ci_build
+    ]
+]
+
+// Custom stage naming function example (optional)
+@NonCPS
+def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
+    def labelMap = dsbc.getKVMap(false)
+    String sn = ""
+    if (labelMap.containsKey("OS_FAMILY")) sn += labelMap.OS_FAMILY + "-"
+    if (labelMap.containsKey("OS_DISTRO")) sn += labelMap.OS_DISTRO + "-"
+    return "MATRIX_TAG=\"${sn}shellcheckCustom\""
+}
+
+// Execution entry point
+dynamatrixPipeline(dynacfgBase, dynacfgPipeline)
+----
+
+Low-level prepareDynamatrix() usage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For custom workflows that do not use `dynamatrixPipeline(...)`, the low-level
+`prepareDynamatrix()` step can generate parallel stage maps directly:
+
+[source,groovy]
+----
+def parallelStages = prepareDynamatrix(
+    commonLabelExpr: 'nut-builder',
+    compilerType: 'C',
+    compilerLabel: 'COMPILER',
+    compilerTools: ['CC', 'CXX', 'CPP'],
+    dynamatrixAxesLabels: [~/^OS_DIS.+/, '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+    dynamatrixAxesCommonEnv: [['LANG=C', 'TZ=UTC'], ['LANG=en_US']],
+    dynamatrixAxesVirtualLabelsMap: [
+        'BITS': [32, 64],
+        'CSTDVERSION_${KEY}': [ ['c': '99', 'cxx': '11'] ],
+        'CSTDVARIANT': ['gnu', 'c']
+    ],
+    allowedFailure: [[~/CSTDVARIANT=c/]],
+    runAllowedFailure: true,
+    excludeCombos: [[~/BITS=32/, ~/ARCH_BITS=64/], [~/BITS=64/, ~/ARCH_BITS=32/]]
+) { def delegate -> setDelegate(delegate)
+    unstash 'nut-ci-src'
+    sh """ ${dynamatrix.commonEnv} ./ci_build.sh """
+}
+
+parallel parallelStages
+----
+
+...or a more complicated pipeline with multiple build/test stages:
+
 ----
 @Library ('dynamatrix') _
 
@@ -205,20 +358,26 @@ pipeline {
 parallel parallelStages
 ----
 
-With this configuration, the Dynamatrix should detect the running
-agents and know their capabilities, so it is in position to prepare
-a series of builds covering every available OS and compiler version
-and CPU architecture.
+With this configuration, Dynamatrix detects the currently running
+agents and their declared capabilities, generating build scenarios
+covering available OS distributions, compiler versions, toolkit
+implementations, CPU bitness/architectures, and virtual matrix axes.
+
+This is what the "dynamic matrix" part is all about: the set of
+platforms covered by the build farm today may differ from those
+covered yesterday or tomorrow, without any change in the recipe
+sources and purely based on the available population of workers
+(e.g. dialing in as Jenkins Swarm agents provided by the project
+community members who care that the project can build reliably
+for their platform).
 
 It can optionally be filtered through constraints, such as that we
 do not even want to try building a combination described by (matching)
-the `skip` option, that we require to run some combination(s) even if
-an agent for that is not currently running so labels are not detected
-(things can hang in queue waiting for a worker, or can cause spinning
-up a build agent if it is configured but dormant), or that some certain
-build setups may fail (e.g. we wonder how they fare, but they are not
-a required baseline and so not blockers for a merge) so their results
-would not be impacting the overall job verdict.
+the `excludeCombos` option, that we require to run some combination(s)
+(`dynamatrixRequiredLabelCombos`) even if an agent for that is not
+currently running so labels are not detected, or that certain build
+setups may fail (`allowedFailure` / `runAllowedFailure`) but their
+failure does not fail the overall job status.
 
 For certain compiler toolkits (e.g. 'C' family) it would provide an
 automatic preparation of variables for several same-versioned tools
