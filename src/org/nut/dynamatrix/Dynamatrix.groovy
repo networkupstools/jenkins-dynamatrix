@@ -1975,10 +1975,10 @@ class Dynamatrix implements Cloneable {
                     Set newBuildLabelSet = [] as Set
                     String newBle = dsbcBleTmp.buildLabelExpression
                     dsbcBleTmp.buildLabelSet.each() { def label ->
-                        if (label instanceof String && (label =~ ~/(?i)^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN)$/)) {
-                            def m = (label =~ ~/(?i)^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN)$/)
+                        if (label instanceof String && (label =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN)$/)) {
+                            def m = (label =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN)$/)
                             String cKey = m[0][1]
-                            String mode = m[0][2].toUpperCase()
+                            String mode = m[0][2]
                             Set candidateVersions = this.nodeCaps.resolveAxisValues(cKey, false)
                             Set standardConstraints = []
                             if (dsbcBleTmp.virtualLabelSet != null) {

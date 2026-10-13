@@ -318,17 +318,17 @@ class NodeCaps implements Cloneable {
             }
 
             // Check if asking for literal "MAX", "MIN", "NOT_MAX", "!MAX", "NOT_MIN", "!MIN"
-            def extremeMatcher = axis =~ ~/(?i)^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN)$/
+            def extremeMatcher = axis =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN)$/
             if (extremeMatcher.find()) {
                 String targetKey = extremeMatcher[0][1]
-                String mode = extremeMatcher[0][2].toUpperCase()
+                String mode = extremeMatcher[0][2]
                 // Collect all version candidates for targetKey on this node
                 Map<String, String> verToLabel = [:]
                 this.nodeData[node].labelMap.keySet().each { String label ->
                     if (label == null) return
                     label = label.trim()
                     if (label.equals("")) return
-                    if (targetKey == 'PYTHONVER' || targetKey == 'PYTHON') {
+                    if (targetKey in ['PYTHONVER', 'PYTHON']) {
                         if (label.startsWith("PYTHONVER=")) {
                             String v = label.substring("PYTHONVER=".length()).trim()
                             if (v != "") verToLabel[v] = label
@@ -399,10 +399,10 @@ class NodeCaps implements Cloneable {
                 ) {
                     if (debugTraceResolver) this.script.println "[DEBUG] resolveAxisValues(): label matched axis as string"
                     hit = true
-                } else if (axis == 'PYTHONVER' || axis == 'PYTHON') {
+                } else if (axis in ['PYTHONVER', 'PYTHON']) {
                     if (returnAssignments && val == null && (label.startsWith("PYTHONVER=") || label.startsWith("PYTHON="))) {
                         hit = true
-                    } else if (!returnAssignments && (label == 'PYTHON' || label == 'PYTHONVER') && val != null) {
+                    } else if (!returnAssignments && (label in ['PYTHON', 'PYTHONVER']) && val != null) {
                         hit = true
                     }
                 } else {

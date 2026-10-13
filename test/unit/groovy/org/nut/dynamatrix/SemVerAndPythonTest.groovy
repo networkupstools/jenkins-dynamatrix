@@ -266,4 +266,48 @@ class SemVerAndPythonTest {
         Set kvSet = dsbc.getKVSet()
         assertTrue(kvSet.contains("PYTHON=3.9"))
     }
+
+    @Test
+    void testExactUppercaseRequirement() {
+        List<String> gccVersions = ["4.4.4", "4.8.0", "4.8.2", "4.9", "7", "10"]
+        // Non-uppercase modes should not match
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "min", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "max", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "not_min", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!min", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "not_max", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!max", gccVersions))
+
+        assertNull(Utils.resolveExtremeVersion("GCCVER", "min", gccVersions))
+        assertNull(Utils.resolveExtremeVersion("GCCVER", "max", gccVersions))
+
+        // NodeCaps should not match lowercase
+        NodeData nd = new NodeData()
+        nd.nodeName = "test-node"
+        nd.labelMap = [
+            'COMPILER': ['GCC'] as TreeSet,
+            'COMPILER=GCC': null,
+            'GCCVER': ['4.4.4', '4.9', '10'] as TreeSet,
+            'GCCVER=4.4.4': null,
+            'GCCVER=4.9': null,
+            'GCCVER=10': null
+        ]
+        NodeCaps nc = new NodeCaps(null)
+        nc.nodeData = ["test-node": nd]
+        nc.isInitialized = true
+
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=max", "test-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=min", "test-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=not_max", "test-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=!max", "test-node", false))
+
+        // DynamatrixConfig should not substitute lowercase
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'COMPILERVER': 'not_max'
+        ])
+        assertFalse(cfg.dynamatrixAxesLabels.contains('${COMPILER}VER=not_max'))
+        assertFalse(cfg.dynamatrixAxesLabels.contains('${COMPILER}VER=NOT_MAX'))
+    }
 }

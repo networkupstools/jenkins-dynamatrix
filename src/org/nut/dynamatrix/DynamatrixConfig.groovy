@@ -590,21 +590,19 @@ class DynamatrixConfig implements Cloneable {
             dynacfgOrig.keySet().each { def k ->
                 def v = dynacfgOrig[k]
                 if (v instanceof String && (k.toString().endsWith('VER') || k.toString() == 'PYTHON') && (
-                    v.equalsIgnoreCase('MAX') || v.equalsIgnoreCase('MIN') ||
-                    v.equalsIgnoreCase('NOT_MAX') || v.equalsIgnoreCase('!MAX') ||
-                    v.equalsIgnoreCase('NOT_MIN') || v.equalsIgnoreCase('!MIN')
+                    v in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN']
                 )) {
                     extremeKeys << k
                 }
             }
             extremeKeys.each { def k ->
-                String v = dynacfgOrig[k].toString().toUpperCase()
+                String v = dynacfgOrig[k].toString()
                 // If dynamatrixAxesLabels is a collection/list, substitute the axis
                 if (Utils.isList(this.dynamatrixAxesLabels) || this.dynamatrixAxesLabels instanceof Collection) {
                     List newAxes = []
                     this.dynamatrixAxesLabels.each { def axis ->
                         String axisStr = axis?.toString()
-                        if (axisStr == k.toString() || axisStr == "\${${k}}" || (k.toString().endsWith('VER') && (axisStr == '${COMPILER}VER' || axisStr == '${COMPILERVER}'))) {
+                        if (axisStr == k.toString() || axisStr == "\${${k}}" || (k.toString().endsWith('VER') && (axisStr in ['${COMPILER}VER', '${COMPILERVER}']))) {
                             newAxes << (axisStr + "=${v}")
                         } else {
                             newAxes << axis

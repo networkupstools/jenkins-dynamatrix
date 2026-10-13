@@ -420,13 +420,11 @@ class Utils {
         List<String> sorted = sortSemVer(targetList, true)
         if (sorted.isEmpty()) return []
 
-        String m = mode ? mode.trim().toUpperCase() : "MAX"
+        String m = mode ? mode.trim() : "MAX"
         if (sorted.size() <= 1) {
             // Single-version case: the only version is simultaneously MIN and MAX.
             // It must not be tagged as NOT_MAX or NOT_MIN.
-            if ("MIN".equalsIgnoreCase(m)) {
-                return sorted
-            } else if ("MAX".equalsIgnoreCase(m)) {
+            if (m in ['MIN', 'MAX']) {
                 return sorted
             } else {
                 // NOT_MIN / !MIN / NOT_MAX / !MAX
@@ -434,16 +432,16 @@ class Utils {
             }
         }
 
-        if ("MIN".equalsIgnoreCase(m)) {
+        if (m == 'MIN') {
             return [sorted[0]]
-        } else if ("MAX".equalsIgnoreCase(m)) {
+        } else if (m == 'MAX') {
             return [sorted[sorted.size() - 1]]
-        } else if ("NOT_MIN".equalsIgnoreCase(m) || "!MIN".equalsIgnoreCase(m)) {
+        } else if (m in ['NOT_MIN', '!MIN']) {
             return sorted.subList(1, sorted.size())
-        } else if ("NOT_MAX".equalsIgnoreCase(m) || "!MAX".equalsIgnoreCase(m)) {
+        } else if (m in ['NOT_MAX', '!MAX']) {
             return sorted.subList(0, sorted.size() - 1)
         } else {
-            return [sorted[sorted.size() - 1]]
+            return []
         }
     }
 
