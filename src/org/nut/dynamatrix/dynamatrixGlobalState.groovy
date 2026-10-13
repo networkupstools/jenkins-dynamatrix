@@ -30,6 +30,8 @@ class dynamatrixGlobalState {
     static String labelCheckoutWorker = null
     /** Something with tools to generate MAN, PDF, HTML... and to spell-check */
     static String labelDocumentationWorker = null
+    /** Something with tools to spell-check, but not necessarily to generate doc formats */
+    static String labelDocumentationSpellchecker = null
 
     static Boolean useGitRefrepoDirWS = false
 

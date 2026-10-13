@@ -46,6 +46,7 @@ String labelCheckoutWorker() {
  * looks for {@code 'doc-builder'} in currently defined build agents.
  *
  * @see infra#labelDefaultWorker
+ * @see infra#labelDocumentationSpellchecker
  * @see dynamatrixGlobalState#labelDocumentationWorker
  */
 String labelDocumentationWorker() {
@@ -56,9 +57,39 @@ String labelDocumentationWorker() {
 
     // Do any nodes declare a capability to build any doc types
     // that the hosted projects might need?
-    def nodeList = nodesByLabel (label: 'doc-builder', offline: true)
+    String fallback = 'doc-builder'
+    def nodeList = nodesByLabel (label: fallback, offline: true)
     if (nodeList.size() > 0)
-        return 'doc-builder'
+        return fallback
+
+    return labelDefaultWorker()
+}
+
+/**
+ * Returns the Jenkins agent label (expression) for a worker that
+ * can be used for documentation spell check (but not necessarily
+ * for various format rendering).<br/>
+ *
+ * As a fallback (if not specified in the
+ * {@link dynamatrixGlobalState#labelDocumentationSpellchecker} setting,
+ * looks for {@code 'doc-spellchecker||`labelDocumentationWorker()`'}
+ * in currently defined build agents.
+ *
+ * @see infra#labelDocumentationWorker
+ * @see dynamatrixGlobalState#labelDocumentationSpellchecker
+ */
+String labelDocumentationSpellchecker() {
+    // Global/modifiable config point:
+    if (Utils.isStringNotEmpty(dynamatrixGlobalState.labelDocumentationSpellchecker)) {
+        return dynamatrixGlobalState.labelDocumentationSpellchecker
+    }
+
+    // Do any nodes declare a capability to spell-check explicitly,
+    // or build any doc types, that the hosted projects might need?
+    String fallback = 'doc-spellchecker||${labelDocumentationWorker()}'
+    def nodeList = nodesByLabel (label: fallback, offline: true)
+    if (nodeList.size() > 0)
+        return fallback
 
     return labelDefaultWorker()
 }
