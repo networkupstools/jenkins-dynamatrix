@@ -381,11 +381,13 @@ class Utils {
     }
 
     /**
-     * Resolve MIN, MAX, NOT_MIN, !MIN, NOT_MAX, or !MAX semantic versions for a compiler or interpreter key,
+     * Resolve MIN, MAX, NOT_MIN, !MIN, NOT_MAX, !MAX, EXTREME, EXTREMES, MIN_MAX,
+     * !EXTREME, !EXTREMES, !MIN_MAX, NOT_EXTREME, NOT_EXTREMES, or NOT_MIN_MAX
+     * semantic versions for a compiler or interpreter key,
      * taking into account C or CXX standard version constraints and exclusion combos.
      * Returns a list of matching versions (empty list if none match).
      * If an agent only has one version installed, that single version is simultaneously MIN and MAX,
-     * and is not tagged as NOT_MAX or NOT_MIN.
+     * and is not tagged as NOT_MAX, NOT_MIN, NOT_EXTREME, etc.
      */
     @NonCPS
     public static List<String> resolveExtremeVersions(
@@ -423,11 +425,11 @@ class Utils {
         String m = mode ? mode.trim() : "MAX"
         if (sorted.size() <= 1) {
             // Single-version case: the only version is simultaneously MIN and MAX.
-            // It must not be tagged as NOT_MAX or NOT_MIN.
-            if (m in ['MIN', 'MAX']) {
+            // It must not be tagged as NOT_MAX, NOT_MIN, or NOT_EXTREME.
+            if (m in ['MIN', 'MAX', 'EXTREME', 'EXTREMES', 'MIN_MAX']) {
                 return sorted
             } else {
-                // NOT_MIN / !MIN / NOT_MAX / !MAX
+                // NOT_MIN / !MIN / NOT_MAX / !MAX / !EXTREME / NOT_EXTREME / etc.
                 return []
             }
         }
@@ -440,13 +442,21 @@ class Utils {
             return sorted.subList(1, sorted.size())
         } else if (m in ['NOT_MAX', '!MAX']) {
             return sorted.subList(0, sorted.size() - 1)
+        } else if (m in ['EXTREME', 'EXTREMES', 'MIN_MAX']) {
+            return [sorted[0], sorted[sorted.size() - 1]].unique()
+        } else if (m in ['!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']) {
+            if (sorted.size() >= 3) {
+                return sorted.subList(1, sorted.size() - 1)
+            } else {
+                return []
+            }
         } else {
             return []
         }
     }
 
     /**
-     * Resolve MIN, MAX, NOT_MIN, !MIN, NOT_MAX, or !MAX semantic version for a compiler or interpreter key,
+     * Resolve extreme semantic version for a compiler or interpreter key,
      * taking into account C or CXX standard version constraints and exclusion combos.
      */
     @NonCPS

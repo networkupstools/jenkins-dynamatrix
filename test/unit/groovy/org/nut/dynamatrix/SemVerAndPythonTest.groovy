@@ -52,6 +52,19 @@ class SemVerAndPythonTest {
         assertEquals(["4.4.4", "4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "NOT_MAX", gccVersions))
         assertEquals(["4.4.4", "4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "!MAX", gccVersions))
 
+        // EXTREME / EXTREMES / MIN_MAX
+        assertEquals(["4.4.4", "10"], Utils.resolveExtremeVersions("GCCVER", "EXTREME", gccVersions))
+        assertEquals(["4.4.4", "10"], Utils.resolveExtremeVersions("GCCVER", "EXTREMES", gccVersions))
+        assertEquals(["4.4.4", "10"], Utils.resolveExtremeVersions("GCCVER", "MIN_MAX", gccVersions))
+
+        // !EXTREME / !EXTREMES / !MIN_MAX / NOT_EXTREME / NOT_EXTREMES / NOT_MIN_MAX
+        assertEquals(["4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "!EXTREME", gccVersions))
+        assertEquals(["4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "!EXTREMES", gccVersions))
+        assertEquals(["4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "!MIN_MAX", gccVersions))
+        assertEquals(["4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "NOT_EXTREME", gccVersions))
+        assertEquals(["4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "NOT_EXTREMES", gccVersions))
+        assertEquals(["4.8.0", "4.8.2", "4.9", "7"], Utils.resolveExtremeVersions("GCCVER", "NOT_MIN_MAX", gccVersions))
+
         List<String> pyVersions = ["2.7", "3.8", "3.9", "3.10", "3.12"]
         assertEquals("2.7", Utils.resolveExtremeVersion("PYTHONVER", "MIN", pyVersions))
         assertEquals("3.12", Utils.resolveExtremeVersion("PYTHONVER", "MAX", pyVersions))
@@ -59,22 +72,57 @@ class SemVerAndPythonTest {
         assertEquals(["3.8", "3.9", "3.10", "3.12"], Utils.resolveExtremeVersions("PYTHONVER", "!MIN", pyVersions))
         assertEquals(["2.7", "3.8", "3.9", "3.10"], Utils.resolveExtremeVersions("PYTHONVER", "NOT_MAX", pyVersions))
         assertEquals(["2.7", "3.8", "3.9", "3.10"], Utils.resolveExtremeVersions("PYTHONVER", "!MAX", pyVersions))
+        assertEquals(["2.7", "3.12"], Utils.resolveExtremeVersions("PYTHONVER", "EXTREME", pyVersions))
+        assertEquals(["2.7", "3.12"], Utils.resolveExtremeVersions("PYTHONVER", "EXTREMES", pyVersions))
+        assertEquals(["2.7", "3.12"], Utils.resolveExtremeVersions("PYTHONVER", "MIN_MAX", pyVersions))
+        assertEquals(["3.8", "3.9", "3.10"], Utils.resolveExtremeVersions("PYTHONVER", "!EXTREME", pyVersions))
+        assertEquals(["3.8", "3.9", "3.10"], Utils.resolveExtremeVersions("PYTHONVER", "NOT_EXTREME", pyVersions))
+        assertEquals(["3.8", "3.9", "3.10"], Utils.resolveExtremeVersions("PYTHONVER", "NOT_MIN_MAX", pyVersions))
     }
 
     @Test
     void testSingleVersionAgentExtremeResolution() {
         // Single-Version Agents: If an agent only has one version of a compiler installed (e.g., only GCC 14 exists),
-        // that single version is simultaneously MIN and MAX. It must not be tagged as NOT_MAX or NOT_MIN.
+        // that single version is simultaneously MIN and MAX. It must not be tagged as NOT_MAX or NOT_MIN or NOT_EXTREME.
         List<String> singleGcc = ["14"]
         assertEquals("14", Utils.resolveExtremeVersion("GCCVER", "MIN", singleGcc))
         assertEquals("14", Utils.resolveExtremeVersion("GCCVER", "MAX", singleGcc))
         assertEquals(["14"], Utils.resolveExtremeVersions("GCCVER", "MIN", singleGcc))
         assertEquals(["14"], Utils.resolveExtremeVersions("GCCVER", "MAX", singleGcc))
+        assertEquals(["14"], Utils.resolveExtremeVersions("GCCVER", "EXTREME", singleGcc))
+        assertEquals(["14"], Utils.resolveExtremeVersions("GCCVER", "EXTREMES", singleGcc))
+        assertEquals(["14"], Utils.resolveExtremeVersions("GCCVER", "MIN_MAX", singleGcc))
 
         assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_MIN", singleGcc))
         assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!MIN", singleGcc))
         assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_MAX", singleGcc))
         assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!MAX", singleGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!EXTREME", singleGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!EXTREMES", singleGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!MIN_MAX", singleGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_EXTREME", singleGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_EXTREMES", singleGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_MIN_MAX", singleGcc))
+    }
+
+    @Test
+    void testTwoVersionsExtremeResolution() {
+        List<String> twoGcc = ["10", "14"]
+        assertEquals(["10"], Utils.resolveExtremeVersions("GCCVER", "MIN", twoGcc))
+        assertEquals(["14"], Utils.resolveExtremeVersions("GCCVER", "MAX", twoGcc))
+        assertEquals(["10", "14"], Utils.resolveExtremeVersions("GCCVER", "EXTREME", twoGcc))
+        assertEquals(["10", "14"], Utils.resolveExtremeVersions("GCCVER", "EXTREMES", twoGcc))
+        assertEquals(["10", "14"], Utils.resolveExtremeVersions("GCCVER", "MIN_MAX", twoGcc))
+
+        assertEquals(["14"], Utils.resolveExtremeVersions("GCCVER", "NOT_MIN", twoGcc))
+        assertEquals(["10"], Utils.resolveExtremeVersions("GCCVER", "NOT_MAX", twoGcc))
+
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!EXTREME", twoGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!EXTREMES", twoGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!MIN_MAX", twoGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_EXTREME", twoGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_EXTREMES", twoGcc))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "NOT_MIN_MAX", twoGcc))
     }
 
     @Test
@@ -169,9 +217,23 @@ class SemVerAndPythonTest {
         Set notMaxGccExcl = nc.resolveAxisValues("GCCVER=!MAX", "test-node", false)
         assertEquals(["4.4.4", "4.9"] as Set, notMaxGccExcl)
 
+        // Test EXTREME / EXTREMES / MIN_MAX and negated aliases in NodeCaps
+        assertEquals(["4.4.4", "10"] as Set, nc.resolveAxisValues("GCCVER=EXTREME", "test-node", false))
+        assertEquals(["4.4.4", "10"] as Set, nc.resolveAxisValues("GCCVER=EXTREMES", "test-node", false))
+        assertEquals(["4.4.4", "10"] as Set, nc.resolveAxisValues("GCCVER=MIN_MAX", "test-node", false))
+        assertEquals(["4.9"] as Set, nc.resolveAxisValues("GCCVER=!EXTREME", "test-node", false))
+        assertEquals(["4.9"] as Set, nc.resolveAxisValues("GCCVER=!EXTREMES", "test-node", false))
+        assertEquals(["4.9"] as Set, nc.resolveAxisValues("GCCVER=!MIN_MAX", "test-node", false))
+        assertEquals(["4.9"] as Set, nc.resolveAxisValues("GCCVER=NOT_EXTREME", "test-node", false))
+        assertEquals(["4.9"] as Set, nc.resolveAxisValues("GCCVER=NOT_EXTREMES", "test-node", false))
+        assertEquals(["4.9"] as Set, nc.resolveAxisValues("GCCVER=NOT_MIN_MAX", "test-node", false))
+
         // Test with returnAssignments = true and fixed prefix
         Set notMaxAssigns = nc.resolveAxisValues("COMPILER=GCC GCCVER=NOT_MAX", "test-node", true)
         assertEquals(["COMPILER=GCC GCCVER=4.4.4", "COMPILER=GCC GCCVER=4.9"] as Set, notMaxAssigns)
+
+        Set extremeAssigns = nc.resolveAxisValues("COMPILER=GCC GCCVER=EXTREME", "test-node", true)
+        assertEquals(["COMPILER=GCC GCCVER=4.4.4", "COMPILER=GCC GCCVER=10"] as Set, extremeAssigns)
 
         // Test single-version agent in NodeCaps
         NodeData ndSingle = new NodeData()
@@ -186,10 +248,14 @@ class SemVerAndPythonTest {
 
         assertEquals(["14"] as Set, nc.resolveAxisValues("GCCVER=MAX", "single-node", false))
         assertEquals(["14"] as Set, nc.resolveAxisValues("GCCVER=MIN", "single-node", false))
+        assertEquals(["14"] as Set, nc.resolveAxisValues("GCCVER=EXTREME", "single-node", false))
+        assertEquals(["14"] as Set, nc.resolveAxisValues("GCCVER=MIN_MAX", "single-node", false))
         assertEquals([] as Set, nc.resolveAxisValues("GCCVER=NOT_MAX", "single-node", false))
         assertEquals([] as Set, nc.resolveAxisValues("GCCVER=!MAX", "single-node", false))
         assertEquals([] as Set, nc.resolveAxisValues("GCCVER=NOT_MIN", "single-node", false))
         assertEquals([] as Set, nc.resolveAxisValues("GCCVER=!MIN", "single-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=NOT_EXTREME", "single-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=!EXTREME", "single-node", false))
     }
 
     @Test
@@ -214,6 +280,20 @@ class SemVerAndPythonTest {
             'GCCVER': 'NOT_MIN'
         ])
         assertTrue(cfg3.dynamatrixAxesLabels.contains('${COMPILER}VER=NOT_MIN'))
+
+        DynamatrixConfig cfg4 = new DynamatrixConfig(null)
+        cfg4.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'COMPILERVER': 'EXTREME'
+        ])
+        assertTrue(cfg4.dynamatrixAxesLabels.contains('${COMPILER}VER=EXTREME'))
+
+        DynamatrixConfig cfg5 = new DynamatrixConfig(null)
+        cfg5.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'COMPILERVER': 'NOT_MIN_MAX'
+        ])
+        assertTrue(cfg5.dynamatrixAxesLabels.contains('${COMPILER}VER=NOT_MIN_MAX'))
     }
 
     @Test
@@ -277,9 +357,16 @@ class SemVerAndPythonTest {
         assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!min", gccVersions))
         assertEquals([], Utils.resolveExtremeVersions("GCCVER", "not_max", gccVersions))
         assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!max", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "extreme", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "extremes", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "min_max", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "!extreme", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "not_extreme", gccVersions))
+        assertEquals([], Utils.resolveExtremeVersions("GCCVER", "not_min_max", gccVersions))
 
         assertNull(Utils.resolveExtremeVersion("GCCVER", "min", gccVersions))
         assertNull(Utils.resolveExtremeVersion("GCCVER", "max", gccVersions))
+        assertNull(Utils.resolveExtremeVersion("GCCVER", "extreme", gccVersions))
 
         // NodeCaps should not match lowercase
         NodeData nd = new NodeData()
@@ -300,6 +387,8 @@ class SemVerAndPythonTest {
         assertEquals([] as Set, nc.resolveAxisValues("GCCVER=min", "test-node", false))
         assertEquals([] as Set, nc.resolveAxisValues("GCCVER=not_max", "test-node", false))
         assertEquals([] as Set, nc.resolveAxisValues("GCCVER=!max", "test-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=extreme", "test-node", false))
+        assertEquals([] as Set, nc.resolveAxisValues("GCCVER=not_extreme", "test-node", false))
 
         // DynamatrixConfig should not substitute lowercase
         DynamatrixConfig cfg = new DynamatrixConfig(null)

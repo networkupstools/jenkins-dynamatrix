@@ -1969,14 +1969,14 @@ class Dynamatrix implements Cloneable {
                 dsbcBleSet = dsbcBleSetTmp
             }
 
-            // Resolve any extreme compiler/interpreter versions (MAX/MIN/NOT_MAX/!MAX/NOT_MIN/!MIN) and export PYTHON="$it"
+            // Resolve any extreme compiler/interpreter versions (MAX/MIN/NOT_MAX/!MAX/NOT_MIN/!MIN/EXTREME/EXTREMES/MIN_MAX/!EXTREME/!EXTREMES/!MIN_MAX/NOT_EXTREME/NOT_EXTREMES/NOT_MIN_MAX) and export PYTHON="$it"
             dsbcBleSet.each() { DynamatrixSingleBuildConfig dsbcBleTmp ->
                 if (dsbcBleTmp.buildLabelSet != null) {
                     Set newBuildLabelSet = [] as Set
                     String newBle = dsbcBleTmp.buildLabelExpression
                     dsbcBleTmp.buildLabelSet.each() { def label ->
-                        if (label instanceof String && (label =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN)$/)) {
-                            def m = (label =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN)$/)
+                        if (label instanceof String && (label =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)) {
+                            def m = (label =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
                             String cKey = m[0][1]
                             String mode = m[0][2]
                             Set candidateVersions = this.nodeCaps.resolveAxisValues(cKey, false)
