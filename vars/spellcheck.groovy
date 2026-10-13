@@ -21,8 +21,27 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
 // Note that this code relies on more data points than just
 // dynacfgPipeline.spellcheck.*
 
+/**
+ * Check whether spellcheck is enabled in dynacfgPipeline configuration
+ */
+Boolean isEnabled(Map dynacfgPipeline = [:]) {
+    if (dynacfgPipeline == null) return false
+    if (!dynacfgPipeline.containsKey('spellcheck')) return false
+    def sc = dynacfgPipeline['spellcheck']
+    if (sc == null || sc == false || "${sc}".trim().equalsIgnoreCase("false")) return false
+    if (sc == true || "${sc}".trim().equalsIgnoreCase("true")) return true
+    if (Utils.isString(sc)) return Utils.isStringNotEmpty(sc)
+    if (Utils.isMap(sc)) {
+        if (sc.containsKey('enabled')) {
+            return (sc.enabled != false && !"${sc.enabled}".trim().equalsIgnoreCase("false"))
+        }
+        return !sc.isEmpty()
+    }
+    return (Boolean)sc
+}
+
 def call(Map dynacfgPipeline = [:]) {
-    if (dynacfgPipeline?.spellcheck) {
+    if (isEnabled(dynacfgPipeline)) {
         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                 'awaiting spellcheck results',
                 'PENDING', "spellcheck")
@@ -86,7 +105,7 @@ def call(Map dynacfgPipeline = [:]) {
  */
 Map makeMap(Map dynacfgPipeline = [:]) {
     Map par = [:]
-    if (dynacfgPipeline?.spellcheck != null) {
+    if (isEnabled(dynacfgPipeline)) {
         par["spellcheck"] = {
             spellcheck(dynacfgPipeline)
         } // spellcheck

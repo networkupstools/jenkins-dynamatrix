@@ -85,7 +85,7 @@ class SemVerAndPythonTest {
             'OS_DISTRO=debian': null
         ]
 
-        NodeCaps nc = new NodeCaps()
+        NodeCaps nc = new NodeCaps(null)
         nc.nodeData = ["test-node": nd]
         nc.isInitialized = true
 

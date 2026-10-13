@@ -17,13 +17,13 @@ import org.nut.dynamatrix.Utils;
 class NodeData {
     // Info about the build agent (node) detailed here.
     //NotSerializable//public final hudson.model.Node node
-    public final String name
+    public String name
 
     /** Original full-string set of labels received from Jenkins Node */
-    public final String labelString
+    public String labelString
 
     /** Labels split into an array (or rather sorted set) by whitespaces */
-    public final TreeSet<String> labelSet
+    public TreeSet<String> labelSet
 
     /**
      * The array of labels split further into a Map: those with an equality
@@ -32,7 +32,18 @@ class NodeData {
      * the sign become key=null; also the original unique key=value strings
      * are saved as keys similarly mapped to null.
      */
-    public final Map<String, Object> labelMap
+    public Map<String, Object> labelMap
+
+    public NodeData() {
+        this.name = ""
+        this.labelString = ""
+        this.labelSet = new TreeSet<>()
+        this.labelMap = [:]
+    }
+
+    public void setNodeName(String name) {
+        this.name = name
+    }
 
     public NodeData(Object nodeOrig) throws Exception {
         // System.out.println("NodeData: got arg: ${Utils.castString(nodeOrig)}"

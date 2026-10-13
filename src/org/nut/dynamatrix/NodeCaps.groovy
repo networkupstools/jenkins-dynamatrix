@@ -7,6 +7,7 @@ import java.util.regex.*;
 import com.cloudbees.groovy.cps.NonCPS;
 import hudson.model.Node;
 import hudson.model.Label;
+import jenkins.model.Jenkins;
 
 import org.nut.dynamatrix.NodeData;
 import org.nut.dynamatrix.Utils;

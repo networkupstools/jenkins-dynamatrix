@@ -44,6 +44,31 @@ def stageNameFunc_Shellcheck(DynamatrixSingleBuildConfig dsbc) {
 // Note that this code relies on mode data points than just dynacfgPipeline.shellcheck.*
 
 /**
+ * Check whether shellcheck is enabled in dynacfgPipeline configuration
+ */
+Boolean isEnabled(Map dynacfgPipeline = [:]) {
+    if (dynacfgPipeline == null) return false
+    if (!dynacfgPipeline.containsKey('shellcheck')) return false
+    def sc = dynacfgPipeline['shellcheck']
+    if (sc == null || sc == false || "${sc}".trim().equalsIgnoreCase("false")) return false
+    if (sc == true || "${sc}".trim().equalsIgnoreCase("true")) return true
+    if (Utils.isString(sc)) return Utils.isStringNotEmpty(sc)
+    if (Utils.isMap(sc)) {
+        if (sc.containsKey('enabled')) {
+            if (sc.enabled == false || "${sc.enabled}".trim().equalsIgnoreCase("false")) {
+                return false
+            }
+        }
+        if (sc.containsKey('single') || sc.containsKey('multi')) {
+            return (sc.single != null && sc.single != false && !"${sc.single}".trim().equalsIgnoreCase("false")) ||
+                   (sc.multi != null && sc.multi != false && !"${sc.multi}".trim().equalsIgnoreCase("false"))
+        }
+        return !sc.isEmpty()
+    }
+    return (Boolean)sc
+}
+
+/**
  * Returns a Set of tuples that a later stage can convert
  * into a Map for `parallel` test running with {@link #makeMap}
  * (avoid having a long-lived Map object which can upset CPS
@@ -73,7 +98,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
     // (seems to only render the first mentioned stage),
     // but "Classic UI" Pipeline Steps tree should...
     //println "SHELLCHECK: ${Utils.castString(dynacfgPipeline.shellcheck)}"
-    if (dynacfgPipeline?.shellcheck?.single != null || dynacfgPipeline?.shellcheck?.multi != null) {
+    if (isEnabled(dynacfgPipeline)) {
         //println "Discovering stagesShellcheck..."
         // Note: Different label set, different dynamatrix
         // instance (inside step), though hopefully same
