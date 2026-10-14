@@ -179,6 +179,9 @@ Map makeMap(Map dynacfgPipeline = [:]) {
             }
         }
     } // spellcheck
+
+    println "Discovered ${par.size()} spellcheck platform builds"
+
     return par
 }
 

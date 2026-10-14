@@ -109,6 +109,9 @@ Map makeMap(Map dynacfgPipeline = [:]) {
             stylecheck(dynacfgPipeline)
         } // stylecheck
     }
+
+    println "Discovered ${par.size()} stylcheck platform builds"
+
     return par
 }
 
