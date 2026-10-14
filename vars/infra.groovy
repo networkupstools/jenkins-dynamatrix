@@ -86,7 +86,7 @@ String labelDocumentationSpellchecker() {
 
     // Do any nodes declare a capability to spell-check explicitly,
     // or build any doc types, that the hosted projects might need?
-    String fallback = 'doc-spellchecker||${labelDocumentationWorker()}'
+    String fallback = "(doc-spellchecker||${labelDocumentationWorker()})"
     def nodeList = nodesByLabel (label: fallback, offline: true)
     if (nodeList.size() > 0)
         return fallback
