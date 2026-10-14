@@ -7,6 +7,8 @@ import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
+import java.util.regex.Matcher;
+
 // TODO: make dynacfgPipeline a class?
 
 /*
@@ -47,17 +49,25 @@ Boolean isEnabled(Map dynacfgPipeline = [:]) {
 }
 
 def call(Map dynacfgPipeline = [:]) {
+    return spellcheck(dynacfgPipeline, null, null)
+}
+
+def call(Map dynacfgPipeline = [:], String labelExpr, String ghNotifyLabel) {
     // TOTHINK: Assume or *ensure* dynacfgPipeline?.spellcheck was
     //  normalized by spellcheck.sanityCheckDynacfgPipeline() ?
     if (isEnabled(dynacfgPipeline)) {
+        if (ghNotifyLabel == null)
+            ghNotifyLabel = "spellcheck"
         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                 'awaiting spellcheck results',
-                'PENDING', "spellcheck")
+                'PENDING', ghNotifyLabel)
 
         Boolean succeeded = null
+        if (labelExpr == null)
+            labelExpr = infra.labelDocumentationSpellchecker()
         while (!succeeded) {
             try {
-                node(infra.labelDocumentationSpellchecker()) {
+                node(labelExpr) {
                     withEnvOptional(dynacfgPipeline.defaultTools) {
                         unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 
@@ -85,20 +95,20 @@ def call(Map dynacfgPipeline = [:]) {
                         succeeded = true
                         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                             'spellcheck passed for this commit',
-                            'SUCCESS', "spellcheck")
+                            'SUCCESS', ghNotifyLabel)
                     }
                 }
             } catch (Throwable t) {
                 if (Utils.isRetryableException(t)) {
                     echo "[DEBUG]: spellcheck(${dynacfgPipeline.get("stashnameSrc")}) " +
-                        " finished with a verdict classified as " +
+                        "finished with a verdict classified as " +
                         "a retryable build agent failure - " +
                         "will re-schedule: ${t.toString()}"
                     succeeded = false
                 } else {
                     infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                         'spellcheck failed for this commit',
-                        'FAILURE', "spellcheck")
+                        'FAILURE', ghNotifyLabel)
                     // Let the pipeline fault path take over
                     throw t
                 }
@@ -114,10 +124,61 @@ def call(Map dynacfgPipeline = [:]) {
 Map makeMap(Map dynacfgPipeline = [:]) {
     Map par = [:]
     if (isEnabled(dynacfgPipeline)) {
-        par["spellcheck"] = {
-            spellcheck(dynacfgPipeline)
-        } // spellcheck
-    }
+        String labelExpr = infra.labelDocumentationSpellchecker()
+        if (dynacfgPipeline?.spellcheck?.tryAllNodes) {
+            // Diligently try each single known node which matches
+            // the label expression, even if there are several agents
+            // with the same platform:
+            nodesByLabel (label: labelExpr, offline: true).each { String nodeName ->
+                String ghNotifyLabel = "spellcheck-" + nodeName
+                par[ghNotifyLabel] = {
+                    spellcheck(dynacfgPipeline, nodeName, ghNotifyLabel)
+                }
+            }
+        } else
+        if (dynacfgPipeline?.spellcheck?.tryAllDistros) {
+            // Look at each single known node which matches the label
+            // expression, and if they have OS_DISTRO identification,
+            // tie that into the label for that check, else use node name:
+            Map<String, Set<String>> distroNodes = [:]
+            Set<String> distrolessNodes = []
+            nodesByLabel (label: labelExpr, offline: true).each { String nodeName ->
+                Set<String> nodeLabels = NodeData.getNodeLabelsByName(nodeName)
+                boolean hit = false
+                nodeLabels.each {
+                    if (hit) return // continue
+                    Matcher matcher = (it =~ /^OS_DISTRO=(.+)$/)
+                    if (matcher.find()) {
+                        String distro = matcher[0][1]
+                        if (!(distroNodes.containsKey(distro))) {
+                            distroNodes[distro] = new HashSet<String>()
+                        }
+                        distroNodes[distro] << nodeName
+                        hit = true
+                    }
+                }
+                if (!hit)
+                    distrolessNodes << nodeName
+            }
+            distrolessNodes.each { String nodeName ->
+                String ghNotifyLabel = "spellcheck-" + nodeName
+                par[ghNotifyLabel] = {
+                    spellcheck(dynacfgPipeline, nodeName, ghNotifyLabel)
+                }
+            }
+            distroNodes.each { String distro, Set nodeNames ->
+                String ghNotifyLabel = "spellcheck-" + distro
+                par[ghNotifyLabel] = {
+                    spellcheck(dynacfgPipeline, "(${labelExpr})&&OS_DISTRO=${distro}", ghNotifyLabel)
+                }
+            }
+        } else {
+            // Try any single node, legacy default
+            par["spellcheck"] = {
+                spellcheck(dynacfgPipeline, labelExpr, "spellcheck")
+            }
+        }
+    } // spellcheck
     return par
 }
 
