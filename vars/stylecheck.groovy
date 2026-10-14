@@ -49,7 +49,7 @@ def call(Map dynacfgPipeline = [:]) {
         Boolean succeeded = null
         while (!succeeded) {
             try {
-                node(infra.labelDocumentationWorker()) {
+                node(infra.labelCodeStyleWorker()) {
                     withEnvOptional(dynacfgPipeline?.defaultTools) {
                         unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 
@@ -109,6 +109,9 @@ Map makeMap(Map dynacfgPipeline = [:]) {
             stylecheck(dynacfgPipeline)
         } // stylecheck
     }
+
+    println "Discovered ${par.size()} stylcheck platform builds"
+
     return par
 }
 
