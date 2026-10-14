@@ -91,7 +91,7 @@ String labelDocumentationSpellchecker() {
     if (nodeList.size() > 0)
         return fallback
 
-    return labelDefaultWorker()
+    return labelDocumentationWorker()
 }
 
 /**
