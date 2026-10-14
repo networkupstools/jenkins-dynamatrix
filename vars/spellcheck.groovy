@@ -91,7 +91,13 @@ def call(Map dynacfgPipeline = [:], String labelExpr, String ghNotifyLabel) {
                             }
                         }
 
-                        sh """ ${dynacfgPipeline.spellcheck.spellcheck} """
+                        if (Utils.isClosure(dynacfgPipeline.spellcheck.spellcheck)) {
+                            dynacfgPipeline.spellcheck.spellcheck()
+                        } else {
+                            sh """ ${dynacfgPipeline.spellcheck.spellcheck} """
+                        }
+
+                        // Did not throw above...
                         succeeded = true
                         infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                             'spellcheck passed for this commit',
@@ -208,7 +214,7 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
                 dynacfgPipeline['spellcheck']['spellcheck'] = null
             }
         } else {
-            // Legacy string or boolean
+            // Legacy string or boolean... or Closure?
             if ("${dynacfgPipeline['spellcheck']}".trim().equals("true")) {
                 if (dynamatrixGlobalState.enableDebugTrace)
                     echo "spellcheck.sanityCheckDynacfgPipeline(): true: defaulting a reasonable config"
@@ -221,7 +227,9 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
                 dynacfgPipeline['spellcheck'] = [
                     spellcheck: null
                 ]
-            } else (Utils.isStringNotEmpty(dynacfgPipeline['spellcheck'])) {
+            } else if (Utils.isClosure(dynacfgPipeline['spellcheck'])
+                || Utils.isStringNotEmpty(dynacfgPipeline['spellcheck'])
+            ) {
                 // Assume it is a legacy direct-command format
                 def tmp = dynacfgPipeline['spellcheck']
                 dynacfgPipeline['spellcheck'] = [
