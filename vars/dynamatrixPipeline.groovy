@@ -889,8 +889,13 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                     }
                 }
 
+                // NOTE: If at least one stage failed with unclassified fault, logged as:
+                //   DEBUG-EXC-FAILURE: hudson.AbortException: Message: Build-and-check
+                //   step failed, proceeding to cover the rest of matrix; Cause: null
+                // the overall pipeline verdict is at best ABORTED
                 echo "OVERALL: Discovered ${Math.max(stagesBinBuild.size() - 1, 0)} " +
-                    "'slow build' combos to run; ended up with following counts: " +
+                    "'slow build' combos to run; ended up with overall result ${currentBuild.result} " +
+                    "and with following counts: " +
                     dynamatrix.toStringStageCount(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
                 if (dynamatrixGlobalState.enableDebugTrace)
@@ -935,6 +940,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
                         def sumText = txtOK + ": " + txtCounts
                         def sumIcon = '/images/svgs/notepad.svg'	// '/images/48x48/notepad.png'
+                        echo sumText
                         try {
                             // Badge API v2.x; TOTHINK: Use ioicons not images URI?
                             addSummary(text: sumText, icon: sumIcon)
@@ -1054,6 +1060,7 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             if (curres in [null, 'null'])
                 curres = 'SUCCESS'
             txt += " ${curres}"
+            echo txt
             try {
                 // Badge v2.x API, with style
                 addBadge(text: txt,
