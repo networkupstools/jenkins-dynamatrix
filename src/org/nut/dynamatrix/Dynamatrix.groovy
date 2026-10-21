@@ -530,6 +530,12 @@ class Dynamatrix implements Cloneable {
         return Utils.intNullZero(this.getCountStages(recurse)?.ABORTED_SAFE)
     }
 
+    /** Reporting the accounted values:
+     * We know we finished the stage with some final verdict, no further work is expected*/
+    public Integer countStagesFinished(Boolean recurse = false) {
+        return Utils.intNullZero(this.getCountStages(recurse)?.FINISHED)
+    }
+
     /** Reporting the accounted values: Standard Jenkins build results */
     public Integer countStagesFinishedOK(Boolean recurse = false) {
         return Utils.intNullZero(this.getCountStages(recurse)?.SUCCESS)
@@ -713,14 +719,9 @@ class Dynamatrix implements Cloneable {
 
         // Detect overall builds no longer in progress (completed with some final verdict)
         Map<String, Integer> mapCountStages = this.getCountStages(recurse)
-        Integer countStagesFinished = 0
-        ['SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT', 'ABORTED_SAFE'].each {
-            countStagesFinished += mapCountStages.getAt(it) ?: 0
-        }
-
-        if ( (mapCountStages.getAt('STARTED')?:0) == countStagesFinished
+        if ( (mapCountStages.getAt('STARTED')?:0) == (mapCountStages.getAt('FINISHED')?:0)
         && ( (mapCountStages.getAt('STARTED')?:0) + (mapCountStages.getAt('RESTARTED')?:0) == (mapCountStages.getAt('COMPLETED')?:0) )
-        && ( (countStagesExpected?:0) <= countStagesFinished )
+        && ( (mapCountStages.getAt('FINISHED')?:0) >= (countStagesExpected?:0))
         ) {
             txt = "Build completed: "
         }
@@ -972,7 +973,13 @@ class Dynamatrix implements Cloneable {
      * zero or not, in layman wording.
      */
     public String toStringStageCount(Boolean recurse = false) {
-        return "countStagesStarted:${countStagesStarted(recurse)} " +
+        // FIXME: Optimize by caching getCountStages() output?
+
+        // Keep this first, so truncated GitHub Checks reports are
+        // still useful to see how far the end of job remains:
+        //   Running 346 'slow build' dynamatrix stages: Finished:345 Started:352 (of which Restarted:6) Completed:351 FinishedOK:344 FinishedFailure:1
+        return "countStagesFinished:${countStagesFinished(recurse)} " +
+            "countStagesStarted:${countStagesStarted(recurse)} " +
             "(of which countStagesRestarted:${countStagesRestarted(recurse)}) " +
             "countStagesCompleted:${countStagesCompleted(recurse)} " +
             "countStagesAbortedSafe:${countStagesAbortedSafe(recurse)} " +
@@ -990,6 +997,14 @@ class Dynamatrix implements Cloneable {
     public String toStringStageCountNonZero(Boolean recurse = false) {
         String s = ""
         Integer i
+
+        // FIXME: Optimize by caching getCountStages() output?
+
+        // Keep this first, so truncated GitHub Checks reports are
+        // still useful to see how far the end of job remains:
+        //   Running 346 'slow build' dynamatrix stages: Finished:345 Started:352 (of which Restarted:6) Completed:351 FinishedOK:344 FinishedFailure:1
+        if ( (i = countStagesFinished(recurse)) > 0)
+            s += "countStagesFinished:${i} "
 
         if ( (i = countStagesStarted(recurse)) > 0)
             s += "countStagesStarted:${i} "
@@ -1079,7 +1094,12 @@ class Dynamatrix implements Cloneable {
      * Returns a clone of current {@link #countStages} map contents
      * (always returns a non-null, but possibly empty, map).
      * If {@code recursive} mode is enabled, also add info from clones
-     * made from this {@link Dynamatrix} object.
+     * made from this {@link Dynamatrix} object.<br/>
+     *
+     * Compared to ordering in {@link #countStagesTemplate}, this map
+     * prepends an entry for 'FINISHED' scenarios (sum of counts for
+     * ['SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
+     * 'ABORTED_SAFE'] results).
      */
     @NonCPS
     synchronized public Map<String, Integer> getCountStages(Boolean recurse = false) {
@@ -1101,14 +1121,23 @@ class Dynamatrix implements Cloneable {
             }
         }
 
-        return mapres
+        // Detect overall builds no longer in progress (completed with some final verdict)
+        Integer countStagesFinished = 0
+        ['SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT', 'ABORTED_SAFE'].each {
+            countStagesFinished += mapres.getAt(it) ?: 0
+        }
+
+        return ['FINISHED': countStagesFinished,] + mapres
     }
 
     /**
      * Returns a clone of current {@link #countStagesPerNode} map contents
      * (always returns a non-null, but possibly empty, map).
      * If {@code recursive} mode is enabled, also add info from clones
-     * made from this {@link Dynamatrix} object.
+     * made from this {@link Dynamatrix} object.<br/>
+     *
+     * NOTE: Currently does not include a 'FINISHED' entry like the
+     * overall {@link #getCountStages} does.
      */
     @NonCPS
     synchronized public Map<String, Map<String, Integer>> getCountStagesPerNode(Boolean recurse = false) {
@@ -1141,6 +1170,7 @@ class Dynamatrix implements Cloneable {
             }
         }
 
+        // TOTHINK: account 'FINISHED' builds per node?
         return mapres
     }
 
