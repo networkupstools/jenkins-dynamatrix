@@ -504,21 +504,23 @@ class Dynamatrix implements Cloneable {
 
     /** Reporting the accounted values:
      * We started the stage (maybe more than once) */
-    public Integer countStagesStarted(Boolean recurse = false) {
-        Map<String, Integer> mapCountStages = this.getCountStages(recurse)
+    public Integer countStagesStarted(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
         return Utils.intNullZero(mapCountStages?.STARTED) + Utils.intNullZero(mapCountStages?.RESTARTED)
     }
 
     /** Reporting the accounted values:
      * We restarted the stage */
-    public Integer countStagesRestarted(Boolean recurse = false) {
-        return Utils.intNullZero(this.getCountStages(recurse)?.RESTARTED)
+    public Integer countStagesRestarted(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
+        return Utils.intNullZero(mapCountStages?.RESTARTED)
     }
 
     /** Reporting the accounted values:
      * We know we finished the stage, successfully or with "fex" exception caught */
-    public Integer countStagesCompleted(Boolean recurse = false) {
-        return Utils.intNullZero(this.getCountStages(recurse)?.COMPLETED)
+    public Integer countStagesCompleted(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
+        return Utils.intNullZero(mapCountStages?.COMPLETED)
     }
 
     /** Reporting the accounted values:
@@ -526,39 +528,46 @@ class Dynamatrix implements Cloneable {
      * (due to {@link #mustAbort}, after getting a node
      * to execute our logic on)
      */
-    public Integer countStagesAbortedSafe(Boolean recurse = false) {
-        return Utils.intNullZero(this.getCountStages(recurse)?.ABORTED_SAFE)
+    public Integer countStagesAbortedSafe(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
+        return Utils.intNullZero(mapCountStages?.ABORTED_SAFE)
     }
 
     /** Reporting the accounted values:
      * We know we finished the stage with some final verdict, no further work is expected*/
-    public Integer countStagesFinished(Boolean recurse = false) {
-        return Utils.intNullZero(this.getCountStages(recurse)?.FINISHED)
+    public Integer countStagesFinished(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
+        return Utils.intNullZero(mapCountStages?.FINISHED)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesFinishedOK(Boolean recurse = false) {
-        return Utils.intNullZero(this.getCountStages(recurse)?.SUCCESS)
+    public Integer countStagesFinishedOK(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
+        return Utils.intNullZero(mapCountStages?.SUCCESS)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesFinishedFailure(Boolean recurse = false) {
-        return Utils.intNullZero(this.getCountStages(recurse)?.FAILURE)
+    public Integer countStagesFinishedFailure(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
+        return Utils.intNullZero(mapCountStages?.FAILURE)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesFinishedFailureAllowed(Boolean recurse = false) {
-        return Utils.intNullZero(this.getCountStages(recurse)?.UNSTABLE)
+    public Integer countStagesFinishedFailureAllowed(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
+        return Utils.intNullZero(mapCountStages?.UNSTABLE)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesAborted(Boolean recurse = false) {
-        return Utils.intNullZero(this.getCountStages(recurse)?.ABORTED)
+    public Integer countStagesAborted(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
+        return Utils.intNullZero(mapCountStages?.ABORTED)
     }
 
     /** Reporting the accounted values: Standard Jenkins build results */
-    public Integer countStagesAbortedNotBuilt(Boolean recurse = false) {
-        return Utils.intNullZero(this.getCountStages(recurse)?.NOT_BUILT)
+    public Integer countStagesAbortedNotBuilt(Boolean recurse = false, Map<String, Integer> cachedMap = null) {
+        Map<String, Integer> mapCountStages = cachedMap ?: this.getCountStages(recurse)
+        return Utils.intNullZero(mapCountStages?.NOT_BUILT)
     }
 
     /**
@@ -973,21 +982,22 @@ class Dynamatrix implements Cloneable {
      * zero or not, in layman wording.
      */
     public String toStringStageCount(Boolean recurse = false) {
-        // FIXME: Optimize by caching getCountStages() output?
+        // Optimize by caching getCountStages() output:
+        Map<String, Integer> mapCountStages = this.getCountStages(recurse)
 
         // Keep this first, so truncated GitHub Checks reports are
         // still useful to see how far the end of job remains:
         //   Running 346 'slow build' dynamatrix stages: Finished:345 Started:352 (of which Restarted:6) Completed:351 FinishedOK:344 FinishedFailure:1
-        return "countStagesFinished:${countStagesFinished(recurse)} " +
-            "countStagesStarted:${countStagesStarted(recurse)} " +
-            "(of which countStagesRestarted:${countStagesRestarted(recurse)}) " +
-            "countStagesCompleted:${countStagesCompleted(recurse)} " +
-            "countStagesAbortedSafe:${countStagesAbortedSafe(recurse)} " +
-            "countStagesFinishedOK:${countStagesFinishedOK(recurse)} " +
-            "countStagesFinishedFailure:${countStagesFinishedFailure(recurse)} " +
-            "countStagesFinishedFailureAllowed:${countStagesFinishedFailureAllowed(recurse)} " +
-            "countStagesAborted:${countStagesAborted(recurse)} " +
-            "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt(recurse)}"
+        return "countStagesFinished:${countStagesFinished(recurse, mapCountStages)} " +
+            "countStagesStarted:${countStagesStarted(recurse, mapCountStages)} " +
+            "(of which countStagesRestarted:${countStagesRestarted(recurse, mapCountStages)}) " +
+            "countStagesCompleted:${countStagesCompleted(recurse, mapCountStages)} " +
+            "countStagesAbortedSafe:${countStagesAbortedSafe(recurse, mapCountStages)} " +
+            "countStagesFinishedOK:${countStagesFinishedOK(recurse, mapCountStages)} " +
+            "countStagesFinishedFailure:${countStagesFinishedFailure(recurse, mapCountStages)} " +
+            "countStagesFinishedFailureAllowed:${countStagesFinishedFailureAllowed(recurse, mapCountStages)} " +
+            "countStagesAborted:${countStagesAborted(recurse, mapCountStages)} " +
+            "countStagesAbortedNotBuilt:${countStagesAbortedNotBuilt(recurse, mapCountStages)}"
     }
 
     /**
@@ -998,39 +1008,40 @@ class Dynamatrix implements Cloneable {
         String s = ""
         Integer i
 
-        // FIXME: Optimize by caching getCountStages() output?
+        // Optimize by caching getCountStages() output:
+        Map<String, Integer> mapCountStages = this.getCountStages(recurse)
 
         // Keep this first, so truncated GitHub Checks reports are
         // still useful to see how far the end of job remains:
         //   Running 346 'slow build' dynamatrix stages: Finished:345 Started:352 (of which Restarted:6) Completed:351 FinishedOK:344 FinishedFailure:1
-        if ( (i = countStagesFinished(recurse)) > 0)
+        if ( (i = countStagesFinished(recurse, mapCountStages)) > 0)
             s += "countStagesFinished:${i} "
 
-        if ( (i = countStagesStarted(recurse)) > 0)
+        if ( (i = countStagesStarted(recurse, mapCountStages)) > 0)
             s += "countStagesStarted:${i} "
 
-        if ( (i = countStagesRestarted(recurse)) > 0)
+        if ( (i = countStagesRestarted(recurse, mapCountStages)) > 0)
             s += "(of which countStagesRestarted:${i}) "
 
-        if ( (i = countStagesCompleted(recurse)) > 0)
+        if ( (i = countStagesCompleted(recurse, mapCountStages)) > 0)
             s += "countStagesCompleted:${i} "
 
-        if ( (i = countStagesAbortedSafe(recurse)) > 0)
+        if ( (i = countStagesAbortedSafe(recurse, mapCountStages)) > 0)
             s += "countStagesAbortedSafe:${i} "
 
-        if ( (i = countStagesFinishedOK(recurse)) > 0)
+        if ( (i = countStagesFinishedOK(recurse, mapCountStages)) > 0)
             s += "countStagesFinishedOK:${i} "
 
-        if ( (i = countStagesFinishedFailure(recurse)) > 0)
+        if ( (i = countStagesFinishedFailure(recurse, mapCountStages)) > 0)
             s += "countStagesFinishedFailure:${i} "
 
-        if ( (i = countStagesFinishedFailureAllowed(recurse)) > 0)
+        if ( (i = countStagesFinishedFailureAllowed(recurse, mapCountStages)) > 0)
             s += "countStagesFinishedFailureAllowed:${i} "
 
-        if ( (i = countStagesAborted(recurse)) > 0)
+        if ( (i = countStagesAborted(recurse, mapCountStages)) > 0)
             s += "countStagesAborted:${i} "
 
-        if ( (i = countStagesAbortedNotBuilt(recurse)) > 0)
+        if ( (i = countStagesAbortedNotBuilt(recurse, mapCountStages)) > 0)
             s += "countStagesAbortedNotBuilt:${i} "
 
         return s.trim()
