@@ -724,7 +724,7 @@ class Dynamatrix implements Cloneable {
         }
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
-        String txt = "Build in progress: "
+        String txt = "Build in progress"
 
         // Detect overall builds no longer in progress (completed with some final verdict)
         Map<String, Integer> mapCountStages = this.getCountStages(recurse)
@@ -732,17 +732,17 @@ class Dynamatrix implements Cloneable {
         && ( (mapCountStages.getAt('STARTED')?:0) + (mapCountStages.getAt('RESTARTED')?:0) == (mapCountStages.getAt('COMPLETED')?:0) )
         && ( (mapCountStages.getAt('FINISHED')?:0) >= (countStagesExpected?:0))
         ) {
-            txt = "Build completed: "
+            txt = "Build completed"
         }
 
         if (this.countStagesExpected > 0) {
-            txt += "planned:${this.countStagesExpected}; "
+            txt += " (planned:${this.countStagesExpected})"
         }
         String strCount = this.toStringStageCountBestEffort(recurse)
         if (strCount in [null, "null", "", "{}", "[]", "[:]"]) {
-            txt += "No work started yet"
+            txt += ": No work started yet"
         } else {
-            txt += strCount
+            txt += ": " + strCount
         }
         if (this.shouldDebugTrace() || this.shouldDebugTraceBadge())
             txt +=
@@ -2515,7 +2515,7 @@ class Dynamatrix implements Cloneable {
         // when preparing the stages below:
         /** `parallelStages` actually contains tuples for mapping <String, Closure> */
         Set<List> parallelStages = []
-        this.countStagesExpected += dsbcSet.size()
+        this.countStagesExpected += dsbcSet?.size() ?: 0
         dsbcSet.each() {DynamatrixSingleBuildConfig dsbcTmp ->
             // copy a unique object ASAP, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()
