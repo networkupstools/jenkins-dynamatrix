@@ -616,12 +616,12 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             // TODO: `unstable` this?
             echo "No stages were prepared for the 'slow build' dynamatrix, so completing the job"
         } else {
-            echo "Scheduling ${stagesBinBuild.size() - 1} stages for the 'slow build' dynamatrix, running this can take a long while..."
+            dynamatrix.countStagesExpected = stagesBinBuild.size() - 1
+            echo "Scheduling ${dynamatrix.countStagesExpected} stages for the 'slow build' dynamatrix, running this can take a long while..."
             try {
-                String txt = "Running ${stagesBinBuild.size() - 1} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; " +
+                String txt = "Running ${dynamatrix.countStagesExpected} 'slow build' dynamatrix stages" + (dynacfgPipeline?.failFast ? "; " +
                         "failFast mode is enabled: " + (dynacfgPipeline?.failFastSafe ? "dynamatrix 'safe'" : "parallel step") + " implementation" : "")
 
-                dynamatrix.countStagesExpected = stagesBinBuild.size() - 1
                 dynamatrix.reportPrefixCountStagesExpected = txt
                 infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                         txt, "PENDING", "slowbuild-run")

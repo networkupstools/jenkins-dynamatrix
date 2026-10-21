@@ -710,6 +710,24 @@ class Dynamatrix implements Cloneable {
 
         // Stage finished, update the rolling progress via GPBP steps (with id)
         String txt = "Build in progress: "
+
+        // Detect overall builds no longer in progress (completed with some final verdict)
+        Map<String, Integer> mapCountStages = this.getCountStages(recurse)
+        Integer countStagesFinished = 0
+        ['SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT', 'ABORTED_SAFE'].each {
+            countStagesFinished += mapCountStages.getAt(it) ?: 0
+        }
+
+        if ( (mapCountStages.getAt('STARTED')?:0) == countStagesFinished
+        && ( (mapCountStages.getAt('STARTED')?:0) + (mapCountStages.getAt('RESTARTED')?:0) == (mapCountStages.getAt('COMPLETED')?:0) )
+        && ( (countStagesExpected?:0) <= countStagesFinished )
+        ) {
+            txt = "Build completed: "
+        }
+
+        if (this.countStagesExpected > 0) {
+            txt += "planned:${this.countStagesExpected}; "
+        }
         String strCount = this.toStringStageCountBestEffort(recurse)
         if (strCount in [null, "null", "", "{}", "[]", "[:]"]) {
             txt += "No work started yet"
@@ -2448,12 +2466,15 @@ class Dynamatrix implements Cloneable {
 
         Set<DynamatrixSingleBuildConfig> dsbcSet = generateBuildConfigSet(dynacfgOrig)
         Dynamatrix thisDynamatrix = this
+        if (this.countStagesExpected == null)
+            this.countStagesExpected = 0
         this.script.println "[DEBUG] generateBuildParallelStages(): current thisDynamatrix.failFast setting when generating parallelStages: ${thisDynamatrix.failFast}"
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
         /** `parallelStages` actually contains tuples for mapping <String, Closure> */
         Set<List> parallelStages = []
+        this.countStagesExpected += dsbcSet.size()
         dsbcSet.each() {DynamatrixSingleBuildConfig dsbcTmp ->
             // copy a unique object ASAP, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()
