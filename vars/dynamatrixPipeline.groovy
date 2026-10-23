@@ -824,13 +824,15 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 // definitive?
 
                                 // Remove Jenkins-defined results; and also the
-                                // data Dynamatrix.groovy classifies; do any remain?
+                                // data Dynamatrix.groovy classifies; do any remain
+                                // as unclassified problems?
                                 Map<String, Integer> mapresOther = new ConcurrentHashMap<String, Integer>()
                                 mapresOther.putAll(mapCountStages)
                                 for (String r in [
                                     'SUCCESS', 'FAILURE', 'UNSTABLE', 'ABORTED', 'NOT_BUILT',
                                     'STARTED', 'RESTARTED', 'COMPLETED', 'ABORTED_SAFE',
-                                    'AGENT_DISCONNECTED', 'AGENT_TIMEOUT'
+                                    'AGENT_DISCONNECTED', 'AGENT_TIMEOUT',
+                                    'FINISHED'
                                 ]) {
                                     if (mapresOther.containsKey(r)) {
                                         if (Utils.isListNotEmpty(mapresOther[r])) {
@@ -863,6 +865,8 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                                     break
                                             }
                                         }
+
+                                        // Not a problematic entry, forget it:
                                         mapresOther.remove(r)
                                     }
                                 }
