@@ -184,6 +184,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     }
 
     @Override
+    @groovy.transform.CompileStatic
     public DynamatrixSingleBuildConfig clone() throws CloneNotSupportedException {
         return (DynamatrixSingleBuildConfig) super.clone();
     }

@@ -101,6 +101,7 @@ class NodeCaps implements Cloneable {
     }
 
     @Override
+    @groovy.transform.CompileStatic
     public NodeCaps clone() throws CloneNotSupportedException {
         return (NodeCaps) super.clone();
     }
