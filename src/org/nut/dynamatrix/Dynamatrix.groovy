@@ -2068,6 +2068,96 @@ class Dynamatrix implements Cloneable {
                 }
             }
 
+            // Resolve any extreme C/C++ standard revisions (MAX/MIN/NOT_MAX/!MAX/NOT_MIN/!MIN/EXTREME/EXTREMES/MIN_MAX/!EXTREME/!EXTREMES/!MIN_MAX/NOT_EXTREME/NOT_EXTREMES/NOT_MIN_MAX) per compiler version
+            Set<DynamatrixSingleBuildConfig> dsbcBleSetWithStd = []
+            dsbcBleSet.each { DynamatrixSingleBuildConfig dsbcBleTmp ->
+                Set extremeVLabels = dsbcBleTmp.virtualLabelSet?.findAll {
+                    it instanceof String && (it =~ /^CSTDVERSION(_[A-Za-z0-9]+)?=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
+                }
+                if (!extremeVLabels || extremeVLabels.isEmpty()) {
+                    dsbcBleSetWithStd << dsbcBleTmp
+                    return
+                }
+
+                String compilerLabel = dsbcBleTmp.buildLabelSet?.find { it instanceof String && it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|COMPILERVER|[A-Za-z0-9_]+VER)=/ }
+                if (!compilerLabel) {
+                    Map<String, String> kv = dsbcBleTmp.getKVMap(false)
+                    String cVerKey = kv.keySet().find { it.endsWith("VER") && it != "PYTHONVER" }
+                    if (cVerKey) compilerLabel = "${cVerKey}=${kv[cVerKey]}"
+                }
+
+                List<Set> resolvedVirtualSets = [dsbcBleTmp.virtualLabelSet ? (new HashSet(dsbcBleTmp.virtualLabelSet)) : [] as Set]
+                extremeVLabels.each { def vLabel ->
+                    def m = (vLabel =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
+                    String labelKey = m[0][1]
+                    String mode = m[0][2]
+
+                    if (labelKey in ['CSTDVERSION_DEFAULT', 'CSTDVERSION']) {
+                        if (dynacfgBuild.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_${KEY}') || labelKey == 'CSTDVERSION_DEFAULT') {
+                            Collection candidatePairs = dynacfgBuild.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}']
+                            if (candidatePairs != null && candidatePairs.size() == 1 && (candidatePairs[0] == mode || candidatePairs[0] instanceof String)) {
+                                candidatePairs = []
+                            }
+                            List<Map<String, String>> resolvedPairs = Utils.resolveExtremeCStdPairs(compilerLabel, mode, candidatePairs, dynacfgBuild.excludeCombos)
+                            if (resolvedPairs) {
+                                List<Set> newResolvedVirtualSets = []
+                                resolvedVirtualSets.each { Set curVSet ->
+                                    resolvedPairs.each { Map<String, String> pair ->
+                                        Set newVSet = new HashSet(curVSet)
+                                        newVSet.remove(vLabel)
+                                        newVSet.add("CSTDVERSION_c=${pair['c']}")
+                                        newVSet.add("CSTDVERSION_cxx=${pair['cxx']}")
+                                        newResolvedVirtualSets << newVSet
+                                    }
+                                }
+                                resolvedVirtualSets = newResolvedVirtualSets
+                            }
+                        } else {
+                            String lang = (dynacfgBuild.compilerType == 'CXX') ? 'cxx' : 'c'
+                            Collection candidates = dynacfgBuild.dynamatrixAxesVirtualLabelsMap['CSTDVERSION']
+                            if (candidates != null && candidates.size() == 1 && candidates[0] == mode) candidates = []
+                            List<String> chosenVers = Utils.resolveExtremeCStdVersions(compilerLabel, mode, candidates, dynacfgBuild.excludeCombos, lang)
+                            if (chosenVers) {
+                                List<Set> newResolvedVirtualSets = []
+                                resolvedVirtualSets.each { Set curVSet ->
+                                    chosenVers.each { String chosenVer ->
+                                        Set newVSet = new HashSet(curVSet)
+                                        newVSet.remove(vLabel)
+                                        newVSet.add("${labelKey}=${chosenVer}")
+                                        newResolvedVirtualSets << newVSet
+                                    }
+                                }
+                                resolvedVirtualSets = newResolvedVirtualSets
+                            }
+                        }
+                    } else {
+                        String lang = labelKey.endsWith('_cxx') ? 'cxx' : (labelKey.endsWith('_c') ? 'c' : ((dynacfgBuild.compilerType == 'CXX') ? 'cxx' : 'c'))
+                        Collection candidates = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[labelKey]
+                        if (candidates != null && candidates.size() == 1 && candidates[0] == mode) candidates = []
+                        List<String> chosenVers = Utils.resolveExtremeCStdVersions(compilerLabel, mode, candidates, dynacfgBuild.excludeCombos, lang)
+                        if (chosenVers) {
+                            List<Set> newResolvedVirtualSets = []
+                            resolvedVirtualSets.each { Set curVSet ->
+                                chosenVers.each { String chosenVer ->
+                                    Set newVSet = new HashSet(curVSet)
+                                    newVSet.remove(vLabel)
+                                    newVSet.add("${labelKey}=${chosenVer}")
+                                    newResolvedVirtualSets << newVSet
+                                }
+                            }
+                            resolvedVirtualSets = newResolvedVirtualSets
+                        }
+                    }
+                }
+
+                resolvedVirtualSets.each { Set resolvedVSet ->
+                    DynamatrixSingleBuildConfig newDsbc = dsbcBleTmp.clone()
+                    newDsbc.virtualLabelSet = resolvedVSet
+                    dsbcBleSetWithStd << newDsbc
+                }
+            }
+            dsbcBleSet = dsbcBleSetWithStd
+
             if (debugMilestonesDetails) {
                 this.script.println "[DEBUG] generateBuildConfigSet(): BEFORE EXCLUSIONS: collected ${dsbcBleSet.size()} combos for individual builds with agent build label expression '${ble}'"
                 dsbcBleSet.each() {DynamatrixSingleBuildConfig dsbcBleTmp ->

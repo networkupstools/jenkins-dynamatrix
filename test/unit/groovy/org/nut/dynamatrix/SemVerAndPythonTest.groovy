@@ -399,4 +399,156 @@ class SemVerAndPythonTest {
         assertFalse(cfg.dynamatrixAxesLabels.contains('${COMPILER}VER=not_max'))
         assertFalse(cfg.dynamatrixAxesLabels.contains('${COMPILER}VER=NOT_MAX'))
     }
+
+    @Test
+    void testCStdSorting() {
+        List<String> cStandards = ["17", "89", "2x", "11", "99"]
+        assertEquals(["89", "99", "11", "17", "2x"], Utils.sortCStdVer(cStandards, "c", true))
+        assertEquals(["2x", "17", "11", "99", "89"], Utils.sortCStdVer(cStandards, "c", false))
+
+        List<String> cxxStandards = ["2b", "98", "14", "11", "03", "17", "2a"]
+        assertEquals(["98", "03", "11", "14", "17", "2a", "2b"], Utils.sortCStdVer(cxxStandards, "cxx", true))
+        assertEquals(["2b", "2a", "17", "14", "11", "03", "98"], Utils.sortCStdVer(cxxStandards, "cxx", false))
+    }
+
+    @Test
+    void testResolveExtremeCStdVersionsPerCompiler() {
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault("C-all")
+
+        List<String> cCandidates = ["89", "99", "11", "17", "2x"]
+        List<String> cxxCandidates = ["98", "03", "11", "14", "17", "2a", "2b"]
+
+        // GCC 4.4.4: Only supports up to C99 and C++98
+        assertEquals("99", Utils.resolveExtremeCStdVersion("GCCVER=4.4.4", "MAX", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("89", Utils.resolveExtremeCStdVersion("GCCVER=4.4.4", "MIN", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals(["89", "99"], Utils.resolveExtremeCStdVersions("GCCVER=4.4.4", "EXTREME", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("98", Utils.resolveExtremeCStdVersion("GCCVER=4.4.4", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // GCC 4.8.2: Supports up to C11 and C++11
+        assertEquals("11", Utils.resolveExtremeCStdVersion("GCCVER=4.8.2", "MAX", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("89", Utils.resolveExtremeCStdVersion("GCCVER=4.8.2", "MIN", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("11", Utils.resolveExtremeCStdVersion("GCCVER=4.8.2", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // GCC 7: Supports C++14 (but not C++17)
+        assertEquals("14", Utils.resolveExtremeCStdVersion("GCCVER=7", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // GCC 10: Supports C2x and C++17
+        assertEquals("2x", Utils.resolveExtremeCStdVersion("GCCVER=10", "MAX", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("17", Utils.resolveExtremeCStdVersion("GCCVER=10", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // Clang 3.3: Supports C++11
+        assertEquals("11", Utils.resolveExtremeCStdVersion("CLANGVER=3.3", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // Clang 5: Supports C++17
+        assertEquals("17", Utils.resolveExtremeCStdVersion("CLANGVER=5", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // NOT_MIN and NOT_MAX
+        List<String> notMinC = Utils.resolveExtremeCStdVersions("GCCVER=4.8.2", "NOT_MIN", cCandidates, cfg.excludeCombos, "c")
+        assertEquals(["99", "11"], notMinC)
+
+        List<String> notMaxC = Utils.resolveExtremeCStdVersions("GCCVER=4.8.2", "NOT_MAX", cCandidates, cfg.excludeCombos, "c")
+        assertEquals(["89", "99"], notMaxC)
+    }
+
+    @Test
+    void testResolveExtremeCStdPairs() {
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault("C+CXX-all")
+
+        List<Map<String, String>> pairs = [
+            ['c': '89', 'cxx': '98'],
+            ['c': '99', 'cxx': '98'],
+            ['c': '11', 'cxx': '11'],
+            ['c': '17', 'cxx': '17'],
+            ['c': '11', 'cxx': '14'],
+            ['c': '2x', 'cxx': '2a']
+        ]
+
+        // GCC 4.8.2 MAX pair should be C11 + C++11
+        List<Map<String, String>> maxPairGcc48 = Utils.resolveExtremeCStdPairs("GCCVER=4.8.2", "MAX", pairs, cfg.excludeCombos)
+        assertEquals(1, maxPairGcc48.size())
+        assertEquals(['c': '11', 'cxx': '11'], maxPairGcc48[0])
+
+        // GCC 4.8.2 MIN pair should be C89 + C++98
+        List<Map<String, String>> minPairGcc48 = Utils.resolveExtremeCStdPairs("GCCVER=4.8.2", "MIN", pairs, cfg.excludeCombos)
+        assertEquals(1, minPairGcc48.size())
+        assertEquals(['c': '89', 'cxx': '98'], minPairGcc48[0])
+
+        // GCC 10 MAX pair should be C17 + C++17
+        List<Map<String, String>> maxPairGcc10 = Utils.resolveExtremeCStdPairs("GCCVER=10", "MAX", pairs, cfg.excludeCombos)
+        assertEquals(1, maxPairGcc10.size())
+        assertEquals(['c': '17', 'cxx': '17'], maxPairGcc10[0])
+    }
+
+    @Test
+    void testDynamatrixConfigExtremeCStdSubstitution() {
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'CSTDVERSION': 'MAX'
+        ])
+        assertEquals(['MAX'], cfg.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_c'])
+
+        DynamatrixConfig cfg2 = new DynamatrixConfig(null)
+        cfg2.initDefault([
+            'defaultDynamatrixConfig': 'CXX',
+            'CSTDVERSION': 'MIN'
+        ])
+        assertEquals(['MIN'], cfg2.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_cxx'])
+
+        DynamatrixConfig cfg3 = new DynamatrixConfig(null)
+        cfg3.initDefault([
+            'defaultDynamatrixConfig': 'C+CXX',
+            'CSTDVERSION': 'EXTREME'
+        ])
+        assertEquals(['EXTREME'], cfg3.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}'])
+
+        DynamatrixConfig cfg4 = new DynamatrixConfig(null)
+        cfg4.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'CSTDVERSION_c': 'NOT_MAX'
+        ])
+        assertEquals(['NOT_MAX'], cfg4.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_c'])
+    }
+
+    @Test
+    void testDynamatrixMatrixGenerationWithExtremeCStd() {
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'CSTDVERSION': 'MAX'
+        ])
+        assertEquals(['MAX'], cfg.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_c'])
+
+        DynamatrixSingleBuildConfig dsbc48 = new DynamatrixSingleBuildConfig(null)
+        dsbc48.buildLabelExpression = "OS_DISTRO=debian&&COMPILER=GCC&&GCCVER=4.8.2&&ARCH64=amd64"
+        dsbc48.buildLabelSet = ["OS_DISTRO=debian", "COMPILER=GCC", "GCCVER=4.8.2", "ARCH64=amd64"] as Set
+        dsbc48.virtualLabelSet = ["CSTDVARIANT=c", "CSTDVERSION_c=MAX"] as Set
+
+        // Test extreme resolution on DSBC for GCC 4.8.2
+        String compilerLabel = dsbc48.buildLabelSet?.find { it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|[A-Za-z0-9_]+VER)=/ }
+        String chosenVer = Utils.resolveExtremeCStdVersion(compilerLabel, "MAX", [], cfg.excludeCombos, "c")
+        assertEquals("11", chosenVer)
+        dsbc48.virtualLabelSet.remove("CSTDVERSION_c=MAX")
+        dsbc48.virtualLabelSet.add("CSTDVERSION_c=${chosenVer}")
+
+        assertFalse(dsbc48.matchesConstraints(cfg.excludeCombos))
+        assertEquals("11", dsbc48.getKVMap().get("CSTDVERSION_c"))
+
+        DynamatrixSingleBuildConfig dsbc10 = new DynamatrixSingleBuildConfig(null)
+        dsbc10.buildLabelExpression = "OS_DISTRO=debian&&COMPILER=GCC&&GCCVER=10&&ARCH64=amd64"
+        dsbc10.buildLabelSet = ["OS_DISTRO=debian", "COMPILER=GCC", "GCCVER=10", "ARCH64=amd64"] as Set
+        dsbc10.virtualLabelSet = ["CSTDVARIANT=c", "CSTDVERSION_c=MAX"] as Set
+
+        // Test extreme resolution on DSBC for GCC 10
+        String compilerLabel10 = dsbc10.buildLabelSet?.find { it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|[A-Za-z0-9_]+VER)=/ }
+        String chosenVer10 = Utils.resolveExtremeCStdVersion(compilerLabel10, "MAX", [], cfg.excludeCombos, "c")
+        assertEquals("2x", chosenVer10)
+        dsbc10.virtualLabelSet.remove("CSTDVERSION_c=MAX")
+        dsbc10.virtualLabelSet.add("CSTDVERSION_c=${chosenVer10}")
+
+        assertFalse(dsbc10.matchesConstraints(cfg.excludeCombos))
+        assertEquals("2x", dsbc10.getKVMap().get("CSTDVERSION_c"))
+    }
 }

@@ -613,6 +613,37 @@ class DynamatrixConfig implements Cloneable {
                 dynacfgOrig.remove(k)
             }
 
+            // Handle requests for extreme C/C++ language revisions like CSTDVERSION: 'MAX', CSTDVERSION_c: 'MIN', CSTDVERSION_cxx: 'NOT_MAX', etc.
+            def extremeCStdKeys = []
+            dynacfgOrig.keySet().each { def k ->
+                def v = dynacfgOrig[k]
+                if (v instanceof String && (k.toString() == 'CSTDVERSION' || k.toString().startsWith('CSTDVERSION_') || k.toString() == 'CSTD') && (
+                    v in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
+                )) {
+                    extremeCStdKeys << k
+                }
+            }
+            extremeCStdKeys.each { def k ->
+                String v = dynacfgOrig[k].toString()
+                if (this.dynamatrixAxesVirtualLabelsMap == null) {
+                    this.dynamatrixAxesVirtualLabelsMap = [:]
+                }
+                if (k.toString() in ['CSTDVERSION', 'CSTD']) {
+                    if (this.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_${KEY}')) {
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}'] = [v]
+                    } else if (this.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_c')) {
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_c'] = [v]
+                    } else if (this.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_cxx')) {
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_cxx'] = [v]
+                    } else {
+                        this.dynamatrixAxesVirtualLabelsMap['CSTDVERSION'] = [v]
+                    }
+                } else {
+                    this.dynamatrixAxesVirtualLabelsMap[k.toString()] = [v]
+                }
+                dynacfgOrig.remove(k)
+            }
+
         }
 
         String errs = ""
