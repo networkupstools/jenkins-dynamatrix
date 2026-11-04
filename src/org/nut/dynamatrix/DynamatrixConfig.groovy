@@ -327,6 +327,7 @@ class DynamatrixConfig implements Cloneable {
     }
 
     @Override
+    @groovy.transform.CompileStatic
     public DynamatrixConfig clone() throws CloneNotSupportedException {
         return (DynamatrixConfig) super.clone();
     }
