@@ -383,11 +383,14 @@ class Utils {
     /**
      * Resolve MIN, MAX, NOT_MIN, !MIN, NOT_MAX, !MAX, EXTREME, EXTREMES, MIN_MAX,
      * !EXTREME, !EXTREMES, !MIN_MAX, NOT_EXTREME, NOT_EXTREMES, or NOT_MIN_MAX
-     * semantic versions for a compiler or interpreter key,
-     * taking into account C or CXX standard version constraints and exclusion combos.
-     * Returns a list of matching versions (empty list if none match).
-     * If an agent only has one version installed, that single version is simultaneously MIN and MAX,
-     * and is not tagged as NOT_MAX, NOT_MIN, NOT_EXTREME, etc.
+     * semantic versions for a compiler or interpreter key, taking into
+     * account C or CXX standard version constraints and exclusion combos.<br/>
+     *
+     * NOTE: If an agent only has one version installed, that single version
+     * is simultaneously MIN and MAX, and is *not* tagged as NOT_MAX, NOT_MIN,
+     * NOT_EXTREME, etc.
+     *
+     * @return A list of matching versions (empty list if none match).
      */
     @NonCPS
     public static List<String> resolveExtremeVersions(
