@@ -20,6 +20,7 @@ import org.nut.dynamatrix.DynamatrixConfig;
 import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
 import org.nut.dynamatrix.NodeCaps;
 import org.nut.dynamatrix.NodeData;
+import org.nut.dynamatrix.UtilsCStd;
 import org.nut.dynamatrix.Utils;
 import org.nut.dynamatrix.dynamatrixGlobalState;
 
@@ -2098,7 +2099,7 @@ class Dynamatrix implements Cloneable {
                             if (candidatePairs != null && candidatePairs.size() == 1 && (candidatePairs[0] == mode || candidatePairs[0] instanceof String)) {
                                 candidatePairs = []
                             }
-                            List<Map<String, String>> resolvedPairs = Utils.resolveExtremeCStdPairs(compilerLabel, mode, candidatePairs, dynacfgBuild.excludeCombos)
+                            List<Map<String, String>> resolvedPairs = UtilsCStd.resolveExtremeCStdPairs(compilerLabel, mode, candidatePairs, dynacfgBuild.excludeCombos)
                             if (resolvedPairs) {
                                 List<Set> newResolvedVirtualSets = []
                                 resolvedVirtualSets.each { Set curVSet ->
@@ -2116,7 +2117,7 @@ class Dynamatrix implements Cloneable {
                             String lang = (dynacfgBuild.compilerType == 'CXX') ? 'cxx' : 'c'
                             Collection candidates = dynacfgBuild.dynamatrixAxesVirtualLabelsMap['CSTDVERSION']
                             if (candidates != null && candidates.size() == 1 && candidates[0] == mode) candidates = []
-                            List<String> chosenVers = Utils.resolveExtremeCStdVersions(compilerLabel, mode, candidates, dynacfgBuild.excludeCombos, lang)
+                            List<String> chosenVers = UtilsCStd.resolveExtremeCStdVersions(compilerLabel, mode, candidates, dynacfgBuild.excludeCombos, lang)
                             if (chosenVers) {
                                 List<Set> newResolvedVirtualSets = []
                                 resolvedVirtualSets.each { Set curVSet ->
@@ -2134,7 +2135,7 @@ class Dynamatrix implements Cloneable {
                         String lang = labelKey.endsWith('_cxx') ? 'cxx' : (labelKey.endsWith('_c') ? 'c' : ((dynacfgBuild.compilerType == 'CXX') ? 'cxx' : 'c'))
                         Collection candidates = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[labelKey]
                         if (candidates != null && candidates.size() == 1 && candidates[0] == mode) candidates = []
-                        List<String> chosenVers = Utils.resolveExtremeCStdVersions(compilerLabel, mode, candidates, dynacfgBuild.excludeCombos, lang)
+                        List<String> chosenVers = UtilsCStd.resolveExtremeCStdVersions(compilerLabel, mode, candidates, dynacfgBuild.excludeCombos, lang)
                         if (chosenVers) {
                             List<Set> newResolvedVirtualSets = []
                             resolvedVirtualSets.each { Set curVSet ->

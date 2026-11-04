@@ -403,12 +403,12 @@ class SemVerAndPythonTest {
     @Test
     void testCStdSorting() {
         List<String> cStandards = ["17", "89", "2x", "11", "99"]
-        assertEquals(["89", "99", "11", "17", "2x"], Utils.sortCStdVer(cStandards, "c", true))
-        assertEquals(["2x", "17", "11", "99", "89"], Utils.sortCStdVer(cStandards, "c", false))
+        assertEquals(["89", "99", "11", "17", "2x"], UtilsCStd.sortCStdVer(cStandards, "c", true))
+        assertEquals(["2x", "17", "11", "99", "89"], UtilsCStd.sortCStdVer(cStandards, "c", false))
 
         List<String> cxxStandards = ["2b", "98", "14", "11", "03", "17", "2a"]
-        assertEquals(["98", "03", "11", "14", "17", "2a", "2b"], Utils.sortCStdVer(cxxStandards, "cxx", true))
-        assertEquals(["2b", "2a", "17", "14", "11", "03", "98"], Utils.sortCStdVer(cxxStandards, "cxx", false))
+        assertEquals(["98", "03", "11", "14", "17", "2a", "2b"], UtilsCStd.sortCStdVer(cxxStandards, "cxx", true))
+        assertEquals(["2b", "2a", "17", "14", "11", "03", "98"], UtilsCStd.sortCStdVer(cxxStandards, "cxx", false))
     }
 
     @Test
@@ -420,34 +420,34 @@ class SemVerAndPythonTest {
         List<String> cxxCandidates = ["98", "03", "11", "14", "17", "2a", "2b"]
 
         // GCC 4.4.4: Only supports up to C99 and C++98
-        assertEquals("99", Utils.resolveExtremeCStdVersion("GCCVER=4.4.4", "MAX", cCandidates, cfg.excludeCombos, "c"))
-        assertEquals("89", Utils.resolveExtremeCStdVersion("GCCVER=4.4.4", "MIN", cCandidates, cfg.excludeCombos, "c"))
-        assertEquals(["89", "99"], Utils.resolveExtremeCStdVersions("GCCVER=4.4.4", "EXTREME", cCandidates, cfg.excludeCombos, "c"))
-        assertEquals("98", Utils.resolveExtremeCStdVersion("GCCVER=4.4.4", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+        assertEquals("99", UtilsCStd.resolveExtremeCStdVersion("GCCVER=4.4.4", "MAX", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("89", UtilsCStd.resolveExtremeCStdVersion("GCCVER=4.4.4", "MIN", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals(["89", "99"], UtilsCStd.resolveExtremeCStdVersions("GCCVER=4.4.4", "EXTREME", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("98", UtilsCStd.resolveExtremeCStdVersion("GCCVER=4.4.4", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
 
         // GCC 4.8.2: Supports up to C11 and C++11
-        assertEquals("11", Utils.resolveExtremeCStdVersion("GCCVER=4.8.2", "MAX", cCandidates, cfg.excludeCombos, "c"))
-        assertEquals("89", Utils.resolveExtremeCStdVersion("GCCVER=4.8.2", "MIN", cCandidates, cfg.excludeCombos, "c"))
-        assertEquals("11", Utils.resolveExtremeCStdVersion("GCCVER=4.8.2", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+        assertEquals("11", UtilsCStd.resolveExtremeCStdVersion("GCCVER=4.8.2", "MAX", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("89", UtilsCStd.resolveExtremeCStdVersion("GCCVER=4.8.2", "MIN", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("11", UtilsCStd.resolveExtremeCStdVersion("GCCVER=4.8.2", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
 
         // GCC 7: Supports C++14 (but not C++17)
-        assertEquals("14", Utils.resolveExtremeCStdVersion("GCCVER=7", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+        assertEquals("14", UtilsCStd.resolveExtremeCStdVersion("GCCVER=7", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
 
         // GCC 10: Supports C2x and C++17
-        assertEquals("2x", Utils.resolveExtremeCStdVersion("GCCVER=10", "MAX", cCandidates, cfg.excludeCombos, "c"))
-        assertEquals("17", Utils.resolveExtremeCStdVersion("GCCVER=10", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+        assertEquals("2x", UtilsCStd.resolveExtremeCStdVersion("GCCVER=10", "MAX", cCandidates, cfg.excludeCombos, "c"))
+        assertEquals("17", UtilsCStd.resolveExtremeCStdVersion("GCCVER=10", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
 
         // Clang 3.3: Supports C++11
-        assertEquals("11", Utils.resolveExtremeCStdVersion("CLANGVER=3.3", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+        assertEquals("11", UtilsCStd.resolveExtremeCStdVersion("CLANGVER=3.3", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
 
         // Clang 5: Supports C++17
-        assertEquals("17", Utils.resolveExtremeCStdVersion("CLANGVER=5", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+        assertEquals("17", UtilsCStd.resolveExtremeCStdVersion("CLANGVER=5", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
 
         // NOT_MIN and NOT_MAX
-        List<String> notMinC = Utils.resolveExtremeCStdVersions("GCCVER=4.8.2", "NOT_MIN", cCandidates, cfg.excludeCombos, "c")
+        List<String> notMinC = UtilsCStd.resolveExtremeCStdVersions("GCCVER=4.8.2", "NOT_MIN", cCandidates, cfg.excludeCombos, "c")
         assertEquals(["99", "11"], notMinC)
 
-        List<String> notMaxC = Utils.resolveExtremeCStdVersions("GCCVER=4.8.2", "NOT_MAX", cCandidates, cfg.excludeCombos, "c")
+        List<String> notMaxC = UtilsCStd.resolveExtremeCStdVersions("GCCVER=4.8.2", "NOT_MAX", cCandidates, cfg.excludeCombos, "c")
         assertEquals(["89", "99"], notMaxC)
     }
 
@@ -466,17 +466,17 @@ class SemVerAndPythonTest {
         ]
 
         // GCC 4.8.2 MAX pair should be C11 + C++11
-        List<Map<String, String>> maxPairGcc48 = Utils.resolveExtremeCStdPairs("GCCVER=4.8.2", "MAX", pairs, cfg.excludeCombos)
+        List<Map<String, String>> maxPairGcc48 = UtilsCStd.resolveExtremeCStdPairs("GCCVER=4.8.2", "MAX", pairs, cfg.excludeCombos)
         assertEquals(1, maxPairGcc48.size())
         assertEquals(['c': '11', 'cxx': '11'], maxPairGcc48[0])
 
         // GCC 4.8.2 MIN pair should be C89 + C++98
-        List<Map<String, String>> minPairGcc48 = Utils.resolveExtremeCStdPairs("GCCVER=4.8.2", "MIN", pairs, cfg.excludeCombos)
+        List<Map<String, String>> minPairGcc48 = UtilsCStd.resolveExtremeCStdPairs("GCCVER=4.8.2", "MIN", pairs, cfg.excludeCombos)
         assertEquals(1, minPairGcc48.size())
         assertEquals(['c': '89', 'cxx': '98'], minPairGcc48[0])
 
         // GCC 10 MAX pair should be C17 + C++17
-        List<Map<String, String>> maxPairGcc10 = Utils.resolveExtremeCStdPairs("GCCVER=10", "MAX", pairs, cfg.excludeCombos)
+        List<Map<String, String>> maxPairGcc10 = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", pairs, cfg.excludeCombos)
         assertEquals(1, maxPairGcc10.size())
         assertEquals(['c': '17', 'cxx': '17'], maxPairGcc10[0])
     }
@@ -528,7 +528,7 @@ class SemVerAndPythonTest {
 
         // Test extreme resolution on DSBC for GCC 4.8.2
         String compilerLabel = dsbc48.buildLabelSet?.find { it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|[A-Za-z0-9_]+VER)=/ }
-        String chosenVer = Utils.resolveExtremeCStdVersion(compilerLabel, "MAX", [], cfg.excludeCombos, "c")
+        String chosenVer = UtilsCStd.resolveExtremeCStdVersion(compilerLabel, "MAX", [], cfg.excludeCombos, "c")
         assertEquals("11", chosenVer)
         dsbc48.virtualLabelSet.remove("CSTDVERSION_c=MAX")
         dsbc48.virtualLabelSet.add("CSTDVERSION_c=${chosenVer}")
@@ -543,7 +543,7 @@ class SemVerAndPythonTest {
 
         // Test extreme resolution on DSBC for GCC 10
         String compilerLabel10 = dsbc10.buildLabelSet?.find { it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|[A-Za-z0-9_]+VER)=/ }
-        String chosenVer10 = Utils.resolveExtremeCStdVersion(compilerLabel10, "MAX", [], cfg.excludeCombos, "c")
+        String chosenVer10 = UtilsCStd.resolveExtremeCStdVersion(compilerLabel10, "MAX", [], cfg.excludeCombos, "c")
         assertEquals("2x", chosenVer10)
         dsbc10.virtualLabelSet.remove("CSTDVERSION_c=MAX")
         dsbc10.virtualLabelSet.add("CSTDVERSION_c=${chosenVer10}")
