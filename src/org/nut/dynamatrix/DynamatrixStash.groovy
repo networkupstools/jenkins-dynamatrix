@@ -834,7 +834,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
      *
      * @see #checkoutCleanSrc(Object, String, String, Boolean, Closure)
      */
-    synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName, Boolean requestDeleteWS = true) {
+    synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName, Boolean requestDeleteWS = true, Boolean exclusiveCheckoutWorkspace = false) {
         def scm = cloneSCM(script)
 
         if (!(Utils.isMap(scm)
@@ -962,11 +962,15 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
             }
 
             script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': waiting for exclusive use (${lockName}) of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
+            Closure checkoutWorkspace = null
             script.lock (resource: lockName, quantity: 1) {
                 // NOTE: Currently this means one lock for all git ops of the CI
                 // farm per hypervisor via DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME
                 // (or overall, if we default).
                 // An apparent bottleneck to optimize (smartly!) later.
+                // With exclusiveCheckoutWorkspace we can at least experiment
+                // whether it is safe to use the prepared cache while some other
+                // job might write into it (should be, as long as no GC, but...)
 
                 // Location under which we can have git reference repositories
                 String refrepoBase = null
@@ -1076,25 +1080,36 @@ exit \$RET
 
                 } // back to workspace dir
 
-                // Maybe the agent had another refrepo, maybe not
-                // They specified "scm-ws", so now they get this:
-                if (refrepoPath == null) {
-                    script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' did not determine a refrepoPath cached in agent workspace: repo '${scmURL}' commit '${scmCommit}'"
-                    //ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), stashCode[stashName])
-                    ret = false
-                } else {
-                    script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
-                        // checkout with refrepo
-                        script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' with refrepoPath='${refrepoPath}': repo '${scmURL}' commit '${scmCommit}'"
-                        // "false" says to not "untie" refrepo in the build agent;
-                        // we only request specific scmCommit if it is a known Git
-                        // SHA hash (not a symbolic branch/tag/PR/... name):
-                        ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), false, requestDeleteWS, stashCode[stashName])
-                    } // withEnv for checking/populating original workspace
-                      // just using refrepo (if usable in the end)
+                checkoutWorkspace = {
+                    // Maybe the agent had another refrepo, maybe not
+                    // They specified "scm-ws", so now they get this:
+                    if (refrepoPath == null) {
+                        script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' did not determine a refrepoPath cached in agent workspace: repo '${scmURL}' commit '${scmCommit}'"
+                        //ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), stashCode[stashName])
+                        ret = false
+                    } else {
+                        script.withEnv(["GIT_REFERENCE_REPO_DIR=${refrepoPath}"]) {
+                            // checkout with refrepo
+                            script.echo "checkoutCleanSrcRefrepoWS: checking out on node '${script?.env?.NODE_NAME}' into '${script.pwd()}' with refrepoPath='${refrepoPath}': repo '${scmURL}' commit '${scmCommit}'"
+                            // "false" says to not "untie" refrepo in the build agent;
+                            // we only request specific scmCommit if it is a known Git
+                            // SHA hash (not a symbolic branch/tag/PR/... name):
+                            ret = checkoutCleanSrc(script, stashName, ((scmCommit ==~ /^[0-9a-fA-F]{40}$/) ? scmCommit : null), false, requestDeleteWS, stashCode[stashName])
+                        } // withEnv for checking/populating original workspace
+                        // just using refrepo (if usable in the end)
+                    }
+                }   // checkoutWorkspace{}
+
+                if (exclusiveCheckoutWorkspace) {
+                    checkoutWorkspace.call()
                 }
                 script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: finished using exclusive lock (${lockName}) on node '${script?.env?.NODE_NAME}' about possibly shared git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
             } // unlock
+
+            if (!exclusiveCheckoutWorkspace) {
+                script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: instantiating the workspace using shared git cache dir (as read-only) without using exclusive lock (${lockName}) on node '${script?.env?.NODE_NAME}': repo '${scmURL}' commit '${scmCommit}'"
+                checkoutWorkspace.call()
+            }
         } catch (Throwable t) {
             script.echo "checkoutCleanSrcRefrepoWS: failed to use git refrepo on node '${script?.env?.NODE_NAME}', falling back if we can"
             script.echo t.toString()
