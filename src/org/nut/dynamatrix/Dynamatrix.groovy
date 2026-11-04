@@ -1889,8 +1889,8 @@ class Dynamatrix implements Cloneable {
             if (virtualAxes.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
                 def tmp = virtualAxes.clone()
-                tmp.each() {Set virtualLabelSet ->
-                    dsbc.virtualLabelSet = virtualLabelSet
+                tmp.each() {def virtualLabelSet ->
+                    dsbc.virtualLabelSet = (virtualLabelSet as Set)
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         virtualAxes.remove(virtualLabelSet)
                         if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: virtualLabelSet: ${virtualLabelSet}"
@@ -1903,8 +1903,8 @@ class Dynamatrix implements Cloneable {
             if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
                 def tmp = dynacfgBuild.dynamatrixAxesCommonEnv.clone()
-                tmp.each() {Set envvarSet ->
-                    dsbc.envvarSet = envvarSet
+                tmp.each() {def envvarSet ->
+                    dsbc.envvarSet = (envvarSet as Set)
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonEnv.remove(envvarSet)
                         if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: envvarSet: ${envvarSet}"
@@ -1917,8 +1917,8 @@ class Dynamatrix implements Cloneable {
             if (dynacfgBuild.dynamatrixAxesCommonOpts.size() > 0) {
                 DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(this.script)
                 def tmp = dynacfgBuild.dynamatrixAxesCommonOpts.clone()
-                tmp.each() {Set clioptSet ->
-                    dsbc.clioptSet = clioptSet
+                tmp.each() {def clioptSet ->
+                    dsbc.clioptSet = (clioptSet as Set)
                     if (dsbc.matchesConstraints(dynacfgBuild.excludeCombos)) {
                         dynacfgBuild.dynamatrixAxesCommonOpts.remove(clioptSet)
                         if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): quick cleanup removed: clioptSet: ${clioptSet}"
@@ -2003,10 +2003,10 @@ class Dynamatrix implements Cloneable {
 
             if (dynacfgBuild.dynamatrixAxesCommonEnv.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
-                dynacfgBuild.dynamatrixAxesCommonEnv.each() {Set envvarSet ->
+                dynacfgBuild.dynamatrixAxesCommonEnv.each() {def envvarSet ->
                     dsbcBleSet.each() {DynamatrixSingleBuildConfig tmp ->
                         DynamatrixSingleBuildConfig dsbcBleTmp = tmp.clone()
-                        dsbcBleTmp.envvarSet = envvarSet
+                        dsbcBleTmp.envvarSet = (envvarSet as Set)
                         dsbcBleSetTmp += dsbcBleTmp
                     }
                 }
@@ -2016,12 +2016,12 @@ class Dynamatrix implements Cloneable {
             if (virtualAxes.size() > 0) {
                 Set<DynamatrixSingleBuildConfig> dsbcBleSetTmp = []
                 if (debugTrace) this.script.println "[DEBUG] generateBuildConfigSet(): COMBINING: virtualAxes: ${Utils.castString(virtualAxes)}\nvs. dsbcBleSet: ${dsbcBleSet}"
-                virtualAxes.each() {Set virtualLabelSet ->
+                virtualAxes.each() {def virtualLabelSet ->
                     //if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)}"
                     dsbcBleSet.each() {DynamatrixSingleBuildConfig tmp ->
                         DynamatrixSingleBuildConfig dsbcBleTmp = tmp.clone()
                         //if (debugTraceResolver) this.script.println "[DEBUG] generateBuildConfigSet(): checking virtualLabelSet: ${Utils.castString(virtualLabelSet)} with ${dsbcBleTmp}"
-                        dsbcBleTmp.virtualLabelSet = virtualLabelSet
+                        dsbcBleTmp.virtualLabelSet = (virtualLabelSet as Set)
                         dsbcBleSetTmp += dsbcBleTmp
                     }
                 }
