@@ -527,7 +527,7 @@ class SemVerAndPythonTest {
         dsbc48.virtualLabelSet = ["CSTDVARIANT=c", "CSTDVERSION_c=MAX"] as Set
 
         // Test extreme resolution on DSBC for GCC 4.8.2
-        String compilerLabel = dsbc48.buildLabelSet?.find { it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|[A-Za-z0-9_]+VER)=/ }
+        String compilerLabel = dsbc48.buildLabelSet?.find { it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|[A-Za-z0-9_]+VER)=.*/ }
         String chosenVer = UtilsCStd.resolveExtremeCStdVersion(compilerLabel, "MAX", [], cfg.excludeCombos, "c")
         assertEquals("11", chosenVer)
         dsbc48.virtualLabelSet.remove("CSTDVERSION_c=MAX")

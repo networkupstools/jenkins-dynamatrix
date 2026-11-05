@@ -2080,7 +2080,7 @@ class Dynamatrix implements Cloneable {
                     return
                 }
 
-                String compilerLabel = dsbcBleTmp.buildLabelSet?.find { it instanceof String && it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|COMPILERVER|[A-Za-z0-9_]+VER)=/ }
+                String compilerLabel = dsbcBleTmp.buildLabelSet?.find { it instanceof String && it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|COMPILERVER|[A-Za-z0-9_]+VER)=.*/ }
                 if (!compilerLabel) {
                     Map<String, String> kv = dsbcBleTmp.getKVMap(false)
                     String cVerKey = kv.keySet().find { it.endsWith("VER") && it != "PYTHONVER" }
