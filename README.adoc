@@ -419,9 +419,33 @@ the reference repository maintained in the workspace, maintenance of
 this location is protected by Lockable Resources plugin. Since agents
 running with independent storage should not wait on each other, this
 lock can be tuned by setting `DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME`
-label; note that agents that do indeed use same storage (shared over
-NFS, or using containers with same homedirs from their host) should
-set identical values in their common lock name.
+label or environment variable; note that agents that do indeed use
+same storage (shared over NFS, or using containers with same homedirs
+bind-mounted from their host) should set identical values in their
+common lock name.
+
+This library supports both exclusive locking (when the reference git
+repository can be written by direct online `git fetch` or indirect
+`unstash` and sync from data prepared earlier), and either exclusive
+or shared locking for actual workspace cloning which relies on such
+a reference repository (this operation only reads from a refrepo).
+In code, see `DynamatrixStash.checkoutCleanSrcRefrepoWS()`; as an
+ultimate consumer you can include `:shared` or `:exclusive` in the
+`DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME` string value.
+
+This library by default errs on the safer side, instantiating the git
+workspace under the same lock as refrepo maintenance (meaning that
+only one parallel code branch at a time can actively proceed with a
+`git clone` operation on the same host), thus ensuring that the refrepo
+does not mutate while we read from it.
+
+With default `git` implementation it should be safe to configure the
+shared use of a refrepo. Parallel code branches would still wait on
+the exclusive lock for `refrepo` update, however most of the branches
+would not do much work here after the first one is done (just check
+the needed commits are there). After passing this exclusive lock,
+multiple "shared"-mode workers can instantiate their git workspaces
+simultaneously -- reducing idle build delays.
 
 Directory naming
 ~~~~~~~~~~~~~~~~

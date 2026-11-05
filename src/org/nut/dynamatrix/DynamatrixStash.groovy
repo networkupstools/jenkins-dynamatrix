@@ -834,7 +834,7 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
      *
      * @see #checkoutCleanSrc(Object, String, String, Boolean, Closure)
      */
-    synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName, Boolean requestDeleteWS = true, Boolean exclusiveCheckoutWorkspace = false) {
+    synchronized static def checkoutCleanSrcRefrepoWS(def script, String stashName, Boolean requestDeleteWS = true, Boolean exclusiveCheckoutWorkspace = null) {
         def scm = cloneSCM(script)
 
         if (!(Utils.isMap(scm)
@@ -961,14 +961,38 @@ echo "[DEBUG] Files in `pwd`: `find . -type f | wc -l` and all FS objects under:
                 lockName = 'gitcache-dynamatrix:defaultLock'
             }
 
+            if (exclusiveCheckoutWorkspace == null) {
+                switch (lockName) {
+                    case ~/:shared/:
+                        // sysadmin of the agent (or its hypervisor
+                        // or otherwise shared storage) knows it is
+                        // safe to rely on `git` program's locking
+                        // and atomic-write implementation, so the
+                        // opened `index` file reflects some stable
+                        // data state, and objects only appear in
+                        // the reference repository being written
+                        // and nothing garbage-collects data away
+                        // while someone else reads it.
+                        exclusiveCheckoutWorkspace = false
+                        break
+                    case ~/:exclusive/:
+                        exclusiveCheckoutWorkspace = true
+                        break
+                    default:
+                        // err on the safer slower side
+                        exclusiveCheckoutWorkspace = true
+                        break
+                }
+            }
+
             script.echo "[DEBUG] checkoutCleanSrcRefrepoWS: node '${script?.env?.NODE_NAME}': waiting for exclusive use (${lockName}) of git cache dir to check out: repo '${scmURL}' commit '${scmCommit}'"
             Closure checkoutWorkspace = null
             script.lock (resource: lockName, quantity: 1) {
                 // NOTE: Currently this means one lock for all git ops of the CI
                 // farm per hypervisor via DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME
-                // (or overall, if we default).
-                // An apparent bottleneck to optimize (smartly!) later.
-                // With exclusiveCheckoutWorkspace we can at least experiment
+                // (or overall, if we default) - an apparent bottleneck to optimize.
+                // With exclusiveCheckoutWorkspace (which can be configured via
+                // DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME) we can at least experiment
                 // whether it is safe to use the prepared cache while some other
                 // job might write into it (should be, as long as no GC, but...)
 
