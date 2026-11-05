@@ -645,6 +645,38 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return "${sn}quickcheck"
     }
 
+    /**
+     * Stage naming functions for Spellcheck:
+     * <pre>
+     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&SpellcheckPlatform_StageNameTagFunc
+     * </pre>
+     */
+    @NonCPS
+    public static String SpellcheckPlatform_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
+        return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.SpellcheckPlatform_StageNameTagValue(dsbc) + '"'
+    }
+
+    @NonCPS
+    public static String SpellcheckPlatform_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
+        Map<String, String> labelMap = dsbc.getKVMap(false)
+        String sn = ""
+        if (labelMap.containsKey("OS_FAMILY"))
+            sn += labelMap.OS_FAMILY + "-"
+        if (labelMap.containsKey("OS_DISTRO"))
+            sn += labelMap.OS_DISTRO + "-"
+        return "${sn}spellcheck"
+    }
+
+    @NonCPS
+    public static String Spellcheck_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
+        return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.Spellcheck_StageNameTagValue(dsbc) + '"'
+    }
+
+    @NonCPS
+    public static String Spellcheck_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
+        return SpellcheckPlatform_StageNameTagValue(dsbc)
+    }
+
     /** Use if a particular shell (or several) has been chosen for one test stage... */
     @NonCPS
     public static String Shellcheck_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {

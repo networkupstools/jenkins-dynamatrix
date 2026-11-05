@@ -422,7 +422,9 @@ lock can be tuned by setting `DYNAMATRIX_REFREPO_WORKSPACE_LOCKNAME`
 label or environment variable; note that agents that do indeed use
 same storage (shared over NFS, or using containers with same homedirs
 bind-mounted from their host) should set identical values in their
-common lock name.
+common lock name. Note that this also applies to otherwise singular
+build agents which would offer multiple executors for parallel runs
+of independent scenarios.
 
 This library supports both exclusive locking (when the reference git
 repository can be written by direct online `git fetch` or indirect

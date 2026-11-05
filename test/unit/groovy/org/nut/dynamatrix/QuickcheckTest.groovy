@@ -136,6 +136,106 @@ class QuickcheckTest {
     }
 
     @Test
+    void testSpellcheckPlatformStageNameTagValue() {
+        DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(null)
+        dsbc.buildLabelSet = ["OS_FAMILY=linux", "OS_DISTRO=ubuntu"] as Set
+
+        String tagVal = DynamatrixSingleBuildConfig.SpellcheckPlatform_StageNameTagValue(dsbc)
+        assertEquals("linux-ubuntu-spellcheck", tagVal)
+
+        String tagFunc = DynamatrixSingleBuildConfig.SpellcheckPlatform_StageNameTagFunc(dsbc)
+        assertEquals('MATRIX_TAG="linux-ubuntu-spellcheck"', tagFunc)
+
+        String tagAlias = DynamatrixSingleBuildConfig.Spellcheck_StageNameTagFunc(dsbc)
+        assertEquals('MATRIX_TAG="linux-ubuntu-spellcheck"', tagAlias)
+    }
+
+    @Test
+    void testSpellcheckPlatformStageNameTagValueWithoutOsFamily() {
+        DynamatrixSingleBuildConfig dsbc = new DynamatrixSingleBuildConfig(null)
+        dsbc.buildLabelSet = ["OS_DISTRO=debian"] as Set
+
+        String tagVal = DynamatrixSingleBuildConfig.SpellcheckPlatform_StageNameTagValue(dsbc)
+        assertEquals("debian-spellcheck", tagVal)
+
+        String tagFunc = DynamatrixSingleBuildConfig.SpellcheckPlatform_StageNameTagFunc(dsbc)
+        assertEquals('MATRIX_TAG="debian-spellcheck"', tagFunc)
+    }
+
+    @Test
+    void testSpellcheckSanityCheckDynacfgPipelineDefaults() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class spellcheckClass = gcl.parseClass(new File("vars/spellcheck.groovy"))
+        def spellcheckInstance = spellcheckClass.getDeclaredConstructor().newInstance()
+
+        Map dynacfgPipeline = [spellcheck: true]
+        Map result = spellcheckInstance.sanityCheckDynacfgPipeline(dynacfgPipeline)
+
+        assertNotNull(result.spellcheck)
+        assertTrue(result.spellcheck instanceof Map)
+        assertEquals(1, result.spellcheck.dynamatrixAxesLabels.size())
+        assertEquals('( ${MAKE} spellcheck )', result.spellcheck.spellcheck)
+        assertNotNull(result.spellcheck.stageNameFunc)
+    }
+
+    @Test
+    void testSpellcheckSanityCheckDynacfgPipelineCustomMap() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class spellcheckClass = gcl.parseClass(new File("vars/spellcheck.groovy"))
+        def spellcheckInstance = spellcheckClass.getDeclaredConstructor().newInstance()
+
+        Map dynacfgPipeline = [
+            spellcheck: [
+                dynamatrixAxesLabels: ['OS_DISTRO'],
+                spellcheck: 'make spellcheck',
+                commonLabelExpr: 'custom-spellcheck-node'
+            ]
+        ]
+        Map result = spellcheckInstance.sanityCheckDynacfgPipeline(dynacfgPipeline)
+
+        assertEquals(['OS_DISTRO'], result.spellcheck.dynamatrixAxesLabels)
+        assertEquals('make spellcheck', result.spellcheck.spellcheck)
+        assertEquals('custom-spellcheck-node', result.spellcheck.commonLabelExpr)
+    }
+
+    @Test
+    void testSpellcheckSanityCheckDynacfgPipelineDefaultCommonLabelExpr() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class spellcheckClass = gcl.parseClass(new File("vars/spellcheck.groovy"))
+        def spellcheckInstance = spellcheckClass.getDeclaredConstructor().newInstance()
+
+        def mockInfra = [
+            labelDocumentationSpellchecker: { -> "doc-spellchecker-label" }
+        ]
+        spellcheckInstance.getBinding().setVariable("infra", mockInfra)
+
+        Map dynacfgPipeline = [spellcheck: true]
+        Map result = spellcheckInstance.sanityCheckDynacfgPipeline(dynacfgPipeline)
+
+        assertEquals("doc-spellchecker-label", result.spellcheck.commonLabelExpr)
+    }
+
+    @Test
+    void testSpellcheckMakeMap() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class spellcheckClass = gcl.parseClass(new File("vars/spellcheck.groovy"))
+        def spellcheckInstance = spellcheckClass.getDeclaredConstructor().newInstance()
+
+        Closure dummyClosure1 = { -> println "dummy1" }
+        Closure dummyClosure2 = { -> println "dummy2" }
+
+        Set<List> stages = [
+            ["spellcheck for ubuntu", dummyClosure1],
+            ["spellcheck for debian", dummyClosure2]
+        ] as Set
+
+        Map map = spellcheckInstance.makeMap(stages)
+        assertEquals(2, map.size())
+        assertTrue(map.containsKey("spellcheck for ubuntu"))
+        assertTrue(map.containsKey("spellcheck for debian"))
+    }
+
+    @Test
     void testStylecheckIsEnabled() {
         GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
         Class stylecheckClass = gcl.parseClass(new File("vars/stylecheck.groovy"))
