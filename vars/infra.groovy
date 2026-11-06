@@ -72,8 +72,11 @@ String labelDocumentationWorker() {
  *
  * As a fallback (if not specified in the
  * {@link dynamatrixGlobalState#labelDocumentationSpellchecker} setting,
- * looks for {@code 'doc-spellchecker||`labelDocumentationWorker()`'}
- * in currently defined build agents.
+ * looks for {@code 'doc-spellchecker||`labelDocumentationWorker()||ASPELL=.*||ASPELL`'}
+ * in currently defined build agents.<br/>
+ *
+ * WARNING: With current string-based matching in the Jenkins common code base,
+ * the {@code ASPELL=.*} expression above is unlikely to match specific tools!<br/>
  *
  * @see infra#labelDocumentationWorker
  * @see dynamatrixGlobalState#labelDocumentationSpellchecker
@@ -86,7 +89,7 @@ String labelDocumentationSpellchecker() {
 
     // Do any nodes declare a capability to spell-check explicitly,
     // or build any doc types, that the hosted projects might need?
-    String fallback = "(doc-spellchecker||${labelDocumentationWorker()})"
+    String fallback = "(doc-spellchecker||${labelDocumentationWorker()}||ASPELL=.*||ASPELL)"
     def nodeList = nodesByLabel (label: fallback, offline: true)
     if (nodeList.size() > 0)
         return fallback
