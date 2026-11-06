@@ -274,4 +274,12 @@ class QuickcheckTest {
         assertTrue(shellcheckInstance.isEnabled([shellcheck: [single: 'make shellcheck']]))
         assertTrue(shellcheckInstance.isEnabled([shellcheck: [multi: 'make shellcheck']]))
     }
+
+    @Test
+    void testQuickcheckClassParses() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class quickcheckClass = gcl.parseClass(new File("vars/quickcheck.groovy"))
+        def quickcheckInstance = quickcheckClass.getDeclaredConstructor().newInstance()
+        assertNotNull(quickcheckInstance)
+    }
 }

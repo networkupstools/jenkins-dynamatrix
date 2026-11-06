@@ -90,6 +90,22 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
     if (isEnabled(dynacfgPipeline)) {
         if (debugTrace) this.script.println "[DEBUG] Discovering stagesQuickcheck: calling prepareDynamatrix() step..."
 
+        def docSpellNodes = []
+        try {
+            String docSpellLabel = infra.labelDocumentationSpellchecker()
+            if (Utils.isStringNotEmpty(docSpellLabel)) {
+                try {
+                    docSpellNodes = nodesByLabel(label: docSpellLabel, offline: true)
+                } catch (Throwable ignored) {
+                    docSpellNodes = []
+                }
+            }
+        } catch (Throwable t) {
+            if (dynamatrixGlobalState.enableDebugTrace) {
+                echo "quickcheck: failed to check infra.labelDocumentationSpellchecker(): ${t.getMessage()}"
+            }
+        }
+
         stagesQuickcheck_arr = prepareDynamatrix([
             dynamatrixAxesLabels: dynacfgPipeline.quickcheck.dynamatrixAxesLabels,
             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
@@ -340,6 +356,15 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                 }
                             }
 
+                            if (aspellProg == null) {
+                                if ((docSpellNodes && (env.NODE_NAME in docSpellNodes || docSpellNodes.any { it.toString() == env.NODE_NAME }))
+                                || (Utils.isStringNotEmpty(docSpellLabel) && nodeLabels.contains(docSpellLabel))
+                                ) {
+                                    // Do not force any particular program name, but do run the test
+                                    aspellProg = ""
+                                }
+                            }
+
                             if (aspellProg != null) {
                                 String spCmd = (spConfig == true) ? '( \${MAKE} spellcheck )' : spConfig.toString()
                                 String stagesQuickcheckNode_key = "spellcheck for ${MATRIX_TAG}"
@@ -348,12 +373,19 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                         "\n  for ${Utils.castString(MATRIX_DSBC)}"
                                     Boolean didFail = true
                                     try {
-                                        withEnv(["ASPELL=${aspellProg}"]) {
+                                        Closure spBody = {
                                             withEnvOptional(dynacfgPipeline.defaultTools) {
                                                 sh """ set +x
                                                 echo "Spellcheck testing with aspell '${aspellProg}' on `uname -a || hostname || true` system"
                                                 ${spCmd}
                                                 """
+                                            }
+                                        }
+                                        if (aspellProg == "") {
+                                            spBody.call()
+                                        } else {
+                                            withEnv(["ASPELL=${aspellProg}"]) {
+                                                spBody.call()
                                             }
                                         }
                                         didFail = false
