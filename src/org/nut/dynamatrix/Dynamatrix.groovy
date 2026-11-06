@@ -636,10 +636,10 @@ class Dynamatrix implements Cloneable {
 
     /** Pretty string like {@code "quick test"} (if
      *  {@link #dynamatrixGithubNotificationContext}
-     *  is {@code "quickbuild-run"},
+     *  contains {@code "quickbuild-run"},
      *  or {@code "slow build"} otherwise. */
     String getBuildTypeFromGHNContext() {
-        return (this.dynamatrixGithubNotificationContext == "quickbuild-run") ? "quick test" : "slow build"
+        return (this.dynamatrixGithubNotificationContext ==~ /.*quickbuild-run.*/) ? "quick test" : "slow build"
     }
 
     /**

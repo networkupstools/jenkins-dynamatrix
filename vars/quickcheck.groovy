@@ -120,7 +120,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
             dynamatrixAxesLabels: dynacfgPipeline.quickcheck.dynamatrixAxesLabels,
             mergeMode: [ 'dynamatrixAxesLabels': 'replace' ],
             stageNameFunc: dynacfgPipeline.quickcheck.stageNameFunc,
-            dynamatrixGithubNotificationContext: "quickbuild-run"
+            dynamatrixGithubNotificationContext: "quickbuild-run-quickcheck"
             ] + (dynacfgPipeline.quickcheck?.excludeCombos ? [excludeCombos: dynacfgPipeline.quickcheck?.excludeCombos,] : [:]),
             returnSet) { def delegate -> setDelegate(delegate)
                     DynamatrixSingleBuildConfig MATRIX_DSBC = delegate.dsbc
