@@ -179,6 +179,11 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return true
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(buildLabelExpression, buildLabelSet, virtualLabelSet, envvarSet, clioptSet, requiresBuildNode)
+    }
+
     public boolean canEqual(Object other) {
         return other instanceof DynamatrixSingleBuildConfig
     }

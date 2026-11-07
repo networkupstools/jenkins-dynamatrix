@@ -590,8 +590,8 @@ class DynamatrixConfig implements Cloneable {
             def extremeKeys = []
             dynacfgOrig.keySet().each { def k ->
                 def v = dynacfgOrig[k]
-                if (v instanceof String && (k.toString().endsWith('VER') || k.toString() == 'PYTHON') && (
-                    v in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
+                if (Utils.isString(v) && (k.toString().endsWith('VER') || k.toString() == 'PYTHON') && (
+                    v.toString() in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
                 )) {
                     extremeKeys << k
                 }
@@ -618,8 +618,8 @@ class DynamatrixConfig implements Cloneable {
             def extremeCStdKeys = []
             dynacfgOrig.keySet().each { def k ->
                 def v = dynacfgOrig[k]
-                if (v instanceof String && (k.toString() == 'CSTDVERSION' || k.toString().startsWith('CSTDVERSION_') || k.toString() == 'CSTD') && (
-                    v in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
+                if (Utils.isString(v) && (k.toString() == 'CSTDVERSION' || k.toString().startsWith('CSTDVERSION_') || k.toString() == 'CSTD') && (
+                    v.toString() in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
                 )) {
                     extremeCStdKeys << k
                 }

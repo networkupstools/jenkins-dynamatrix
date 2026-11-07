@@ -850,7 +850,12 @@ class Dynamatrix implements Cloneable {
 ////////////////////////// END OF RESULTS ACCOUNTING ///////////////////
 
     public Dynamatrix(Object script, String dynamatrixComment = null) {
+        this(script, null, dynamatrixComment)
+    }
+
+    public Dynamatrix(Object script, NodeCaps nodeCaps, String dynamatrixComment = null) {
         this.script = script
+        this.nodeCaps = nodeCaps
 
         // Avoid java.lang.CloneNotSupportedException: java.util.concurrent.ConcurrentHashMap
         // Groovy and Java should support it, but...
@@ -1513,7 +1518,7 @@ class Dynamatrix implements Cloneable {
 
         // Inheritance in groovy for class fields is weird, so below
         // we use this temporary object as defined in caller's scope
-        NodeCaps tmpNodeCaps = new NodeCaps(
+        NodeCaps tmpNodeCaps = (this.nodeCaps != null && this.nodeCaps.isInitialized) ? this.nodeCaps : new NodeCaps(
             this.script,
             commonLabelExpr,
             debugTrace,
@@ -1522,8 +1527,7 @@ class Dynamatrix implements Cloneable {
 
         //this.nodeCaps = null // kick GC
         nodeCaps = tmpNodeCaps
-        //this.nodeCaps = tmpNodeCaps.clone()
-        //this.nodeCaps = nodeCaps
+        this.nodeCaps = tmpNodeCaps
         if (debugTrace) {
             this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps: " + Utils.castString(nodeCaps)
             this.script.println "[DEBUG] prepareDynamatrix(): collected nodeCaps.nodeData: " + Utils.castString(nodeCaps.nodeData)
@@ -2035,24 +2039,25 @@ class Dynamatrix implements Cloneable {
                     Set newBuildLabelSet = [] as Set
                     String newBle = dsbcBleTmp.buildLabelExpression
                     dsbcBleTmp.buildLabelSet.each() { def label ->
-                        if (label instanceof String && (label =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)) {
-                            def m = (label =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
+                        String lblStr = label?.toString()
+                        if (Utils.isString(label) && (lblStr =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)) {
+                            def m = (lblStr =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
                             String cKey = m[0][1]
                             String mode = m[0][2]
                             Set candidateVersions = this.nodeCaps.resolveAxisValues(cKey, false)
                             Set standardConstraints = []
                             if (dsbcBleTmp.virtualLabelSet != null) {
-                                dsbcBleTmp.virtualLabelSet.each() { if (it?.toString()?.startsWith("CSTDVERSION")) standardConstraints << it }
+                                dsbcBleTmp.virtualLabelSet.each() { if (it?.toString()?.startsWith("CSTDVERSION")) standardConstraints << it?.toString() }
                             }
                             String chosenVer = Utils.resolveExtremeVersion(cKey, mode, candidateVersions, standardConstraints, dynacfgBuild.excludeCombos)
                             if (chosenVer != null) {
                                 newBuildLabelSet << "${cKey}=${chosenVer}"
-                                if (newBle != null) newBle = newBle.replace((String)label, "${cKey}=${chosenVer}")
+                                if (newBle != null) newBle = newBle.replace(lblStr, "${cKey}=${chosenVer}")
                             } else {
-                                newBuildLabelSet << label
+                                newBuildLabelSet << lblStr
                             }
                         } else {
-                            newBuildLabelSet << label
+                            newBuildLabelSet << (label != null ? lblStr : null)
                         }
                     }
                     dsbcBleTmp.buildLabelSet = newBuildLabelSet
@@ -2082,31 +2087,60 @@ class Dynamatrix implements Cloneable {
             // Resolve any extreme C/C++ standard revisions (MAX/MIN/NOT_MAX/!MAX/NOT_MIN/!MIN/EXTREME/EXTREMES/MIN_MAX/!EXTREME/!EXTREMES/!MIN_MAX/NOT_EXTREME/NOT_EXTREMES/NOT_MIN_MAX) per compiler version
             Set<DynamatrixSingleBuildConfig> dsbcBleSetWithStd = []
             dsbcBleSet.each { DynamatrixSingleBuildConfig dsbcBleTmp ->
-                Set extremeVLabels = dsbcBleTmp.virtualLabelSet?.findAll {
-                    it instanceof String && (it =~ /^CSTDVERSION(_[A-Za-z0-9]+)?=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
+                Set extremeVLabels = dsbcBleTmp.virtualLabelSet?.collect { it?.toString() }?.findAll {
+                    Utils.isString(it) && (it =~ /^CSTDVERSION(_[A-Za-z0-9]+)?=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
                 }
                 if (!extremeVLabels || extremeVLabels.isEmpty()) {
                     dsbcBleSetWithStd << dsbcBleTmp
                     return
                 }
 
-                String compilerLabel = dsbcBleTmp.buildLabelSet?.find { it instanceof String && it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|COMPILERVER|[A-Za-z0-9_]+VER)=.*/ }
+                String compilerLabel = dsbcBleTmp.buildLabelSet?.collect { it?.toString() }?.find { Utils.isString(it) && it =~ /^(GCCVER|CLANGVER|CCVER|CXXVER|COMPILERVER|[A-Za-z0-9_]+VER)=.*/ }
                 if (!compilerLabel) {
                     Map<String, String> kv = dsbcBleTmp.getKVMap(false)
                     String cVerKey = kv.keySet().find { it.endsWith("VER") && it != "PYTHONVER" }
                     if (cVerKey) compilerLabel = "${cVerKey}=${kv[cVerKey]}"
                 }
 
-                List<Set> resolvedVirtualSets = [dsbcBleTmp.virtualLabelSet ? (new HashSet(dsbcBleTmp.virtualLabelSet)) : [] as Set]
+                List<Set> resolvedVirtualSets = [dsbcBleTmp.virtualLabelSet ? (new HashSet(dsbcBleTmp.virtualLabelSet.collect { it?.toString() })) : [] as Set]
+
+                // Check if this DSBC has paired extreme labels (e.g. CSTDVERSION_c=MAX and CSTDVERSION_cxx=MAX)
+                def vLabelC = extremeVLabels.find { it =~ /^CSTDVERSION_c=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/ }
+                def vLabelCxx = extremeVLabels.find { it =~ /^CSTDVERSION_cxx=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/ }
+
+                Set processedExtremeVLabels = [] as Set
+                if (vLabelC && vLabelCxx && (dynacfgBuild.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_${KEY}') || (vLabelC =~ /^[^=]+=(.+)$/)[0][1] == (vLabelCxx =~ /^[^=]+=(.+)$/)[0][1])) {
+                    String mode = (vLabelC =~ /^[^=]+=(.+)$/)[0][1]
+                    Collection candidatePairs = dynacfgBuild.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}'] ?: []
+                    List<Map<String, String>> resolvedPairs = UtilsCStd.resolveExtremeCStdPairs(compilerLabel, mode, candidatePairs, dynacfgBuild.excludeCombos)
+                    if (resolvedPairs) {
+                        List<Set> newResolvedVirtualSets = []
+                        resolvedVirtualSets.each { Set curVSet ->
+                            resolvedPairs.each { Map<String, String> pair ->
+                                Set newVSet = new HashSet(curVSet)
+                                newVSet.remove(vLabelC)
+                                newVSet.remove(vLabelCxx)
+                                newVSet.add("CSTDVERSION_c=${pair['c']}")
+                                newVSet.add("CSTDVERSION_cxx=${pair['cxx']}")
+                                newResolvedVirtualSets << newVSet
+                            }
+                        }
+                        resolvedVirtualSets = newResolvedVirtualSets
+                        processedExtremeVLabels << vLabelC
+                        processedExtremeVLabels << vLabelCxx
+                    }
+                }
+
                 extremeVLabels.each { def vLabel ->
+                    if (processedExtremeVLabels.contains(vLabel)) return
                     def m = (vLabel =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
                     String labelKey = m[0][1]
                     String mode = m[0][2]
 
                     if (labelKey in ['CSTDVERSION_DEFAULT', 'CSTDVERSION']) {
                         if (dynacfgBuild.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_${KEY}') || labelKey == 'CSTDVERSION_DEFAULT') {
-                            Collection candidatePairs = dynacfgBuild.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}']
-                            if (candidatePairs != null && candidatePairs.size() == 1 && (candidatePairs[0] == mode || candidatePairs[0] instanceof String)) {
+                            Collection candidatePairs = dynacfgBuild.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}'] ?: []
+                            if (candidatePairs != null && candidatePairs.size() == 1 && (candidatePairs[0] == mode || Utils.isString(candidatePairs[0]))) {
                                 candidatePairs = []
                             }
                             List<Map<String, String>> resolvedPairs = UtilsCStd.resolveExtremeCStdPairs(compilerLabel, mode, candidatePairs, dynacfgBuild.excludeCombos)
@@ -2125,7 +2159,7 @@ class Dynamatrix implements Cloneable {
                             }
                         } else {
                             String lang = (dynacfgBuild.compilerType == 'CXX') ? 'cxx' : 'c'
-                            Collection candidates = dynacfgBuild.dynamatrixAxesVirtualLabelsMap['CSTDVERSION']
+                            Collection candidates = dynacfgBuild.dynamatrixAxesVirtualLabelsMap['CSTDVERSION'] ?: []
                             if (candidates != null && candidates.size() == 1 && candidates[0] == mode) candidates = []
                             List<String> chosenVers = UtilsCStd.resolveExtremeCStdVersions(compilerLabel, mode, candidates, dynacfgBuild.excludeCombos, lang)
                             if (chosenVers) {
@@ -2143,7 +2177,7 @@ class Dynamatrix implements Cloneable {
                         }
                     } else {
                         String lang = labelKey.endsWith('_cxx') ? 'cxx' : (labelKey.endsWith('_c') ? 'c' : ((dynacfgBuild.compilerType == 'CXX') ? 'cxx' : 'c'))
-                        Collection candidates = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[labelKey]
+                        Collection candidates = dynacfgBuild.dynamatrixAxesVirtualLabelsMap[labelKey] ?: dynacfgBuild.dynamatrixAxesVirtualLabelsMap['CSTDVERSION'] ?: []
                         if (candidates != null && candidates.size() == 1 && candidates[0] == mode) candidates = []
                         List<String> chosenVers = UtilsCStd.resolveExtremeCStdVersions(compilerLabel, mode, candidates, dynacfgBuild.excludeCombos, lang)
                         if (chosenVers) {

@@ -416,20 +416,29 @@ class Utils {
 
         List<String> validVersions = []
         if (isListNotEmpty(standardConstraints) && isListNotEmpty(excludeCombos)) {
-            versions.each { String ver ->
-                boolean isExcluded = false
-                // Check if this compiler/interpreter version with standard
-                // constraints hits any excludeCombos currently defined in
-                // the DynamatrixSingleBuildConfig class:
-                DynamatrixSingleBuildConfig testDsbc = new DynamatrixSingleBuildConfig(null)
-                testDsbc.buildLabelSet = ["${compilerKey}=${ver}"] as Set
-                testDsbc.virtualLabelSet = (standardConstraints as Set)
-                if (testDsbc.matchesConstraints(excludeCombos as Set)) {
-                    isExcluded = true
+            // Only consider concrete standard constraints (e.g. CSTDVERSION=11, CSTDVERSION_c=99),
+            // ignoring extreme placeholders like MAX, MIN, NOT_MAX, etc.
+            Collection concreteConstraints = standardConstraints.findAll {
+                !(it?.toString() =~ /^CSTDVERSION(_[A-Za-z0-9]+)?=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
+            }
+            if (isListNotEmpty(concreteConstraints)) {
+                versions.each { String ver ->
+                    boolean isExcluded = false
+                    // Check if this compiler/interpreter version with standard
+                    // constraints hits any excludeCombos currently defined in
+                    // the DynamatrixSingleBuildConfig class:
+                    DynamatrixSingleBuildConfig testDsbc = new DynamatrixSingleBuildConfig(null)
+                    testDsbc.buildLabelSet = ["${compilerKey}=${ver}"] as Set
+                    testDsbc.virtualLabelSet = (concreteConstraints as Set)
+                    if (testDsbc.matchesConstraints(excludeCombos as Set)) {
+                        isExcluded = true
+                    }
+                    if (!isExcluded) {
+                        validVersions << ver
+                    }
                 }
-                if (!isExcluded) {
-                    validVersions << ver
-                }
+            } else {
+                validVersions = new ArrayList<>(versions)
             }
         }
 
@@ -496,14 +505,18 @@ class Utils {
      * ...and convert into a Map where keys are agent label expression strings.
      */
     // WARNING: NOT @NonCPS here, some code treats args as ArrayList and CPS helps it find this implementation
-    static Map<String, Set> mapBuildLabelExpressions(Set<Set> blcSet) {
+    static Map<String, Set> mapBuildLabelExpressions(Collection blcSet) {
         /** Equivalent to buildLabelsAgents in the class */
         Map<String, Set> blaMap = [:]
-        blcSet.each() {Set combo ->
-            // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
-            // ble == build label expression
-            String ble = String.join('&&', combo).replaceAll('\\s+', '&&')
-            blaMap[ble] = combo
+        if (blcSet != null) {
+            blcSet.each() { def combo ->
+                if (combo == null) return
+                Collection comboColl = (combo instanceof Collection) ? combo : [combo]
+                // Note that labels can be composite, e.g. "COMPILER=GCC GCCVER=1.2.3"
+                // ble == build label expression
+                String ble = String.join('&&', comboColl).replaceAll('\\s+', '&&')
+                blaMap[ble] = comboColl as Set
+            }
         }
         return blaMap
     }

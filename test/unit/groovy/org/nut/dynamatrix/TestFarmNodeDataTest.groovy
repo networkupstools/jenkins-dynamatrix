@@ -77,4 +77,107 @@ class TestFarmNodeDataTest {
         assertTrue(ncSubset.nodeData.containsKey('0-master-worker'))
         assertTrue(ncSubset.nodeData.containsKey('danutci-oi'))
     }
+
+    @Test
+    void testVirtualCStdPairMaxEvaluation() {
+        NodeCaps nc = TestFarmNodeData.getNodeCaps(['danutci-freebsd-15-amd64', 'donutci-debian-altroot--jenkins-centos7-amd64+ssh'])
+        Dynamatrix dynamatrix = new Dynamatrix(null, nc)
+
+        Map cfgMap = [
+            'defaultDynamatrixConfig': 'C+CXX',
+            'dynamatrixAxesLabels': ['OS_DISTRO', 'COMPILER', '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+            'dynamatrixAxesVirtualLabelsMap': [
+                'CSTDVERSION_${KEY}': [
+                    ['c': '99', 'cxx': '98'],
+                    ['c': 'MAX', 'cxx': 'MAX']
+                ],
+                'CSTDVARIANT': ['gnu']
+            ]
+        ]
+
+        dynamatrix.prepareDynamatrix(cfgMap)
+        Set<DynamatrixSingleBuildConfig> dsbcs = dynamatrix.generateBuildConfigSet()
+        assertNotNull(dsbcs)
+        assertFalse(dsbcs.isEmpty())
+
+        // Verify that NO single build config has literal 'MAX' in its standard version or stage name
+        dsbcs.each { DynamatrixSingleBuildConfig dsbc ->
+            Map<String, String> kv = dsbc.getKVMap(false)
+            String cVer = kv.get('CSTDVERSION_c')
+            String cxxVer = kv.get('CSTDVERSION_cxx')
+            assertNotNull(cVer, "CSTDVERSION_c should be present: ${dsbc}")
+            assertNotNull(cxxVer, "CSTDVERSION_cxx should be present: ${dsbc}")
+            assertNotEquals('MAX', cVer, "CSTDVERSION_c must not be literal MAX: ${dsbc}")
+            assertNotEquals('MAX', cxxVer, "CSTDVERSION_cxx must not be literal MAX: ${dsbc}")
+            assertFalse(cVer.contains('MAX'), "CSTDVERSION_c must not contain MAX: ${dsbc}")
+            assertFalse(cxxVer.contains('MAX'), "CSTDVERSION_cxx must not contain MAX: ${dsbc}")
+
+            // Verify stage name or tag does not produce gnuMAX
+            String cStdArg = DynamatrixSingleBuildConfig.C_stdarg(kv.get('CSTDVARIANT'), kv.get('CSTDVERSION_c'))
+            if (cStdArg != null) {
+                assertFalse(cStdArg.contains('gnuMAX'), "C_stdarg must not produce gnuMAX: ${cStdArg}")
+            }
+        }
+
+        // Verify we have both 99/98 builds and MAX-resolved builds (e.g. 17/17)
+        boolean has99_98 = dsbcs.any { dsbc ->
+            Map<String, String> kv = dsbc.getKVMap(false)
+            kv.get('CSTDVERSION_c') == '99' && kv.get('CSTDVERSION_cxx') == '98'
+        }
+        assertTrue(has99_98, "Should have gnu99/98 builds")
+
+        boolean hasMaxResolved = dsbcs.any { dsbc ->
+            Map<String, String> kv = dsbc.getKVMap(false)
+            kv.get('CSTDVERSION_c') in ['11', '17', '2x'] && kv.get('CSTDVERSION_cxx') in ['11', '14', '17', '2a', '2b']
+        }
+        assertTrue(hasMaxResolved, "Should have MAX-resolved builds (e.g. 17/17)")
+    }
+
+    @Test
+    void testVirtualCStdPairMaxEvaluationWithCompilerVerMax() {
+        NodeCaps nc = TestFarmNodeData.getNodeCaps(['danutci-freebsd-15-amd64', 'donutci-debian-altroot--jenkins-centos7-amd64+ssh'])
+        Dynamatrix dynamatrix = new Dynamatrix(null, nc)
+
+        Map cfgMap = [
+            'defaultDynamatrixConfig': 'C+CXX',
+            'COMPILERVER': 'MAX',
+            'dynamatrixAxesLabels': ['OS_DISTRO', 'COMPILER', '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+            'dynamatrixAxesVirtualLabelsMap': [
+                'CSTDVERSION_${KEY}': [
+                    ['c': '99', 'cxx': '98'],
+                    ['c': 'MAX', 'cxx': 'MAX']
+                ],
+                'CSTDVARIANT': ['gnu']
+            ]
+        ]
+
+        dynamatrix.prepareDynamatrix(cfgMap)
+        Set<DynamatrixSingleBuildConfig> dsbcs = dynamatrix.generateBuildConfigSet()
+        assertNotNull(dsbcs)
+        assertFalse(dsbcs.isEmpty())
+
+        // Verify no literal 'MAX' in C standard versions
+        dsbcs.each { DynamatrixSingleBuildConfig dsbc ->
+            Map<String, String> kv = dsbc.getKVMap(false)
+            String cVer = kv.get('CSTDVERSION_c')
+            String cxxVer = kv.get('CSTDVERSION_cxx')
+            assertNotNull(cVer, "CSTDVERSION_c should be present: ${dsbc}")
+            assertNotNull(cxxVer, "CSTDVERSION_cxx should be present: ${dsbc}")
+            assertNotEquals('MAX', cVer, "CSTDVERSION_c must not be literal MAX: ${dsbc}")
+            assertNotEquals('MAX', cxxVer, "CSTDVERSION_cxx must not be literal MAX: ${dsbc}")
+        }
+
+        // Verify both 99/98 and MAX builds exist
+        boolean has99_98 = dsbcs.any { dsbc ->
+            Map<String, String> kv = dsbc.getKVMap(false)
+            kv.get('CSTDVERSION_c') == '99' && kv.get('CSTDVERSION_cxx') == '98'
+        }
+        assertTrue(has99_98, "Should have gnu99/98 builds")
+
+        boolean hasMaxResolved = dsbcs.any { dsbc ->
+            Map<String, String> kv = dsbc.getKVMap(false)
+            kv.get('CSTDVERSION_c') in ['11', '17', '2x'] && kv.get('CSTDVERSION_cxx') in ['11', '14', '17', '2a', '2b']
+        }
+        assertTrue(hasMaxResolved, "Should have MAX-resolved builds")
+    }
 }

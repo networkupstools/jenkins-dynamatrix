@@ -128,9 +128,16 @@ class UtilsCStd {
         String lang = 'c'
     ) {
         List<String> candidates = []
+        boolean hadExtremeInCandidates = false
         if (isListNotEmpty(candidateVersions)) {
-            candidates = candidateVersions.collect { it?.toString()?.trim() }.findAll { isStringNotEmpty(it) }
-        } else {
+            hadExtremeInCandidates = candidateVersions.any {
+                it?.toString()?.trim() in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
+            }
+            if (!hadExtremeInCandidates) {
+                candidates = candidateVersions.collect { it?.toString()?.trim() }.findAll { isStringNotEmpty(it) }
+            }
+        }
+        if (candidates.isEmpty() || hadExtremeInCandidates) {
             if (lang in ['cxx', 'cpp', 'c++']) {
                 candidates = ['98', '03', '11', '14', '17', '2a', '2b']
             } else {
@@ -216,16 +223,24 @@ class UtilsCStd {
         Collection excludeCombos = []
     ) {
         List<Map<String, String>> candidates = []
+        boolean hadExtremeInCandidates = false
         if (isListNotEmpty(candidatePairs)) {
             candidatePairs.each { def item ->
                 if (item instanceof Map) {
                     Map<String, String> m = [:]
                     item.each { k, v -> m[k.toString()] = v?.toString() }
-                    candidates << m
+                    boolean hasExtreme = m.values().any {
+                        it in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
+                    }
+                    if (hasExtreme) {
+                        hadExtremeInCandidates = true
+                    } else {
+                        candidates << m
+                    }
                 }
             }
         }
-        if (candidates.isEmpty()) {
+        if (candidates.isEmpty() || hadExtremeInCandidates) {
             candidates = [
                 ['c': '89', 'cxx': '98'],
                 ['c': '99', 'cxx': '98'],
