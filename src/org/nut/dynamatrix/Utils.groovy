@@ -402,7 +402,6 @@ class Utils {
      * @see UtilsCStd#resolveExtremeCStdVersions
      * @see UtilsCStd#resolveExtremeCStdPairs
      */
-    @NonCPS
     public static List<String> resolveExtremeVersions(
         String compilerKey,
         String mode,
@@ -483,7 +482,6 @@ class Utils {
      * Resolve extreme semantic version for a compiler or interpreter key,
      * taking into account C or CXX standard version constraints and exclusion combos.
      */
-    @NonCPS
     public static String resolveExtremeVersion(
         String compilerKey,
         String mode,

@@ -119,7 +119,6 @@ class UtilsCStd {
      * taking into account exclusion combos.
      * Returns a list of matching standard version strings (empty list if none match).
      */
-    @NonCPS
     public static List<String> resolveExtremeCStdVersions(
         String compilerLabel,
         String mode,
@@ -198,7 +197,6 @@ class UtilsCStd {
     /**
      * Resolve extreme C or C++ language standard revision for a given compiler label.
      */
-    @NonCPS
     public static String resolveExtremeCStdVersion(
         String compilerLabel,
         String mode,
@@ -215,7 +213,6 @@ class UtilsCStd {
      * Resolve extreme paired C and C++ language standard revisions (for CSTDVERSION_${KEY})
      * for a given compiler label and excludeCombos.
      */
-    @NonCPS
     public static List<Map<String, String>> resolveExtremeCStdPairs(
         String compilerLabel,
         String mode,
