@@ -55,9 +55,13 @@ Boolean isEnabled(Map dynacfgPipeline = [:]) {
             if (sc.enabled == false || "${sc.enabled}".trim().equalsIgnoreCase("false")) {
                 return false
             }
+            if (sc.enabled == null || "${sc.enabled}".trim().equalsIgnoreCase("null")) {
+                return false
+            }
             if (sc.enabled == true || "${sc.enabled}".trim().equalsIgnoreCase("true")) {
                 return true
             }
+            throw new IllegalArgumentException("dynacfgPipeline.spellcheck.enabled must resolve to 'true'/'false', was: '${sc.enabled}'")
         }
         if (sc.containsKey('spellcheck')) {
             def scsc = sc['spellcheck']
@@ -86,6 +90,8 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
 
     Boolean debugTrace = (dynacfgPipeline?.enableDebugTrace || dynacfgPipeline?.spellcheck?.enableDebugTrace)
 
+    // TOTHINK: Should we assume or *ensure* dynacfgPipeline?.spellcheck
+    //  was normalized by spellcheck.sanityCheckDynacfgPipeline() if enabled?
     if (isEnabled(dynacfgPipeline)) {
         if (debugTrace) this.script.println "[DEBUG] Discovering stagesSpellcheck: calling prepareDynamatrix() step..."
 
@@ -238,6 +244,7 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                     MATRIX_DSBC.dsbcResultInterim = 'FAILURE'
                                     echo msg
 
+                                    // Let the pipeline fault path take over
                                     manager.buildFailure()
                                     unstable(msg)
                                 }
@@ -308,20 +315,22 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
                 dynacfgPipeline['spellcheck']['spellcheck'] = null
             }
         } else {
+            // Legacy string or boolean... or Closure?
             if ("${dynacfgPipeline['spellcheck']}".trim().equals("true")) {
                 // Assign defaults
                 if (dynamatrixGlobalState.enableDebugTrace)
                     echo "spellcheck.sanityCheckDynacfgPipeline(): true: defaulting a reasonable config"
                 dynacfgPipeline['spellcheck'] = [
-                    'dynamatrixAxesLabels': [~/^OS_.+/],
-                    'spellcheck': '( \${MAKE} spellcheck )'
+                    dynamatrixAxesLabels: [~/^OS_.+/],
+                    spellcheck: '( \${MAKE} spellcheck )'
                 ]
             } else if ("${dynacfgPipeline['spellcheck']}".trim().equals("false")) {
                 if (dynamatrixGlobalState.enableDebugTrace)
                     echo "spellcheck.sanityCheckDynacfgPipeline(): false: defaulting a null-filled config"
-                dynacfgPipeline['spellcheck'] = [:]
-                dynacfgPipeline['spellcheck']['dynamatrixAxesLabels'] = []
-                dynacfgPipeline['spellcheck']['spellcheck'] = null
+                dynacfgPipeline['spellcheck'] = [
+                    dynamatrixAxesLabels: [],
+                    spellcheck: null
+                ]
             } else if (Utils.isClosure(dynacfgPipeline['spellcheck'])
                 || Utils.isStringNotEmpty(dynacfgPipeline['spellcheck'])
             ) {
@@ -338,9 +347,10 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     } else {
         if (dynamatrixGlobalState.enableDebugTrace)
             echo "spellcheck.sanityCheckDynacfgPipeline(): defaulting a null-filled config"
-        dynacfgPipeline['spellcheck'] = [:]
-        dynacfgPipeline['spellcheck']['dynamatrixAxesLabels'] = []
-        dynacfgPipeline['spellcheck']['spellcheck'] = null
+        dynacfgPipeline['spellcheck'] = [
+            dynamatrixAxesLabels: [],
+            spellcheck: null
+        ]
     }
 
     if (!dynacfgPipeline.spellcheck.stageNameFunc) {
