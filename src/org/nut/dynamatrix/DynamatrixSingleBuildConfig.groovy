@@ -267,7 +267,11 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                 "\n}" ;
     }
 
-    @NonCPS
+    // NOTE: Cannot be @NonCPS because it calls stageNameFunc(this), which is a
+    // user-provided Closure that may contain pipeline steps. Calling closures
+    // from @NonCPS methods causes CPS serialization errors like
+    // "expected to call java.util.ArrayList.sort but wound up catching
+    // org.jenkinsci.plugins.workflow.cps.CpsClosure2.call".
     public String stageName() {
         if (stageNameFunc != null) {
             // may append arg.defaultStageName() if it wants
