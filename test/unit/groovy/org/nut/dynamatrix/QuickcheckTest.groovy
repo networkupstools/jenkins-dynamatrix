@@ -216,6 +216,69 @@ class QuickcheckTest {
     }
 
     @Test
+    void testSpellcheckSanityCheckFlatKeyPrepconfConversion() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class spellcheckClass = gcl.parseClass(new File("vars/spellcheck.groovy"))
+        def spellcheckInstance = spellcheckClass.getDeclaredConstructor().newInstance()
+
+        Map dynacfgPipeline = [
+            spellcheck: [
+                dynamatrixAxesLabels: ['OS_DISTRO'],
+                spellcheck: 'make spellcheck'
+            ],
+            spellcheck_prepconf: './configure'
+        ]
+        Map result = spellcheckInstance.sanityCheckDynacfgPipeline(dynacfgPipeline)
+
+        // Flat key should be converted to nested and removed
+        assertFalse(result.containsKey('spellcheck_prepconf'))
+        assertEquals('./configure', result.spellcheck.prepconf)
+    }
+
+    @Test
+    void testSpellcheckSanityCheckFlatKeyConfigureConversion() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class spellcheckClass = gcl.parseClass(new File("vars/spellcheck.groovy"))
+        def spellcheckInstance = spellcheckClass.getDeclaredConstructor().newInstance()
+
+        Map dynacfgPipeline = [
+            spellcheck: [
+                dynamatrixAxesLabels: ['OS_DISTRO'],
+                spellcheck: 'make spellcheck'
+            ],
+            spellcheck_configure: 'make configure'
+        ]
+        Map result = spellcheckInstance.sanityCheckDynacfgPipeline(dynacfgPipeline)
+
+        // Flat key should be converted to nested and removed
+        assertFalse(result.containsKey('spellcheck_configure'))
+        assertEquals('make configure', result.spellcheck.configure)
+    }
+
+    @Test
+    void testSpellcheckSanityCheckFlatKeyTrueValue() {
+        GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
+        Class spellcheckClass = gcl.parseClass(new File("vars/spellcheck.groovy"))
+        def spellcheckInstance = spellcheckClass.getDeclaredConstructor().newInstance()
+
+        Map dynacfgPipeline = [
+            spellcheck: [
+                dynamatrixAxesLabels: ['OS_DISTRO'],
+                spellcheck: 'make spellcheck'
+            ],
+            spellcheck_prepconf: 'true',
+            spellcheck_configure: 'true'
+        ]
+        Map result = spellcheckInstance.sanityCheckDynacfgPipeline(dynacfgPipeline)
+
+        // "true" flat keys should become null (use buildPhases) and be removed
+        assertFalse(result.containsKey('spellcheck_prepconf'))
+        assertFalse(result.containsKey('spellcheck_configure'))
+        assertNull(result.spellcheck.prepconf)
+        assertNull(result.spellcheck.configure)
+    }
+
+    @Test
     void testSpellcheckMakeMap() {
         GroovyClassLoader gcl = new GroovyClassLoader(this.class.classLoader)
         Class spellcheckClass = gcl.parseClass(new File("vars/spellcheck.groovy"))

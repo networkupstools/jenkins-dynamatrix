@@ -113,28 +113,20 @@ Set<List> call(Map dynacfgPipeline = [:], Boolean returnSet = true) {
                                 withEnvOptional(dynacfgPipeline.defaultTools) {
                                     unstashCleanSrc(dynacfgPipeline.get("stashnameSrc"))
 
-                                    if (dynacfgPipeline?.spellcheck_prepconf != null) {
-                                        if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_prepconf)) {
-                                            sh """ ${dynacfgPipeline.spellcheck_prepconf} """
-                                        } // else: pipeline author wants this skipped
-                                    } else if (dynacfgPipeline?.spellcheck?.prepconf != null) {
+                                    if (dynacfgPipeline?.spellcheck?.prepconf != null) {
                                         if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck.prepconf)) {
                                             sh """ ${dynacfgPipeline.spellcheck.prepconf} """
-                                        }
+                                        } // else: pipeline author wants this skipped
                                     } else {
                                         if (dynacfgPipeline?.buildPhases?.prepconf) {
                                             sh """ ${dynacfgPipeline.buildPhases.prepconf} """
                                         }
                                     }
 
-                                    if (dynacfgPipeline?.spellcheck_configure != null) {
-                                        if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck_configure)) {
-                                            sh """ ${dynacfgPipeline.spellcheck_configure} """
-                                        } // else: pipeline author wants this skipped
-                                    } else if (dynacfgPipeline?.spellcheck?.configure != null) {
+                                    if (dynacfgPipeline?.spellcheck?.configure != null) {
                                         if (Utils.isStringNotEmpty(dynacfgPipeline.spellcheck.configure)) {
                                             sh """ ${dynacfgPipeline.spellcheck.configure} """
-                                        }
+                                        } // else: pipeline author wants this skipped
                                     } else {
                                         if (dynacfgPipeline?.buildPhases?.configure) {
                                             sh """ ${dynacfgPipeline.buildPhases.configure} """
@@ -367,36 +359,60 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
         }
     }
 
-    if (dynacfgPipeline.containsKey('spellcheck_prepconf')) {
-        if ("${dynacfgPipeline['spellcheck_prepconf']}".trim().equals("true")) {
+    if (dynacfgPipeline['spellcheck'].containsKey('prepconf')) {
+        if ("${dynacfgPipeline['spellcheck']['prepconf']}".trim().equals("true")) {
             // Use whatever buildPhases provide
             if (dynamatrixGlobalState.enableDebugTrace)
-                echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck_prepconf = null"
-            dynacfgPipeline['spellcheck_prepconf'] = null
+                echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck.prepconf = null"
+            dynacfgPipeline['spellcheck']['prepconf'] = null
         }
     } else {
-        if (dynamatrixGlobalState.enableDebugTrace)
-            echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck_prepconf = null"
-        dynacfgPipeline['spellcheck_prepconf'] = null
+        if (dynacfgPipeline.containsKey('spellcheck_prepconf')) {
+            if ("${dynacfgPipeline['spellcheck_prepconf']}".trim().equals("true")) {
+                // Use whatever buildPhases provide
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck.prepconf = null"
+                dynacfgPipeline['spellcheck']['prepconf'] = null
+            } else {
+                dynacfgPipeline['spellcheck']['prepconf'] = dynacfgPipeline['spellcheck_prepconf']
+            }
+            dynacfgPipeline.remove('spellcheck_prepconf')
+        } else {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck.prepconf = null"
+            dynacfgPipeline['spellcheck']['prepconf'] = null
+        }
     }
 
-    if (dynacfgPipeline.containsKey('spellcheck_configure')) {
-        if ("${dynacfgPipeline['spellcheck_configure']}".trim().equals("true")) {
+    if (dynacfgPipeline['spellcheck'].containsKey('configure')) {
+        if ("${dynacfgPipeline['spellcheck']['configure']}".trim().equals("true")) {
             // Use whatever buildPhases provide
             if (dynamatrixGlobalState.enableDebugTrace)
-                echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck_configure = null"
-            dynacfgPipeline['spellcheck_configure'] = null
+                echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck.configure = null"
+            dynacfgPipeline['spellcheck']['configure'] = null
         }
     } else {
-        if (dynamatrixGlobalState.enableDebugTrace)
-            echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck_configure = null"
-        dynacfgPipeline['spellcheck_configure'] = null
+        if (dynacfgPipeline.containsKey('spellcheck_configure')) {
+            if ("${dynacfgPipeline['spellcheck_configure']}".trim().equals("true")) {
+                // Use whatever buildPhases provide
+                if (dynamatrixGlobalState.enableDebugTrace)
+                    echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck.configure = null"
+                dynacfgPipeline['spellcheck']['configure'] = null
+            } else {
+                dynacfgPipeline['spellcheck']['configure'] = dynacfgPipeline['spellcheck_configure']
+            }
+            dynacfgPipeline.remove('spellcheck_configure')
+        } else {
+            if (dynamatrixGlobalState.enableDebugTrace)
+                echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck.configure = null"
+            dynacfgPipeline['spellcheck']['configure'] = null
+        }
     }
 
     if (dynamatrixGlobalState.enableDebugTrace) {
-        println "SPELLCHECK_PREPCONF : " + Utils.castString(dynacfgPipeline['spellcheck_prepconf'])
-        println "SPELLCHECK_CONFIGURE: " + Utils.castString(dynacfgPipeline['spellcheck_configure'])
-        println "SPELLCHECK          : " + Utils.castString(dynacfgPipeline['spellcheck'])
+        println "SPELLCHECK_PREPCONF : " + Utils.castString(dynacfgPipeline['spellcheck']['prepconf'])
+        println "SPELLCHECK_CONFIGURE: " + Utils.castString(dynacfgPipeline['spellcheck']['configure'])
+        println "SPELLCHECK          : " + Utils.castString(dynacfgPipeline['spellcheck']['spellcheck'])
     }
 
     return dynacfgPipeline

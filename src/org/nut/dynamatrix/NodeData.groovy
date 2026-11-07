@@ -56,6 +56,7 @@ class NodeData {
     }
 
     /** Split a string with space-separated labels into a Set */
+    @NonCPS
     public static TreeSet<String> makeLabelSet(String labelString) {
         def labelSet = new TreeSet<String>(Arrays.asList(labelString.split('[ \r\n\t]+')))
         labelSet.remove("")
@@ -67,6 +68,7 @@ class NodeData {
      * mapped to Sets of one or more values right away. We also save the
      * original unique "key-value" strings mapped to "null".
      */
+    @NonCPS
     public static Map<String, Object> makeLabelMap(Collection<String> labelSet) {
         Map<String, Object> labelMap = [:]
         if (labelSet != null) {
