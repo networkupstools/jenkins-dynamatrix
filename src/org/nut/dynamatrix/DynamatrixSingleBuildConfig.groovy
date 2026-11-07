@@ -180,16 +180,19 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     }
 
     @Override
+    @NonCPS
     public int hashCode() {
         return Objects.hash(buildLabelExpression, buildLabelSet, virtualLabelSet, envvarSet, clioptSet, requiresBuildNode)
     }
 
+    @NonCPS
     public boolean canEqual(Object other) {
         return other instanceof DynamatrixSingleBuildConfig
     }
 
     @Override
     @groovy.transform.CompileStatic
+    @NonCPS
     public DynamatrixSingleBuildConfig clone() throws CloneNotSupportedException {
         return (DynamatrixSingleBuildConfig) super.clone();
     }
