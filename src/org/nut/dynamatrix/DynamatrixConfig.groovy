@@ -771,12 +771,20 @@ class DynamatrixConfig implements Cloneable {
 
     public String getConstraintsNodelabels() {
         // Returns a valid non-null (maybe empty) string that can be directly
-        // *appended* to label expressions (starts with "&&" if needed) - so
-        // deliberately does not include this.commonLabelExpr in the return
-        String commonLabelExpr = ""
+        // *appended* to label expressions (starts with "&&" if needed).
+        // Includes commonLabelExpr so it's handled at the generateBuildConfigSet
+        // level alongside requiredNodelabels and excludedNodelabels, allowing
+        // proper node-matching validation before stage generation.
+        String constraints = ""
 
         boolean debugErrors = this.shouldDebugErrors()
         boolean debugTrace = this.shouldDebugTrace()
+
+        // TODO: Use StringBuilder
+        if (Utils.isStringNotEmpty(this.commonLabelExpr)) {
+            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Added commonLabelExpr: " + this.commonLabelExpr
+            constraints += " && (${this.commonLabelExpr})"
+        }
 
         // TODO: Use StringBuilder
         if (Utils.isListNotEmpty(this.requiredNodelabels)) {
@@ -789,7 +797,7 @@ class DynamatrixConfig implements Cloneable {
                 }
             }
             if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Added requiredNodelabels: " + le
-            commonLabelExpr += " && (${le})"
+            constraints += " && (${le})"
         }
 
         // TODO: Use StringBuilder
@@ -803,10 +811,10 @@ class DynamatrixConfig implements Cloneable {
                 }
             }
             if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Added excludedNodelabels: " + le
-            commonLabelExpr += " && (${le})"
+            constraints += " && (${le})"
         }
 
-        return commonLabelExpr
+        return constraints
     }
 
 } // end of class DynamatrixConfig
