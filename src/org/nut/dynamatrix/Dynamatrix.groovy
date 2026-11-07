@@ -1707,6 +1707,29 @@ class Dynamatrix implements Cloneable {
                 tmp[tmpBle] = this.buildLabelsAgents[ble]
             }
             this.buildLabelsAgents = tmp
+
+            // Filter out label expressions that match no actual Jenkins nodes.
+            // When commonLabelExpr adds constraints like 'doc-spellchecker', some
+            // axis combinations (e.g., OS_DISTRO=ubuntu-mantic) may have no nodes
+            // satisfying the combined expression. Without this filter, those combos
+            // would generate stages that hang waiting for non-existent workers.
+            if (this.buildLabelsAgents.size() > 0) {
+                int removedNoNodes = 0
+                Map<String, Set> filtered = [:]
+                this.buildLabelsAgents.keySet().each() {String ble ->
+                    List nodeList = this.script.nodesByLabel(label: ble, offline: true)
+                    if (nodeList != null && nodeList.size() > 0) {
+                        filtered[ble] = this.buildLabelsAgents[ble]
+                    } else {
+                        removedNoNodes++
+                        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): removed label expression with no matching nodes: ${ble}"
+                    }
+                }
+                this.buildLabelsAgents = filtered
+                if (removedNoNodes > 0 && debugMilestones) {
+                    this.script.println "[DEBUG] prepareDynamatrix(): removed ${removedNoNodes} label expressions that matched no nodes after applying commonLabelExpr: (${dynacfg.commonLabelExpr})"
+                }
+            }
         }
 
         String blaStr = ""
