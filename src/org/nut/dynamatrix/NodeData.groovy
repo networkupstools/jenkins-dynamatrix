@@ -41,6 +41,60 @@ class NodeData {
         this.labelMap = [:]
     }
 
+    public NodeData(String name, Collection<String> labels) {
+        this.name = name ?: ""
+        this.labelSet = new TreeSet<String>(labels ?: [])
+        this.labelString = this.labelSet.join(" ")
+        this.labelMap = makeLabelMap(this.labelSet)
+    }
+
+    public NodeData(String name, String labelString) {
+        this.name = name ?: ""
+        this.labelString = labelString ?: ""
+        this.labelSet = makeLabelSet(this.labelString)
+        this.labelMap = makeLabelMap(this.labelSet)
+    }
+
+    /** Split a string with space-separated labels into a Set */
+    public static TreeSet<String> makeLabelSet(String labelString) {
+        def labelSet = new TreeSet<String>(Arrays.asList(labelString.split('[ \r\n\t]+')))
+        labelSet.remove("")
+        return labelSet
+    }
+
+    /** Finally, collect the map of labels which declare certain capabilities
+     * There may be several hits e.g. "GCCVER=8 GCCVER=10" so we save keys
+     * mapped to Sets of one or more values right away. We also save the
+     * original unique "key-value" strings mapped to "null".
+     */
+    public static Map<String, Object> makeLabelMap(Collection<String> labelSet) {
+        Map<String, Object> labelMap = [:]
+        if (labelSet != null) {
+            labelSet.each() { String label ->
+                if (label == null) return
+                label = label.trim()
+                if (label.equals("")) return
+
+                if (label.contains("=")) {
+                    // Save custom mapping:
+                    String[] keyValue = label.split("=", 2)
+                    String k = keyValue[0].trim()
+                    String v = keyValue[1].trim()
+                    if (!labelMap.containsKey(k)) {
+                        labelMap[k] = new TreeSet()
+                    }
+                    labelMap[k] << v
+                }
+
+                // Also save the original string "as is", as if a single-value
+                // token... or it just was a single-value token, no equality
+                // sign in contents:
+                labelMap[label] = null
+            }
+        }
+        return labelMap
+    }
+
     public void setNodeName(String name) {
         this.name = name
     }
@@ -70,35 +124,8 @@ class NodeData {
         // Other fields are final, so can not be re-set by us or external code:
         this.name = node.getNodeName()
         this.labelString = node.labelString
-        this.labelSet = node.labelString.split('[ \r\n\t]+')
-
-        // Finally, collect the map of labels which declare certain capabilities
-        // There may be several hits e.g. "GCCVER=8 GCCVER=10" so we save keys
-        // mapped to Sets of one or more values right away. We also save the
-        // original unique "key-value" strings mapped to "null".
-        Map<String, Object> labelMap = [:]
-        labelSet.each() {String label ->
-            if (label == null) return
-            label = label.trim()
-            if (label.equals("")) return
-
-            if (label.contains("=")) {
-                // Save custom mapping:
-                String[] keyValue = label.split("=", 2)
-                String k = keyValue[0].trim()
-                String v = keyValue[1].trim()
-                if (!labelMap.containsKey(k)) {
-                    labelMap[k] = new TreeSet()
-                }
-                labelMap[k] << v
-            }
-
-            // Also save the original string "as is", as if a single-value
-            // token... or it just was a single-value token, no equality
-            // sign in contents:
-            labelMap[label] = null
-        }
-        this.labelMap = labelMap
+        this.labelSet = makeLabelSet(this.labelString)
+        this.labelMap = makeLabelMap(this.labelSet)
     }
 
     @NonCPS
