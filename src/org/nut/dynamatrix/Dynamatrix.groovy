@@ -1509,18 +1509,21 @@ class Dynamatrix implements Cloneable {
         // TODO: Cache as label-mapped hash in dynamatrixGlobals so re-runs for
         // other configs for same builder would not query and parse real Jenkins
         // worker labels again and again.
-        def commonLabelExpr = dynacfg.commonLabelExpr
-        if (commonLabelExpr == null) commonLabelExpr = ""
-        commonLabelExpr += dynacfg.getConstraintsNodelabels()
-        // If we had no/null dynacfg.commonLabelExpr, avoid starting with
-        // the "&&" from constraints, if any... and trim() generally:
-        commonLabelExpr = commonLabelExpr.trim().replaceFirst(/^ *\&\& */, '').trim()
+        // commonLabelExpr is used only for node filtering at discovery time.
+        // The constraint is applied to build label expressions at the
+        // generateBuildConfigSet level via getConstraintsNodelabels(), which
+        // now includes commonLabelExpr alongside requiredNodelabels and
+        // excludedNodelabels. This ensures proper node-matching validation
+        // before stage generation, avoiding the post-hoc filtering problem
+        // where appended constraints created expressions that matched no nodes.
+        def nodeFilterExpr = dynacfg.commonLabelExpr
+        if (nodeFilterExpr == null) nodeFilterExpr = ""
 
         // Inheritance in groovy for class fields is weird, so below
         // we use this temporary object as defined in caller's scope
         NodeCaps tmpNodeCaps = (this.nodeCaps != null && this.nodeCaps.isInitialized) ? this.nodeCaps : new NodeCaps(
             this.script,
-            commonLabelExpr,
+            nodeFilterExpr,
             debugTrace,
             debugErrors,
             debugTraceResolver)
@@ -1689,48 +1692,13 @@ class Dynamatrix implements Cloneable {
         // agent requirements of generated pipeline stages:
         this.buildLabelsAgents = Utils.mapBuildLabelExpressions(this.buildLabelCombosFlat)
 
-        // Finally, append into BLA keys the constraints from commonLabelExpr
-        // (the original "request" for suitable workers -- note that optional
-        // further inclusions or exclusions of capability labels are treated
-        // later). We append to keep the more "interesting" variable string
-        // part seen early in the logs, stage names, etc.
-        // Overall, this should help avoid scheduling builds to agents that
-        // have e.g. matching tool kits, but not the third-party prerequisite
-        // packages preinstalled for a particular project.
-        if (Utils.isStringNotEmpty(dynacfg.commonLabelExpr)) {
-            if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): appending ' && (${dynacfg.commonLabelExpr})' to buildLabelsAgents combos..."
-            Map<String, Set> tmp = [:]
-            this.buildLabelsAgents.keySet().each() {String ble ->
-                // Note, we only append to the key (node label string for
-                // eventual use in a build), not the value (array of K=V's)
-                String tmpBle = "(${ble}) && (${dynacfg.commonLabelExpr})"
-                tmp[tmpBle] = this.buildLabelsAgents[ble]
-            }
-            this.buildLabelsAgents = tmp
-
-            // Filter out label expressions that match no actual Jenkins nodes.
-            // When commonLabelExpr adds constraints like 'doc-spellchecker', some
-            // axis combinations (e.g., OS_DISTRO=ubuntu-mantic) may have no nodes
-            // satisfying the combined expression. Without this filter, those combos
-            // would generate stages that hang waiting for non-existent workers.
-            if (this.buildLabelsAgents.size() > 0) {
-                int removedNoNodes = 0
-                Map<String, Set> filtered = [:]
-                this.buildLabelsAgents.keySet().each() {String ble ->
-                    List nodeList = this.script.nodesByLabel(label: ble, offline: true)
-                    if (nodeList != null && nodeList.size() > 0) {
-                        filtered[ble] = this.buildLabelsAgents[ble]
-                    } else {
-                        removedNoNodes++
-                        if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): removed label expression with no matching nodes: ${ble}"
-                    }
-                }
-                this.buildLabelsAgents = filtered
-                if (removedNoNodes > 0 && debugMilestones) {
-                    this.script.println "[DEBUG] prepareDynamatrix(): removed ${removedNoNodes} label expressions that matched no nodes after applying commonLabelExpr: (${dynacfg.commonLabelExpr})"
-                }
-            }
-        }
+        // commonLabelExpr is no longer appended here. It is now included in
+        // getConstraintsNodelabels() and applied at the generateBuildConfigSet
+        // level, where node-matching validation filters out combos that match
+        // no nodes. This avoids the problem where appending commonLabelExpr
+        // to axis-based expressions created combined expressions that Jenkins
+        // label matching could not resolve, even though the underlying nodes
+        // were discovered from agents that satisfied the constraint.
 
         String blaStr = ""
         this.buildLabelsAgents.keySet().each() {String ble ->
