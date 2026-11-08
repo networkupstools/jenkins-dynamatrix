@@ -63,6 +63,16 @@ class UtilsCStd {
         'cxx23':    2023
     ]
 
+    static final List<Map<String, String>> candidateCombosDefault = [
+        ['c': '89', 'cxx': '98'],   // all gcc, all clang (that we care about at least)
+        ['c': '99', 'cxx': '98'],   // gcc 4.5+ (partially since 3.0), all clang (that we care about at least)
+        ['c': '11', 'cxx': '11'],   // gcc 4.8.1+ (partial since mid-4.x), clang 3.3+
+        ['c': '11', 'cxx': '14'],   // gcc 5+, clang 3.4+
+        ['c': '17', 'cxx': '17'],   // gcc 8.1.0+, clang 6+
+        ['c': '2x', 'cxx': '2a'],   // gcc 9-11 (incremental addition of features), clang 10+
+        ['c': '2x', 'cxx': '2b']    // gcc 11+, clang 13+
+    ]
+
     /**
      * Get the chronological release year rank for a C or C++ standard revision.
      */
@@ -239,32 +249,16 @@ class UtilsCStd {
             }
         }
         if (candidates.isEmpty()) {
-            candidates = [
-                ['c': '89', 'cxx': '98'],   // all gcc, all clang (that we care about at least)
-                ['c': '99', 'cxx': '98'],   // gcc 4.5+ (partially since 3.0), all clang (that we care about at least)
-                ['c': '11', 'cxx': '11'],   // gcc 4.8.1+ (partial since mid-4.x), clang 3.3+
-                ['c': '11', 'cxx': '14'],   // gcc 5+, clang 3.4+
-                ['c': '17', 'cxx': '17'],   // gcc 8.1.0+, clang 6+
-                ['c': '2x', 'cxx': '2a'],   // gcc 9-11 (incremental addition of features), clang 10+
-                ['c': '2x', 'cxx': '2b']    // gcc 11+, clang 13+
-            ]
+            candidates = candidateCombosDefault
         } else if (hadExtremeInCandidates) {
             // When explicit candidates contain extreme sentinels (MAX/MIN/etc.),
             // merge them with the hardcoded defaults so that extreme modes can
             // select from the full range of standards. The concrete pairs represent
             // explicit user intent and are preserved, while the defaults provide
             // the range for MAX/MIN/EXTREME selection.
-            List<Map<String, String>> defaults = [
-                ['c': '89', 'cxx': '98'],
-                ['c': '99', 'cxx': '98'],
-                ['c': '11', 'cxx': '11'],
-                ['c': '11', 'cxx': '14'],
-                ['c': '17', 'cxx': '17'],
-                ['c': '2x', 'cxx': '2a'],
-                ['c': '2x', 'cxx': '2b']
-            ]
+
             // Merge: add defaults that are not already in candidates
-            defaults.each { Map<String, String> defPair ->
+            candidateCombosDefault.each { Map<String, String> defPair ->
                 boolean exists = candidates.any { Map<String, String> c -> c == defPair }
                 if (!exists) {
                     candidates << defPair
