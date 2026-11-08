@@ -2060,7 +2060,17 @@ class Dynamatrix implements Cloneable {
                 if (kvMap.containsKey("PYTHONVER") || kvMap.containsKey("PYTHON")) {
                     String pyVer = kvMap.get("PYTHON") ?: kvMap.get("PYTHONVER")
                     if (dsbcBleTmp.envvarSet == null) dsbcBleTmp.envvarSet = [] as Set
-                    dsbcBleTmp.envvarSet.removeIf { it?.toString()?.startsWith("PYTHON=") }
+                    // Avoid removeIf with closure: CPS transformer cannot handle
+                    // Java default methods that take closures (CpsClosure2).
+                    // "expected to call java.util.LinkedHashSet.removeIf but wound up
+                    // catching org.jenkinsci.plugins.workflow.cps.CpsClosure2.call"
+                    Set<String> filteredEnvvarSet = []
+                    dsbcBleTmp.envvarSet.each() { def item ->
+                        if (!(item?.toString()?.startsWith("PYTHON="))) {
+                            filteredEnvvarSet << item
+                        }
+                    }
+                    dsbcBleTmp.envvarSet = filteredEnvvarSet
                     dsbcBleTmp.envvarSet.add("PYTHON=${pyVer}")
                 }
             }
