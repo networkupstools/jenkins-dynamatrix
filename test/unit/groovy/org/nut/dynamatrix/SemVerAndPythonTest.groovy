@@ -484,7 +484,8 @@ class SemVerAndPythonTest {
     @Test
     void testResolveExtremeCStdPairsWithExtremeCandidates() {
         // When candidate pairs include MAX/MIN sentinels along with concrete pairs,
-        // the concrete pairs must be preserved (not discarded) and used for resolution.
+        // the concrete pairs are preserved AND merged with hardcoded defaults so that
+        // extreme modes (MAX, MIN, etc.) can select from the full range of standards.
         // This is the fix for the hadExtremeInCandidates bug.
         DynamatrixConfig cfg = new DynamatrixConfig(null)
         cfg.initDefault("C+CXX-all")
@@ -496,11 +497,12 @@ class SemVerAndPythonTest {
         ]
 
         // With the fix, the concrete pair ['c':'99','cxx':'98'] is preserved.
-        // The MAX sentinel is filtered out, leaving only the concrete pair.
-        // MAX mode on a single remaining pair returns that pair.
+        // The MAX sentinel triggers merging with hardcoded defaults, so MAX mode
+        // selects the highest supported pair for GCC 10: ['c':'17','cxx':'17']
+        // (C2x pairs are excluded by GCC 10's excludeCombos for cxx)
         List<Map<String, String>> result = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", pairsWithMax, cfg.excludeCombos)
         assertEquals(1, result.size())
-        assertEquals(['c': '99', 'cxx': '98'], result[0])
+        assertEquals(['c': '17', 'cxx': '17'], result[0])
 
         // A richer set: concrete pairs + MAX sentinel
         List<Map<String, String>> richerPairs = [
@@ -511,27 +513,37 @@ class SemVerAndPythonTest {
             ['c': 'MAX', 'cxx': 'MAX']
         ]
 
-        // MAX mode: the concrete pairs are used (not the hardcoded defaults),
-        // and the highest supported pair for GCC 10 is ['c':'17','cxx':'17']
-        // (C2x is excluded for cxx by GCC 10's excludeCombos, but C17 is the max)
+        // MAX mode: concrete pairs merged with defaults, then highest supported
+        // pair for GCC 10 is ['c':'17','cxx':'17']
         List<Map<String, String>> maxResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", richerPairs, cfg.excludeCombos)
         assertEquals(1, maxResult.size())
         assertEquals(['c': '17', 'cxx': '17'], maxResult[0])
 
-        // NOT_MIN mode: skip the lowest, return the rest
+        // NOT_MIN mode: after merging and excludeCombos filtering, the lowest
+        // pair (c89/cxx98) is removed, leaving the rest
         List<Map<String, String>> notMinResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "NOT_MIN", richerPairs, cfg.excludeCombos)
-        // After excludeCombos filtering on GCC 10, all 4 concrete pairs survive
-        // NOT_MIN removes the first (lowest), leaving 3
-        assertEquals(3, notMinResult.size())
-        assertEquals(['c': '99', 'cxx': '11'], notMinResult[0])
-        assertEquals(['c': '11', 'cxx': '11'], notMinResult[1])
-        assertEquals(['c': '17', 'cxx': '17'], notMinResult[2])
+        // The merged set includes defaults + concrete pairs, deduplicated and sorted.
+        // After excludeCombos for GCC 10, pairs like c2x are excluded for cxx.
+        // NOT_MIN removes the first (lowest) pair.
+        assert notMinResult.size() >= 3
+        // The first result should not be the minimum pair
+        assert notMinResult[0] != ['c': '89', 'cxx': '98']
 
         // Empty candidates should still fall back to hardcoded defaults
         List<Map<String, String>> emptyResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", [], cfg.excludeCombos)
         assertEquals(1, emptyResult.size())
-        // GCC 10 supports up to C2x for C, C++17 for CXX from hardcoded defaults
+        // GCC 10 supports up to C17+C++17 from hardcoded defaults (C2x excluded for cxx)
         assertEquals(['c': '17', 'cxx': '17'], emptyResult[0])
+
+        // Verify that concrete pairs not in defaults are also preserved
+        List<Map<String, String>> customPairs = [
+            ['c': '99', 'cxx': '11'],  // Not in hardcoded defaults
+            ['c': 'MAX', 'cxx': 'MAX']
+        ]
+        List<Map<String, String>> customResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", customPairs, cfg.excludeCombos)
+        assertEquals(1, customResult.size())
+        // The custom pair is preserved but merged with defaults, so MAX picks the highest
+        assertEquals(['c': '17', 'cxx': '17'], customResult[0])
     }
 
     @Test

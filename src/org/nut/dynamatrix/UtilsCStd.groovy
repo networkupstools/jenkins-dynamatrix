@@ -248,6 +248,28 @@ class UtilsCStd {
                 ['c': '2x', 'cxx': '2a'],   // gcc 9-11 (incremental addition of features), clang 10+
                 ['c': '2x', 'cxx': '2b']    // gcc 11+, clang 13+
             ]
+        } else if (hadExtremeInCandidates) {
+            // When explicit candidates contain extreme sentinels (MAX/MIN/etc.),
+            // merge them with the hardcoded defaults so that extreme modes can
+            // select from the full range of standards. The concrete pairs represent
+            // explicit user intent and are preserved, while the defaults provide
+            // the range for MAX/MIN/EXTREME selection.
+            List<Map<String, String>> defaults = [
+                ['c': '89', 'cxx': '98'],
+                ['c': '99', 'cxx': '98'],
+                ['c': '11', 'cxx': '11'],
+                ['c': '11', 'cxx': '14'],
+                ['c': '17', 'cxx': '17'],
+                ['c': '2x', 'cxx': '2a'],
+                ['c': '2x', 'cxx': '2b']
+            ]
+            // Merge: add defaults that are not already in candidates
+            defaults.each { Map<String, String> defPair ->
+                boolean exists = candidates.any { Map<String, String> c -> c == defPair }
+                if (!exists) {
+                    candidates << defPair
+                }
+            }
         }
 
         List<Map<String, String>> supportedPairs = []
