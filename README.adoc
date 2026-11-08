@@ -48,6 +48,13 @@ dev/test versions of its consumers had to be named explicitly, like this:
 
 ======
 
+For a practical reference from one of the most active currently known
+consumers of this library, please see
+link:https://github.com/networkupstools/nut/blob/master/Jenkinsfile-dynamatrix[NUT
+Jenkinsfile-dynamatrix] pipeline script definition, which sets up multiple
+"slow build" scenario requirements, some only for certain external conditions,
+and calls this library to do the heavy lifting.
+
 What and why
 ~~~~~~~~~~~~
 
