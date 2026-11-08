@@ -2285,7 +2285,9 @@ class Dynamatrix implements Cloneable {
 
                 if (nodeList.size() > 0) {
                     // This combo can work with the constraints
-                    dsbc.buildLabelExpression += constraintsNodelabels
+                    // Wrap the existing buildLabelExpression in parentheses to preserve
+                    // the grouping of axis-derived labels before appending constraints
+                    dsbc.buildLabelExpression = "(" + dsbc.buildLabelExpression + ")" + constraintsNodelabels
                     tmp += dsbc
                 } else {
                     // Drop this combo as we can not run it anyway
