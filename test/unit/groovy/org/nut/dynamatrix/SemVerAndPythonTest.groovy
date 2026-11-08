@@ -482,6 +482,81 @@ class SemVerAndPythonTest {
     }
 
     @Test
+    void testResolveExtremeCStdPairsWithExtremeCandidates() {
+        // When candidate pairs include MAX/MIN sentinels along with concrete pairs,
+        // the concrete pairs must be preserved (not discarded) and used for resolution.
+        // This is the fix for the hadExtremeInCandidates bug.
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault("C+CXX-all")
+
+        // Simulates the Jenkinsfile pattern: explicit concrete pairs + MAX sentinel
+        List<Map<String, String>> pairsWithMax = [
+            ['c': '99', 'cxx': '98'],
+            ['c': 'MAX', 'cxx': 'MAX']
+        ]
+
+        // With the fix, the concrete pair ['c':'99','cxx':'98'] is preserved.
+        // The MAX sentinel is filtered out, leaving only the concrete pair.
+        // MAX mode on a single remaining pair returns that pair.
+        List<Map<String, String>> result = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", pairsWithMax, cfg.excludeCombos)
+        assertEquals(1, result.size())
+        assertEquals(['c': '99', 'cxx': '98'], result[0])
+
+        // A richer set: concrete pairs + MAX sentinel
+        List<Map<String, String>> richerPairs = [
+            ['c': '99', 'cxx': '98'],
+            ['c': '99', 'cxx': '11'],
+            ['c': '11', 'cxx': '11'],
+            ['c': '17', 'cxx': '17'],
+            ['c': 'MAX', 'cxx': 'MAX']
+        ]
+
+        // MAX mode: the concrete pairs are used (not the hardcoded defaults),
+        // and the highest supported pair for GCC 10 is ['c':'17','cxx':'17']
+        // (C2x is excluded for cxx by GCC 10's excludeCombos, but C17 is the max)
+        List<Map<String, String>> maxResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", richerPairs, cfg.excludeCombos)
+        assertEquals(1, maxResult.size())
+        assertEquals(['c': '17', 'cxx': '17'], maxResult[0])
+
+        // NOT_MIN mode: skip the lowest, return the rest
+        List<Map<String, String>> notMinResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "NOT_MIN", richerPairs, cfg.excludeCombos)
+        // After excludeCombos filtering on GCC 10, all 4 concrete pairs survive
+        // NOT_MIN removes the first (lowest), leaving 3
+        assertEquals(3, notMinResult.size())
+        assertEquals(['c': '99', 'cxx': '11'], notMinResult[0])
+        assertEquals(['c': '11', 'cxx': '11'], notMinResult[1])
+        assertEquals(['c': '17', 'cxx': '17'], notMinResult[2])
+
+        // Empty candidates should still fall back to hardcoded defaults
+        List<Map<String, String>> emptyResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", [], cfg.excludeCombos)
+        assertEquals(1, emptyResult.size())
+        // GCC 10 supports up to C2x for C, C++17 for CXX from hardcoded defaults
+        assertEquals(['c': '17', 'cxx': '17'], emptyResult[0])
+    }
+
+    @Test
+    void testIccExcludeCombos() {
+        // Verify that Intel Classic (icc) compiler versions are properly excluded
+        // from C/C++ standards beyond what icc supports (C17/C++17 at most).
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault("C+CXX-all")
+
+        // icc should NOT support C2x
+        List<Map<String, String>> iccPairs = UtilsCStd.resolveExtremeCStdPairs("CLANGVER=icc-2021.3.0", "MAX", [], cfg.excludeCombos)
+        assertEquals(1, iccPairs.size())
+        // The MAX pair for icc should be C17+C++17, not C2x+C++2b
+        assertEquals(['c': '17', 'cxx': '17'], iccPairs[0])
+
+        // Verify C2x is excluded for icc's C standard
+        String maxCStd = UtilsCStd.resolveExtremeCStdVersion("CLANGVER=icc-2021.3.0", "MAX", [], cfg.excludeCombos, "c")
+        assertEquals("17", maxCStd)
+
+        // Verify C++2b is excluded for icc's C++ standard
+        String maxCxxStd = UtilsCStd.resolveExtremeCStdVersion("CLANGVER=icc-2021.3.0", "MAX", [], cfg.excludeCombos, "cxx")
+        assertEquals("17", maxCxxStd)
+    }
+
+    @Test
     void testDynamatrixConfigExtremeCStdSubstitution() {
         DynamatrixConfig cfg = new DynamatrixConfig(null)
         cfg.initDefault([
