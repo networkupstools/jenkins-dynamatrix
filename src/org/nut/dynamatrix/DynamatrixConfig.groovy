@@ -498,6 +498,18 @@ class DynamatrixConfig implements Cloneable {
                 // releases' single- or at most double-numbered releases except
                 // some special cases.
 
+                // Intel Classic (icc) compiler versions are reported as
+                // CLANGVER=icc-XXXX.Y.Z (e.g. icc-2021.3.0) because icc uses
+                // the CLANG frontend.  The numeric CLANGVER regex patterns above
+                // do not match the 'icc-' prefix, so we handle it separately.
+                // Intel Classic 2021.x supports:
+                //   C: up to C17 (C2x/2x not supported)
+                //   C++: up to C++17 (C++20/2a and C++23/2b not supported)
+                // TOTHINK: match specific numbers in ICC version? Not needed for
+                //  current build farm whose deployed versions should all support
+                //  these standards, and per latest news the ICC project is
+                //  unlikely to evolve further.
+
                 this.excludeCombos = [
 
                     [~/GCCVER=[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90)/],
@@ -517,7 +529,12 @@ class DynamatrixConfig implements Cloneable {
                     [~/CLANGVER=3\.([4-9]|[1-9][0-9]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14)/],
                     [~/CLANGVER=4([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14)/],
                     [~/CLANGVER=[5-8]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14|17)/],
-                    [~/CLANGVER=(9|[1-9][0-9.]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14|17|2x)/]
+                    [~/CLANGVER=(9|[1-9][0-9.]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14|17|2x)/],
+
+                    // Intel Classic (icc) - C standard: supports up to C17
+                    [~/CLANGVER=icc-.+/, ~/CSTDVERSION_c=(?!89|90|98|99|11|14|17)/],
+                    // Intel Classic (icc) - C++ standard: supports up to C++17
+                    [~/CLANGVER=icc-.+/, ~/CSTDVERSION_cxx=(?!98|99|03|11|14|17)/]
 
                 ] // excludeCombos
 
