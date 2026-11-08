@@ -2,6 +2,7 @@ package org.nut.dynamatrix
 
 import com.cloudbees.groovy.cps.NonCPS;
 import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
+import org.nut.dynamatrix.dynamatrixGlobalState;
 
 import static org.nut.dynamatrix.Utils.*;
 
@@ -237,7 +238,7 @@ class UtilsCStd {
                 }
             }
         }
-        if (candidates.isEmpty() || hadExtremeInCandidates) {
+        if (candidates.isEmpty()) {
             candidates = [
                 ['c': '89', 'cxx': '98'],   // all gcc, all clang (that we care about at least)
                 ['c': '99', 'cxx': '98'],   // gcc 4.5+ (partially since 3.0), all clang (that we care about at least)
@@ -276,6 +277,12 @@ class UtilsCStd {
             int cmpC = compareCStdVer(a['c'], b['c'], 'c')
             if (cmpC != 0) return cmpC
             return compareCStdVer(a['cxx'], b['cxx'], 'cxx')
+        }
+
+        if (!hadExtremeInCandidates) {
+            if (dynamatrixGlobalState.enableDebugTraceResolver) {
+                println("resolveExtremeCStdPairs(): hadExtremeInCandidates==false, would likely return empty hit sets now")
+            }
         }
 
         String m = mode ? mode.trim() : "MAX"
