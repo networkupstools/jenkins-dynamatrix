@@ -141,8 +141,8 @@ class UtilsCStd {
     /**
      * Resolve MIN, MAX, NOT_MIN, !MIN, NOT_MAX, !MAX, EXTREME, EXTREMES, MIN_MAX,
      * !EXTREME, !EXTREMES, !MIN_MAX, NOT_EXTREME, NOT_EXTREMES, or NOT_MIN_MAX
-     * C or C++ language standard revisions for a given compiler label (e.g. "GCCVER=4.8.2" or "CLANGVER=10"),
-     * taking into account exclusion combos.
+     * C or C++ language standard revisions for a given compiler label (e.g.
+     * "GCCVER=4.8.2" or "CLANGVER=10"), taking into account exclusion combos.
      * Returns a list of matching standard version strings (empty list if none match).
      */
     public static List<String> resolveExtremeCStdVersions(
@@ -236,8 +236,8 @@ class UtilsCStd {
     }
 
     /**
-     * Resolve extreme paired C and C++ language standard revisions (for CSTDVERSION_${KEY})
-     * for a given compiler label and excludeCombos.
+     * Resolve extreme paired C and C++ language standard revisions
+     * (for CSTDVERSION_${KEY}) for a given compiler label and excludeCombos.
      */
     public static List<Map<String, String>> resolveExtremeCStdPairs(
         String compilerLabel,
