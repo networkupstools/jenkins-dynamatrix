@@ -30,7 +30,9 @@ class UtilsCStd {
         '2x':   2023,
         'c2x':  2023,
         '23':   2023,
-        'c23':  2023
+        'c23':  2023,
+        '2y':   2029,
+        'c2y':  2029
     ]
 
     /**
@@ -60,7 +62,13 @@ class UtilsCStd {
         '2b':       2023,
         '23':       2023,
         'c++23':    2023,
-        'cxx23':    2023
+        'cxx23':    2023,
+        '2c':       2026,
+        'c++26':    2026,
+        'cxx26':    2026,
+        '2d':       2029,
+        'c++29':    2029,
+        'cxx29':    2029
     ]
 
     /**
@@ -84,8 +92,13 @@ class UtilsCStd {
         ['c': '11', 'cxx': '11'],   // gcc 4.8.1+ (partial since mid-4.x), clang 3.3+
         ['c': '11', 'cxx': '14'],   // gcc 5+, clang 3.4+
         ['c': '17', 'cxx': '17'],   // gcc 8.1.0+, clang 6+
-        ['c': '2x', 'cxx': '2a'],   // gcc 9-11 (incremental addition of features), clang 10+
-        ['c': '2x', 'cxx': '2b']    // gcc 11+, clang 13+
+        ['c': '2x', 'cxx': '2a'],   // C23 draft + C++20 draft: gcc 9+, clang 10+
+        ['c': '2x', 'cxx': '2b'],   // C23 draft + C++23 draft: gcc 11+, clang 13+
+        ['c': '23', 'cxx': '23'],   // C23 FINAL + C++23 FINAL: gcc 15+, clang not yet
+        ['c': '2x', 'cxx': '2c'],   // C23 draft + C++26 draft: gcc 14+, clang 17+
+        ['c': '2y', 'cxx': '2a'],   // C29 draft + C++20 draft: gcc 15+, clang 19+
+        ['c': '2y', 'cxx': '2b'],   // C29 draft + C++23 draft: gcc 15+, clang 19+
+        ['c': '2y', 'cxx': '2c']    // C29 draft + C++26 draft: gcc 16+, clang 23+
     ]
 
     /**
@@ -118,6 +131,7 @@ class UtilsCStd {
     public static int compareCStdVer(String a, String b, String lang = 'c') {
         int rankA = getCStdRank(a, lang)
         int rankB = getCStdRank(b, lang)
+        // FIXME: Finalized support for 'c23' should be greater than partial 'c2x', etc.
         if (rankA != rankB) {
             return rankA <=> rankB
         }
@@ -164,9 +178,9 @@ class UtilsCStd {
         }
         if (candidates.isEmpty() || hadExtremeInCandidates) {
             if (lang in ['cxx', 'cpp', 'c++']) {
-                candidates = ['98', '03', '11', '14', '17', '2a', '2b']
+                candidates = ['98', '03', '11', '14', '17', '2a', '2b', '2c', '2d']
             } else {
-                candidates = ['89', '99', '11', '17', '2x']
+                candidates = ['89', '99', '11', '17', '2x', '2y']
             }
         }
         if (candidates.isEmpty()) return []

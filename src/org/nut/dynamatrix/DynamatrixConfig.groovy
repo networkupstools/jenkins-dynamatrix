@@ -453,84 +453,111 @@ class DynamatrixConfig implements Cloneable {
                 } // switch choice of dialects
 
                 // Default filter of C/C++ revisions having *decent* support
-                // in/since certain versions of compiler toolkits.
-                // https://en.wikipedia.org/wiki/C17_(C_standard_revision) et al
+                // in/since certain versions of compiler toolkits, as a single
+                // standard revision support may actively evolve across many
+                // compiler versions. Standards are not necessarily cumulative,
+                // different language aspects can and did get deprecated and
+                // removed (notably before/in/after C11 and C++11, so programs
+                // written with keywords required by one are rejected by others,
+                // necessitating `#if __STDC_VERSION__ >= 199901L` kind of code).
+                // See https://en.wikipedia.org/wiki/C17_(C_standard_revision)
+                // and links to other C versions and C++ family from there, and
+                // footnotes in https://www.geeksforgeeks.org/cpp/cpp-98-standard/ etc.
+                //
+                // Below we list C/C++ standard support knowledge base for known
+                // GCC and CLANG compilers.
+                // Standard name mapping (and draft names -> finalized names):
+                //   C: C89 (ansi) aka C90, C99, C11,
+                //        C17 (small fixes to C11),
+                //        C23 (was C2x), C2y (future C29)
+                //   C++: C++98 (ansi),
+                //        C++03 (small fixes to C++98),
+                //        C++11, C++14, C++17,
+                //        C++20 (was 2a), C++23 (was 2b),
+                //        C++2c (future C++26),
+                //        C++2d (future C++29)
+                //
+                ///////////////////////////////////////////////////////////
                 // For GCC support, see:
-                //      https://gcc.gnu.org/onlinedocs/gcc/Standards.html
+                //      https://gcc.gnu.org/projects/c-status.html
                 //      https://gcc.gnu.org/projects/cxx-status.html
-                //          (C++98 C++11 C++14 C++17 C++20 C++23)
-                //          C++98/C++03 : all versions
-                //          C++11 : since mid-4.x, mostly 4.8+, finished by 4.8.1; good in 4.9+
-                //          C++14 : complete since v5; default in v6.1-v14 (inclusive)
-                //          C++17 : almost complete by v7, one fix in v8; default in v11-v15 (inclusive)
-                //          C++20 (2a) : experimental adding a lot in v8/v9/v10/v11 ("almost full support"),
-                //                       some work added in v16 and none of that table's cells seem to be incomplete;
-                //                       default since v16
-                //          C++23 (2b) : experimental since v11, almost complete in v16; formal option since v11
-                //          C++26 : experimental in v14-v17, ongoing WIP; formal option since v14
-                //          C++29 : experimental since v12 (one feature) / v17 (many features), ongoing WIP;
-                //                  formal option since v17
+                //      https://gcc.gnu.org/onlinedocs/gcc/Standards.html
                 //      https://gcc.gnu.org/onlinedocs/gcc/C-Dialect-Options.html
-                //          C89=C90 : "forever"?
-                //          C99 : "substantially supported" since v4.5, largely since 3.0+ (https://gcc.gnu.org/c99status.html)
-                //          C11 : since 4.6(partially?), since 4.9 fully (default)
-                //          C17 : 8.1.0+ (default from GCC 8 to 14 inclusively)
-                //          C2x : v9+
-                //          C23 : full support since GCC 15 (default)
-                //          C2y : experimental since v15-16 (ongoing WIP)
+                //
+                // C standard support by GCC version:
+                //      C89=C90 : all versions
+                //      C99     : v4.5+ : "substantially completely supported" since v4.5, largely since 3.0+ (https://gcc.gnu.org/c99status.html)
+                //      C11     : v4.8+ : partially since 4.6, DEFAULT since 4.9
+                //      C17     : v8.1+ (v8.0 excludes C17), DEFAULT from GCC 8 to 14 inclusively
+                //      C23 (2x): v9+ (experimental), v13+ (most features), DEFAULT since v15
+                //      C29 (2y): v15+ (experimental, ongoing WIP)
+                //
+                // C++ standard support by GCC version:
+                //      C++98   : v2.95+; DEFAULT until v6.1
+                //      C++03   : v3.4+ (formally: almost same as C++98)
+                //      C++11   : v4.8.1+ (partial since mid-4.x); good in 4.9+
+                //      C++14   : v5+ (v5.0 excludes C14); DEFAULT in v6.1-v10 (inclusive)
+                //      C++17   : v7+ (v8.0 excludes C++17, v8.1+ includes it); DEFAULT in v11-v15 (inclusive)
+                //      C++20 (2a): v8+ (experimental), v11+ (most features), DEFAULT since v16
+                //      C++23 (2b): v11+ (experimental), v12.1+ (comprehensive), v14+ (most features), almost complete in v16
+                //      C++26 (2c): v14+ (experimental)
+                //      C++29 (2d): v17+ (very partial, ongoing WIP)
+                //
+                ///////////////////////////////////////////////////////////
                 // For CLANG support, see:
-                //      https://clang.llvm.org/docs/CommandGuide/clang.html
-                //      https://clang.llvm.org/cxx_status.html - *complete* C++ version support begins with:
-                //          C++98/C++03 : all versions
-                //          C++11 : v3.3+
-                //          C++14 : v3.4+
-                //          C++17 : v5+
-                //          C++20 (2a) : brewing; keyword became official since v10+,
-                //                       mostly done by v19 (some "partially"),
-                //                       final table cell claimed in v23
-                //          C++23 (2b) : brewing since v13+, mostly done by v20
-                //          C++26 (2c) : experimental in v17-v24, ongoing WIP
-                //          C++29 (2d) : very partial in v23-24
-                //      https://releases.llvm.org/6.0.0/tools/clang/docs/ReleaseNotes.html and similar
                 //      https://clang.llvm.org/c_status.html
-                //          C89 : ???
-                //          C99 : practically finished since v3.2/3.4; a few bits added in v16 and v17
-                //          C11 : since 3.1; a few bits added in v4/15/16/21 though
-                //          C17 : formally v6+ ("There are no major changes in this edition, only technical
-                //                corrections and clarifications that are tracked by Defect Report")
-                //          C2x : brewing since v9+
-                //          C23 : kind of v18+ (formal -std=c23 option support) but
-                //                still some features not completed, ongoing WIP in v19/20/21
-                //          C2y (future 29) : partial, ongoing WIP in v17/20-24...
-                // FIXME (2026-11-11): Update the mappings, prefer finally-published
-                //  version number support over lettered drafts.
-                //  * In the years since this JSL was started, "C23" and "C++23"
-                //    were standardized (in Oct 2024). GCC since version 15 claims
-                //    full support (uses as default standard), CLANG partial.
-                //  * Drafts for upcoming "C29" (C2Y) and "C++26" and "C++29" are tracked.
-
-                // Consider following ${COMPILER}VER numbers not sufficiently
+                //      https://clang.llvm.org/cxx_status.html
+                //      https://clang.llvm.org/compatibility.html
+                //      https://clang.llvm.org/docs/CommandGuide/clang.html
+                //      https://releases.llvm.org/6.0.0/tools/clang/docs/ReleaseNotes.html and similar
+                //
+                // C standard support by CLANG version:
+                //      C89=C90 : all versions
+                //      C99     : v3.2+ (practical), v17 (formal completion)
+                //      C11     : v3.1+ (bits added in v4/15/16/21)
+                //      C17     : v6+ (formally: technical corrections only vs C11)
+                //      C23 (2x): v9+ (experimental c2x), v18+ (formal c23), ongoing WIP
+                //      C29 (2y): v19+ (partial, ongoing WIP)
+                //
+                // C++ standard support by CLANG version:
+                //      C++98   : all versions
+                //      C++03   : all versions since 1.0
+                //      C++11   : v3.3+
+                //      C++14   : v3.4+
+                //      C++17   : v5+
+                //      C++20 (2a): v10+ (keyword official), v19 (mostly done), v23 (full support table, some cells "partial")
+                //      C++23 (2b): v13+ (experimental), v20 (mostly done)
+                //      C++26 (2c): v17+ (experimental), ongoing WIP in v24
+                //      C++29 (2d): v23+ (very partial, ongoing WIP)
+                //
+                ///////////////////////////////////////////////////////////
+                //
+                // NOTES for the excludeCombos collection below:
+                //
+                // We consider following ${COMPILER}VER numbers not sufficiently
                 // compatible with language versions from the table above, at
                 // least for the practical purpose of not scheduling builds.
-                // Combinations below that DO match keys=values of generated
+                // Combinations below that DO match `keys=values` of generated
                 // build candidate will remove that candidate from queue list.
-
+                //
                 // Recurrent ([^0-9.]|$|\.[0-9]+) means to have end of version
                 // or optional next numbered component, to cater for recent
                 // releases' single- or at most double-numbered releases except
                 // some special cases.
-
+                //
                 // Intel Classic (icc) compiler versions are reported as
                 // CLANGVER=icc-XXXX.Y.Z (e.g. icc-2021.3.0) because icc uses
                 // the CLANG frontend.  The numeric CLANGVER regex patterns above
                 // do not match the 'icc-' prefix, so we handle it separately.
                 // Intel Classic 2021.x supports:
-                //   C: up to C17 (C2x/2x not supported)
-                //   C++: up to C++17 (C++20/2a and C++23/2b not supported)
+                //   C: up to C17 (C23/2x and C2y/29 not supported)
+                //   C++: up to C++17 (C++20/2a, C++23/2b, C++26/2c not supported)
+                //
                 // TOTHINK: match specific numbers in ICC version? Not needed for
                 //  current build farm whose deployed versions should all support
                 //  these standards, and per latest news the ICC project is
                 //  unlikely to evolve further.
+                //
                 // TOTHINK: Also with uneven "2a/2b/2x/20/23" wording mess and
                 //  lack of some version number parity (no C03, C26), ideally the
                 //  rules for C and for C++ have to be handled separately...
@@ -541,33 +568,65 @@ class DynamatrixConfig implements Cloneable {
 
                 this.excludeCombos = [
 
+                    // GCC 0-2: allow only C89/C90 (too old)
                     [~/GCCVER=[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90)/],
+                    // GCC 3.0-4.4: additionally C++98 (technically maybe since 2.95)
+                    // and C99 (sufficiently implemented for NUT CI farm at least)
                     [~/GCCVER=3([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
                     [~/GCCVER=4([^0-9.]|$)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
                     [~/GCCVER=4\.[0-4]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
+                    // GCC 4.5-4.7, 4.8.0: additionally C++03
                     [~/GCCVER=4\.([5-7]([^0-9.]|$|\.[0-9]+)|8(\.0|[^0-9.]|$))/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03)/],
-                    [~/GCCVER=4\.(8\.[1-9][0-9]*|(9|1[0-9]+)([^0-9.]|$|\.[0-9]+))/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11)/],
-                    [~/GCCVER=([5-7]|8\.0)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11|14)/],
+                    // GCC 4.8.1+: additionally C11/C++11
+                    [~/GCCVER=4\.(8\.[1-9][0-9]*|(9|1[0-9]+)([^0-9.]|$|\.[0-9]+))/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11)/],
+                    // GCC 5-7, 8.0: additionally C++14
+                    [~/GCCVER=([5-7]|8\.0)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14)/],
                     [~/GCCVER=8([^0-9.]|$)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14)/],
+                    // GCC 8.1+: additionally C17/C++17
                     [~/GCCVER=(8\.[1-9][0-9]*)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17)/],
 
-                    // GCC 9-10: C standard - C2x supported
-                    // GCC 9-10: C++ standard - C++2a supported, C++2b excluded (from GCC 11+)
+                    // Incremental additional support for draft and release of newer versions:
+                    // GCC 9-10: partial draft C23 (2x) and C++20 (2a) supported
+                    // Exclude C++23 (2b), C++26 (2c), C++29 (2d) for C++
                     [~/GCCVER=(9|10)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17|2a|2x)/],
-                    // GCC 11+: Full C2x and C++2b support, no exclusions needed
-                    // (no rules needed - all modern standards are allowed)
+                    // GCC 11-13: partial draft C23 (2x) and C++23 (2b) supported
+                    // Exclude C++26 (2c), C++29 (2d) for C++, C2y for C
+                    [~/GCCVER=1[1-3]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17|2a|2b|2x)/],
+                    // GCC 14: partial draft C23 (2x) and C++26 (2c) supported
+                    // Exclude C++29 (2d) for C++, C2y for C
+                    [~/GCCVER=14([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17|2a|2b|2c|2x)/],
+                    // GCC 15+: C23 fully supported, and partial draft C++26 (2c) and C++29 (2d)
+                    [~/GCCVER=15([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION_cxx=(?!98|99|03|11|14|17|23|2a|2b|2c|2d)/],
+                    // GCC 16+: Practically full support for published standards,
+                    // although C++23 is still deemed "experimental", and
+                    // including partial for draft C29 (2y) and C++29 (2d)
+                    // (no rules needed - all known standards are allowed)
 
-                    [~/CLANGVER=[012]\..+/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03)/],
-                    [~/CLANGVER=3\.[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03)/],
+                    // CLANG 0.x-3.1: allow only C89/C90/C98 and C03 (since 1.0)
+                    [~/CLANGVER=0\..+/, ~/CSTDVERSION[^=]*=(?!89|90|98)/],
+                    [~/CLANGVER=[12]\..+/, ~/CSTDVERSION[^=]*=(?!89|90|98|03)/],
+                    [~/CLANGVER=3\.[01]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|03)/],
+                    // CLANG 3.2: additionally C99 in practical shape
+                    [~/CLANGVER=3\.2([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03)/],
+                    // CLANG 3.3: additionally C11/C++11
                     [~/CLANGVER=3\.3([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11)/],
+                    // CLANG 3.4-4.x: additionally C++14
                     [~/CLANGVER=3\.([4-9]|[1-9][0-9]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14)/],
                     [~/CLANGVER=4([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14)/],
-                    [~/CLANGVER=[5-9]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17)/],
+                    // CLANG 5-9: additionally C17/C++17
+                    [~/CLANGVER=[5-8]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17)/],
 
-                    // CLANG 10-12: C2x supported, C++2a supported, C++2b excluded (from CLANG 13+)
+                    // Incremental additional support for draft and release of newer versions:
+                    // CLANG 9: partial draft C23 (2x)
+                    [~/CLANGVER=9([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17|2x)/],
+                    // CLANG 10-12:partial draft C23 (2x) and C++20 (2a) supported
                     [~/CLANGVER=1[0-2]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17|2a|2x)/],
-                    // CLANG 13+: both C2x and C++2b support
-                    [~/CLANGVER=1[3-9]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17|2a|2b|2x)/],
+                    // CLANG 13-16: partial draft C23 (2x) and C++23 (2b) supported
+                    [~/CLANGVER=1[3-6]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17|2a|2b|2x)/],
+                    // CLANG 17-22: partial draft C23 (2x) and C++26 (2c) supported
+                    [~/CLANGVER=(1[7-9]|2[0-2])([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14|17|2a|2b|2c|2x)/],
+                    // CLANG 23+: partial draft C29 (2y) and C++29 (2d) supported
+                    // (no rules needed - all known standards are allowed)
 
                     // Theoretically this should be also separated by versions
                     // like `icc-YYYY.X.Y`, but the project seems to be gone now
