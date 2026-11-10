@@ -461,16 +461,23 @@ class DynamatrixConfig implements Cloneable {
                 //          (C++98 C++11 C++14 C++17 C++20 C++23)
                 //          C++98/C++03 : all versions
                 //          C++11 : since mid-4.x, mostly 4.8+, finished by 4.8.1; good in 4.9+
-                //          C++14 : complete since v5
-                //          C++17 : almost complete by v7, one fix in v8
-                //          C++20 (2a) : experimental adding a lot in v8/v9/v10/v11
-                //          C++23 (2b) : experimental since v11
+                //          C++14 : complete since v5; default in v6.1-v14 (inclusive)
+                //          C++17 : almost complete by v7, one fix in v8; default in v11-v15 (inclusive)
+                //          C++20 (2a) : experimental adding a lot in v8/v9/v10/v11 ("almost full support"),
+                //                       some work added in v16 and none of that table's cells seem to be incomplete;
+                //                       default since v16
+                //          C++23 (2b) : experimental since v11, almost complete in v16; formal option since v11
+                //          C++26 : experimental in v14-v17, ongoing WIP; formal option since v14
+                //          C++29 : experimental since v12 (one feature) / v17 (many features), ongoing WIP;
+                //                  formal option since v17
                 //      https://gcc.gnu.org/onlinedocs/gcc/C-Dialect-Options.html
                 //          C89=C90 : "forever"?
                 //          C99 : "substantially supported" since v4.5, largely since 3.0+ (https://gcc.gnu.org/c99status.html)
-                //          C11 : since 4.6(partially?)
-                //          C17 : 8.1.0+
+                //          C11 : since 4.6(partially?), since 4.9 fully (default)
+                //          C17 : 8.1.0+ (default from GCC 8 to 14 inclusively)
                 //          C2x : v9+
+                //          C23 : full support since GCC 15 (default)
+                //          C2y : experimental since v15-16 (ongoing WIP)
                 // For CLANG support, see:
                 //      https://clang.llvm.org/docs/CommandGuide/clang.html
                 //      https://clang.llvm.org/cxx_status.html - *complete* C++ version support begins with:
@@ -478,14 +485,29 @@ class DynamatrixConfig implements Cloneable {
                 //          C++11 : v3.3+
                 //          C++14 : v3.4+
                 //          C++17 : v5+
-                //          C++20 (2a) : brewing; keyword became official since v10+
-                //          C++23 (2b) : brewing since v13+
+                //          C++20 (2a) : brewing; keyword became official since v10+,
+                //                       mostly done by v19 (some "partially"),
+                //                       final table cell claimed in v23
+                //          C++23 (2b) : brewing since v13+, mostly done by v20
+                //          C++26 (2c) : experimental in v17-v24, ongoing WIP
+                //          C++29 (2d) : very partial in v23-24
                 //      https://releases.llvm.org/6.0.0/tools/clang/docs/ReleaseNotes.html and similar
+                //      https://clang.llvm.org/c_status.html
                 //          C89 : ???
-                //          C99 : ???
-                //          C11 : since 3.1
-                //          C17 : v6+
-                //          C2x : v9+
+                //          C99 : practically finished since v3.2/3.4; a few bits added in v16 and v17
+                //          C11 : since 3.1; a few bits added in v4/15/16/21 though
+                //          C17 : formally v6+ ("There are no major changes in this edition, only technical
+                //                corrections and clarifications that are tracked by Defect Report")
+                //          C2x : brewing since v9+
+                //          C23 : kind of v18+ (formal -std=c23 option support) but
+                //                still some features not completed, ongoing WIP in v19/20/21
+                //          C2y (future 29) : partial, ongoing WIP in v17/20-24...
+                // FIXME (2026-11-11): Update the mappings, prefer finally-published
+                //  version number support over lettered drafts.
+                //  * In the years since this JSL was started, "C23" and "C++23"
+                //    were standardized (in Oct 2024). GCC since version 15 claims
+                //    full support (uses as default standard), CLANG partial.
+                //  * Drafts for upcoming "C29" (C2Y) and "C++26" and "C++29" are tracked.
 
                 // Consider following ${COMPILER}VER numbers not sufficiently
                 // compatible with language versions from the table above, at
