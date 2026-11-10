@@ -543,7 +543,19 @@ class DynamatrixConfig implements Cloneable {
                     [~/GCCVER=([5-7]|8\.0)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11|14)/],
                     [~/GCCVER=8([^0-9.]|$)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|03|11|14)/],
                     [~/GCCVER=(8\.[1-9][0-9]*)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11|14|17)/],
-                    [~/GCCVER=(9|[1-9][0-9]+)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11|14|17|2x)/],
+
+                    // Obsoleted due to block below as this line excluded "2x"
+                    // for ALL CSTDVERSION keys (both C and C++), which
+                    // blocked C2x/C++2a and C2x/C++2b:
+                    //   [~/GCCVER=(9|[1-9][0-9]+)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|98|99|03|11|14|17|2x)/],
+                    // Also with uneven "2a/2b/2x/20/23" wording mess, rules
+                    // for C and for C++ have to be handled separately...
+                    // GCC 9-10: C standard - C2x supported, exclude nothing new
+                    // (no CSTDVERSION_c rule needed - C2x is allowed)
+                    // GCC 9-10: C++ standard - C++2a supported, C++2b excluded (from GCC 11+)
+                    [~/GCCVER=(9|10)([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION(_cxx)?=(?!98|99|03|11|14|17|2a)/],
+                    // GCC 11+: Full C2x and C++2b support, no exclusions needed
+                    // (no rules needed - all modern standards are allowed)
 
                     [~/CLANGVER=[012]\..+/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
                     [~/CLANGVER=3\.[012]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99)/],
@@ -551,12 +563,19 @@ class DynamatrixConfig implements Cloneable {
                     [~/CLANGVER=3\.([4-9]|[1-9][0-9]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14)/],
                     [~/CLANGVER=4([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14)/],
                     [~/CLANGVER=[5-8]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14|17)/],
-                    [~/CLANGVER=(9|[1-9][0-9.]+)([^0-9]|$|\.[0-9]+)/, ~/CSTDVERSION[^=]*=(?!89|90|98|99|11|14|17|2x)/],
+
+                    // CLANG 9: C standard — C17 supported, C2x excluded (from CLANG 10+)
+                    [~/CLANGVER=9([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION(_c)?=(?!89|90|98|99|11|14|17)/],
+                    // CLANG 9: C++ standard — C++17 supported, C++2a/2b excluded (from CLANG 10+/13+)
+                    [~/CLANGVER=9([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION(_cxx)?=(?!98|99|03|11|14|17)/],
+                    // CLANG 10-12: C2x supported, C++2a supported, C++2b excluded (from CLANG 13+)
+                    [~/CLANGVER=1[0-2]([^0-9.]|$|\.[0-9]+)/, ~/CSTDVERSION(_cxx)?=(?!98|99|03|11|14|17|2a)/],
+                    // CLANG 13+: Full C2x and C++2b support, no exclusions needed
 
                     // Intel Classic (icc) - C standard: supports up to C17
-                    [~/CLANGVER=icc-.+/, ~/CSTDVERSION_c=(?!89|90|98|99|11|14|17)/],
+                    [~/CLANGVER=icc-.+/, ~/CSTDVERSION(_c)?=(?!89|90|98|99|11|14|17)/],
                     // Intel Classic (icc) - C++ standard: supports up to C++17
-                    [~/CLANGVER=icc-.+/, ~/CSTDVERSION_cxx=(?!98|99|03|11|14|17)/]
+                    [~/CLANGVER=icc-.+/, ~/CSTDVERSION(_cxx)?=(?!98|99|03|11|14|17)/]
 
                 ] // excludeCombos
 

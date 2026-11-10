@@ -433,9 +433,9 @@ class SemVerAndPythonTest {
         // GCC 7: Supports C++14 (but not C++17)
         assertEquals("14", UtilsCStd.resolveExtremeCStdVersion("GCCVER=7", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
 
-        // GCC 10: Supports C2x and C++17
+        // GCC 10: Supports C2x and C++2a (C++2b from GCC 11+)
         assertEquals("2x", UtilsCStd.resolveExtremeCStdVersion("GCCVER=10", "MAX", cCandidates, cfg.excludeCombos, "c"))
-        assertEquals("17", UtilsCStd.resolveExtremeCStdVersion("GCCVER=10", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
+        assertEquals("2a", UtilsCStd.resolveExtremeCStdVersion("GCCVER=10", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
 
         // Clang 3.3: Supports C++11
         assertEquals("11", UtilsCStd.resolveExtremeCStdVersion("CLANGVER=3.3", "MAX", cxxCandidates, cfg.excludeCombos, "cxx"))
@@ -462,7 +462,8 @@ class SemVerAndPythonTest {
             ['c': '11', 'cxx': '11'],
             ['c': '17', 'cxx': '17'],
             ['c': '11', 'cxx': '14'],
-            ['c': '2x', 'cxx': '2a']
+            ['c': '2x', 'cxx': '2a'],
+            ['c': '2x', 'cxx': '2b']
         ]
 
         // GCC 4.8.2 MAX pair should be C11 + C++11
@@ -475,10 +476,26 @@ class SemVerAndPythonTest {
         assertEquals(1, minPairGcc48.size())
         assertEquals(['c': '89', 'cxx': '98'], minPairGcc48[0])
 
-        // GCC 10 MAX pair should be C17 + C++17
+        // GCC 10 MAX pair: C2x supported for C, but C++2b not (GCC 11+ needed)
+        // So the highest pair is ['c':'2x','cxx':'2a'] (C2x + C++20)
         List<Map<String, String>> maxPairGcc10 = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", pairs, cfg.excludeCombos)
         assertEquals(1, maxPairGcc10.size())
-        assertEquals(['c': '17', 'cxx': '17'], maxPairGcc10[0])
+        assertEquals(['c': '2x', 'cxx': '2a'], maxPairGcc10[0])
+
+        // GCC 11+ MAX pair should be C2x + C++2b (full support)
+        List<Map<String, String>> maxPairGcc11 = UtilsCStd.resolveExtremeCStdPairs("GCCVER=11", "MAX", pairs, cfg.excludeCombos)
+        assertEquals(1, maxPairGcc11.size())
+        assertEquals(['c': '2x', 'cxx': '2b'], maxPairGcc11[0])
+
+        // CLANG 13+ MAX pair should be C2x + C++2b (full support)
+        List<Map<String, String>> maxPairClang13 = UtilsCStd.resolveExtremeCStdPairs("CLANGVER=13", "MAX", pairs, cfg.excludeCombos)
+        assertEquals(1, maxPairClang13.size())
+        assertEquals(['c': '2x', 'cxx': '2b'], maxPairClang13[0])
+
+        // CLANG 22 MAX pair should be C2x + C++2b (full support)
+        List<Map<String, String>> maxPairClang22 = UtilsCStd.resolveExtremeCStdPairs("CLANGVER=22", "MAX", pairs, cfg.excludeCombos)
+        assertEquals(1, maxPairClang22.size())
+        assertEquals(['c': '2x', 'cxx': '2b'], maxPairClang22[0])
     }
 
     @Test
@@ -498,11 +515,11 @@ class SemVerAndPythonTest {
 
         // With the fix, the concrete pair ['c':'99','cxx':'98'] is preserved.
         // The MAX sentinel triggers merging with hardcoded defaults, so MAX mode
-        // selects the highest supported pair for GCC 10: ['c':'17','cxx':'17']
-        // (C2x pairs are excluded by GCC 10's excludeCombos for cxx)
+        // selects the highest supported pair for GCC 10: ['c':'2x','cxx':'2a']
+        // (GCC 10 supports C2x for C, C++2a for C++, but not C++2b)
         List<Map<String, String>> result = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", pairsWithMax, cfg.excludeCombos)
         assertEquals(1, result.size())
-        assertEquals(['c': '17', 'cxx': '17'], result[0])
+        assertEquals(['c': '2x', 'cxx': '2a'], result[0])
 
         // A richer set: concrete pairs + MAX sentinel
         List<Map<String, String>> richerPairs = [
@@ -514,16 +531,16 @@ class SemVerAndPythonTest {
         ]
 
         // MAX mode: concrete pairs merged with defaults, then highest supported
-        // pair for GCC 10 is ['c':'17','cxx':'17']
+        // pair for GCC 10 is ['c':'2x','cxx':'2a']
         List<Map<String, String>> maxResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", richerPairs, cfg.excludeCombos)
         assertEquals(1, maxResult.size())
-        assertEquals(['c': '17', 'cxx': '17'], maxResult[0])
+        assertEquals(['c': '2x', 'cxx': '2a'], maxResult[0])
 
         // NOT_MIN mode: after merging and excludeCombos filtering, the lowest
         // pair (c89/cxx98) is removed, leaving the rest
         List<Map<String, String>> notMinResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "NOT_MIN", richerPairs, cfg.excludeCombos)
         // The merged set includes defaults + concrete pairs, deduplicated and sorted.
-        // After excludeCombos for GCC 10, pairs like c2x are excluded for cxx.
+        // After excludeCombos for GCC 10, C++2b is excluded.
         // NOT_MIN removes the first (lowest) pair.
         assert notMinResult.size() >= 3
         // The first result should not be the minimum pair
@@ -532,8 +549,8 @@ class SemVerAndPythonTest {
         // Empty candidates should still fall back to hardcoded defaults
         List<Map<String, String>> emptyResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", [], cfg.excludeCombos)
         assertEquals(1, emptyResult.size())
-        // GCC 10 supports up to C17+C++17 from hardcoded defaults (C2x excluded for cxx)
-        assertEquals(['c': '17', 'cxx': '17'], emptyResult[0])
+        // GCC 10 supports C2x+C++2a from hardcoded defaults (C++2b excluded)
+        assertEquals(['c': '2x', 'cxx': '2a'], emptyResult[0])
 
         // Verify that concrete pairs not in defaults are also preserved
         List<Map<String, String>> customPairs = [
@@ -543,7 +560,12 @@ class SemVerAndPythonTest {
         List<Map<String, String>> customResult = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX", customPairs, cfg.excludeCombos)
         assertEquals(1, customResult.size())
         // The custom pair is preserved but merged with defaults, so MAX picks the highest
-        assertEquals(['c': '17', 'cxx': '17'], customResult[0])
+        assertEquals(['c': '2x', 'cxx': '2a'], customResult[0])
+
+        // CLANG 22 should resolve MAX to C2x+C++2b (full support)
+        List<Map<String, String>> clang22Result = UtilsCStd.resolveExtremeCStdPairs("CLANGVER=22", "MAX", pairsWithMax, cfg.excludeCombos)
+        assertEquals(1, clang22Result.size())
+        assertEquals(['c': '2x', 'cxx': '2b'], clang22Result[0])
     }
 
     @Test
