@@ -192,7 +192,10 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     @Override
     @groovy.transform.CompileStatic
-    @NonCPS
+    // NOTE: Cannot be @NonCPS because this object may contain Closure fields
+    // (e.g., stageNameFunc) that get corrupted when serialized across CPS
+    // boundaries. Cloning in @NonCPS context causes "expected to call
+    // stageNameFunc but wound up catching C_StageNameTagFunc" errors.
     public DynamatrixSingleBuildConfig clone() throws CloneNotSupportedException {
         return (DynamatrixSingleBuildConfig) super.clone();
     }
