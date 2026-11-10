@@ -28,11 +28,13 @@ class UtilsCStd {
         '18':   2018,
         'c18':  2018,
         '2x':   2023,
-        'c2x':  2023,
         '23':   2023,
+        'c2x':  2023,
         'c23':  2023,
         '2y':   2029,
-        'c2y':  2029
+        '29':   2029,   // Not finalized/published at the time of this writing
+        'c2y':  2029,
+        'c29':  2029
     ]
 
     /**
@@ -59,16 +61,26 @@ class UtilsCStd {
         '20':       2020,
         'c++20':    2020,
         'cxx20':    2020,
+        'c++2a':    2020,
+        'cxx2a':    2020,
         '2b':       2023,
         '23':       2023,
         'c++23':    2023,
         'cxx23':    2023,
+        'c++2b':    2023,
+        'cxx2b':    2023,
         '2c':       2026,
+        '26':       2026,   // Not finalized/published at the time of this writing
         'c++26':    2026,
         'cxx26':    2026,
+        'c++2c':    2026,
+        'cxx2c':    2026,
         '2d':       2029,
+        '29':       2029,   // Not finalized/published at the time of this writing
         'c++29':    2029,
-        'cxx29':    2029
+        'cxx29':    2029,
+        'c++2d':    2029,
+        'cxx2d':    2029
     ]
 
     /**
@@ -125,17 +137,36 @@ class UtilsCStd {
     }
 
     /**
-     * Compare two C/C++ standard revisions chronologically.
+     * Compare two C/C++ standard revisions chronologically
+     * and by completeness (final spec is "greater than" draft).
+     * @returns <ul><li>-1 : (a > b)</li>
+                    <li> 0 : (a == b)</li>
+                    <li> 1 : (a < b)</li>
+                </ul>
      */
     @NonCPS
     public static int compareCStdVer(String a, String b, String lang = 'c') {
+        // ranks are chronological years corresponding to the standard name/tag:
         int rankA = getCStdRank(a, lang)
         int rankB = getCStdRank(b, lang)
-        // FIXME: Finalized support for 'c23' should be greater than partial 'c2x', etc.
         if (rankA != rankB) {
             return rankA <=> rankB
         }
-        return (a ?: '') <=> (b ?: '')
+        // else: rankA == rankB
+
+        // Finalized support for '23'/'c23' should be "greater" than partial '2x'/'c2x', etc.
+        // Given equal ranks, the clue is the key ending in a digit or not
+        boolean aNumeric = (a ==~ /^.*\d$/)
+        boolean bNumeric = (b ==~ /^.*\d$/)
+        if ((aNumeric && bNumeric) || (!aNumeric && !bNumeric)) {
+            // either both are numeric or neither is =>
+            // practically identical, sort by key string
+            // (may be equal or not)
+            return (a ?: '') <=> (b ?: '')
+        }
+
+        // Exactly one key is numeric, prefer it as "greater" for comparison
+        return (aNumeric ? 1 : -1)
     }
 
     /**

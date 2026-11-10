@@ -1,7 +1,12 @@
 package org.nut.dynamatrix
 
-import org.junit.jupiter.api.Test
-import static org.junit.jupiter.api.Assertions.*
+import org.nut.dynamatrix.NodeCaps;
+import org.nut.dynamatrix.NodeData;
+import org.nut.dynamatrix.DynamatrixConfig;
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SemVerAndPythonTest {
 
@@ -402,13 +407,13 @@ class SemVerAndPythonTest {
 
     @Test
     void testCStdSorting() {
-        List<String> cStandards = ["17", "89", "2x", "11", "99", "2y"]
-        assertEquals(["89", "99", "11", "17", "2x", "2y"], UtilsCStd.sortCStdVer(cStandards, "c", true))
-        assertEquals(["2y", "2x", "17", "11", "99", "89"], UtilsCStd.sortCStdVer(cStandards, "c", false))
+        List<String> cStandards = ["17", "89", "2x", "11", "23", "99", "2y"]
+        assertEquals(["89", "99", "11", "17", "2x", "23", "2y"], UtilsCStd.sortCStdVer(cStandards, "c", true))
+        assertEquals(["2y", "23", "2x", "17", "11", "99", "89"], UtilsCStd.sortCStdVer(cStandards, "c", false))
 
-        List<String> cxxStandards = ["2b", "98", "14", "11", "03", "17", "2a", "2c", "2d"]
-        assertEquals(["98", "03", "11", "14", "17", "2a", "2b", "2c", "2d"], UtilsCStd.sortCStdVer(cxxStandards, "cxx", true))
-        assertEquals(["2d", "2c", "2b", "2a", "17", "14", "11", "03", "98"], UtilsCStd.sortCStdVer(cxxStandards, "cxx", false))
+        List<String> cxxStandards = ["2b", "98", "14", "11", "03", "17", "23", "cxx23", "c++23", "2a", "2c", "cxx2d", "2d"]
+        assertEquals(["98", "03", "11", "14", "17", "2a", "2b", "23", "c++23", "cxx23", "2c", "2d", "cxx2d"], UtilsCStd.sortCStdVer(cxxStandards, "cxx", true))
+        assertEquals(["cxx2d", "2d", "2c", "cxx23", "c++23", "23", "2b", "2a", "17", "14", "11", "03", "98"], UtilsCStd.sortCStdVer(cxxStandards, "cxx", false))
     }
 
     @Test
@@ -416,8 +421,8 @@ class SemVerAndPythonTest {
         DynamatrixConfig cfg = new DynamatrixConfig(null)
         cfg.initDefault("C-all")
 
-        List<String> cCandidates = ["89", "99", "11", "17", "2x", "2y"]
-        List<String> cxxCandidates = ["98", "03", "11", "14", "17", "2a", "2b", "2c", "2d"]
+        List<String> cCandidates = ["89", "99", "11", "17", "2x", "23", "2y", "29"]
+        List<String> cxxCandidates = ["98", "03", "11", "14", "17", "2a", "20", "2b", "23", "2c", "26", "2d", "29"]
 
         // GCC 4.4.4: Only supports up to C99 and C++98
         assertEquals("99", UtilsCStd.resolveExtremeCStdVersion("GCCVER=4.4.4", "MAX", cCandidates, cfg.excludeCombos, "c"))
