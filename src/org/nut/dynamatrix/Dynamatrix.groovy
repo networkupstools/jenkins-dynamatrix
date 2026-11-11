@@ -1551,11 +1551,11 @@ class Dynamatrix implements Cloneable {
         dynacfg.dynamatrixAxesLabels.each() {def axis ->
             //TreeSet effAxis = this.nodeCaps.resolveAxisName(axis).sort()
             //TreeSet effAxis = nodeCaps.resolveAxisName(axis).sort()
-            TreeSet effAxis = tmpNodeCaps.resolveAxisName(axis).sort()
+            TreeSet effAxis = Utils.sortSafeForCPS(tmpNodeCaps.resolveAxisName(axis))
             if (debugTraceResolver) this.script.println "[DEBUG] prepareDynamatrix(): converted axis argument '${axis}' into: " + effAxis
             this.effectiveAxes << effAxis
         }
-        this.effectiveAxes = this.effectiveAxes.sort()
+        this.effectiveAxes = Utils.sortSafeForCPS(this.effectiveAxes)
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected effectiveAxes: " + this.effectiveAxes
 
         // By this point, a request for ['OS', '${COMPILER}VER', ~/ARC.+/]
@@ -1563,7 +1563,7 @@ class Dynamatrix implements Cloneable {
         // get a set with two sets of axes that can do our separate builds:
         // [ [OS, ARCH, CLANGVER], [OS, ARCH, GCCVER] ]
         // ...and preferably really sorted :)
-        this.effectiveAxes = Utils.cartesianSquared(this.effectiveAxes).sort()
+        this.effectiveAxes = Utils.sortSafeForCPS(Utils.cartesianSquared(this.effectiveAxes))
         if (this.effectiveAxes.size() > 0) {
             // We want set of sets for processing below
             def listCount = 0
@@ -1625,7 +1625,7 @@ class Dynamatrix implements Cloneable {
                     if (tmpset != null && tmpset.size() > 0) {
                         // TODO: Value constraints and classification
                         // (mayFail etc) probably belong here
-                        axisCombos << tmpset.sort()
+                        axisCombos << Utils.sortSafeForCPS(tmpset)
                     }
                 }
 
@@ -1638,7 +1638,7 @@ class Dynamatrix implements Cloneable {
                         // that node
                         // TODO: Something around constraints and classification
                         // (is axis required? etc) might belong here
-                        axisCombos = axisCombos.sort()
+                        axisCombos = Utils.sortSafeForCPS(axisCombos)
                         nodeAxisCombos << axisCombos
                     } else {
                         if (debugTraceResolver) this.script.println "[DEBUG] prepareDynamatrix(): ignored buildLabelCombos collected for node ${nodeName} with requested axis set ${axisSet}: only got " + axisCombos
@@ -1648,11 +1648,11 @@ class Dynamatrix implements Cloneable {
             if (nodeAxisCombos.size() > 0) {
                 // It is okay if several nodes can run a build
                 // which matches the given requirements
-                nodeAxisCombos = nodeAxisCombos.sort()
+                nodeAxisCombos = Utils.sortSafeForCPS(nodeAxisCombos)
                 this.buildLabelCombos << nodeAxisCombos
             }
         }
-        this.buildLabelCombos = this.buildLabelCombos.sort()
+        this.buildLabelCombos = Utils.sortSafeForCPS(this.buildLabelCombos)
         if (debugTrace) this.script.println "[DEBUG] prepareDynamatrix(): Initially detected buildLabelCombos (still grouped per node): " + this.buildLabelCombos
         // a request for dynamatrixAxesLabels: ['OS', '${COMPILER}VER', ~/ARC.+/]
         // on testbed got us this:
@@ -1672,7 +1672,7 @@ class Dynamatrix implements Cloneable {
                 // supported for one of the original effectiveAxes requirements,
                 // where each of nodeAxisCombos contains a set of axisValues
                 if (debugTraceResolver) this.script.println "[DEBUG] prepareDynamatrix(): Expanding : " + nodeAxisCombos
-                List tmp = Utils.cartesianSquared(nodeAxisCombos as Iterable).sort()
+                List tmp = Utils.sortSafeForCPS(Utils.cartesianSquared(nodeAxisCombos as Iterable))
                 // Revive combos that had only one hit and were flattened
                 // into single items (strings) instead of Sets (of Sets)
                 if (tmp.size() > 0) {
@@ -2351,7 +2351,7 @@ class Dynamatrix implements Cloneable {
         // echo's below are not debug-decorated, in these cases they are the payload
 //CLS//
         return { ->
-            script.withEnv(dsbc.getKVSet().sort()) { // by side effect, sorting turns the Set into an array
+            script.withEnv(Utils.sortSafeForCPS(dsbc.getKVSet())) { // by side effect, sorting turns the Set into an array
 //SCR//                script.script {
 
                     if (body == null) {

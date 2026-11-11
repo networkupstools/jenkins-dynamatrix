@@ -171,6 +171,7 @@ class Utils {
      *
      * @see #cartesianSquared
      */
+    @NonCPS
     static Iterable cartesianProduct(Iterable a, Iterable b) {
         if (a.size() == 0) return b
         if (b.size() == 0) return a
@@ -521,5 +522,33 @@ class Utils {
             }
         }
         return blaMap
+    }
+
+    /**
+     * Safe wrapper for sorting collections in CPS-transformed code.<br/>
+     *
+     * PROBLEM: When .sort() is called without an explicit Comparator in CPS-transformed
+     * code, Java's ArrayList.sort() uses internal closures. The CPS plugin tries to
+     * serialize these implicit closures but fails with type mismatches:
+     * <pre>
+     *   "expected to call java.util.ArrayList.sort but wound up catching CpsClosure2.call"
+     * </pre>
+     *
+     * This is similar to the removeIf() issue where Java default methods with
+     * closures cause CPS serialization conflicts (see Dynamatrix.groovy).<br/>
+     *
+     * SOLUTION: This method is marked @NonCPS, so sorting happens outside CPS
+     * transformation context, allowing Groovy's native .sort() to work safely.
+     * The method is safe to be @NonCPS because it only performs collection sorting
+     * with no pipeline steps, side effects, or impure logic.<br/>
+     *
+     * @param collection The collection to sort (will be sorted in-place)
+     * @return The same collection after sorting
+     */
+    @NonCPS
+    static Collection sortSafeForCPS(Collection collection) {
+        if (collection == null) return collection
+        collection.sort()
+        return collection
     }
 }
