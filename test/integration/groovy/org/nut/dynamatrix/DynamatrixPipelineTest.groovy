@@ -1,7 +1,7 @@
 package org.nut.dynamatrix
 
-import hudson.model.Label
 import hudson.slaves.DumbSlave
+import hudson.slaves.RetentionStrategy
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
 import org.jenkinsci.plugins.workflow.job.WorkflowJob
 import org.jenkinsci.plugins.workflow.job.WorkflowRun
@@ -45,10 +45,12 @@ class DynamatrixPipelineTest {
             List<String> labels = TestFarmNodeData.FARM_NODES_LABELS[nodeName] ?: []
             // Filter out the node name itself from labels to avoid duplication
             String labelStr = labels.findAll { it != nodeName }.join(' ')
-            DumbSlave slave = rule.createOnlineSlave(
-                labelStr.isEmpty() ? null : Label.parse(labelStr)
-            )
-            slave.setName(nodeName)
+            DumbSlave slave = rule.createSlave(nodeName)
+            if (!labelStr.isEmpty()) {
+                slave.setLabelString(labelStr)
+            }
+            slave.setRetentionStrategy(new RetentionStrategy.Always())
+            rule.jenkins.addNode(slave)
         }
     }
 
