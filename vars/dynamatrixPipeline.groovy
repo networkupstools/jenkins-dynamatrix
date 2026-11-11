@@ -208,7 +208,8 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
     if (dynacfg.compilerType in [CompilerTypes.C]) {
         // Set global default
-        dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc
+        // NOTE: Wrap method reference in explicit closure to survive CPS serialization
+        dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.C_StageNameTagFunc(dsbc) }
     }
 
     // Sanity-check the pipeline options based on settings provided by caller

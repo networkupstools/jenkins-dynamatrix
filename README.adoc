@@ -260,7 +260,9 @@ dynacfgPipeline.slowBuild = [
 ]
 
 // Custom stage naming function example (optional)
-@NonCPS
+// NOTE: Cannot be @NonCPS because it calls getKVMap() which is a CPS-transformed method.
+// When assigning this to stageNameFunc, wrap it in an explicit closure to survive
+// CPS serialization: { dsbc -> stageNameFunc_ShellcheckCustom(dsbc) }
 def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
     def labelMap = dsbc.getKVMap(false)
     String sn = ""

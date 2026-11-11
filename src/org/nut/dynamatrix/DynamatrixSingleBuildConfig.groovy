@@ -19,7 +19,8 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     /**
      * Typically may be assigned something like
-     *    <pre>stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc</pre>
+     *    <pre>stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.C_StageNameTagFunc(dsbc) }</pre>
+     * (Wrapped in a closure to survive CPS serialization, rather than using method reference syntax)
      */
     Closure stageNameFunc = null
 
@@ -319,7 +320,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     /**
      * One implementation that pipelines can assign:
-     *    <pre>dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc</pre>
+     *    <pre>dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.C_StageNameTagFunc(dsbc) }</pre>
      *
      * NOTE: Cannot be @NonCPS because it calls C_StageNameTagValue which calls
      * getKVMap() -- a CPS-transformed method that may call script.println().
@@ -619,8 +620,8 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     /**
      * One implementation that pipelines can assign:
      * <pre>
-     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&Shellcheck_StageNameTagFunc
-     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
+     *    dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.Shellcheck_StageNameTagFunc(dsbc) }
+     *    dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.ShellcheckPlatform_StageNameTagFunc(dsbc) }
      * </pre>
      * For a platform, in which we can then group-test several shells.
      */
@@ -647,7 +648,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     /**
      * Stage naming functions for Quickcheck (grabbed by OS distro + CPU arch, regardless of bitness):
      * <pre>
-     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&QuickcheckPlatform_StageNameTagFunc
+     *    dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.QuickcheckPlatform_StageNameTagFunc(dsbc) }
      * </pre>
      */
     /** NOTE: Cannot be @NonCPS because it calls QuickcheckPlatform_StageNameTagValue which calls getKVMap() */
@@ -671,7 +672,7 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     /**
      * Stage naming functions for Spellcheck:
      * <pre>
-     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&SpellcheckPlatform_StageNameTagFunc
+     *    dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.SpellcheckPlatform_StageNameTagFunc(dsbc) }
      * </pre>
      */
     /** NOTE: Cannot be @NonCPS because it calls SpellcheckPlatform_StageNameTagValue which calls getKVMap() */

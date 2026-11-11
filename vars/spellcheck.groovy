@@ -356,7 +356,8 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     if (!dynacfgPipeline.spellcheck.stageNameFunc) {
         if (dynamatrixGlobalState.enableDebugTrace)
             echo "spellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.spellcheck.stageNameFunc"
-        dynacfgPipeline.spellcheck.stageNameFunc = DynamatrixSingleBuildConfig.&SpellcheckPlatform_StageNameTagFunc
+        // NOTE: Wrap method reference in explicit closure to survive CPS serialization
+        dynacfgPipeline.spellcheck.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.SpellcheckPlatform_StageNameTagFunc(dsbc) }
     }
 
     if (!dynacfgPipeline.spellcheck.containsKey('commonLabelExpr') || dynacfgPipeline.spellcheck.commonLabelExpr == null) {

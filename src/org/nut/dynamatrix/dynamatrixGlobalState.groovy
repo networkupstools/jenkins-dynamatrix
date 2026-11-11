@@ -89,7 +89,7 @@ class dynamatrixGlobalState {
      * {@code "c17-clang-xcode10.2-warn"} instead of a default long list
      * of variables that impact the uniqueness of a build setup. For one
      * reference implementation, see
-     *    <pre>dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc</pre>
+     *    <pre>dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.C_StageNameTagFunc(dsbc) }</pre>
      */
     static def stageNameFunc = null
 

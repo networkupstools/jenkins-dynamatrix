@@ -496,7 +496,8 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     if (!dynacfgPipeline.shellcheck.stageNameFunc) {
         if (dynamatrixGlobalState.enableDebugTrace)
             echo "shellcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.shellcheck.stageNameFunc"
-        dynacfgPipeline.shellcheck.stageNameFunc = DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
+        // NOTE: Wrap method reference in explicit closure to survive CPS serialization
+        dynacfgPipeline.shellcheck.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.ShellcheckPlatform_StageNameTagFunc(dsbc) }
     }
 
     if (dynacfgPipeline.containsKey('shellcheck_prepconf')) {
