@@ -300,6 +300,55 @@ jenkinsIntegration {
 }
 */
 
+// Hack the separated test/mocklib sources into the test sources
+// seen by JenkinsRule as if they are part of JSL itself (the "src"
+// registration setup above helps for unit testing of pure groovy,
+// not of Jenkins integration which needs to load TestFarmNodeData,
+// and that it is easiest if it were part of production JSL -- or
+// makes-believe so at testing run time).
+val mocklibBaseDir = file("test/mocklib")
+val mocklibSrc = file("${mocklibBaseDir}/src")
+val mocklibVars = file("${mocklibBaseDir}/vars")
+val mocklibResources = file("${mocklibBaseDir}/resources")
+val syncMocklibSources by tasks.registering(Copy::class) {
+    if (mocklibSrc.isDirectory) {
+        from(mocklibSrc) {
+            into("src")
+            include("**/*.groovy")
+        }
+    }
+
+    // NOTE: No steps in mocklib so far, but just in case for future overrides:
+    if (mocklibVars.isDirectory) {
+        from(mocklibVars) {
+            into("vars")
+            include("**/*.groovy")
+        }
+    }
+
+    /*  // No test-specific resources there yet, so commented away
+        // to avoid potential overwrite of boilerplate-dictated files
+        if (mocklibResources.isDirectory) {
+            from(mocklibResources) {
+                into("resources")
+            }
+        }
+    */
+
+    into(layout.buildDirectory.dir("sharedLibrarySource/jenkins-dynamatrix"))
+}
+
+tasks.named("syncSharedLibrarySource").configure {
+    // The mkobit plugin may have some logic of its own about this setup,
+    // so as OUR finishing touch make sure the mocklib groovy files are
+    // where we want them for the JenkinsRule integration testbeds.
+    // NOTE: The plugin defines this named task.
+    // TOTHINK: Revise with migration to mkobit 0.12.0 or later,
+    //  there is a GitHub issue that promises to solve such situations
+    //  out of the box.
+    finalizedBy(syncMocklibSources)
+}
+
 // https://github.com/mkobit/jenkins-pipeline-shared-libraries-gradle-plugin#changing-the-jenkins-lts-line
 sharedLibrary {
 /*
@@ -467,7 +516,7 @@ testing {
             useJUnitJupiter(libs.versions.junit.jupiter)
             sources {
                 java.srcDirs("test/unit/java")
-                groovy.srcDirs("test/unit/groovy")
+                groovy.srcDirs("test/unit/groovy", "test/mocklib")
                 kotlin.srcDirs("test/unit/kotlin")
             }
             dependencies {
@@ -506,9 +555,13 @@ val integrationTestJunit =
         sharedLibrary.withJenkins(this)
         sources {
             java.setSrcDirs(listOf("test/integration-junit/java"))
-            groovy.setSrcDirs(listOf("test/integration/groovy"))
+            groovy.setSrcDirs(listOf("test/integration/groovy", "test/mocklib/src"))
         }
         dependencies {
+            // TestFarmNodeData in test/mocklib (under src/ as JSL classes go)
+            // depends on NodeCaps/NodeData from the main library, so we
+            // need the main source output on both compile and runtime classpaths.
+            implementation(sourceSets.named("main").get().output)
             // Borrowing Groovy classpath from Spock, which must have it:
             compileOnly(libs.spock.core)
             implementation(libs.junit.jupiter.api)
@@ -553,7 +606,7 @@ val integrationTestJunit =
         targets.all {
             testTask.configure {
                 useJUnitPlatform()
-                dependsOn(prepareJenkinsTestDeps)
+                dependsOn(prepareJenkinsTestDeps, syncMocklibSources)
                 classpath += files(layout.buildDirectory.dir("jth-test-resources"))
             }
         }
