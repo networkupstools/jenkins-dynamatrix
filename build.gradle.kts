@@ -661,6 +661,13 @@ val org.jetbrains.gradle.ext.ModuleSettings.packagePrefix: org.jetbrains.gradle.
 
 idea {
     module {
+        if (mocklibSrc.isDirectory) {
+            sourceDirs.add(mocklibSrc)
+        }
+        if (mocklibResources.isDirectory) {
+            resourceDirs.add(mocklibResources)
+        }
+
         settings {
             packagePrefix["src"]  = "org.nut.dynamatrix"
             packagePrefix["vars"] = "org.nut.dynamatrix"
