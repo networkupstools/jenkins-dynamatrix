@@ -282,7 +282,7 @@ val prepareJenkinsTestDeps by tasks.registering {
 }
 
 tasks.named<Test>("integrationTest").configure {
-    dependsOn(prepareJenkinsTestDeps)
+    dependsOn(prepareJenkinsTestDeps, syncMocklibSources)
     classpath += files(layout.buildDirectory.dir("jth-test-resources"))
 }
 

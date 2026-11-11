@@ -83,7 +83,7 @@ class genericPipelineTest {
     @WithTimeout(1500)
     void "Testing durable task plugin availability - sh step"(JenkinsRule rule) {
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
-            node('master') {
+            node {
                 sh 'echo Hello from Shell'
             }
         ''', false)
