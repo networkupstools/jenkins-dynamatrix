@@ -56,7 +56,7 @@ class DynamatrixPipelineTest {
             Map cfgMap = [
                 "defaultDynamatrixConfig": "C+CXX",
                 "commonLabelExpr":         "nut-builder",
-                "dynamatrixAxesLabels": ["OS_DISTRO", "COMPILER", '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+                "dynamatrixAxesLabels": ["OS_DISTRO", '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
                 "dynamatrixAxesVirtualLabelsMap": [
                     'CSTDVERSION_${KEY}': [
                         ["c": "89", "cxx": "98"],
@@ -160,7 +160,7 @@ class DynamatrixPipelineTest {
             Map cfgMap = [
                 "defaultDynamatrixConfig": "C+CXX",
                 "commonLabelExpr":         "nut-builder",
-                "dynamatrixAxesLabels":    ["OS_DISTRO", "COMPILER", '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
+                "dynamatrixAxesLabels":    ["OS_DISTRO", '${COMPILER}VER', 'ARCH${ARCH_BITS}'],
                 "dynamatrixAxesVirtualLabelsMap": [
                     'CSTDVERSION_${KEY}': [
                         ["c": "11", "cxx": "14"],
@@ -540,7 +540,7 @@ class DynamatrixPipelineTest {
             Map cfgMap = [
                 "defaultDynamatrixConfig": "C+CXX",
                 "commonLabelExpr":         "nut-builder",
-                "dynamatrixAxesLabels":    ["OS_DISTRO", "COMPILER", '${COMPILER}VER'],
+                "dynamatrixAxesLabels":    ["OS_DISTRO", '${COMPILER}VER'],
                 "dynamatrixAxesVirtualLabelsMap": [
                     'CSTDVERSION_${KEY}': [
                         ["c": "99", "cxx": "11"],

@@ -83,10 +83,10 @@ class genericPipelineTest {
     @WithTimeout(1500)
     void "Testing durable task plugin availability - sh step"(JenkinsRule rule) {
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
-            node {
+            node('master') {
                 sh 'echo Hello from Shell'
             }
-        ''', true)
+        ''', false)
 
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'pSh')
         workflowJob.definition = flow
