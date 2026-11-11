@@ -45,10 +45,7 @@ class DynamatrixPipelineTest {
             List<String> labels = TestFarmNodeData.FARM_NODES_LABELS[nodeName] ?: []
             // Filter out the node name itself from labels to avoid duplication
             String labelStr = labels.findAll { it != nodeName }.join(' ')
-            DumbSlave slave = rule.createSlave(nodeName)
-            if (!labelStr.isEmpty()) {
-                slave.setLabelString(labelStr)
-            }
+            DumbSlave slave = rule.createSlave(nodeName, labelStr, null)
             slave.setRetentionStrategy(new RetentionStrategy.Always())
             rule.jenkins.addNode(slave)
         }
