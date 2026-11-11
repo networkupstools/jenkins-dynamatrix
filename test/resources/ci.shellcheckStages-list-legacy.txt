@@ -1,0 +1,2 @@
+Discovered 0 'shellcheck (legacy string)' configuration(s)
+

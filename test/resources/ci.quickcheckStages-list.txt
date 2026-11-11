@@ -1,0 +1,2 @@
+Discovered 0 'quickcheck' configuration(s)
+

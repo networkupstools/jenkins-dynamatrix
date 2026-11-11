@@ -1,0 +1,2 @@
+Discovered 0 'spellcheck (closure)' configuration(s)
+
