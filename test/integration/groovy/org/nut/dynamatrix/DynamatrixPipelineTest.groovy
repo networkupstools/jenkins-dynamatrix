@@ -1,5 +1,7 @@
 package org.nut.dynamatrix
 
+import hudson.model.Label
+import hudson.slaves.DumbSlave
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
 import org.jenkinsci.plugins.workflow.job.WorkflowJob
 import org.jenkinsci.plugins.workflow.job.WorkflowRun
@@ -16,6 +18,10 @@ import org.jvnet.hudson.test.recipes.WithTimeout
  * accessible from CPS pipelines.  This is safe because the test runs
  * in a controlled JenkinsRule harness, not in production.
  *
+ * Registers mock DumbSlave agents with labels from TestFarmNodeData
+ * so that nodesByLabel() calls in generateBuildConfigSet() can find
+ * matching nodes.
+ *
  * Covers:
  * - C/C++ autotools build with "extreme" specifications for included/excluded
  *   matrix cells, including MAX resolution, allowed failures, and bit-width
@@ -30,6 +36,22 @@ import org.jvnet.hudson.test.recipes.WithTimeout
 @WithJenkins
 class DynamatrixPipelineTest {
 
+    /**
+     * Register mock DumbSlave agents for the given node names.
+     * Each agent gets the labels from TestFarmNodeData.FARM_NODES_LABELS.
+     */
+    private void registerMockNodes(JenkinsRule rule, List<String> nodeNames) {
+        nodeNames.each { String nodeName ->
+            List<String> labels = TestFarmNodeData.FARM_NODES_LABELS[nodeName] ?: []
+            // Filter out the node name itself from labels to avoid duplication
+            String labelStr = labels.findAll { it != nodeName }.join(' ')
+            DumbSlave slave = rule.createOnlineSlave(
+                labelStr.isEmpty() ? null : Label.parse(labelStr)
+            )
+            slave.setName(nodeName)
+        }
+    }
+
     // ========================================================================
     // Test 1: C/C++ autotools build with extreme include/exclude specs
     // ========================================================================
@@ -37,6 +59,15 @@ class DynamatrixPipelineTest {
     @Test
     @WithTimeout(600)
     void "autotools slow build with extreme specs"(JenkinsRule rule) {
+        // Register mock nodes before creating the pipeline
+        def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+            def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+            boolean hasGcc = labels.any { it.startsWith("GCCVER=") }
+            boolean hasClang = labels.any { it.startsWith("CLANGVER=") }
+            (hasGcc || hasClang) && name.contains("debian")
+        }
+        registerMockNodes(rule, nodeNames)
+
         final CpsFlowDefinition flow = new CpsFlowDefinition(
             '''
             @Library("jenkins-dynamatrix") _
@@ -133,6 +164,7 @@ class DynamatrixPipelineTest {
         rule.assertLogNotContains("expected to call", run)
         rule.assertLogNotContains("java.lang.Error", run)
         rule.assertLogNotContains("java.lang.Exception", run)
+        rule.assertLogNotContains("Closure", run)
     }
 
     // ========================================================================
@@ -142,6 +174,14 @@ class DynamatrixPipelineTest {
     @Test
     @WithTimeout(600)
     void "ci_build slow build with extreme specs"(JenkinsRule rule) {
+        // Register mock nodes before creating the pipeline
+        def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+            def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+            boolean hasClang = labels.any { it.startsWith("CLANGVER=") }
+            hasClang && (name.contains("freebsd") || name.contains("nutci"))
+        }
+        registerMockNodes(rule, nodeNames)
+
         final CpsFlowDefinition flow = new CpsFlowDefinition(
             '''
             @Library("jenkins-dynamatrix") _
@@ -219,6 +259,7 @@ class DynamatrixPipelineTest {
         rule.assertLogContains("SUCCESS: ci_build slow build test passed", run)
         rule.assertLogContains("Discovered", run)
         rule.assertLogNotContains("expected to call", run)
+        rule.assertLogNotContains("Closure", run)
     }
 
     // ========================================================================
@@ -228,6 +269,13 @@ class DynamatrixPipelineTest {
     @Test
     @WithTimeout(600)
     void "spellcheck with legacy string config"(JenkinsRule rule) {
+        // Register mock nodes before creating the pipeline
+        def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+            def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+            labels.any { it.contains("OS_DISTRO") }
+        }
+        registerMockNodes(rule, nodeNames)
+
         final CpsFlowDefinition flow = new CpsFlowDefinition(
             '''
             @Library("jenkins-dynamatrix") _
@@ -272,6 +320,7 @@ class DynamatrixPipelineTest {
 
         rule.assertLogContains("SUCCESS: spellcheck legacy string test passed", run)
         rule.assertLogNotContains("expected to call", run)
+        rule.assertLogNotContains("Closure", run)
     }
 
     // ========================================================================
@@ -281,6 +330,13 @@ class DynamatrixPipelineTest {
     @Test
     @WithTimeout(600)
     void "spellcheck with Closure config"(JenkinsRule rule) {
+        // Register mock nodes before creating the pipeline
+        def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+            def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+            labels.any { it.contains("OS_DISTRO") }
+        }
+        registerMockNodes(rule, nodeNames)
+
         final CpsFlowDefinition flow = new CpsFlowDefinition(
             '''
             @Library("jenkins-dynamatrix") _
@@ -338,6 +394,7 @@ class DynamatrixPipelineTest {
 
         rule.assertLogContains("SUCCESS: spellcheck closure test passed", run)
         rule.assertLogNotContains("expected to call", run)
+        rule.assertLogNotContains("Closure", run)
     }
 
     // ========================================================================
@@ -347,6 +404,13 @@ class DynamatrixPipelineTest {
     @Test
     @WithTimeout(600)
     void "shellcheck with legacy string config"(JenkinsRule rule) {
+        // Register mock nodes before creating the pipeline
+        def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+            def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+            labels.any { it.contains("OS_DISTRO") }
+        }
+        registerMockNodes(rule, nodeNames)
+
         final CpsFlowDefinition flow = new CpsFlowDefinition(
             '''
             @Library("jenkins-dynamatrix") _
@@ -391,6 +455,7 @@ class DynamatrixPipelineTest {
 
         rule.assertLogContains("SUCCESS: shellcheck legacy string test passed", run)
         rule.assertLogNotContains("expected to call", run)
+        rule.assertLogNotContains("Closure", run)
     }
 
     // ========================================================================
@@ -400,6 +465,13 @@ class DynamatrixPipelineTest {
     @Test
     @WithTimeout(600)
     void "shellcheck with Closure config"(JenkinsRule rule) {
+        // Register mock nodes before creating the pipeline
+        def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+            def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+            labels.any { it.contains("OS_DISTRO") }
+        }
+        registerMockNodes(rule, nodeNames)
+
         final CpsFlowDefinition flow = new CpsFlowDefinition(
             '''
             @Library("jenkins-dynamatrix") _
@@ -459,6 +531,7 @@ class DynamatrixPipelineTest {
 
         rule.assertLogContains("SUCCESS: shellcheck closure test passed", run)
         rule.assertLogNotContains("expected to call", run)
+        rule.assertLogNotContains("Closure", run)
     }
 
     // ========================================================================
@@ -468,6 +541,13 @@ class DynamatrixPipelineTest {
     @Test
     @WithTimeout(600)
     void "quickcheck summary generation"(JenkinsRule rule) {
+        // Register mock nodes before creating the pipeline
+        def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+            def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+            labels.any { it.contains("OS_DISTRO") }
+        }
+        registerMockNodes(rule, nodeNames)
+
         final CpsFlowDefinition flow = new CpsFlowDefinition(
             '''
             @Library("jenkins-dynamatrix") _
@@ -513,6 +593,7 @@ class DynamatrixPipelineTest {
         rule.assertLogContains("SUCCESS: quickcheck summary test passed", run)
         rule.assertLogContains("Discovered", run)
         rule.assertLogNotContains("expected to call", run)
+        rule.assertLogNotContains("Closure", run)
     }
 
     // ========================================================================
@@ -522,6 +603,14 @@ class DynamatrixPipelineTest {
     @Test
     @WithTimeout(600)
     void "summary sorting verification"(JenkinsRule rule) {
+        // Register mock nodes before creating the pipeline
+        def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+            def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+            boolean hasGcc = labels.any { it.startsWith("GCCVER=") }
+            hasGcc && name.contains("debian")
+        }
+        registerMockNodes(rule, nodeNames)
+
         final CpsFlowDefinition flow = new CpsFlowDefinition(
             '''
             @Library("jenkins-dynamatrix") _
@@ -587,5 +676,6 @@ class DynamatrixPipelineTest {
         rule.assertLogContains("Discovered", run)
         rule.assertLogContains("CONFIG #", run)
         rule.assertLogNotContains("expected to call", run)
+        rule.assertLogNotContains("Closure", run)
     }
 }
