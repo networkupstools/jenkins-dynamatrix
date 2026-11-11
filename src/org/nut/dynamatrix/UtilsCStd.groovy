@@ -171,8 +171,12 @@ class UtilsCStd {
 
     /**
      * Sort a collection of C or C++ standard version strings chronologically.
+     *
+     * NOTE: Cannot be @NonCPS because it uses a closure comparator in list.sort()
+     * which can be serialized by CPS when this method is called from CPS context,
+     * causing "expected to call ArrayList.sort but wound up catching CpsClosure2.call"
+     * mismatch errors.
      */
-    @NonCPS
     public static List<String> sortCStdVer(Collection versions, String lang = 'c', boolean ascending = true) {
         if (versions == null) return []
         List<String> list = new ArrayList<String>(versions.collect { it?.toString() }.findAll { isStringNotEmpty(it) })
