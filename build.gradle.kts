@@ -516,7 +516,7 @@ testing {
             useJUnitJupiter(libs.versions.junit.jupiter)
             sources {
                 java.srcDirs("test/unit/java")
-                groovy.srcDirs("test/unit/groovy", "test/mocklib")
+                groovy.srcDirs("test/unit/groovy", "test/mocklib/src")
                 kotlin.srcDirs("test/unit/kotlin")
             }
             dependencies {

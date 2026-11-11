@@ -10,6 +10,11 @@ import org.jvnet.hudson.test.JenkinsRule
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins
 import org.jvnet.hudson.test.recipes.WithTimeout
 
+import org.nut.dynamatrix.Dynamatrix
+import org.nut.dynamatrix.NodeCaps
+import org.nut.dynamatrix.NodeData
+import org.nut.dynamatrix.TestFarmNodeData
+
 /**
  * Integration test that mimics a simplified variant of
  * the NUT project's Jenkinsfile-dynamatrix pipeline script.
