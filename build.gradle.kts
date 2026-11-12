@@ -562,6 +562,7 @@ testing {
                 runtimeOnly(jenkinsPlugins.workflow.step.api)
                 runtimeOnly(jenkinsPlugins.workflow.support)
                 runtimeOnly(jenkinsPlugins.workflow.api)
+                runtimeOnly(jenkinsPlugins.pipeline.build.step)
                 runtimeOnly(jenkinsPlugins.workflow.basic.steps)
                 runtimeOnly(jenkinsPlugins.workflow.cps)
                 runtimeOnly(jenkinsPlugins.workflow.job)
