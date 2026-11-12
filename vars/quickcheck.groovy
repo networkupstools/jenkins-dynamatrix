@@ -626,7 +626,8 @@ Map sanityCheckDynacfgPipeline(Map dynacfgPipeline = [:]) {
     if (!dynacfgPipeline.quickcheck.stageNameFunc) {
         if (dynamatrixGlobalState.enableDebugTrace)
             echo "quickcheck.sanityCheckDynacfgPipeline(): populate missing dynacfgPipeline.quickcheck.stageNameFunc"
-        dynacfgPipeline.quickcheck.stageNameFunc = DynamatrixSingleBuildConfig.&QuickcheckPlatform_StageNameTagFunc
+        // NOTE: Wrap method reference in explicit closure to survive CPS serialization
+        dynacfgPipeline.quickcheck.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.QuickcheckPlatform_StageNameTagFunc(dsbc) }
     }
 
     if (dynacfgPipeline.containsKey('quickcheck_prepconf')) {

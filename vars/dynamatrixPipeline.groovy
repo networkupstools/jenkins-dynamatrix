@@ -208,7 +208,8 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
     if (dynacfg.compilerType in [CompilerTypes.C]) {
         // Set global default
-        dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc
+        // NOTE: Wrap method reference in explicit closure to survive CPS serialization
+        dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.C_StageNameTagFunc(dsbc) }
     }
 
     // Sanity-check the pipeline options based on settings provided by caller
@@ -430,6 +431,9 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 stage("Run quick tests") {
                     echo "Beginning quick-test stage"
 
+                    // Track build result before executing quick tests to detect if abort happens during them
+                    def buildResultBeforeQuickTests = currentBuild.result
+
                     // Convert back from the Set of tuples we used to
                     // avoid storing a Map for too long - and making CPS sad
                     // This Map has contents needed for `parallel` step.
@@ -490,6 +494,17 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                                 'PENDING', "spellcheck")
                         }
                         parallel par1
+
+                        // Check if any quick test was aborted by user or timeout
+                        // When individual quick test stages are aborted, they catch FlowInterruptedException
+                        // and set dsbcResultInterim='ABORTED' in their local Dynamatrix instances.
+                        // If the build overall was aborted by admin/timeout during quick tests,
+                        // Jenkins will set currentBuild.result to 'ABORTED'.
+                        // We compare before/after to detect if abort happened during quick test execution.
+                        if (currentBuild.result == 'ABORTED' && buildResultBeforeQuickTests != 'ABORTED') {
+                            echo "[ABORT] Detected build abort during quick tests; setting mustAbort flag to prevent slow builds"
+                            dynamatrix.mustAbort = true
+                        }
 
                         // If we are here - nothing crashed in parallel stages
                         if (stagesShellcheck_arr?.size() > 0) {
@@ -670,22 +685,27 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
 
             def tmpRes = currentBuild.result
             String bigStageName = "Run the bigger dynamatrix (${stagesBinBuild.size() - 1} stages)"
-            stage(bigStageName) {
-                // This parallel, unlike "par1" above, tends to
-                // preclude further processing if it fails and
-                // so avoids detailing the failure analysis
-                // It also tends to not always post the GitHub
-                // Checks verdict about the stage, leaving its
-                // status in limbo ("pending"). This may be or
-                // not be related to the size of REST API posting
-                // (log attached?)
-                warnError(message: "Not all of the 'slow build' succeeded; proceeding to analyze the results") {
-                    parallel stagesBinBuild
-                    echo "FINISHED stage('${bigStageName}'): currentBuild.result was ${tmpRes} before the stage, now is ${currentBuild.result}"
-                    tmpRes = currentBuild.result
+
+            if (dynamatrix.mustAbort) {
+                echo "SKIPPING slow build dynamatrix because mustAbort flag is raised (abort detected during quick tests)"
+            } else {
+                stage(bigStageName) {
+                    // This parallel, unlike "par1" above, tends to
+                    // preclude further processing if it fails and
+                    // so avoids detailing the failure analysis
+                    // It also tends to not always post the GitHub
+                    // Checks verdict about the stage, leaving its
+                    // status in limbo ("pending"). This may be or
+                    // not be related to the size of REST API posting
+                    // (log attached?)
+                    warnError(message: "Not all of the 'slow build' succeeded; proceeding to analyze the results") {
+                        parallel stagesBinBuild
+                        echo "FINISHED stage('${bigStageName}'): currentBuild.result was ${tmpRes} before the stage, now is ${currentBuild.result}"
+                        tmpRes = currentBuild.result
+                    }
                 }
+                echo "Completed the 'slow build' dynamatrix"
             }
-            echo "Completed the 'slow build' dynamatrix"
 
             infra.reportGithubStageStatus(dynacfgPipeline.get("stashnameSrc"),
                     "Analyzing results after the 'slow build' dynamatrix (${stagesBinBuild.size() - 1} stages)...",

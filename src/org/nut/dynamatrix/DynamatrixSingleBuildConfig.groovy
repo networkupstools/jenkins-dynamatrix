@@ -19,7 +19,8 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     /**
      * Typically may be assigned something like
-     *    <pre>stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc</pre>
+     *    <pre>stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.C_StageNameTagFunc(dsbc) }</pre>
+     * (Wrapped in a closure to survive CPS serialization, rather than using method reference syntax)
      */
     Closure stageNameFunc = null
 
@@ -179,11 +180,23 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return true
     }
 
+    @Override
+    @NonCPS
+    public int hashCode() {
+        return Objects.hash(buildLabelExpression, buildLabelSet, virtualLabelSet, envvarSet, clioptSet, requiresBuildNode)
+    }
+
+    @NonCPS
     public boolean canEqual(Object other) {
         return other instanceof DynamatrixSingleBuildConfig
     }
 
     @Override
+    @groovy.transform.CompileStatic
+    // NOTE: Cannot be @NonCPS because this object may contain Closure fields
+    // (e.g., stageNameFunc) that get corrupted when serialized across CPS
+    // boundaries. Cloning in @NonCPS context causes "expected to call
+    // stageNameFunc but wound up catching C_StageNameTagFunc" errors.
     public DynamatrixSingleBuildConfig clone() throws CloneNotSupportedException {
         return (DynamatrixSingleBuildConfig) super.clone();
     }
@@ -258,7 +271,11 @@ class DynamatrixSingleBuildConfig implements Cloneable {
                 "\n}" ;
     }
 
-    @NonCPS
+    // NOTE: Cannot be @NonCPS because it calls stageNameFunc(this), which is a
+    // user-provided Closure that may contain pipeline steps. Calling closures
+    // from @NonCPS methods causes CPS serialization errors like
+    // "expected to call java.util.ArrayList.sort but wound up catching
+    // org.jenkinsci.plugins.workflow.cps.CpsClosure2.call".
     public String stageName() {
         if (stageNameFunc != null) {
             // may append arg.defaultStageName() if it wants
@@ -303,9 +320,11 @@ class DynamatrixSingleBuildConfig implements Cloneable {
 
     /**
      * One implementation that pipelines can assign:
-     *    <pre>dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&C_StageNameTagFunc</pre>
+     *    <pre>dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.C_StageNameTagFunc(dsbc) }</pre>
+     *
+     * NOTE: Cannot be @NonCPS because it calls C_StageNameTagValue which calls
+     * getKVMap() -- a CPS-transformed method that may call script.println().
      */
-    @NonCPS
     public static String C_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
         return 'MATRIX_TAG="' + C_StageNameTagValue(dsbc) + "\" && " + dsbc.defaultStageName()
     }
@@ -427,8 +446,11 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      *
      * Behavior is not defined if several of the original label sets
      * assigned a (different) value to the same label key.
+     *
+     * NOTE: Cannot be @NonCPS because it calls script.println() which is
+     * a pipeline step. Calling pipeline steps from @NonCPS methods causes
+     * CPS serialization errors.
      */
-    @NonCPS
     public Map<String, String> getKVMap(boolean storeNulls = false) {
         boolean debugErrors = this.shouldDebugErrors()
         boolean debugTrace = this.shouldDebugTrace()
@@ -509,8 +531,10 @@ class DynamatrixSingleBuildConfig implements Cloneable {
      * and agent labels in examples.
      * Parse {@code ARCH_BITS=64&&ARCH64=amd64&&COMPILER=CLANG&&CLANGVER=9&&OS_DISTRO=openindiana && BITS=64&&CSTDVARIANT=c&&CSTDVERSION=99 (isAllowedFailure)}
      * => {@code NUT_MATRIX_TAG="c99-clang-openindiana-amd64-64bit(-warn|nowarn)(-mayFail)"}
+     *
+     * NOTE: Cannot be @NonCPS because it calls getKVMap() -- a CPS-transformed
+     * method that may call script.println().
      */
-    @NonCPS
     public static String C_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
         Map<String, String> labelMap = dsbc.getKVMap(false)
 
@@ -596,17 +620,17 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     /**
      * One implementation that pipelines can assign:
      * <pre>
-     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&Shellcheck_StageNameTagFunc
-     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&ShellcheckPlatform_StageNameTagFunc
+     *    dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.Shellcheck_StageNameTagFunc(dsbc) }
+     *    dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.ShellcheckPlatform_StageNameTagFunc(dsbc) }
      * </pre>
      * For a platform, in which we can then group-test several shells.
      */
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls ShellcheckPlatform_StageNameTagValue which calls getKVMap() */
     public static String ShellcheckPlatform_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
         return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.ShellcheckPlatform_StageNameTagValue(dsbc) + '"'
     }
 
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls getKVMap() -- a CPS-transformed method */
     public static String ShellcheckPlatform_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
         Map<String, String> labelMap = dsbc.getKVMap(false)
         String sn = ""
@@ -624,15 +648,15 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     /**
      * Stage naming functions for Quickcheck (grabbed by OS distro + CPU arch, regardless of bitness):
      * <pre>
-     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&QuickcheckPlatform_StageNameTagFunc
+     *    dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.QuickcheckPlatform_StageNameTagFunc(dsbc) }
      * </pre>
      */
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls QuickcheckPlatform_StageNameTagValue which calls getKVMap() */
     public static String QuickcheckPlatform_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
         return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.QuickcheckPlatform_StageNameTagValue(dsbc) + '"'
     }
 
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls getKVMap() -- a CPS-transformed method */
     public static String QuickcheckPlatform_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
         Map<String, String> labelMap = dsbc.getKVMap(false)
         String sn = ""
@@ -648,15 +672,15 @@ class DynamatrixSingleBuildConfig implements Cloneable {
     /**
      * Stage naming functions for Spellcheck:
      * <pre>
-     *    dynamatrixGlobalState.stageNameFunc = DynamatrixSingleBuildConfig.&SpellcheckPlatform_StageNameTagFunc
+     *    dynamatrixGlobalState.stageNameFunc = { dsbc -> DynamatrixSingleBuildConfig.SpellcheckPlatform_StageNameTagFunc(dsbc) }
      * </pre>
      */
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls SpellcheckPlatform_StageNameTagValue which calls getKVMap() */
     public static String SpellcheckPlatform_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
         return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.SpellcheckPlatform_StageNameTagValue(dsbc) + '"'
     }
 
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls getKVMap() -- a CPS-transformed method */
     public static String SpellcheckPlatform_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
         Map<String, String> labelMap = dsbc.getKVMap(false)
         String sn = ""
@@ -667,23 +691,23 @@ class DynamatrixSingleBuildConfig implements Cloneable {
         return "${sn}spellcheck"
     }
 
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls Spellcheck_StageNameTagValue which calls getKVMap() */
     public static String Spellcheck_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
         return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.Spellcheck_StageNameTagValue(dsbc) + '"'
     }
 
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls SpellcheckPlatform_StageNameTagValue which calls getKVMap() */
     public static String Spellcheck_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
         return SpellcheckPlatform_StageNameTagValue(dsbc)
     }
 
     /** Use if a particular shell (or several) has been chosen for one test stage... */
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls Shellcheck_StageNameTagValue which calls getKVMap() */
     public static String Shellcheck_StageNameTagFunc(DynamatrixSingleBuildConfig dsbc) {
         return 'MATRIX_TAG="' + DynamatrixSingleBuildConfig.Shellcheck_StageNameTagValue(dsbc) + '"'
     }
 
-    @NonCPS
+    /** NOTE: Cannot be @NonCPS because it calls getKVMap() -- a CPS-transformed method */
     public static String Shellcheck_StageNameTagValue(DynamatrixSingleBuildConfig dsbc) {
         Map<String, String> labelMap = dsbc.getKVMap(false)
         String sn = ""
