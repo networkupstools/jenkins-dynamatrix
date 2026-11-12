@@ -1,5 +1,7 @@
 package org.nut.dynamatrix
 
+import com.cloudbees.groovy.cps.NonCPS
+import org.nut.dynamatrix.DynamatrixSingleBuildConfig;
 import org.nut.dynamatrix.NodeCaps;
 import org.nut.dynamatrix.NodeData;
 
@@ -8,6 +10,11 @@ import org.nut.dynamatrix.NodeData;
  * Usable for testing complex query cases, axis resolution, and matrix evaluations.
  */
 class TestFarmNodeData {
+
+    @NonCPS
+    static List<DynamatrixSingleBuildConfig> sortBuildConfigs(Collection<DynamatrixSingleBuildConfig> configs) {
+        return configs.toList().sort { it.defaultStageName() }
+    }
 
     /**
      * Map of node name to node slave class name (e.g. DumbSlave, SwarmSlave).

@@ -137,7 +137,7 @@ class DynamatrixPipelineTest {
             }
 
             String summary = "Discovered " + dsbcs.size() + " slow build (autotools) configurations"
-            List<DynamatrixSingleBuildConfig> sorted = dsbcs.toList().sort { it.defaultStageName() }
+            List<DynamatrixSingleBuildConfig> sorted = TestFarmNodeData.sortBuildConfigs(dsbcs)
             sorted.eachWithIndex { dsbc, idx ->
                 summary += " CONFIG#" + (idx + 1) + " " + dsbc.defaultStageName()
             }
@@ -249,7 +249,7 @@ class DynamatrixPipelineTest {
             if (!hasIso) throw new RuntimeException("Should have iso variant builds")
 
             String summary = "Discovered " + dsbcs.size() + " slow build (ci_build) configurations"
-            List<DynamatrixSingleBuildConfig> sorted = dsbcs.toList().sort { it.defaultStageName() }
+            List<DynamatrixSingleBuildConfig> sorted = TestFarmNodeData.sortBuildConfigs(dsbcs)
             sorted.eachWithIndex { dsbc, idx ->
                 summary += " CONFIG#" + (idx + 1) + " " + dsbc.defaultStageName()
             }
@@ -310,7 +310,7 @@ class DynamatrixPipelineTest {
 
             String summary = "Discovered " + (dsbcs ? dsbcs.size() : 0) + " spellcheck (legacy string) configurations"
             if (dsbcs) {
-                List<DynamatrixSingleBuildConfig> sorted = dsbcs.toList().sort { it.defaultStageName() }
+                List<DynamatrixSingleBuildConfig> sorted = TestFarmNodeData.sortBuildConfigs(dsbcs)
                 sorted.eachWithIndex { dsbc, idx ->
                     summary += " CONFIG#" + (idx + 1) + " " + dsbc.defaultStageName()
                 }
@@ -384,7 +384,7 @@ class DynamatrixPipelineTest {
 
             String summary = "Discovered " + (dsbcs ? dsbcs.size() : 0) + " spellcheck (closure) configurations"
             if (dsbcs) {
-                List<DynamatrixSingleBuildConfig> sorted = dsbcs.toList().sort { it.defaultStageName() }
+                List<DynamatrixSingleBuildConfig> sorted = TestFarmNodeData.sortBuildConfigs(dsbcs)
                 sorted.eachWithIndex { dsbc, idx ->
                     summary += " CONFIG#" + (idx + 1) + " " + dsbc.defaultStageName()
                 }
@@ -445,7 +445,7 @@ class DynamatrixPipelineTest {
 
             String summary = "Discovered " + (dsbcs ? dsbcs.size() : 0) + " shellcheck (legacy string) configurations"
             if (dsbcs) {
-                List<DynamatrixSingleBuildConfig> sorted = dsbcs.toList().sort { it.defaultStageName() }
+                List<DynamatrixSingleBuildConfig> sorted = TestFarmNodeData.sortBuildConfigs(dsbcs)
                 sorted.eachWithIndex { dsbc, idx ->
                     summary += " CONFIG#" + (idx + 1) + " " + dsbc.defaultStageName()
                 }
@@ -521,7 +521,7 @@ class DynamatrixPipelineTest {
 
             String summary = "Discovered " + (dsbcs ? dsbcs.size() : 0) + " shellcheck (closure) configurations"
             if (dsbcs) {
-                List<DynamatrixSingleBuildConfig> sorted = dsbcs.toList().sort { it.defaultStageName() }
+                List<DynamatrixSingleBuildConfig> sorted = TestFarmNodeData.sortBuildConfigs(dsbcs)
                 sorted.eachWithIndex { dsbc, idx ->
                     summary += " CONFIG#" + (idx + 1) + " " + dsbc.defaultStageName()
                 }
@@ -582,7 +582,7 @@ class DynamatrixPipelineTest {
 
             String summary = "Discovered " + (dsbcs ? dsbcs.size() : 0) + " quickcheck configurations"
             if (dsbcs) {
-                List<DynamatrixSingleBuildConfig> sorted = dsbcs.toList().sort { it.defaultStageName() }
+                List<DynamatrixSingleBuildConfig> sorted = TestFarmNodeData.sortBuildConfigs(dsbcs)
                 sorted.eachWithIndex { dsbc, idx ->
                     summary += " CONFIG#" + (idx + 1) + " " + dsbc.defaultStageName()
                 }
@@ -657,12 +657,12 @@ class DynamatrixPipelineTest {
             }
 
             String summary = "Discovered " + dsbcs.size() + " reference comparison configurations"
-            List<DynamatrixSingleBuildConfig> sorted = dsbcs.toList().sort { it.defaultStageName() }
+            List<DynamatrixSingleBuildConfig> sorted = TestFarmNodeData.sortBuildConfigs(dsbcs)
             List<String> stageNames = []
             sorted.eachWithIndex { dsbc, idx ->
                 String sn = dsbc.defaultStageName()
                 stageNames.add(sn)
-                summary += " CONFIG#" + (idx + 1) + " " + sn
+                summary += " CONFIG #" + (idx + 1) + " " + sn
             }
 
             List<String> sortedNames = stageNames.sort()
