@@ -1,6 +1,7 @@
 package org.nut.dynamatrix
 
 import hudson.slaves.DumbSlave
+import hudson.slaves.JNLPLauncher
 import hudson.slaves.RetentionStrategy
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
 import org.jenkinsci.plugins.workflow.job.WorkflowJob
@@ -44,14 +45,19 @@ class DynamatrixPipelineTest {
     /**
      * Register mock DumbSlave agents for the given node names.
      * Each agent gets the labels from TestFarmNodeData.FARM_NODES_LABELS.
+     * The pipelines only query labels with offline: true, so inbound-only
+     * agents avoid starting a separate remoting JVM for every node.
      */
     private void registerMockNodes(JenkinsRule rule, List<String> nodeNames) {
         nodeNames.each { String nodeName ->
             List<String> labels = TestFarmNodeData.FARM_NODES_LABELS[nodeName] ?: []
             // Filter out the node name itself from labels to avoid duplication
             String labelStr = labels.findAll { it != nodeName }.join(' ')
-            DumbSlave slave = rule.createSlave(nodeName, labelStr, null)
-            slave.setRetentionStrategy(new RetentionStrategy.Always())
+            DumbSlave slave = new DumbSlave(nodeName,
+                new File(rule.jenkins.rootDir, "agent-${nodeName}").absolutePath,
+                new JNLPLauncher())
+            slave.setLabelString(labelStr)
+            slave.setRetentionStrategy(RetentionStrategy.NOOP)
             rule.jenkins.addNode(slave)
         }
     }

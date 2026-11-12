@@ -1,5 +1,29 @@
 # Gradle Memory Issues - Investigation & Fix
 
+> Correction: The original analysis below was speculative and is retained only
+> as historical context. Its memory breakdown, recommendations, root-cause
+> claims, and claim that reducing the daemon heap fixes the tests are not
+> supported by measurements. `-Xmx` is a limit, not a reservation. The
+> `jhat` tool mentioned below is not available in modern JDKs.
+
+## Follow-up measurement
+
+On an approximately 7.8 GiB Linux machine without swap, the original
+`DynamatrixPipelineTest` started 72 Jenkins remoting JVMs. At one snapshot
+their summed RSS was about 4.9 GiB (RSS includes shared pages); the Gradle
+daemon and test worker were about 380 MiB and 572 MiB RSS, respectively.
+The test worker had a 2 GiB maximum heap. A live test-worker heap dump taken
+during agent startup was 117 MiB; its contents were dominated by ordinary
+strings, reflection and collection objects. It is a single early snapshot,
+not proof that no leak or runaway allocation can occur later. The worker
+subsequently exited with status 143 (SIGTERM); the sender was not identified.
+The Windows native allocation failure cannot be conclusively attributed to
+the same cause from the available log alone.
+
+The test pipelines only query node labels with `offline: true`. Their mock
+nodes now use inbound-only launchers instead of starting remoting JVMs.
+This revealed a separate CPS closure sorting error in the test pipelines.
+
 ## Problem Summary
 The gradle integration tests (`integrationTestJunit`) were failing with:
 1. **Linux (Codespaces)**: Gradle daemon crash with "Daemon has exited normally or was terminated"
