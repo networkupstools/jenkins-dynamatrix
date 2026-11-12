@@ -2031,8 +2031,8 @@ class Dynamatrix implements Cloneable {
                     String newBle = dsbcBleTmp.buildLabelExpression
                     dsbcBleTmp.buildLabelSet.each() { def label ->
                         String lblStr = label?.toString()
-                        if (Utils.isString(label) && (lblStr =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)) {
-                            def m = (lblStr =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
+                        if (Utils.isString(label) && (lblStr =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX|MAX11|MAX17|MAX23)$/)) {
+                            def m = (lblStr =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX|MAX11|MAX17|MAX23)$/)
                             String cKey = m[0][1]
                             String mode = m[0][2]
                             Set candidateVersions = this.nodeCaps.resolveAxisValues(cKey, false)
@@ -2079,7 +2079,7 @@ class Dynamatrix implements Cloneable {
             Set<DynamatrixSingleBuildConfig> dsbcBleSetWithStd = []
             dsbcBleSet.each { DynamatrixSingleBuildConfig dsbcBleTmp ->
                 Set extremeVLabels = dsbcBleTmp.virtualLabelSet?.collect { it?.toString() }?.findAll {
-                    Utils.isString(it) && (it =~ /^CSTDVERSION(_[A-Za-z0-9]+)?=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
+                    Utils.isString(it) && (it =~ /^CSTDVERSION(_[A-Za-z0-9]+)?=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX|MAX11|MAX17|MAX23)$/)
                 }
                 if (!extremeVLabels || extremeVLabels.isEmpty()) {
                     dsbcBleSetWithStd << dsbcBleTmp
@@ -2096,8 +2096,8 @@ class Dynamatrix implements Cloneable {
                 List<Set> resolvedVirtualSets = [dsbcBleTmp.virtualLabelSet ? (new HashSet(dsbcBleTmp.virtualLabelSet.collect { it?.toString() })) : [] as Set]
 
                 // Check if this DSBC has paired extreme labels (e.g. CSTDVERSION_c=MAX and CSTDVERSION_cxx=MAX)
-                def vLabelC = extremeVLabels.find { it =~ /^CSTDVERSION_c=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/ }
-                def vLabelCxx = extremeVLabels.find { it =~ /^CSTDVERSION_cxx=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/ }
+                def vLabelC = extremeVLabels.find { it =~ /^CSTDVERSION_c=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX|MAX11|MAX17|MAX23)$/ }
+                def vLabelCxx = extremeVLabels.find { it =~ /^CSTDVERSION_cxx=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX|MAX11|MAX17|MAX23)$/ }
 
                 Set processedExtremeVLabels = [] as Set
                 if (vLabelC && vLabelCxx && (dynacfgBuild.dynamatrixAxesVirtualLabelsMap.containsKey('CSTDVERSION_${KEY}') || (vLabelC =~ /^[^=]+=(.+)$/)[0][1] == (vLabelCxx =~ /^[^=]+=(.+)$/)[0][1])) {
@@ -2124,7 +2124,7 @@ class Dynamatrix implements Cloneable {
 
                 extremeVLabels.each { def vLabel ->
                     if (processedExtremeVLabels.contains(vLabel)) return
-                    def m = (vLabel =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX)$/)
+                    def m = (vLabel =~ /^([^=]+)=(MAX|MIN|NOT_MAX|!MAX|NOT_MIN|!MIN|EXTREME|EXTREMES|MIN_MAX|!EXTREME|!EXTREMES|!MIN_MAX|NOT_EXTREME|NOT_EXTREMES|NOT_MIN_MAX|MAX11|MAX17|MAX23)$/)
                     String labelKey = m[0][1]
                     String mode = m[0][2]
 

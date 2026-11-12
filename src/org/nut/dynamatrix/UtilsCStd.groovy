@@ -191,8 +191,14 @@ class UtilsCStd {
      * Resolve MIN, MAX, NOT_MIN, !MIN, NOT_MAX, !MAX, EXTREME, EXTREMES, MIN_MAX,
      * !EXTREME, !EXTREMES, !MIN_MAX, NOT_EXTREME, NOT_EXTREMES, or NOT_MIN_MAX
      * C or C++ language standard revisions for a given compiler label (e.g.
-     * "GCCVER=4.8.2" or "CLANGVER=10"), taking into account exclusion combos.
-     * Returns a list of matching standard version strings (empty list if none match).
+     * "GCCVER=4.8.2" or "CLANGVER=10"), taking into account exclusion combos.<br/>
+     *
+     * Additionally supports MAX11, MAX17, MAX23 tokens that limit the considered
+     * candidates to respectively C11/C++11, C17/C++17, and C23/C++23 standards.
+     * For MAX23, only compilers with finished C23/C++23 support (e.g. GCC 15+)
+     * are considered, not those with draft support like 2x/2b.
+     *
+     * @returns A list of matching standard version strings (empty list if none match).
      */
     public static List<String> resolveExtremeCStdVersions(
         String compilerLabel,
@@ -205,7 +211,7 @@ class UtilsCStd {
         boolean hadExtremeInCandidates = false
         if (isListNotEmpty(candidateVersions)) {
             hadExtremeInCandidates = candidateVersions.any {
-                it?.toString()?.trim() in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
+                it?.toString()?.trim() in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX', 'MAX11', 'MAX17', 'MAX23']
             }
             if (!hadExtremeInCandidates) {
                 candidates = candidateVersions.collect { it?.toString()?.trim() }.findAll { isStringNotEmpty(it) }
@@ -241,7 +247,7 @@ class UtilsCStd {
 
         String m = mode ? mode.trim() : "MAX"
         if (sorted.size() <= 1) {
-            if (m in ['MIN', 'MAX', 'EXTREME', 'EXTREMES', 'MIN_MAX']) {
+            if (m in ['MIN', 'MAX', 'EXTREME', 'EXTREMES', 'MIN_MAX', 'MAX11', 'MAX17', 'MAX23']) {
                 return sorted
             } else {
                 return []
@@ -264,6 +270,33 @@ class UtilsCStd {
             } else {
                 return []
             }
+        } else if (m == 'MAX11') {
+            // MAX11: Find the highest standard up to C11/C++11
+            List<String> filtered = sorted.findAll { String ver ->
+                getCStdRank(ver, lang) <= getCStdRank('11', lang)
+            }
+            return filtered.isEmpty() ? [] : [filtered[filtered.size() - 1]]
+        } else if (m == 'MAX17') {
+            // MAX17: Find the highest standard up to C17/C++17
+            List<String> filtered = sorted.findAll { String ver ->
+                getCStdRank(ver, lang) <= getCStdRank('17', lang)
+            }
+            return filtered.isEmpty() ? [] : [filtered[filtered.size() - 1]]
+        } else if (m == 'MAX23') {
+            // MAX23: Find the highest standard up to C23/C++23,
+            // but only consider finalized standards.
+            // For C, exact 23 is the target; for C++, 23 is the target.
+            // Drafts like 2x/2b/2a/2c/2d/2y are excluded entirely.
+            List<String> filtered = sorted.findAll { String ver ->
+                int rank = getCStdRank(ver, lang)
+                int targetRank = getCStdRank('23', lang)
+                // Only include standards with rank <= 23 rank
+                if (rank > targetRank) return false
+                // Exclude all drafts - a draft ends with a letter (e.g., 2x, 2b, 2a, 2c, 2d, 2y)
+                // Only finalized standards (ending in a digit) are included
+                return ver ==~ /.*\d$/
+            }
+            return filtered.isEmpty() ? [] : [filtered[filtered.size() - 1]]
         } else {
             return []
         }
@@ -287,6 +320,11 @@ class UtilsCStd {
     /**
      * Resolve extreme paired C and C++ language standard revisions
      * (for CSTDVERSION_${KEY}) for a given compiler label and excludeCombos.
+     *
+     * Additionally supports MAX11, MAX17, MAX23 tokens that limit the considered
+     * candidates to respectively C11/C++11, C17/C++17, and C23/C++23 standards.
+     * For MAX23, only compilers with finished C23/C++23 support (e.g. GCC 15+)
+     * are considered, not those with draft support like 2x/2b.
      */
     public static List<Map<String, String>> resolveExtremeCStdPairs(
         String compilerLabel,
@@ -302,7 +340,7 @@ class UtilsCStd {
                     Map<String, String> m = [:]
                     item.each { k, v -> m[k.toString()] = v?.toString() }
                     boolean hasExtreme = m.values().any {
-                        it in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
+                        it in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX', 'MAX11', 'MAX17', 'MAX23']
                     }
                     if (hasExtreme) {
                         hadExtremeInCandidates = true
@@ -369,7 +407,7 @@ class UtilsCStd {
 
         String m = mode ? mode.trim() : "MAX"
         if (supportedPairs.size() <= 1) {
-            if (m in ['MIN', 'MAX', 'EXTREME', 'EXTREMES', 'MIN_MAX']) {
+            if (m in ['MIN', 'MAX', 'EXTREME', 'EXTREMES', 'MIN_MAX', 'MAX11', 'MAX17', 'MAX23']) {
                 return supportedPairs
             } else {
                 return []
@@ -392,6 +430,48 @@ class UtilsCStd {
             } else {
                 return []
             }
+        } else if (m == 'MAX11') {
+            // MAX11: Find the highest pair where both C and C++ are <= C11/C++11
+            List<Map<String, String>> filtered = supportedPairs.findAll { Map<String, String> pair ->
+                int cRank = getCStdRank(pair['c'], 'c')
+                int cxxRank = getCStdRank(pair['cxx'], 'cxx')
+                int c11Rank = getCStdRank('11', 'c')
+                int cxx11Rank = getCStdRank('11', 'cxx')
+                return cRank <= c11Rank && cxxRank <= cxx11Rank
+            }
+            return filtered.isEmpty() ? [] : [filtered[filtered.size() - 1]]
+        } else if (m == 'MAX17') {
+            // MAX17: Find the highest pair where both C and C++ are <= C17/C++17
+            List<Map<String, String>> filtered = supportedPairs.findAll { Map<String, String> pair ->
+                int cRank = getCStdRank(pair['c'], 'c')
+                int cxxRank = getCStdRank(pair['cxx'], 'cxx')
+                int c17Rank = getCStdRank('17', 'c')
+                int cxx17Rank = getCStdRank('17', 'cxx')
+                return cRank <= c17Rank && cxxRank <= cxx17Rank
+            }
+            return filtered.isEmpty() ? [] : [filtered[filtered.size() - 1]]
+        } else if (m == 'MAX23') {
+            // MAX23: Find the highest pair where both C and C++ are <= C23/C++23,
+            // but only consider finalized standards (not drafts like 2x/2b).
+            List<Map<String, String>> filtered = supportedPairs.findAll { Map<String, String> pair ->
+                int cRank = getCStdRank(pair['c'], 'c')
+                int cxxRank = getCStdRank(pair['cxx'], 'cxx')
+                int c23Rank = getCStdRank('23', 'c')
+                int cxx23Rank = getCStdRank('23', 'cxx')
+
+                // Check ranks are within bounds
+                if (cRank > c23Rank || cxxRank > cxx23Rank) return false
+
+                // For standards at the same rank as 23, only include finalized versions
+                if (cRank == c23Rank) {
+                    if (!(pair['c'] ==~ /.*\d$/)) return false
+                }
+                if (cxxRank == cxx23Rank) {
+                    if (!(pair['cxx'] ==~ /.*\d$/)) return false
+                }
+                return true
+            }
+            return filtered.isEmpty() ? [] : [filtered[filtered.size() - 1]]
         } else {
             return []
         }

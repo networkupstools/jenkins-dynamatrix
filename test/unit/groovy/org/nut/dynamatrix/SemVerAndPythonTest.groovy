@@ -682,4 +682,100 @@ class SemVerAndPythonTest {
         assertFalse(dsbc10.matchesConstraints(cfg.excludeCombos))
         assertEquals("2x", dsbc10.getKVMap().get("CSTDVERSION_c"))
     }
+
+    @Test
+    void testMax11Max17Max23Tokens() {
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault("C-all")
+
+        List<String> cCandidates = ["89", "99", "11", "17", "2x", "23", "2y"]
+        List<String> cxxCandidates = ["98", "03", "11", "14", "17", "2a", "20", "2b", "23", "2c", "26"]
+
+        // MAX11 for C: GCC 4.8.2 supports up to C11
+        assertEquals("11", UtilsCStd.resolveExtremeCStdVersion("GCCVER=4.8.2", "MAX11", cCandidates, cfg.excludeCombos, "c"))
+        // MAX11 for C++: GCC 4.8.2 supports up to C++11
+        assertEquals("11", UtilsCStd.resolveExtremeCStdVersion("GCCVER=4.8.2", "MAX11", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // MAX17 for C: GCC 10 supports up to C17 (C2x is draft, excluded by MAX17)
+        assertEquals("17", UtilsCStd.resolveExtremeCStdVersion("GCCVER=10", "MAX17", cCandidates, cfg.excludeCombos, "c"))
+        // MAX17 for C++: GCC 10 supports up to C++17 (C++2a is draft, excluded by MAX17)
+        assertEquals("17", UtilsCStd.resolveExtremeCStdVersion("GCCVER=10", "MAX17", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // MAX23 for C: GCC 15+ supports finalized C23
+        assertEquals("23", UtilsCStd.resolveExtremeCStdVersion("GCCVER=15", "MAX23", cCandidates, cfg.excludeCombos, "c"))
+        // MAX23 for C++: GCC 15+ supports finalized C++23
+        assertEquals("23", UtilsCStd.resolveExtremeCStdVersion("GCCVER=15", "MAX23", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // MAX23 for C: GCC 10 supports C2x (draft), but MAX23 should exclude drafts
+        // So it should return C17 (the highest finalized standard before C23)
+        assertEquals("17", UtilsCStd.resolveExtremeCStdVersion("GCCVER=10", "MAX23", cCandidates, cfg.excludeCombos, "c"))
+        // MAX23 for C++: GCC 10 supports C++2a (draft), but MAX23 should exclude drafts
+        assertEquals("17", UtilsCStd.resolveExtremeCStdVersion("GCCVER=10", "MAX23", cxxCandidates, cfg.excludeCombos, "cxx"))
+
+        // MAX23 for CLANG: According to excludeCombos, CLANG 17-22 supports only C2x (draft)
+        // So MAX23 returns C17 (the highest finalized standard before C23)
+        assertEquals("17", UtilsCStd.resolveExtremeCStdVersion("CLANGVER=18", "MAX23", cCandidates, cfg.excludeCombos, "c"))
+        // CLANG 13 supports C2x (draft), but MAX23 should exclude drafts
+        assertEquals("17", UtilsCStd.resolveExtremeCStdVersion("CLANGVER=13", "MAX23", cCandidates, cfg.excludeCombos, "c"))
+
+        // Test MAX11, MAX17, MAX23 with resolveExtremeCStdPairs
+        List<Map<String, String>> pairs = [
+            ['c': '89', 'cxx': '98'],
+            ['c': '99', 'cxx': '98'],
+            ['c': '11', 'cxx': '11'],
+            ['c': '11', 'cxx': '14'],
+            ['c': '17', 'cxx': '17'],
+            ['c': '2x', 'cxx': '2a'],
+            ['c': '2x', 'cxx': '2b'],
+            ['c': '23', 'cxx': '23'],
+            ['c': '2x', 'cxx': '2c'],
+            ['c': '2y', 'cxx': '2a'],
+            ['c': '2y', 'cxx': '2b'],
+            ['c': '2y', 'cxx': '2c']
+        ]
+
+        // MAX11 pair for GCC 4.8.2: C11 + C++11
+        List<Map<String, String>> max11Pair = UtilsCStd.resolveExtremeCStdPairs("GCCVER=4.8.2", "MAX11", pairs, cfg.excludeCombos)
+        assertEquals(1, max11Pair.size())
+        assertEquals(['c': '11', 'cxx': '11'], max11Pair[0])
+
+        // MAX17 pair for GCC 10: C17 + C++17 (C2x/C++2a are drafts, excluded by MAX17)
+        List<Map<String, String>> max17Pair = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX17", pairs, cfg.excludeCombos)
+        assertEquals(1, max17Pair.size())
+        assertEquals(['c': '17', 'cxx': '17'], max17Pair[0])
+
+        // MAX23 pair for GCC 15: C23 + C++23 (finalized)
+        List<Map<String, String>> max23PairGcc15 = UtilsCStd.resolveExtremeCStdPairs("GCCVER=15", "MAX23", pairs, cfg.excludeCombos)
+        assertEquals(1, max23PairGcc15.size())
+        assertEquals(['c': '23', 'cxx': '23'], max23PairGcc15[0])
+
+        // MAX23 pair for GCC 10: C2x/C++2a are drafts, so MAX23 should return C17+C++17
+        List<Map<String, String>> max23PairGcc10 = UtilsCStd.resolveExtremeCStdPairs("GCCVER=10", "MAX23", pairs, cfg.excludeCombos)
+        assertEquals(1, max23PairGcc10.size())
+        assertEquals(['c': '17', 'cxx': '17'], max23PairGcc10[0])
+    }
+
+    @Test
+    void testDynamatrixConfigMax11Max17Max23Substitution() {
+        DynamatrixConfig cfg = new DynamatrixConfig(null)
+        cfg.initDefault([
+            'defaultDynamatrixConfig': 'C',
+            'CSTDVERSION': 'MAX11'
+        ])
+        assertEquals(['MAX11'], cfg.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_c'])
+
+        DynamatrixConfig cfg2 = new DynamatrixConfig(null)
+        cfg2.initDefault([
+            'defaultDynamatrixConfig': 'CXX',
+            'CSTDVERSION': 'MAX17'
+        ])
+        assertEquals(['MAX17'], cfg2.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_cxx'])
+
+        DynamatrixConfig cfg3 = new DynamatrixConfig(null)
+        cfg3.initDefault([
+            'defaultDynamatrixConfig': 'C+CXX',
+            'CSTDVERSION': 'MAX23'
+        ])
+        assertEquals(['MAX23'], cfg3.dynamatrixAxesVirtualLabelsMap['CSTDVERSION_${KEY}'])
+    }
 }

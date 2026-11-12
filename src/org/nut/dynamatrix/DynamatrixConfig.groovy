@@ -737,7 +737,7 @@ class DynamatrixConfig implements Cloneable {
             dynacfgOrig.keySet().each { def k ->
                 def v = dynacfgOrig[k]
                 if (Utils.isString(v) && (k.toString() == 'CSTDVERSION' || k.toString().startsWith('CSTDVERSION_') || k.toString() == 'CSTD') && (
-                    v.toString() in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX']
+                    v.toString() in ['MAX', 'MIN', 'NOT_MAX', '!MAX', 'NOT_MIN', '!MIN', 'EXTREME', 'EXTREMES', 'MIN_MAX', '!EXTREME', '!EXTREMES', '!MIN_MAX', 'NOT_EXTREME', 'NOT_EXTREMES', 'NOT_MIN_MAX', 'MAX11', 'MAX17', 'MAX23']
                 )) {
                     extremeCStdKeys << k
                 }
