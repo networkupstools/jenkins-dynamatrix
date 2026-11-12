@@ -532,7 +532,12 @@ testing {
         // Configure the mkobit-created default suite to match integrationTestJunit:
         // useJUnitPlatform() + harness so our JUnit 4/5 @Rule tests run properly.
         named<JvmTestSuite>("integrationTest") {
+            sources {
+                groovy.setSrcDirs(listOf("test/integration/groovy", "test/mocklib/src"))
+            }
             dependencies {
+                // Main source output so integration tests can import classes from src/
+                implementation(sourceSets.named("main").get().output)
                 // compileOnly so IDEA sees Groovy and configures the Groovy SDK for this module;
                 // the task-level groovyClasspath override is invisible during Gradle sync.
                 compileOnly(libs.spock.core)
@@ -540,10 +545,43 @@ testing {
                 implementation(libs.jenkins.test.harness)
                 runtimeOnly(libs.junit.jupiter.engine)
                 runtimeOnly(libs.junit.platform.launcher)
+                // groovy-all:2.4.21 is the fat JAR (all Groovy modules in one archive).
+                // Using the fat jar avoids the Java 9+ BuiltinClassLoader split-package
+                // problem: having groovy.jar + groovy-swing.jar on the classpath causes
+                // the classloader to cache org.codehaus.groovy.runtime to groovy.jar and
+                // then refuse to search groovy-swing.jar for SwingGroovyMethods/Groovysh.
+                // It also makes Groovy visible to IDEA for SDK detection (implementation
+                // is compile+runtime, whereas runtimeOnly is invisible to IDEA sync).
+                implementation(libs.groovy.all)
+                //runtimeOnly("org.jenkins-ci.main:jenkins-core:${sharedLibrary.jenkins.version}")
+                runtimeOnly("commons-discovery:commons-discovery:0.5")
+                runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
+                runtimeOnly(jenkinsPlugins.bouncycastle.api)
+                runtimeOnly(jenkinsPlugins.display.url.api)
+                runtimeOnly(jenkinsPlugins.scm.api)
+                runtimeOnly(jenkinsPlugins.workflow.step.api)
+                runtimeOnly(jenkinsPlugins.workflow.support)
+                runtimeOnly(jenkinsPlugins.workflow.api)
+                runtimeOnly(jenkinsPlugins.workflow.basic.steps)
+                runtimeOnly(jenkinsPlugins.workflow.cps)
+                runtimeOnly(jenkinsPlugins.workflow.job)
+                runtimeOnly(jenkinsPlugins.workflow.durable.task.step)
+                runtimeOnly(jenkinsPlugins.durable.task)
+                runtimeOnly(jenkinsPlugins.workflow.scm.step)
+                runtimeOnly(jenkinsPlugins.junit)
+                runtimeOnly(jenkinsPlugins.matrix.project)
+                runtimeOnly(jenkinsPlugins.branch.api)
+                runtimeOnly(jenkinsPlugins.cloudbees.folder)
+                runtimeOnly(jenkinsPlugins.structs)
+                runtimeOnly(jenkinsPlugins.script.security)
+                runtimeOnly(jenkinsPlugins.pipeline.model.definition)
+                runtimeOnly(jenkinsPlugins.credentials)
             }
             targets.all {
                 testTask.configure {
                     useJUnitPlatform()
+                    dependsOn(prepareJenkinsTestDeps, syncMocklibSources)
+                    classpath += files(layout.buildDirectory.dir("jth-test-resources"))
                 }
             }
         }
