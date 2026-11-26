@@ -64,6 +64,34 @@ class DynamatrixGithubNotifier {
         this.script = script
     }
 
+    @NonCPS
+    static String githubBranchUrl(String repositoryUrl, String branchName) {
+        if (repositoryUrl == null || repositoryUrl.trim().isEmpty()
+            || branchName == null || branchName.trim().isEmpty()) {
+            return null
+        }
+
+        String githubUrl = repositoryUrl.trim()
+        if (githubUrl ==~ /(?i)^git@github\.com:.+$/) {
+            githubUrl = githubUrl.replaceFirst(/(?i)^git@github\.com:/, 'https://github.com/')
+        } else if (githubUrl ==~ /(?i)^ssh:\/\/git@github\.com\/.+$/) {
+            githubUrl = githubUrl.replaceFirst(/(?i)^ssh:\/\/git@github\.com\//, 'https://github.com/')
+        } else if (githubUrl ==~ /(?i)^git:\/\/github\.com\/.+$/) {
+            githubUrl = githubUrl.replaceFirst(/(?i)^git:\/\/github\.com\//, 'https://github.com/')
+        } else if (githubUrl ==~ /(?i)^https?:\/\/github\.com\/.+$/) {
+            githubUrl = githubUrl.replaceFirst(/(?i)^https?:\/\//, 'https://')
+        } else {
+            return null
+        }
+
+        githubUrl = githubUrl.replaceFirst(/(?i)\.git\/?$/, '').replaceFirst(/\/+$/, '')
+        if (!(githubUrl ==~ /(?i)^https:\/\/github\.com\/[^\/]+\/[^\/]+$/)) {
+            return null
+        }
+
+        return "${githubUrl}/tree/${branchName}"
+    }
+
     /** Getter of {@link #defaultInstance} for most callers;
      *  also setter/creator of that instance for pipeline init
      *  (or any first call with non-null {@code script}

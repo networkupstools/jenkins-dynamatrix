@@ -55,6 +55,11 @@ Jenkinsfile-dynamatrix] pipeline script definition, which sets up multiple
 "slow build" scenario requirements, some only for certain external conditions,
 and calls this library to do the heavy lifting.
 
+`dynamatrixPipeline` also adds an early status entry to the Jenkins build page.
+Pull request entries link to the pull request, and GitHub branch builds link to
+the corresponding branch page (for example,
+`https://github.com/networkupstools/nut/tree/mergetrain/20261123`).
+
 What and why
 ~~~~~~~~~~~~
 

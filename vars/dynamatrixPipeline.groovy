@@ -164,6 +164,32 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
             }
         } catch (Throwable ignored) {
         } // no-op
+    } else if (env.BRANCH_NAME && !env.CHANGE_ID) {
+        String branchScmUrl = null
+        try {
+            branchScmUrl = scm?.userRemoteConfigs?.find {
+                it?.url && !it.url.toLowerCase().contains('dynamatrix')
+            }?.url
+        } catch (Throwable ignored) {
+        }
+        if (!branchScmUrl) branchScmUrl = env.GIT_URL
+
+        String branchUrl = DynamatrixGithubNotifier.githubBranchUrl(branchScmUrl, env.BRANCH_NAME)
+        if (branchUrl) {
+            def topPostText = "Branch: ${env.BRANCH_NAME}"
+            def topPostIcon = 'symbol-logo-github plugin-ionicons-api'
+            try {
+                try {
+                    addSummary(text: topPostText, icon: topPostIcon,
+                        link: branchUrl, target: '_blank')
+                } catch (Throwable olderBadge) {
+                    // Assume older Badge API
+                    topPostText = "<a href='${branchUrl}' target='_blank'>${topPostText}</a>"
+                    createSummary(text: topPostText, icon: topPostIcon)
+                }
+            } catch (Throwable ignored) {
+            } // no-op
+        }
     }
 
     // Avoid NPEs (TBD: and changing the original Map's entries unexpectedly
