@@ -186,7 +186,7 @@ class Dynamatrix implements Cloneable {
         if (recurse && this.knownClones.size() > 0) {
             this.knownClones.each {
                 Result rIt = it?.getWorstResult(recurse)
-                if (r != null) {
+                if (rIt != null) {
                     if (r == null) {
                         r = rIt
                     } else {
