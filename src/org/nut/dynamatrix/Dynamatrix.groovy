@@ -11,6 +11,7 @@ import hudson.remoting.ProxyException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 import java.util.regex.*;
 
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
@@ -49,7 +50,7 @@ class Dynamatrix implements Cloneable {
     /** Have some defaults, if only to have all expected fields defined */
     private def script
     /** Prepared String with identifier of this object */
-    private final String objectID = Integer.toHexString(hashCode())
+    private String objectID = UUID.randomUUID().toString()
     /** Arbitrary comment to explain why this Dynamatrix instance was created */
     public String dynamatrixComment = null
     /** Context tag got github notifications */
@@ -123,7 +124,7 @@ class Dynamatrix implements Cloneable {
      * @see #progressSummary
      * @see #updateProgressBadge()
      */
-    private final static Map<String, Object> progressBadge = new HashMap<String, Object>()
+    private final static Map<String, Object> progressBadge = java.util.Collections.synchronizedMap(new HashMap<String, Object>())
 
     /**
      * Object of a last-created status (paragraph on build page)
@@ -135,7 +136,7 @@ class Dynamatrix implements Cloneable {
      * @see #progressBadge
      * @see #createSummary()
      */
-    private final static Map<String, Object> progressSummary = new HashMap<String, Object>()
+    private final static Map<String, Object> progressSummary = java.util.Collections.synchronizedMap(new HashMap<String, Object>())
 
     /**
      * Set upon success of new-style calls, so we can update existing
@@ -890,8 +891,10 @@ class Dynamatrix implements Cloneable {
 
     @Override
     public Dynamatrix clone() throws CloneNotSupportedException {
-        Dynamatrix ret = (Dynamatrix) super.clone()
+        Dynamatrix ret = this.shallowClone()
+        ret.objectID = UUID.randomUUID().toString()
         ret.knownClones = []
+        this.resetCloneTrackingState(ret)
         this.knownClones << ret
         ret.dynamatrixComment = "Clone of Dynamatrix@${this.objectID}" +
                 (ret.dynamatrixComment == null ? "" : ": ${ret.dynamatrixComment}")
@@ -908,11 +911,14 @@ class Dynamatrix implements Cloneable {
     }
 
     public Dynamatrix clone(String dynamatrixComment, Boolean rememberMe = false) throws CloneNotSupportedException {
-        Dynamatrix ret = (Dynamatrix) super.clone()
+        Dynamatrix ret = this.shallowClone()
+        ret.objectID = UUID.randomUUID().toString()
         ret.dynamatrixComment = dynamatrixComment
         ret.knownClones = []
-        if (rememberMe)
+        if (rememberMe) {
+            this.resetCloneTrackingState(ret)
             this.knownClones << ret
+        }
 
         if (this.shouldDebugTrace()) {
             StringWriter stackTrace = new StringWriter()
@@ -924,6 +930,21 @@ class Dynamatrix implements Cloneable {
         }
 
         return ret
+    }
+
+    @groovy.transform.CompileStatic
+    private Dynamatrix shallowClone() throws CloneNotSupportedException {
+        return (Dynamatrix) super.clone()
+    }
+
+    private void resetCloneTrackingState(Dynamatrix clone) {
+        clone.@dmWorstResult = null
+        clone.@countStages = new ConcurrentHashMap<String, Integer>()
+        clone.@countStagesPerNode = new ConcurrentHashMap<String, Map<String, Integer>>()
+        clone.@trackStageResults = new ConcurrentHashMap<String, Result>()
+        clone.@trackStageLogkeys = new ConcurrentHashMap<String, String>()
+        clone.countStagesExpected = null
+        clone.@reportedTooManyRestarts = false
     }
 
     /** Clone current {@link #dynacfg} into {@link #dynacfgSaved}.
