@@ -31,6 +31,10 @@ import org.nut.dynamatrix.dynamatrixGlobalState;
  * set of build agents and project configurations.
  */
 class Dynamatrix implements Cloneable {
+    private static class ProgressState implements java.io.Serializable {
+        Integer countStagesExpected = null
+    }
+
     /**
      * Class-shared cache of the collected {@link #nodeCaps} per label
      * expression, so we only query Jenkins core once for those, even
@@ -51,6 +55,10 @@ class Dynamatrix implements Cloneable {
     private def script
     /** Prepared String with identifier of this object */
     private String objectID = UUID.randomUUID().toString()
+    /** Identifier shared by clones for progress reporting */
+    private String progressOwnerID = null
+    /** Expected stage count shared by clones in the same matrix */
+    private ProgressState progressState = new ProgressState()
     /** Arbitrary comment to explain why this Dynamatrix instance was created */
     public String dynamatrixComment = null
     /** Context tag got github notifications */
@@ -255,10 +263,15 @@ class Dynamatrix implements Cloneable {
      * Used for regular updates of reportGithubStageStatus() during the run.
      */
     public String reportPrefixCountStagesExpected = null
-    /**
-     * May get used for regular updates of reportGithubStageStatus() during the run.
-     */
-    public Integer countStagesExpected = null
+
+    /** Expected number of stages in this matrix, shared by its clones - getter. */
+    public Integer getCountStagesExpected() {
+        return this.progressState.countStagesExpected
+    }
+    /** Expected number of stages in this matrix, shared by its clones - setter. */
+    public void setCountStagesExpected(Integer count) {
+        this.progressState.countStagesExpected = count
+    }
 
     /**
      * For each {@code stageName} (map key), track its {@link Result}
@@ -649,7 +662,9 @@ class Dynamatrix implements Cloneable {
      * current+history list) in the classic Jenkins user interface - page for
      * a job definition overview.<br/>
      *
-     * This method populates the "yellow box" (identified by {@link #objectID})
+     * This method populates the "yellow box" (identified by the
+     * {@link #progressOwnerID}, shared with internal clones of this
+     * matrix, or if it is {@code null} -- by its {@link #objectID})
      * with {@link #countStages} summarized by one of the {@code toString*()}
      * methods defined in this class (depending on which of them produces
      * non-trivial output).<br/>
@@ -668,11 +683,12 @@ class Dynamatrix implements Cloneable {
     // Must be CPS - calls pipeline script steps; this
     // precludes use of at least synchronized{} blocks
     synchronized
-    Boolean updateProgressBadge(Boolean removeOnly = false, Boolean recurse = false, Boolean updateStatusPage = true) {
+    Boolean updateProgressBadge(Boolean removeOnly = false, Boolean recurse = false, Boolean updateStatusPage = true, Boolean forceFinished = false) {
         if (!this.script)
             return null
 
-        String txtBadgeId = "Build-progress-badge@" + this.objectID
+        String progressID = this.progressOwnerID ?: this.objectID
+        String txtBadgeId = "Build-progress-badge@" + progressID
 
         try {
             if (!badgeAPIv2Works || removeOnly) {
@@ -730,10 +746,11 @@ class Dynamatrix implements Cloneable {
 
         // Detect overall builds no longer in progress (completed with some final verdict)
         Map<String, Integer> mapCountStages = this.getCountStages(recurse)
-        if ( (mapCountStages.getAt('STARTED')?:0) == (mapCountStages.getAt('FINISHED')?:0)
+        if (forceFinished || (
+            (mapCountStages.getAt('STARTED')?:0) == (mapCountStages.getAt('FINISHED')?:0)
         && ( (mapCountStages.getAt('STARTED')?:0) + (mapCountStages.getAt('RESTARTED')?:0) == (mapCountStages.getAt('COMPLETED')?:0) )
         && ( (mapCountStages.getAt('FINISHED')?:0) >= (countStagesExpected?:0))
-        ) {
+        )) {
             txt = "Build completed"
         }
 
@@ -829,13 +846,14 @@ class Dynamatrix implements Cloneable {
             }
         }
 
-        if (updateStatusPage) {
+        if (updateStatusPage && (badgeAPIv2Works ||
+            (progressID == this.objectID && txt.startsWith("Build completed")))) {
             try {
                 if (countStagesPerNode.size() > 0)
                     txt += "<br/>Non-zero stats per build node:<br/><pre>${this.toStringStageCountPerNodeDumpNonZero(true, true)}</pre>"
                 if (Utils.isStringNotEmpty(this.dynamatrixGithubNotificationContext))
                     txt = "[${this.dynamatrixGithubNotificationContext}] ${txt}"
-                def resSummary = this.createSummary(txt)
+                def resSummary = this.createSummary(txt, 'info.gif', progressID)
                 if (res == null || resSummary == false)
                     res = resSummary
             } catch (Throwable t) {
@@ -893,6 +911,7 @@ class Dynamatrix implements Cloneable {
     public Dynamatrix clone() throws CloneNotSupportedException {
         Dynamatrix ret = this.shallowClone()
         ret.objectID = UUID.randomUUID().toString()
+        ret.progressOwnerID = this.progressOwnerID ?: this.objectID
         ret.knownClones = []
         this.resetCloneTrackingState(ret)
         this.knownClones << ret
@@ -913,6 +932,7 @@ class Dynamatrix implements Cloneable {
     public Dynamatrix clone(String dynamatrixComment, Boolean rememberMe = false) throws CloneNotSupportedException {
         Dynamatrix ret = this.shallowClone()
         ret.objectID = UUID.randomUUID().toString()
+        ret.progressOwnerID = this.progressOwnerID ?: this.objectID
         ret.dynamatrixComment = dynamatrixComment
         ret.knownClones = []
         if (rememberMe) {
@@ -943,7 +963,6 @@ class Dynamatrix implements Cloneable {
         clone.@countStagesPerNode = new ConcurrentHashMap<String, Map<String, Integer>>()
         clone.@trackStageResults = new ConcurrentHashMap<String, Result>()
         clone.@trackStageLogkeys = new ConcurrentHashMap<String, String>()
-        clone.countStagesExpected = null
         clone.@reportedTooManyRestarts = false
     }
 

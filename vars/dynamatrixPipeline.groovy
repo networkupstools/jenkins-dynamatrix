@@ -971,6 +971,9 @@ def pipelineBody(Map dynacfgBase = [:], Map dynacfgPipeline = [:]) {
                 if (dynamatrixGlobalState.enableDebugTrace)
                     echo dynamatrix.toStringStageCountDump(dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 
+                // Publish the final matrix-wide progress before removing its rolling badge.
+                dynamatrix.updateProgressBadge(false, dynacfgPipeline?.recurseIntoDynamatrixCloneStats, true, true)
+
                 // Build finished, remove the rolling progress via GPBP steps (with id)
                 dynamatrix.updateProgressBadge(true, dynacfgPipeline?.recurseIntoDynamatrixCloneStats)
 

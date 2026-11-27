@@ -15,6 +15,10 @@ class DynamatrixCloneTest {
         Dynamatrix clone = parent.clone('remembered clone', true)
 
         assertNotEquals(objectID(parent), objectID(clone))
+        assertEquals(progressID(parent), progressID(clone))
+
+        parent.countStagesExpected = 374
+        assertEquals(374, clone.countStagesExpected)
 
         parent.countStagesIncrement('STARTED')
         clone.countStagesIncrement('FAILURE')
@@ -27,9 +31,27 @@ class DynamatrixCloneTest {
         assertEquals(Result.FAILURE, parent.getWorstResult(true))
     }
 
+    @Test
+    void testCloneUsesUpdatedMatrixExpectedCount() {
+        Dynamatrix parent = new Dynamatrix(null)
+        Dynamatrix clone = parent.clone('prepared clone', false)
+
+        parent.countStagesExpected = 374
+
+        assertEquals(374, clone.countStagesExpected)
+        assertEquals(progressID(parent), progressID(clone))
+        assertNotEquals(objectID(parent), objectID(clone))
+    }
+
     private static String objectID(Dynamatrix dynamatrix) {
         Field objectIDField = Dynamatrix.getDeclaredField('objectID')
         objectIDField.accessible = true
         return (String) objectIDField.get(dynamatrix)
+    }
+
+    private static String progressID(Dynamatrix dynamatrix) {
+        Field progressOwnerIDField = Dynamatrix.getDeclaredField('progressOwnerID')
+        progressOwnerIDField.accessible = true
+        return (String) progressOwnerIDField.get(dynamatrix) ?: objectID(dynamatrix)
     }
 }

@@ -280,6 +280,15 @@ def stageNameFunc_ShellcheckCustom(DynamatrixSingleBuildConfig dsbc) {
 dynamatrixPipeline(dynacfgBase, dynacfgPipeline)
 ----
 
+Progress reporting
+^^^^^^^^^^^^^^^^^^
+
+Progress entries are scoped to one `Dynamatrix` matrix. Internal clones
+share that matrix's planned stage count and progress entry, while distinct
+matrices keep separate entries. Jenkins Badge API versions that can update
+summaries show the current matrix progress; older append-only summary APIs
+receive only the final summary to avoid leaving a trail of interim snapshots.
+
 Low-level prepareDynamatrix() usage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
