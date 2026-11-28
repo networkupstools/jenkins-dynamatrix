@@ -650,6 +650,52 @@ class DynamatrixPipelineTest {
         verifySummaryAgainstReference(run, "test/resources/ci.DynamatrixPipelineTest.quickcheckStages-list.txt")
     }
 
+    @Test
+    @WithTimeout(120)
+    void "stage generation can access expected stage count from CPS"(JenkinsRule rule) {
+        def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+            def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+            labels.any { it.startsWith("GCCVER=") } && name.contains("debian")
+        }
+        registerMockNodes(rule, nodeNames)
+
+        final CpsFlowDefinition flow = new CpsFlowDefinition(
+            '''
+            @Library("jenkins-dynamatrix") _
+            import org.nut.dynamatrix.*
+
+            def nodeNames = TestFarmNodeData.getNodeNames().findAll { name ->
+                def labels = TestFarmNodeData.FARM_NODES_LABELS[name] ?: []
+                labels.any { it.startsWith("GCCVER=") } && name.contains("debian")
+            }
+            NodeCaps nc = TestFarmNodeData.getNodeCaps(nodeNames)
+            Dynamatrix dynamatrix = new Dynamatrix(this, nc, "expected-stage-count-cps-test")
+            dynamatrix.prepareDynamatrix([
+                "commonLabelExpr": "nut-builder",
+                "dynamatrixAxesLabels": ["OS_DISTRO", '${COMPILER}VER']
+            ])
+
+            Set<List> stages = dynamatrix.generateBuild(
+                ["requiredNodelabels": ["OS_DISTRO=debian12"]], true, false, null)
+            if (stages == null || stages.empty) {
+                throw new RuntimeException("Expected generated build stages")
+            }
+            dynamatrix.countStagesExpected = stages.size()
+            if (dynamatrix.countStagesExpected != stages.size()) {
+                throw new RuntimeException("Expected stage count property to match generated stages")
+            }
+            dynamatrix.updateProgressBadge(false, false, false)
+            echo "SUCCESS: generated " + dynamatrix.countStagesExpected + " stages from CPS"
+            '''.stripIndent(), false)
+
+        final WorkflowJob workflowJob = rule.createProject(WorkflowJob, "pExpectedStageCountCps")
+        workflowJob.definition = flow
+        final WorkflowRun run = rule.buildAndAssertSuccess(workflowJob)
+
+        rule.assertLogContains("SUCCESS: generated", run)
+        rule.assertLogNotContains("MissingFieldException", run)
+    }
+
     // ========================================================================
     // Test 8: Verify alphanumerical sorting of summaries
     // ========================================================================

@@ -59,6 +59,8 @@ class Dynamatrix implements Cloneable {
     private String progressOwnerID = null
     /** Expected stage count shared by clones in the same matrix */
     private ProgressState progressState = new ProgressState()
+    /** Backing field retained for Jenkins CPS field resolution. */
+    private Integer countStagesExpected = null
     /** Arbitrary comment to explain why this Dynamatrix instance was created */
     public String dynamatrixComment = null
     /** Context tag got github notifications */
@@ -270,6 +272,7 @@ class Dynamatrix implements Cloneable {
     }
     /** Expected number of stages in this matrix, shared by its clones - setter. */
     public void setCountStagesExpected(Integer count) {
+        this.@countStagesExpected = count
         this.progressState.countStagesExpected = count
     }
 
@@ -749,13 +752,13 @@ class Dynamatrix implements Cloneable {
         if (forceFinished || (
             (mapCountStages.getAt('STARTED')?:0) == (mapCountStages.getAt('FINISHED')?:0)
         && ( (mapCountStages.getAt('STARTED')?:0) + (mapCountStages.getAt('RESTARTED')?:0) == (mapCountStages.getAt('COMPLETED')?:0) )
-        && ( (mapCountStages.getAt('FINISHED')?:0) >= (countStagesExpected?:0))
+        && ( (mapCountStages.getAt('FINISHED')?:0) >= (this.getCountStagesExpected()?:0))
         )) {
             txt = "Build completed"
         }
 
-        if (this.countStagesExpected > 0) {
-            txt += " (planned:${this.countStagesExpected})"
+        if (this.getCountStagesExpected() > 0) {
+            txt += " (planned:${this.getCountStagesExpected()})"
         }
         String strCount = this.toStringStageCountBestEffort(recurse)
         if (strCount in [null, "null", "", "{}", "[]", "[:]"]) {
@@ -2675,15 +2678,15 @@ class Dynamatrix implements Cloneable {
 
         Set<DynamatrixSingleBuildConfig> dsbcSet = generateBuildConfigSet(dynacfgOrig)
         Dynamatrix thisDynamatrix = this
-        if (this.countStagesExpected == null)
-            this.countStagesExpected = 0
+        if (this.getCountStagesExpected() == null)
+            this.setCountStagesExpected(0)
         this.script.println "[DEBUG] generateBuildParallelStages(): current thisDynamatrix.failFast setting when generating parallelStages: ${thisDynamatrix.failFast}"
 
         // Consider allowedFailure (if flag runAllowedFailure==true)
         // when preparing the stages below:
         /** `parallelStages` actually contains tuples for mapping <String, Closure> */
         Set<List> parallelStages = []
-        this.countStagesExpected += dsbcSet?.size() ?: 0
+        this.setCountStagesExpected(this.getCountStagesExpected() + (dsbcSet?.size() ?: 0))
         dsbcSet.each() {DynamatrixSingleBuildConfig dsbcTmp ->
             // copy a unique object ASAP, otherwise stuff gets mixed up
             DynamatrixSingleBuildConfig dsbc = dsbcTmp.clone()

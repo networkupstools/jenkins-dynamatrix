@@ -43,6 +43,23 @@ class DynamatrixCloneTest {
         assertNotEquals(objectID(parent), objectID(clone))
     }
 
+    @Test
+    void testExpectedStageCountBackingFieldStaysInSyncWithSharedState() {
+        Field countStagesExpectedField = Dynamatrix.getDeclaredField('countStagesExpected')
+        countStagesExpectedField.accessible = true
+
+        Dynamatrix parent = new Dynamatrix(null)
+        Dynamatrix clone = parent.clone('prepared clone', false)
+
+        parent.countStagesExpected = 374
+        assertEquals(374, countStagesExpectedField.get(parent))
+        assertEquals(374, clone.countStagesExpected)
+
+        clone.countStagesExpected = 375
+        assertEquals(375, countStagesExpectedField.get(clone))
+        assertEquals(375, parent.countStagesExpected)
+    }
+
     private static String objectID(Dynamatrix dynamatrix) {
         Field objectIDField = Dynamatrix.getDeclaredField('objectID')
         objectIDField.accessible = true
